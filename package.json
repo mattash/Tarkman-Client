@@ -1,0 +1,14 @@
+{
+  "name": "tark-client",
+  "version": "1.0.0",
+  "description": "Tarkman Client React App",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test"
+  },
+  "keywords": [],
+  "author": "mattash",
+  "license": "ISC"
+}
