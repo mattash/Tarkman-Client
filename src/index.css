@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --primary-bg: #3c3c3c;
+    --header-bg: #58243c;
+    --button-bg: #d05c96;
+    --button-hover-bg: #d05c96;
+    --text-color: #ffffff;
+    --subtext-color: #cccccc;
+  }
+  
+  body {
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+  }
+  
+  header, .navbar {
+    background-color: var(--header-bg);
+  }
+  
+  button {
+    background-color: var(--button-bg);
+    color: var(--text-color);
+  }
+  
+  button:hover {
+    background-color: var(--button-hover-bg);
+  }
+
+  .bg-header {
+    background-color: var(--header-bg);
+  }
