@@ -9,7 +9,7 @@ const SessionList = () => {
     const fetchSessions = async () => {
       try {
         const response = await api.get('/services.json');
-        console.log(response.data);
+        // console.log(response.data);
         setSessions(response.data);
       } catch (error) {
         console.error('Error fetching sessions:', error);
