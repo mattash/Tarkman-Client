@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Tarkman",
+  "name": "A tool to help you understand the liturgies of the Armenian Church",
   "icons": [
     {
       "src": "favicon.ico",
