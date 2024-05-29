@@ -16,7 +16,14 @@ const SessionDetail = () => {
         <PartsList sessionId={id} isDrawerOpen={isDrawerOpen} />
         <Drawer.Root shouldScaleBackground onClose={() => setIsDrawerOpen(false)}>
           <Drawer.Trigger asChild>
-            <button className="fixed bottom-2 right-2 rounded-full p-2 shadow-md">Learn More&hellip;</button>
+            <button className="fixed bottom-2 right-2 rounded-full p-2 shadow-md">
+            <div className="flex items-center">
+              <span>Learn More</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-4 w-4 ml-1">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              </svg>
+            </div>
+            </button>
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/40" />

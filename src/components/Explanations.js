@@ -30,7 +30,7 @@ const Explanations = () => {
   }, [subscriptionData]);
 
   if (!explanation) {
-    return <div>Loading...</div>;
+    return <div className='text-gray-400'>No current explanations</div>;
   }
 
   return (
