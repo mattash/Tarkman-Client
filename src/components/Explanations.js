@@ -1,17 +1,14 @@
+// src/components/Explanations.js
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api';
-import usePusher from '../hooks/usePusher';
+import { usePusher } from '../context/PusherContext';
 import ReactMarkdown from 'react-markdown';
-
 
 const Explanations = () => {
   const [explanation, setExplanation] = useState(null);
-
-  // Get the session ID from the URL
   const { id: sessionId } = useParams();
-  const [logData, setLogData] = useState('');
-
+  const subscriptionData = usePusher();
 
   const fetchExplanation = async () => {
     try {
@@ -26,16 +23,14 @@ const Explanations = () => {
     fetchExplanation();
   }, [sessionId]);
 
-  usePusher(`channel_${sessionId}`, 'part_change', () => {
-    fetchExplanation();
-  })
+  useEffect(() => {
+    if (subscriptionData) {
+      fetchExplanation();
+    }
+  }, [subscriptionData]);
 
   if (!explanation) {
-    return (
-      <div>
-        Loading... 
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   return (
