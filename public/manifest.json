@@ -1,6 +1,7 @@
 {
   "name": "Tarkman - Liturgy Translator",
   "short_name": "Tarkman",
+  "version": "0.2.5",
   "icons": [
     {
       "src": "favicon.ico",
