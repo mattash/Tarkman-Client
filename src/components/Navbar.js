@@ -7,6 +7,8 @@ const Navbar = () => {
       <div className="container mx-auto flex justify-between items-center">
         <Link to="/" className="text-2xl font-bold">Tarkman</Link>
         <div>
+          <Link to="/sessions" className="mr-4">Sessions</Link>
+          <Link to="/about">About</Link>
 {/*           <Link to="/sign_in" className="mr-4">Sign In</Link>
           <Link to="/sign_up">Sign Up</Link> */}
         </div>

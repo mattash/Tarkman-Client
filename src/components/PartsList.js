@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import api from '../api';
 import usePusher from '../hooks/usePusher';
 import Navbar from '../components/Navbar';
+import { fromJSON } from 'postcss';
 
 
 const PartsList = ({ sessionId }) => {
@@ -13,6 +14,8 @@ const PartsList = ({ sessionId }) => {
     try {
       const response = await api.get(`/s/${sessionId}/parts.json`);
       setParts(response.data.parts);
+      const sessionResponse = await api.get(`/s/${sessionId}.json`);
+      handlePartUpdated({ part: sessionResponse.data.session.current_part_id });
     } catch (error) {
       console.error('Error fetching parts:', error);
     }
@@ -22,13 +25,37 @@ const PartsList = ({ sessionId }) => {
     fetchParts();
   }, [fetchParts]);
 
+  let focusedElement = null;
+
   const handlePartUpdated = (data) => {
     const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
     const { session, liturgy, part } = parsedData;
-    console.log(parsedData)
     const element = partsRef.current[parsedData.part];
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const stickyElement = document.querySelector('.sticky');
+      const offset = stickyElement.offsetHeight;
+      console.log('offset', offset);
+
+
+      // Remove the focus class from the previously focused element
+      if (focusedElement) {
+        focusedElement.classList.remove('mt-14', 'focus');
+      }
+
+      // Add the focus class to the new element
+      element.classList.add('focus', 'mt-14', 'animate-flash');
+
+      // Store a reference to the new focused element
+      focusedElement = element;
+
+      setTimeout(() => {
+        element.classList.remove('animate-flash');
+      }, 1000); // Duration of the animation
+
+      element.scrollIntoView({ behavior: 'auto', block: 'start' });
+      requestAnimationFrame(() => {
+        window.scrollBy(0, -offset);
+      });
     }
   };
 

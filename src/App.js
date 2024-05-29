@@ -5,6 +5,7 @@ import SessionDetail from './components/SessionDetail';
 import SignIn from './components/SignIn';
 import SignUp from './components/SignUp';
 import Explanations from './components/Explanations';
+import About from './pages/About';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="/sessions/:id/explanations" element={<Explanations />} />
             <Route path="/sign_in" element={<SignIn />} />
             <Route path="/sign_up" element={<SignUp />} />
+            <Route path="/about" element={<About />} />
           </Routes>
         </main>
       </div>

@@ -6,13 +6,13 @@ import { Drawer } from 'vaul';
 
 const SessionDetail = () => {
   const { id } = useParams();
-  const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <div>
-      <PartsList sessionId={id} />
-
-      <Drawer.Root shouldScaleBackground>
+        <PartsList sessionId={id} isDrawerOpen={isDrawerOpen} />
+        
+        <Drawer.Root shouldScaleBackground onClose={() => setIsDrawerOpen(false)}>
         <Drawer.Trigger asChild>
           <button className="fixed bottom-2 right-2 rounded-full p-2 shadow-md">Learn More&hellip;</button>
         </Drawer.Trigger>

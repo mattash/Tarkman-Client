@@ -1,0 +1,634 @@
+
+
+FILE: ./src/App.js
+
+
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Sessions from './pages/Sessions';
+import SessionDetail from './components/SessionDetail';
+import SignIn from './components/SignIn';
+import SignUp from './components/SignUp';
+import Explanations from './components/Explanations';
+import About from './pages/About';
+
+function App() {
+  return (
+    <Router>
+      <div className="App">
+        <header className="App-header">
+        </header>
+        <main>
+          <Routes>
+            <Route path="/" element={<Sessions />} />
+            <Route path="/sessions/:id/parts" element={<SessionDetail />} />
+            <Route path="/sessions" element={<Sessions />} />
+            <Route path="/sessions/:id/explanations" element={<Explanations />} />
+            <Route path="/sign_in" element={<SignIn />} />
+            <Route path="/sign_up" element={<SignUp />} />
+            <Route path="/about" element={<About />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
+
+
+FILE: ./src/components/PartsList.js
+
+
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import api from '../api';
+import usePusher from '../hooks/usePusher';
+import Navbar from '../components/Navbar';
+import { fromJSON } from 'postcss';
+
+
+const PartsList = ({ sessionId }) => {
+  const [parts, setParts] = useState([]);
+  const [selectedLang, setSelectedLang] = useState('en'); // Default language
+  const partsRef = useRef({});
+
+  const fetchParts = useCallback(async () => {
+    try {
+      const response = await api.get(`/s/${sessionId}/parts.json`);
+      setParts(response.data.parts);
+      const sessionResponse = await api.get(`/s/${sessionId}.json`);
+      handlePartUpdated({ part: sessionResponse.data.session.current_part_id });
+    } catch (error) {
+      console.error('Error fetching parts:', error);
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    fetchParts();
+  }, [fetchParts]);
+
+  let focusedElement = null;
+
+  const handlePartUpdated = (data) => {
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+    const { session, liturgy, part } = parsedData;
+    const element = partsRef.current[parsedData.part];
+    if (element) {
+      const stickyElement = document.querySelector('.sticky');
+      const offset = stickyElement.offsetHeight;
+      console.log('offset', offset);
+
+
+      // Remove the focus class from the previously focused element
+      if (focusedElement) {
+        focusedElement.classList.remove('mt-14', 'focus');
+      }
+
+      // Add the focus class to the new element
+      element.classList.add('focus', 'mt-14', 'animate-flash');
+
+      // Store a reference to the new focused element
+      focusedElement = element;
+
+      setTimeout(() => {
+        element.classList.remove('animate-flash');
+      }, 1000); // Duration of the animation
+
+      element.scrollIntoView({ behavior: 'auto', block: 'start' });
+      requestAnimationFrame(() => {
+        window.scrollBy(0, -offset);
+      });
+    }
+  };
+
+  usePusher(`channel_${sessionId}`, 'part_change', handlePartUpdated);
+
+  const renderPartContent = (part) => {
+    switch (selectedLang) {
+      case 'grabar':
+        return <p>{part.grabar}</p>;
+      case 'translit':
+        return <p>{part.translit}</p>;
+      case 'en':
+        return <p>{part.en}</p>;
+      case 'ru':
+        return <p>{part.ru}</p>;
+      default:
+        return <p>{part.en}</p>;
+    }
+  };
+
+  return (
+    <div>
+      <Navbar />
+      <div className="bg-gray-800 text-white p-4 rounded-lg shadow-md">
+      <div className="sticky top-0 flex justify-center mb-6 bg-gray-800 py-2 z-10  rounded">
+        <button className={`px-4 py-2 rounded-l ${selectedLang === 'grabar' ? 'bg-gray-700' : 'bg-gray-600'}`} onClick={() => setSelectedLang('grabar')}>Գրաբար</button>
+        <button className={`px-4 py-2 ${selectedLang === 'translit' ? 'bg-gray-700' : 'bg-gray-600'}`} onClick={() => setSelectedLang('translit')}>Translit</button>
+        <button className={`px-4 py-2 ${selectedLang === 'en' ? 'bg-gray-700' : 'bg-gray-600'}`} onClick={() => setSelectedLang('en')}>English</button>
+        <button className={`px-4 py-2 rounded-r ${selectedLang === 'ru' ? 'bg-gray-700' : 'bg-gray-600'}`} onClick={() => setSelectedLang('ru')}>Русский</button>
+      </div>
+        <ul className="space-y-4">
+          {parts.map(({ part }) => (
+            <li key={part.id} ref={(el) => (partsRef.current[part.id] = el)} className="bg-gray-700 p-4 rounded shadow hover:bg-gray-600 transition">
+              <h2 className="font-semibold capitalize">{part.role}</h2>
+              {renderPartContent(part)}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default PartsList;
+
+FILE: ./src/components/SignUp.js
+
+
+import React, { useState } from 'react';
+import { signUp } from '../auth';
+
+const SignUp = ({ history }) => {
+  const [userData, setUserData] = useState({ email: '', password: '' });
+
+  const handleChange = (e) => {
+    setUserData({
+      ...userData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await signUp(userData);
+      history.push('/sign_in');
+    } catch (error) {
+      console.error('Error signing up:', error);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <label className="block">
+        Email:
+        <input type="email" name="email" value={userData.email} onChange={handleChange} className="border p-2 rounded w-full" />
+      </label>
+      <label className="block">
+        Password:
+        <input type="password" name="password" value={userData.password} onChange={handleChange} className="border p-2 rounded w-full" />
+      </label>
+      <button type="submit" className="bg-blue-500 text-white p-2 rounded">Sign Up</button>
+    </form>
+  );
+};
+
+export default SignUp;
+
+
+FILE: ./src/components/SessionDetail.js
+
+
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import PartsList from './PartsList';
+import Explanations from './Explanations';
+import { Drawer } from 'vaul';
+
+const SessionDetail = () => {
+  const { id } = useParams();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  return (
+    <div>
+        <PartsList sessionId={id} isDrawerOpen={isDrawerOpen} />
+        
+        <Drawer.Root shouldScaleBackground onClose={() => setIsDrawerOpen(false)}>
+        <Drawer.Trigger asChild>
+          <button className="fixed bottom-2 right-2 rounded-full p-2 shadow-md">Learn More&hellip;</button>
+        </Drawer.Trigger>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40" /> 
+            <Drawer.Content className="bg-zinc-100 flex flex-col rounded-t-[10px] h-[76%] mt-24 fixed bottom-0 left-0 right-0 z-10">
+              <div className="p-4 bg-white rounded-t-[10px] flex-1 overflow-y-auto overflow-scrolling-touch">
+                <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-zinc-300 mb-8" />
+                <div className="mx-auto">
+                  <Drawer.Title className="font-medium mb-4 text-gray-600">
+                    Current Explanations
+                  </Drawer.Title>
+                  <Explanations sessionId={id} />
+                </div>
+              </div>
+            </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+    </div>
+  );
+};
+
+export default SessionDetail;
+
+FILE: ./src/components/SessionList.js
+
+
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../api';
+
+const SessionList = () => {
+  const [sessions, setSessions] = useState([]);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await api.get('/services.json');
+        // console.log(response.data);
+        setSessions(response.data);
+      } catch (error) {
+        console.error('Error fetching sessions:', error);
+      }
+    };
+
+    fetchSessions();
+  }, []);
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Current Services</h1>
+      <ul className="space-y-4">
+        {Array.isArray(sessions) && sessions.length > 0 ? (
+          sessions.map(({ session }) => (
+            <li key={session.id} className="border p-4 rounded shadow hover:bg-gray-100 transition bg-gray-800 shadow-md">
+              <Link to={`/sessions/${session.id}/parts`} className="flex items-center">
+                <img src={session.avatar_url} alt="Avatar" className="w-16 h-16 rounded-full mr-4" />
+                <div>
+                  <h2 className="text-xl font-semibold text-blue-500 hover:underline">{session.liturgy}</h2>
+                  <p className="text-gray-500 text-sm">{session.date} - {session.church_name}</p>
+                </div>
+              </Link>
+            </li>
+          ))
+        ) : (
+          <li className='border p-4 rounded shadow hover:bg-gray-100 transition bg-gray-800 shadow-md'>
+            <p>No services are currently taking place.</p>
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+};
+
+export default SessionList;
+
+
+FILE: ./src/components/Navbar.js
+
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const Navbar = () => {
+  return (
+    <nav className="bg-header p-4 text-white">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link to="/" className="text-2xl font-bold">Tarkman</Link>
+        <div>
+          <Link to="/sessions" className="mr-4">Sessions</Link>
+          <Link to="/about">About</Link>
+{/*           <Link to="/sign_in" className="mr-4">Sign In</Link>
+          <Link to="/sign_up">Sign Up</Link> */}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+
+
+FILE: ./src/components/SignIn.js
+
+
+import React, { useState } from 'react';
+import { signIn } from '../auth';
+
+const SignIn = ({ history }) => {
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+
+  const handleChange = (e) => {
+    setCredentials({
+      ...credentials,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await signIn(credentials);
+      history.push('/sessions');
+    } catch (error) {
+      console.error('Error signing in:', error);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <label className="block">
+        Email:
+        <input type="email" name="email" value={credentials.email} onChange={handleChange} className="border p-2 rounded w-full" />
+      </label>
+      <label className="block">
+        Password:
+        <input type="password" name="password" value={credentials.password} onChange={handleChange} className="border p-2 rounded w-full" />
+      </label>
+      <button type="submit" className="bg-blue-500 text-white p-2 rounded">Sign In</button>
+    </form>
+  );
+};
+
+export default SignIn;
+
+
+FILE: ./src/components/Footer.js
+
+
+import React from 'react';
+
+const Footer = () => {
+  return (
+    <footer className="bg-header-bg p-4 text-center text-white">
+      <p>&copy; 2024 Tarkman. All rights reserved.</p>
+    </footer>
+  );
+};
+
+export default Footer;
+
+
+FILE: ./src/components/Explanations.js
+
+
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import api from '../api';
+import usePusher from '../hooks/usePusher';
+import ReactMarkdown from 'react-markdown';
+
+
+const Explanations = () => {
+  const [explanation, setExplanation] = useState(null);
+
+  // Get the session ID from the URL
+  const { id: sessionId } = useParams();
+  const [logData, setLogData] = useState('');
+
+
+  const fetchExplanation = async () => {
+    try {
+      const response = await api.get(`/s/${sessionId}/explanations/current.json`);
+      setExplanation(response.data[0]);
+    } catch (error) {
+      console.error('Error fetching explanation:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchExplanation();
+  }, [sessionId]);
+
+  usePusher(`channel_${sessionId}`, 'part_change', () => {
+    fetchExplanation();
+  })
+
+  if (!explanation) {
+    return (
+      <div>
+        Loading... 
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-100 text-gray-600 p-4 rounded-lg shadow-md w-full">
+      <h2 className="text-2xl font-bold mb-2">{explanation.title}</h2>
+      <ReactMarkdown>{explanation.description}</ReactMarkdown>
+    </div>
+  );
+};
+
+export default Explanations;
+
+
+FILE: ./src/pusher.js
+
+
+import Pusher from 'pusher-js';
+
+const pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
+  cluster: process.env.REACT_APP_PUSHER_CLUSTER,
+});
+
+export default pusher;
+
+
+FILE: ./src/App.test.js
+
+
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+
+
+FILE: ./src/setupTests.js
+
+
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+
+
+FILE: ./src/auth.js
+
+
+import api from './api';
+
+export const signIn = async (credentials) => {
+  const response = await api.post('/session', credentials);
+  return response.data;
+};
+
+export const signOut = async () => {
+  await api.delete('/sign_out');
+};
+
+export const signUp = async (userData) => {
+  const response = await api.post('/users', userData);
+  return response.data;
+};
+
+
+FILE: ./src/pages/Sessions.js
+
+
+import React from 'react';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import SessionList from '../components/SessionList';
+
+const Sessions = () => {
+  return (
+    <div>
+      <Navbar />
+      <main className="container mx-auto p-4">
+        <SessionList />
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default Sessions;
+
+
+FILE: ./src/pages/About.js
+
+
+import React from 'react';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+
+const Sessions = () => {
+  return (
+    <div>
+      <Navbar />
+      <main className="container mx-auto p-4">
+        {/* a page with information about the App */}
+        <div className="p-6">
+          <h1 className="text-2xl font-bold mb-4">About</h1>
+          
+          <section className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">What is this for?</h2>
+            <p className="mb-2">Tarkman is a side project, which began in 2015 with the desire to more seamlessly introduce the deep and powerful theological and biblical content of the Divine Liturgy of the Armenian Church to new and learning faithful. For decades liturgy books with multiple translations have been available for worshippers to use during church services. However, the use of these books can sometimes be cumbersome and intimidating for the neophyte.</p>
+            <p>Tarkman's purpose is to leverage technology to facilitate a simple and engaging experience for worshippers of the Armenian Church who desire to understand our liturgies more fully.</p>
+          </section>
+
+          <section className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">What does Tarkman mean?</h2>
+            <p>Tarkman is derived from the Armenian word for translate, tarkmanel, and means interpreter. In a broader sense, it is a title for one that helps others understand.</p>
+          </section>
+
+          <section className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Do I need to sign up for this?</h2>
+            <p>No, you don't need to sign up or login to use the features of this app. Registered users of this app are intended to be parishes or clergy, who are using this tool to present the translation of their services to participants.</p>
+          </section>
+
+          <section className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Credits</h2>
+            <h3 className="text-lg font-semibold mb-1">Source publications</h3>
+            <ul className="list-disc list-inside mb-2">
+              <li>Source text for the Divine Liturgy text provisioned from The Divine Liturgy of Armenian Church (Western Armenian/English) , edited by Very Rev. Fr. Daniel Findikyan.</li>
+              <li>Source text for the Abbreviated Morning Service provided by St. Vartan Armenian Church of Oakland.</li>
+              <li>Source text for the Abbreviated Evening Service provided by St. Nersses Seminary.</li>
+              <li>More information regarding credits and translation sources can be provided upon request.</li>
+            </ul>
+            <h3 className="text-lg font-semibold mb-1">Icon fonts</h3>
+            <p>Icon font generated by flaticon.com under CC. The authors are: Freepik, Egor Rumyantsev.</p>
+          </section>
+
+          <section className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Contact</h2>
+            <p>This tool is built and maintained by Fr. Mesrop Ash. If you have questions or comments you can contact him at pastor@stjohnarmenianchurch.com.</p>
+          </section>
+        </div>               
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default Sessions;
+
+FILE: ./src/reportWebVitals.js
+
+
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+
+
+FILE: ./src/api.js
+
+
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'https://www.tarkman.app',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export default api;
+
+
+FILE: ./src/hooks/usePusher.js
+
+
+import { useEffect } from 'react';
+import pusher from '../pusher';
+
+const usePusher = (channelName, eventName, callback) => {
+  useEffect(() => {
+    const channel = pusher.subscribe(channelName);
+
+    channel.bind(eventName, callback);
+
+    return () => {
+      channel.unbind(eventName, callback);
+      pusher.unsubscribe(channelName);
+    };
+  }, [channelName, eventName, callback]);
+};
+
+export default usePusher;
+
+
+FILE: ./src/index.js
+
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
