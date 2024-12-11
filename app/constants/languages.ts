@@ -2,7 +2,7 @@ import { Language } from '../contexts/LanguageContext'
 
 export const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'en', label: 'English' },
-  { value: 'ru', label: 'Russian' },
-  { value: 'grabar', label: 'Grabar' },
-  { value: 'translit', label: 'Transliteration' }
+  { value: 'ru', label: 'Русский' },
+  { value: 'grabar', label: 'Գրաբար' },
+  { value: 'translit', label: 'Translit' }
 ] 
