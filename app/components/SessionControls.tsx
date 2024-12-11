@@ -1,0 +1,83 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '~/api'
+
+interface SessionControlsProps {
+  sessionId: number
+}
+
+interface SessionPartResponse {
+  id: number
+  current_part: {
+    id: number
+    name: string
+    metadata: Record<string, unknown>
+  }
+}
+
+export function SessionControls({ sessionId }: SessionControlsProps) {
+  const queryClient = useQueryClient()
+
+  const prevMutation = useMutation<SessionPartResponse>({
+    mutationFn: async () => {
+      const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions', sessionId] })
+    }
+  })
+
+  const nextMutation = useMutation<SessionPartResponse>({
+    mutationFn: async () => {
+      const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions', sessionId] })
+    }
+  })
+
+  return (
+    <div className="flex gap-4 items-center p-4 rounded-lg bg-white shadow-md">
+      <button
+        onClick={() => prevMutation.mutate()}
+        disabled={prevMutation.isPending}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Previous part"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-5 w-5" 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path 
+            fillRule="evenodd" 
+            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" 
+            clipRule="evenodd" 
+          />
+        </svg>
+      </button>
+
+      <button
+        onClick={() => nextMutation.mutate()}
+        disabled={nextMutation.isPending}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Next part"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-5 w-5" 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path 
+            fillRule="evenodd" 
+            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" 
+            clipRule="evenodd" 
+          />
+        </svg>
+      </button>
+    </div>
+  )
+} 

@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-500;
+  }
+} 
+
+@keyframes flash {
+  0% { background-color: rgba(59, 130, 246, 0.5); }
+  100% { background-color: transparent; }
+}
+
+.animate-flash {
+  animation: flash 0.1s ease-out;
+}
+
+.focus {
+  transition: margin 0.3s ease;
+} 

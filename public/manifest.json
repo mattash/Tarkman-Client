@@ -1,0 +1,28 @@
+{
+  "name": "Tarkman - Liturgy Translator",
+  "short_name": "Tarkman",
+  "description": "A tool for translating the liturgy of the Armenian Orthodox Church",
+  "version": "0.2.5",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "android-chrome-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "android-chrome-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#58243c",
+  "background_color": "#3c3c3c",
+  "orientation": "portrait"
+}
