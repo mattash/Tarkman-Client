@@ -1,4 +1,4 @@
-import type { AuthResponse, LoginCredentials } from '~/types/auth';
+import type { AuthResponse, LoginCredentials } from '@/types/auth';
 
 const API_BASE = "https://www.tarkman.app";
 

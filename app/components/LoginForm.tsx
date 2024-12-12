@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useAuth } from '~/contexts/AuthContext';
-import { login } from '~/api/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { login } from '@/api/auth';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');

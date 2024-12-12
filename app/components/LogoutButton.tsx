@@ -1,5 +1,5 @@
-import { useAuth } from '~/contexts/AuthContext';
-import { logout } from '~/api/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { logout } from '@/api/auth';
 
 export function LogoutButton() {
   const { token, logout: logoutContext } = useAuth();

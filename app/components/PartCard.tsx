@@ -3,7 +3,7 @@ import { Part } from '../types/part'
 import { useLanguage } from '../contexts/LanguageContext'
 import clsx from 'clsx'
 
-interface PartCardProps {
+export interface PartCardProps {
   part: Part
 }
 

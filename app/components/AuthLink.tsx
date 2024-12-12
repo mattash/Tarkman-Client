@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useAuth } from "~/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { LogoutButton } from "./LogoutButton";
 
 

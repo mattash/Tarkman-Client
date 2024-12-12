@@ -23,7 +23,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
       const data = await response.json()
       return data[0]
     },
-    enabled: !!subscriptionData?.part,
+    enabled: true,
   })
 
   React.useEffect(() => {

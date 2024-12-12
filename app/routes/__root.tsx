@@ -2,8 +2,8 @@ import * as React from 'react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { AuthProvider } from '~/contexts/AuthContext'
-import { Navbar } from '~/components/Navbar'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { Navbar } from '@/components/Navbar'
 
 const queryClient = new QueryClient({
   defaultOptions: {
