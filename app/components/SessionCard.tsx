@@ -12,7 +12,7 @@ export function SessionCard({ session }: SessionCardProps) {
       key={session.id}
       to="/sessions/$id/parts"
       params={{ id: session.id.toString() }}
-      className="p-4 border rounded-lg hover:shadow-lg transition-shadow"
+      className="p-4 border rounded-lg hover:shadow-lg transition-shadow bg-gray-800 border-tarkman-purple"
     >
       <img
         src={session.avatar_url}

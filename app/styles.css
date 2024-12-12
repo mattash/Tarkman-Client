@@ -8,6 +8,42 @@
   }
 } 
 
+.bg-tarkman-purple {
+  background-color: #6e3852;
+}
+
+.hover\:bg-tarkman-purple:hover {
+  background-color: #6e3852;
+}
+
+.bg-tarkman-purple-dark {
+  background-color: #4c2739;
+}
+
+.hover\:bg-tarkman-purple-dark:hover {
+  background-color: #4c2739;
+}
+
+.bg-tarkman-purple-light {
+  background-color: #BA7295;
+}
+
+.hover\:bg-tarkman-purple-light:hover {
+  background-color: #BA7295;
+}
+
+.border-tarkman-purple {
+  border-color: #4c2739;
+}
+
+.text-tarkman-purple-list {
+  color: #BA7295;
+}
+
+.bg-tarkman-purple-light {
+  background-color: #BA7295;
+}
+
 @keyframes flash {
   0% { background-color: rgba(59, 130, 246, 0.5); }
   100% { background-color: transparent; }
