@@ -22,9 +22,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="min-h-screen bg-slate-900">
+        <div className="min-h-screen bg-gray-900">
           <Navbar />
-          <main className="container mx-auto p-4 bg-slate-900 text-slate-100">
+          <main className="container mx-auto p-4 bg-gray-900 text-gray-100">
             <Outlet />
           </main>
         </div>

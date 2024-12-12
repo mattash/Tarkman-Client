@@ -23,7 +23,7 @@ export function SessionList() {
   }
 
   if (!Array.isArray(sessions)) {
-    return <div>Invalid session data</div>
+    return <div>No services available</div>
   }
 
   return (

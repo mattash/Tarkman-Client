@@ -24,7 +24,7 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-8 space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
       <div>
         <label htmlFor="email" className="block text-sm font-medium ">
           Email
@@ -34,7 +34,7 @@ export function LoginForm() {
           id="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-slate-900"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-gray-900 px-2 py-1"
           required
         />
       </div>
@@ -48,7 +48,7 @@ export function LoginForm() {
           id="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-slate-900"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-gray-900 px-2 py-1"
           required
         />
       </div>
@@ -61,7 +61,7 @@ export function LoginForm() {
         type="submit"
         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
       >
-        Sign In
+        Login
       </button>
     </form>
   );

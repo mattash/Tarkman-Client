@@ -13,7 +13,7 @@ export function Navbar() {
           {/* Logo and Desktop Navigation */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <img src="/favicon-32x32.png" alt="Tarkman Logo" className="h-8 w-8" />
+              <img src="/apple-touch-icon.png" alt="Tarkman Logo" className="h-8 w-8 rounded-sm" />
             </div>
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
