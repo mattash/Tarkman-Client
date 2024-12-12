@@ -41,7 +41,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
 
 
   return (
-    <div className="bg-gray-800 text-white p-4 rounded-lg shadow-md">
+    <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-4 shadow-md">
       {data?.parts.map(({ part }) => (
         <div 
           className="grid grid-cols-2 gap-4 mb-4" 
