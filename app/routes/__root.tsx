@@ -23,7 +23,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <div className="min-h-screen bg-gray-900">
-          <Navbar />
+          {!window.location.pathname.includes('display') && <Navbar />}
           <main className="container mx-auto p-4 bg-gray-900 text-gray-100">
             <Outlet />
           </main>

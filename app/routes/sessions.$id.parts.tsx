@@ -5,12 +5,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { ExplanationDrawer } from '@/components/ExplanationDrawer'
 import { useState } from 'react'
 import { CurrentExplanation } from '@/components/CurrentExplanation'
-import { Button } from '@/components/ui/button'
-
-interface Explanation {
-  title: string
-  content: string
-}
 
 export const Route = createFileRoute('/sessions/$id/parts')({
   component: () => {

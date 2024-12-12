@@ -15,6 +15,7 @@ import { Route as LoginImport } from './routes/login'
 import { Route as DashboardImport } from './routes/dashboard'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
+import { Route as SessionsDisplayImport } from './routes/sessions.display'
 import { Route as SessionsIdPartsImport } from './routes/sessions.$id.parts'
 import { Route as SessionsIdExplanationsImport } from './routes/sessions.$id.explanations'
 
@@ -41,6 +42,12 @@ const AboutRoute = AboutImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SessionsDisplayRoute = SessionsDisplayImport.update({
+  id: '/sessions/display',
+  path: '/sessions/display',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -88,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/sessions/display': {
+      id: '/sessions/display'
+      path: '/sessions/display'
+      fullPath: '/sessions/display'
+      preLoaderRoute: typeof SessionsDisplayImport
+      parentRoute: typeof rootRoute
+    }
     '/sessions/$id/explanations': {
       id: '/sessions/$id/explanations'
       path: '/sessions/$id/explanations'
@@ -112,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/sessions/display': typeof SessionsDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
 }
@@ -121,6 +136,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/sessions/display': typeof SessionsDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
 }
@@ -131,6 +147,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/sessions/display': typeof SessionsDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
 }
@@ -142,6 +159,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/sessions/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
   fileRoutesByTo: FileRoutesByTo
@@ -150,6 +168,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/sessions/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
   id:
@@ -158,6 +177,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/sessions/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
   fileRoutesById: FileRoutesById
@@ -168,6 +188,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  SessionsDisplayRoute: typeof SessionsDisplayRoute
   SessionsIdExplanationsRoute: typeof SessionsIdExplanationsRoute
   SessionsIdPartsRoute: typeof SessionsIdPartsRoute
 }
@@ -177,6 +198,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  SessionsDisplayRoute: SessionsDisplayRoute,
   SessionsIdExplanationsRoute: SessionsIdExplanationsRoute,
   SessionsIdPartsRoute: SessionsIdPartsRoute,
 }
@@ -195,6 +217,7 @@ export const routeTree = rootRoute
         "/about",
         "/dashboard",
         "/login",
+        "/sessions/display",
         "/sessions/$id/explanations",
         "/sessions/$id/parts"
       ]
@@ -210,6 +233,9 @@ export const routeTree = rootRoute
     },
     "/login": {
       "filePath": "login.tsx"
+    },
+    "/sessions/display": {
+      "filePath": "sessions.display.tsx"
     },
     "/sessions/$id/explanations": {
       "filePath": "sessions.$id.explanations.tsx"

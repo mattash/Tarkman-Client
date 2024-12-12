@@ -15,8 +15,12 @@ export function usePartScroll() {
 
     if (element) {
       const stickyElement = document.querySelector('.sticky') as HTMLElement
-      if (!stickyElement) return
-      const offset = stickyElement.offsetHeight
+
+      let offset = 0
+      if (stickyElement ) {
+        offset = stickyElement.offsetHeight
+      }
+
 
       if (focusedElementRef.current) {
         focusedElementRef.current.classList.remove('mt-14', 'focus')
