@@ -52,19 +52,18 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
         onLanguageChange={setSelectedLang} 
       />
       <ul className="space-y-4">
-        {data?.parts.map(({ part }) => {
-          return (
-            <PartCard
-              key={part.id}
-              ref={(el) => {
-                if (el) {
-                  partsRef.current[part.id] = el
-                }
-              }}
-              part={part}
-            />
-          )
-        })}
+        {data?.parts.map(({ part }) => (
+          <PartCard
+            key={part.id}
+            ref={(el) => {
+              if (el) {
+                partsRef.current[part.id] = el
+              }
+            }}
+            part={part}
+            sessionId={sessionId}
+          />
+        ))}
       </ul>
     </div>
   )

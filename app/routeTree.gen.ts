@@ -16,8 +16,10 @@ import { Route as DashboardImport } from './routes/dashboard'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 import { Route as SessionsDisplayImport } from './routes/sessions.display'
+import { Route as PartIdImport } from './routes/part.$id'
 import { Route as SessionsIdPartsImport } from './routes/sessions.$id.parts'
 import { Route as SessionsIdExplanationsImport } from './routes/sessions.$id.explanations'
+import { Route as SessionsIdPartPartIdImport } from './routes/sessions.$id.part.$partId'
 
 // Create/Update Routes
 
@@ -51,6 +53,12 @@ const SessionsDisplayRoute = SessionsDisplayImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const PartIdRoute = PartIdImport.update({
+  id: '/part/$id',
+  path: '/part/$id',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const SessionsIdPartsRoute = SessionsIdPartsImport.update({
   id: '/sessions/$id/parts',
   path: '/sessions/$id/parts',
@@ -60,6 +68,12 @@ const SessionsIdPartsRoute = SessionsIdPartsImport.update({
 const SessionsIdExplanationsRoute = SessionsIdExplanationsImport.update({
   id: '/sessions/$id/explanations',
   path: '/sessions/$id/explanations',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SessionsIdPartPartIdRoute = SessionsIdPartPartIdImport.update({
+  id: '/sessions/$id/part/$partId',
+  path: '/sessions/$id/part/$partId',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -95,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/part/$id': {
+      id: '/part/$id'
+      path: '/part/$id'
+      fullPath: '/part/$id'
+      preLoaderRoute: typeof PartIdImport
+      parentRoute: typeof rootRoute
+    }
     '/sessions/display': {
       id: '/sessions/display'
       path: '/sessions/display'
@@ -116,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessionsIdPartsImport
       parentRoute: typeof rootRoute
     }
+    '/sessions/$id/part/$partId': {
+      id: '/sessions/$id/part/$partId'
+      path: '/sessions/$id/part/$partId'
+      fullPath: '/sessions/$id/part/$partId'
+      preLoaderRoute: typeof SessionsIdPartPartIdImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -126,9 +154,11 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/part/$id': typeof PartIdRoute
   '/sessions/display': typeof SessionsDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
+  '/sessions/$id/part/$partId': typeof SessionsIdPartPartIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -136,9 +166,11 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/part/$id': typeof PartIdRoute
   '/sessions/display': typeof SessionsDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
+  '/sessions/$id/part/$partId': typeof SessionsIdPartPartIdRoute
 }
 
 export interface FileRoutesById {
@@ -147,9 +179,11 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/part/$id': typeof PartIdRoute
   '/sessions/display': typeof SessionsDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
+  '/sessions/$id/part/$partId': typeof SessionsIdPartPartIdRoute
 }
 
 export interface FileRouteTypes {
@@ -159,27 +193,33 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/part/$id'
     | '/sessions/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
+    | '/sessions/$id/part/$partId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/part/$id'
     | '/sessions/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
+    | '/sessions/$id/part/$partId'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/part/$id'
     | '/sessions/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
+    | '/sessions/$id/part/$partId'
   fileRoutesById: FileRoutesById
 }
 
@@ -188,9 +228,11 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  PartIdRoute: typeof PartIdRoute
   SessionsDisplayRoute: typeof SessionsDisplayRoute
   SessionsIdExplanationsRoute: typeof SessionsIdExplanationsRoute
   SessionsIdPartsRoute: typeof SessionsIdPartsRoute
+  SessionsIdPartPartIdRoute: typeof SessionsIdPartPartIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -198,9 +240,11 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  PartIdRoute: PartIdRoute,
   SessionsDisplayRoute: SessionsDisplayRoute,
   SessionsIdExplanationsRoute: SessionsIdExplanationsRoute,
   SessionsIdPartsRoute: SessionsIdPartsRoute,
+  SessionsIdPartPartIdRoute: SessionsIdPartPartIdRoute,
 }
 
 export const routeTree = rootRoute
@@ -217,9 +261,11 @@ export const routeTree = rootRoute
         "/about",
         "/dashboard",
         "/login",
+        "/part/$id",
         "/sessions/display",
         "/sessions/$id/explanations",
-        "/sessions/$id/parts"
+        "/sessions/$id/parts",
+        "/sessions/$id/part/$partId"
       ]
     },
     "/": {
@@ -234,6 +280,9 @@ export const routeTree = rootRoute
     "/login": {
       "filePath": "login.tsx"
     },
+    "/part/$id": {
+      "filePath": "part.$id.tsx"
+    },
     "/sessions/display": {
       "filePath": "sessions.display.tsx"
     },
@@ -242,6 +291,9 @@ export const routeTree = rootRoute
     },
     "/sessions/$id/parts": {
       "filePath": "sessions.$id.parts.tsx"
+    },
+    "/sessions/$id/part/$partId": {
+      "filePath": "sessions.$id.part.$partId.tsx"
     }
   }
 }
