@@ -42,12 +42,12 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
       <button
         onClick={() => prevMutation.mutate()}
         disabled={prevMutation.isPending}
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-5 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Previous part"
       >
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
-          className="h-5 w-5" 
+          className="h-8 w-8" 
           viewBox="0 0 20 20" 
           fill="currentColor"
         >
@@ -62,12 +62,12 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
       <button
         onClick={() => nextMutation.mutate()}
         disabled={nextMutation.isPending}
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-5 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Next part"
       >
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
-          className="h-5 w-5" 
+          className="h-8 w-8" 
           viewBox="0 0 20 20" 
           fill="currentColor"
         >

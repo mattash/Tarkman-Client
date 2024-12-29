@@ -41,10 +41,10 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
 
 
   return (
-    <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-4 shadow-md">
+    <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
       {data?.parts.map(({ part }) => (
         <div 
-          className="grid grid-cols-2 gap-4 mb-4" 
+          className="grid grid-cols-2 gap-5 mb-5" 
           key={part.id}
           ref={(el) => {
             if (el) {
@@ -54,17 +54,17 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
         >
           <div
             key={`en-${part.id}`}
-            className="p-4 bg-gray-700 rounded-lg"
+            className="p-5 bg-gray-700 rounded-lg"
           >
-            <div className="font-bold uppercase text-gray-400 text-6xl">{part.role}</div>
-            <div className="text-9xl">{part.en}</div>
+            <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
+            <div className="text-9xl">{part.translit}</div>
           </div>
           <div
             key={`tr-${part.id}`}
-            className="p-4 bg-gray-700 rounded-lg"
+            className="p-5 bg-gray-700 rounded-lg"
           >
-            <div className="font-bold uppercase text-gray-400 text-6xl">{part.role}</div>
-            <div className="text-9xl">{part.translit}</div>
+            <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
+            <div className="text-9xl">{part.en}</div>
           </div>
         </div>
       ))}
