@@ -1,19 +1,21 @@
 import * as React from 'react'
 import { Part } from '../types/part'
 import { useLanguage } from '../contexts/LanguageContext'
+import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 
 export interface PartCardProps {
   part: Part
+  sessionId: string
 }
 
 const styles = {
-  card: 'bg-gray-700 p-4 rounded shadow hover:bg-gray-600 transition',
+  card: 'bg-gray-700 p-4 rounded shadow hover:bg-gray-600 transition cursor-pointer',
   title: 'font-semibold capitalize mb-2',
   content: 'text-gray-200'
 }
 
-export function PartCard({ part }: PartCardProps, ref: React.Ref<HTMLLIElement>) {
+export function PartCard({ part, sessionId }: PartCardProps, ref: React.Ref<HTMLLIElement>) {
   const { selectedLang } = useLanguage()
 
   const renderPartContent = () => {
@@ -29,8 +31,17 @@ export function PartCard({ part }: PartCardProps, ref: React.Ref<HTMLLIElement>)
 
   return (
     <li ref={ref} className={styles.card}>
-      <h2 className={styles.title}>{part.role}</h2>
-      {renderPartContent()}
+      <Link
+        to="/sessions/$id/part/$partId"
+        params={{
+          id: sessionId,
+          partId: part.id.toString()
+        }}
+        className="block"
+      >
+        <h2 className={styles.title}>{part.role}</h2>
+        {renderPartContent()}
+      </Link>
     </li>
   )
 }
