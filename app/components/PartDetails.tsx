@@ -3,6 +3,7 @@ import { useQuery, useQueries } from '@tanstack/react-query'
 import { Part } from '../types/part'
 import { Route } from '../routes/sessions.$id.part.$partId'
 import DOMPurify from 'dompurify'
+import { FastForwardButton } from './FastForwardButton'
 
 interface Explanation {
   id: number
@@ -66,7 +67,10 @@ export function PartDetails({ partId }: PartDetailsProps) {
     <div className="space-y-6 bg-gray-800 text-white p-6 rounded-lg">
       {/* Role and Page */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold capitalize">{part.role}</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold capitalize">{part.role}</h2>
+          <FastForwardButton sessionId={sessionId} partId={partId} />
+        </div>
         {part.page && (
           <span className="text-gray-400">Page {part.page}</span>
         )}
