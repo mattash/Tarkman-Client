@@ -1,23 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { SessionWrapper } from '../types/session'
 
-interface ErrorResponse {
-  error: string
-}
-
 async function fetchCurrentSession(): Promise<SessionWrapper | null> {
-  const response = await fetch('https://www.tarkman.app/s/2/current.json')
-  
-  if (response.status === 404) {
-    // Return null to indicate no active session instead of throwing
-    return null
-  }
+  const churchId = import.meta.env.VITE_DEFAULT_CHURCH_ID || '2'
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${import.meta.env.VITE_DEFAULT_CHURCH_ID}/current.json`)
   
   if (!response.ok) {
     throw new Error('Error fetching session')
   }
   
-  return response.json()
+  const data = await response.json()
+  
+  // Check for inactive session response
+  if ('status' in data && data.status === 'inactive') {
+    return null
+  }
+  
+  return data as SessionWrapper
 }
 
 export function useSessionPolling() {
