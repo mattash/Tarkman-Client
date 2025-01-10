@@ -19,7 +19,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
   const { data: explanation, isLoading } = useQuery<Explanation>({
     queryKey: ['explanation', sessionId, subscriptionData?.part],
     queryFn: async () => {
-      const response = await fetch(`https://www.tarkman.app/s/${sessionId}/explanations/current.json`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/current.json`)
       const data = await response.json()
       return data[0]
     },

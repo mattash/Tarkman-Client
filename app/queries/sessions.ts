@@ -11,14 +11,14 @@ export const sessionsKeys = {
 }
 
 export async function fetchSessions(): Promise<SessionWrapper[]> {
-  const response = await fetch('https://www.tarkman.app/services.json')
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/services.json`)
   return response.json()
 }
 
 export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
   const [partsResponse, sessionResponse] = await Promise.all([
-    fetch(`https://www.tarkman.app/s/${sessionId}/parts.json`),
-    fetch(`https://www.tarkman.app/s/${sessionId}.json`)
+    fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts.json`),
+    fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}.json`)
   ])
   
   const partsData: PartsResponse = await partsResponse.json()

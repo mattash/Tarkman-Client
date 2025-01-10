@@ -30,7 +30,7 @@ export function PartDetails({ partId }: PartDetailsProps) {
   const { data: partResponse, isLoading: isPartLoading } = useQuery<PartResponse>({
     queryKey: ['part', sessionId, partId],
     queryFn: async () => {
-      const response = await fetch(`https://www.tarkman.app/s/${sessionId}/parts/${partId}.json`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts/${partId}.json`)
       const data = await response.json()
       return data
     }
@@ -43,7 +43,7 @@ export function PartDetails({ partId }: PartDetailsProps) {
     queries: (part?.explanation_ids ?? []).map(explanationId => ({
       queryKey: ['explanation', sessionId, explanationId],
       queryFn: async () => {
-        const response = await fetch(`https://www.tarkman.app/s/${sessionId}/explanations/${explanationId}.json`)
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/${explanationId}.json`)
         const data = await response.json()
         return data as ExplanationResponse
       }
