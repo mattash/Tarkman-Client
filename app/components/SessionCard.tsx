@@ -21,7 +21,9 @@ export function SessionCard({ session }: SessionCardProps) {
       />
       <h2 className="font-semibold">{session.church_name}</h2>
       <p>{session.liturgy}</p>
-      <p className="text-gray-600">{new Date(session.date).toLocaleDateString()}</p>
+      <p className="text-gray-600">
+        {new Date(session.date + 'T00:00:00').toLocaleDateString()}
+      </p>
     </Link>
   )
 } 
