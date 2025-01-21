@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { SessionPartsParallel } from '../components/SessionPartsParallel'
 import { useSessionPolling } from '../hooks/useSessionPolling'
 import { SessionWrapper } from '../types/session'
+import { Message } from '../components/Message'
 
 export const Route = createFileRoute('/sessions/display')({
   component: RouteComponent,
@@ -24,5 +25,15 @@ function RouteComponent() {
     return loadingView
   }
 
-  return <SessionPartsParallel sessionId={sessionWrapper.session.id.toString()} />
+  const { current_part_position, num_of_parts, options } = sessionWrapper.session
+  const showWelcomeMessage = current_part_position === 0 && options.before_message
+  const showFarewellMessage = current_part_position === (num_of_parts - 1) && options.after_message
+
+  return (
+    <>
+      {showWelcomeMessage && <Message message={options.before_message} />}
+      {showFarewellMessage && <Message message={options.after_message} />}
+      <SessionPartsParallel sessionId={sessionWrapper.session.id.toString()} />
+    </>
+  )
 }

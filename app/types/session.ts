@@ -14,6 +14,12 @@ export interface SessionData {
       gospel: string
       epistle: string
     }
+    options: {
+      gospel: string
+      epistle: string
+      before_message: string
+      after_message: string
+    }
 }
 
 export interface SessionWrapper {

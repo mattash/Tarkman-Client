@@ -51,7 +51,18 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			'tarkman-purple': '#6B46C1',
+  			'primary': '#6B46C1',
+  		},
+  		keyframes: {
+  			'fade-in': {
+  				'0%': { opacity: '0', transform: 'translateY(-10px)' },
+  				'100%': { opacity: '1', transform: 'translateY(0)' },
   			}
+  		},
+  		animation: {
+  			'fade-in': 'fade-in 0.5s ease-out forwards',
   		}
   	}
   },
