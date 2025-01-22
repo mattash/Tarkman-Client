@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { usePusher } from '../hooks/usePusher'
-import { usePartScroll } from '../hooks/usePartScroll'
 import { fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
 
@@ -10,9 +9,10 @@ interface SessionPartsParallelProps {
 }
 
 export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
-  const { partsRef, handlePartUpdated } = usePartScroll()
-  const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
+  const partsRef = React.useRef<Record<string, HTMLElement>>({})
   const scrollAnimationRef = React.useRef<number | null>(null)
+  const [currentPartId, setCurrentPartId] = React.useState<string | null>(null)
+  const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
 
   const smoothScrollToPart = React.useCallback((element: HTMLElement) => {
     // Cancel any existing scroll animation
@@ -25,8 +25,9 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
     const elementHeight = elementRect.height
     const viewportHeight = window.innerHeight
     
-    // Immediately position the element at the top of the viewport
-    const topPosition = window.scrollY + elementRect.top
+    // Position the element ⅓ from the top of the viewport
+    const oneFourthViewportOffset = viewportHeight / 4
+    const topPosition = window.scrollY + elementRect.top - oneFourthViewportOffset
     window.scrollTo({ top: topPosition, behavior: 'instant' })
 
     // If content is smaller than viewport, no need to scroll
@@ -34,8 +35,8 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
       return
     }
 
-    // Calculate the distance to scroll (from top to bottom of the element)
-    const scrollDistance = elementHeight - viewportHeight
+    // Calculate the distance to scroll (from current position to bottom of the element)
+    const scrollDistance = elementHeight - (viewportHeight - oneFourthViewportOffset)
 
     // Calculate scroll duration based on content length
     const baseSpeed = 0.15 // pixels per millisecond (adjusted for smoother scroll)
@@ -77,7 +78,9 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
 
   React.useEffect(() => {
     if (data?.sessionData.session.current_part_id) {
-      const currentPartElement = partsRef.current[data.sessionData.session.current_part_id]
+      const currentId = data.sessionData.session.current_part_id
+      setCurrentPartId(currentId)
+      const currentPartElement = partsRef.current[currentId]
       if (currentPartElement) {
         smoothScrollToPart(currentPartElement)
       }
@@ -86,6 +89,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
 
   React.useEffect(() => {
     if (subscriptionData?.part) {
+      setCurrentPartId(subscriptionData.part)
       const currentPartElement = partsRef.current[subscriptionData.part]
       if (currentPartElement) {
         smoothScrollToPart(currentPartElement)
@@ -106,32 +110,35 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
 
   return (
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
-      {data?.parts.map(({ part }) => (
-        <div 
-          className="grid grid-cols-2 gap-5 mb-5" 
-          key={part.id}
-          ref={(el) => {
-            if (el) {
-              partsRef.current[part.id] = el
-            }
-          }}
-        >
-          <div
-            key={`en-${part.id}`}
-            className="p-5 bg-gray-700 rounded-lg"
+      {data?.parts.map(({ part }) => {
+        const isCurrentPart = part.id === Number(currentPartId)
+        return (
+          <div 
+            className="grid grid-cols-2 gap-5 mb-5" 
+            key={part.id}
+            ref={(el) => {
+              if (el) {
+                partsRef.current[part.id] = el
+              }
+            }}
           >
-            <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-            <div className="text-9xl">{part.translit}</div>
+            <div
+              key={`en-${part.id}`}
+              className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
+            >
+              <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
+              <div className="text-9xl">{part.translit}</div>
+            </div>
+            <div
+              key={`tr-${part.id}`}
+              className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
+            >
+              <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
+              <div className="text-9xl">{part.en}</div>
+            </div>
           </div>
-          <div
-            key={`tr-${part.id}`}
-            className="p-5 bg-gray-700 rounded-lg"
-          >
-            <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-            <div className="text-9xl">{part.en}</div>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
