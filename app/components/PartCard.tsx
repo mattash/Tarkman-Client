@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Part } from '../types/part'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Link } from '@tanstack/react-router'
+import ReactMarkdown from 'react-markdown'
 import clsx from 'clsx'
 
 export interface PartCardProps {
@@ -12,7 +13,7 @@ export interface PartCardProps {
 const styles = {
   card: 'bg-gray-700 p-4 rounded shadow hover:bg-gray-600 transition cursor-pointer',
   title: 'font-semibold capitalize mb-2',
-  content: 'text-gray-200'
+  content: 'text-gray-200 prose prose-invert prose-sm max-w-none'
 }
 
 export function PartCard({ part, sessionId }: PartCardProps, ref: React.Ref<HTMLLIElement>) {
@@ -26,7 +27,17 @@ export function PartCard({ part, sessionId }: PartCardProps, ref: React.Ref<HTML
       ru: part.ru
     }[selectedLang] || part.en
 
-    return <p className={styles.content}>{content}</p>
+    // Process content to prevent unwanted code blocks
+    // Remove any leading whitespace that might cause Markdown to interpret as code blocks
+    const processedContent = content.split('\n').map(line => line.trimStart()).join('\n\n')
+
+    return (
+      <ReactMarkdown 
+        className={styles.content}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    )
   }
 
   return (

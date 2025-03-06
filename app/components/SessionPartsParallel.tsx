@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { usePusher } from '../hooks/usePusher'
 import { fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
+import ReactMarkdown from 'react-markdown'
 
 interface SessionPartsParallelProps {
   sessionId: string
@@ -127,14 +128,18 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
               className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
             >
               <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <div className="text-9xl">{part.translit}</div>
+              <ReactMarkdown className={`text-8xl prose prose-invert max-w-none`}>
+                {part.translit.split('\n').map(line => line.trimStart()).join('\n\n')}
+              </ReactMarkdown>
             </div>
             <div
               key={`tr-${part.id}`}
               className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
             >
               <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <div className="text-9xl">{part.en}</div>
+              <ReactMarkdown className={`text-8xl prose prose-invert max-w-none`}>
+                {part.en.split('\n').map(line => line.trimStart()).join('\n\n')}
+              </ReactMarkdown>
             </div>
           </div>
         )
