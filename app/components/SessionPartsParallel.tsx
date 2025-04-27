@@ -21,7 +21,9 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
     // "consume" this part (in ms). The value is placed on the element as a
     // data attribute when it is rendered.
     const effectiveDurationMsAttr = element.getAttribute('data-duration-ms')
-    const effectiveDurationMs = effectiveDurationMsAttr ? Number(effectiveDurationMsAttr) : 0
+    const effectiveDurationMs = effectiveDurationMsAttr && !isNaN(Number(effectiveDurationMsAttr)) 
+      ? Number(effectiveDurationMsAttr) 
+      : 0
 
     // Cancel any existing scroll animation or pending timeout
     if (scrollAnimationRef.current !== null) {
