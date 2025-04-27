@@ -12,21 +12,36 @@ interface SessionPartsParallelProps {
 export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   const partsRef = React.useRef<Record<string, HTMLElement>>({})
   const scrollAnimationRef = React.useRef<number | null>(null)
+  const scrollTimeoutRef = React.useRef<number | null>(null)
   const [currentPartId, setCurrentPartId] = React.useState<string | null>(null)
   const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
 
   const smoothScrollToPart = React.useCallback((element: HTMLElement) => {
-    // Cancel any existing scroll animation
+    // Retrieve the server-provided estimate for how long it should take to
+    // "consume" this part (in ms). The value is placed on the element as a
+    // data attribute when it is rendered.
+    const effectiveDurationMsAttr = element.getAttribute('data-duration-ms')
+    const effectiveDurationMs = effectiveDurationMsAttr && !isNaN(Number(effectiveDurationMsAttr)) 
+      ? Number(effectiveDurationMsAttr) 
+      : 0
+
+    // Cancel any existing scroll animation or pending timeout
     if (scrollAnimationRef.current !== null) {
       cancelAnimationFrame(scrollAnimationRef.current)
       scrollAnimationRef.current = null
+    }
+
+    if (scrollTimeoutRef.current !== null) {
+      clearTimeout(scrollTimeoutRef.current)
+      scrollTimeoutRef.current = null
     }
 
     const elementRect = element.getBoundingClientRect()
     const elementHeight = elementRect.height
     const viewportHeight = window.innerHeight
     
-    // Position the element ⅓ from the top of the viewport
+    // Position the element ¼ from the top of the viewport so that the user has
+    // some context above the current part.
     const oneFourthViewportOffset = viewportHeight / 4
     const topPosition = window.scrollY + elementRect.top - oneFourthViewportOffset
     window.scrollTo({ top: topPosition, behavior: 'instant' })
@@ -36,34 +51,67 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
       return
     }
 
-    // Calculate the distance to scroll (from current position to bottom of the element)
-    const scrollDistance = elementHeight - (viewportHeight - oneFourthViewportOffset)
+    // Calculate how much of the element is already visible so that we only
+    // scroll for the yet-to-be-seen portion.
+    const initiallyVisibleHeight = Math.max(
+      0,
+      Math.min(elementHeight, viewportHeight - oneFourthViewportOffset)
+    )
 
-    // Calculate scroll duration based on content length
-    const baseSpeed = 0.15 // pixels per millisecond (adjusted for smoother scroll)
-    const contentRatio = elementHeight / viewportHeight
-    const adjustedSpeed = baseSpeed / Math.log2(contentRatio + 1)
+    const remainingHeight = elementHeight - initiallyVisibleHeight
 
-    const startTime = performance.now()
-    const startPosition = window.scrollY
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed * adjustedSpeed / scrollDistance, 1)
-      
-      if (progress < 1) {
-        window.scrollTo(0, startPosition + scrollDistance * progress)
-        scrollAnimationRef.current = requestAnimationFrame(animate)
-      } else {
-        window.scrollTo(0, startPosition + scrollDistance)
-        scrollAnimationRef.current = null
-      }
+    if (remainingHeight <= 0) {
+      return
     }
 
-    // Start the animation in the next frame to ensure the initial scroll has completed
-    requestAnimationFrame(() => {
-      scrollAnimationRef.current = requestAnimationFrame(animate)
-    })
+    // Scroll distance equals the height that is still hidden below the fold.
+    const scrollDistance = remainingHeight
+
+    // Determine the target animation duration. Use the server-provided
+    // `effective_duration_ms` scaled by the percentage of the part that is not
+    // yet visible.
+    const remainingPercent = scrollDistance / elementHeight
+    const targetDuration = effectiveDurationMs * remainingPercent || 0
+
+    // How long the currently visible content should stay on screen before we
+    // begin auto-scrolling.
+    const delayBeforeScroll = effectiveDurationMs * (1 - remainingPercent) || 0
+
+    // Fallback: if the server provided an invalid/zero duration fall back to
+    // a heuristic of 0.15 px/ms like before.
+    const fallbackSpeed = 0.15 // px per ms
+
+    const startScrollAnimation = () => {
+      const startTime = performance.now()
+      const startPosition = window.scrollY
+
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime
+
+        const progress = targetDuration > 0
+          ? Math.min(elapsed / targetDuration, 1)
+          : Math.min((elapsed * fallbackSpeed) / scrollDistance, 1)
+
+        if (progress < 1) {
+          window.scrollTo(0, startPosition + scrollDistance * progress)
+          scrollAnimationRef.current = requestAnimationFrame(animate)
+        } else {
+          window.scrollTo(0, startPosition + scrollDistance)
+          scrollAnimationRef.current = null
+        }
+      }
+
+      // Start in next frame
+      requestAnimationFrame(() => {
+        scrollAnimationRef.current = requestAnimationFrame(animate)
+      })
+    }
+
+    if (delayBeforeScroll > 0) {
+      scrollTimeoutRef.current = window.setTimeout(startScrollAnimation, delayBeforeScroll)
+    } else {
+      startScrollAnimation()
+    }
   }, [])
 
   const { 
@@ -103,6 +151,9 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
       if (scrollAnimationRef.current !== null) {
         cancelAnimationFrame(scrollAnimationRef.current)
       }
+      if (scrollTimeoutRef.current !== null) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -117,6 +168,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
           <div 
             className="grid grid-cols-2 gap-5 mb-5" 
             key={part.id}
+            data-duration-ms={part.effective_duration_ms}
             ref={(el) => {
               if (el) {
                 partsRef.current[part.id] = el
@@ -124,20 +176,20 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
             }}
           >
             <div
-              key={`en-${part.id}`}
+              key={`translit-${part.id}`}
               className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
             >
               <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <ReactMarkdown className={`text-8xl prose prose-invert max-w-none`}>
+              <ReactMarkdown className="text-8xl prose prose-invert max-w-none">
                 {part.translit.split('\n').map(line => line.trimStart()).join('\n\n')}
               </ReactMarkdown>
             </div>
             <div
-              key={`tr-${part.id}`}
+              key={`en-${part.id}`}
               className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
             >
               <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <ReactMarkdown className={`text-8xl prose prose-invert max-w-none`}>
+              <ReactMarkdown className="text-8xl prose prose-invert max-w-none">
                 {part.en.split('\n').map(line => line.trimStart()).join('\n\n')}
               </ReactMarkdown>
             </div>
