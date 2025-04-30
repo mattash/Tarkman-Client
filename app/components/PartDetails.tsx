@@ -63,7 +63,6 @@ export function PartDetails({ partId }: PartDetailsProps) {
           throw new Error(`Failed to fetch explanation ${explanationId}`)
         }
         const data = await response.json()
-        console.log('Raw explanation response:', explanationId, data)
         return data as Promise<ExplanationResponse>
       },
       ...queryConfig
@@ -75,19 +74,10 @@ export function PartDetails({ partId }: PartDetailsProps) {
   const isLoading = isPartLoading || isLoadingExplanations
   const hasError = partError || hasExplanationError
   
-  console.log('Explanation queries:', explanationQueries.map(q => ({
-    data: q.data,
-    error: q.error,
-    status: q.status,
-    isLoading: q.isLoading
-  })))
-
   const explanations = explanationQueries
     .filter(query => query.data)
     .map(query => query.data!)
   
-  console.log('Filtered explanations:', explanations)
-
   if (hasError) {
     return <div className="text-red-500">Error loading data</div>
   }
