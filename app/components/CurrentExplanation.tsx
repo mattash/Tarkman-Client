@@ -1,35 +1,29 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import { usePusher } from '../hooks/usePusher'
-
-interface Explanation {
-  id: number
-  title: string
-  description: string
-  created_at: string
-  updated_at: string
-  row_order: number
-}
+import { Explanation } from '../types/explanation'
+import { explanationQueryKeys, fetchCurrentExplanation } from '../queries/explanationQueries'
 
 interface CurrentExplanationProps {
   sessionId: string
 }
 
 export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
-  const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
+  const queryClient = useQueryClient()
+  const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
   const [previousExplanation, setPreviousExplanation] = React.useState<Explanation | null>(null)
 
-  const { data: explanation, isLoading } = useQuery<Explanation>({
-    queryKey: ['explanation', sessionId, subscriptionData?.part],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/current.json`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch current explanation')
-      }
-      const data = await response.json()
-      return data
-    },
+  React.useEffect(() => {
+    if (pusherData) {
+      console.log('Pusher received part_change, invalidating current explanation query', pusherData)
+      queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
+    }
+  }, [pusherData, queryClient, sessionId])
+
+  const { data: explanation, isLoading } = useQuery<Explanation | null>({
+    queryKey: explanationQueryKeys.current(sessionId),
+    queryFn: () => fetchCurrentExplanation(sessionId),
     enabled: true,
   })
 
@@ -39,7 +33,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
     }
   }, [explanation])
 
-  const displayExplanation = explanation || previousExplanation
+  const displayExplanation = explanation ?? previousExplanation
 
   if (!displayExplanation) {
     return <div>No explanation available</div>

@@ -4,7 +4,6 @@ import { SessionControls } from '@/components/SessionControls'
 import { useAuth } from '@/contexts/AuthContext'
 import { ExplanationDrawer } from '@/components/ExplanationDrawer'
 import { useState } from 'react'
-import { CurrentExplanation } from '@/components/CurrentExplanation'
 
 export const Route = createFileRoute('/sessions/$id/parts')({
   component: () => {
@@ -16,9 +15,7 @@ export const Route = createFileRoute('/sessions/$id/parts')({
       <div>
         <SessionParts sessionId={id} />
         {!auth.user && (
-          <ExplanationDrawer title="Explanation">
-            <CurrentExplanation sessionId={id} />
-          </ExplanationDrawer>
+          <ExplanationDrawer sessionId={id} title="Explanation" />
         )}
         {auth.user && (
           <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-1000">

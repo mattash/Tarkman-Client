@@ -3,7 +3,11 @@ import { SessionWrapper } from '../types/session'
 
 async function fetchCurrentSession(): Promise<SessionWrapper | null> {
   const churchId = import.meta.env.VITE_DEFAULT_CHURCH_ID || '2'
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${import.meta.env.VITE_DEFAULT_CHURCH_ID}/current.json`)
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${import.meta.env.VITE_DEFAULT_CHURCH_ID}/current.json`, {
+    headers: {
+      'X-Polling-Client': 'true',
+    },
+  })
   
   if (!response.ok) {
     throw new Error('Error fetching session')
