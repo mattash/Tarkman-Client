@@ -5,15 +5,16 @@ import { Route } from '../routes/sessions.$id.part.$partId'
 import DOMPurify from 'dompurify'
 import { FastForwardButton } from './FastForwardButton'
 
-interface Explanation {
+interface ExplanationApiResponse {
   id: number
   title: string
   description: string
+  created_at: string
+  updated_at: string
+  row_order: number
 }
 
-interface ExplanationResponse {
-  explanation: Explanation
-}
+type ExplanationResponse = ExplanationApiResponse
 
 interface PartResponse {
   part: Part
@@ -23,17 +24,31 @@ interface PartDetailsProps {
   partId: number
 }
 
+const queryKeys = {
+  part: (sessionId: string, partId: number) => ['part', sessionId, partId],
+  explanation: (sessionId: string, explanationId: string) => ['explanation', sessionId, explanationId]
+}
+
+const queryConfig = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  cacheTime: 10 * 60 * 1000, // 10 minutes
+  retry: 2
+}
+
 export function PartDetails({ partId }: PartDetailsProps) {
   const { id: sessionId } = Route.useParams()
 
   // Fetch part details
-  const { data: partResponse, isLoading: isPartLoading } = useQuery<PartResponse>({
-    queryKey: ['part', sessionId, partId],
+  const { data: partResponse, isLoading: isPartLoading, error: partError } = useQuery<PartResponse>({
+    queryKey: queryKeys.part(sessionId, partId),
     queryFn: async () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts/${partId}.json`)
-      const data = await response.json()
-      return data
-    }
+      if (!response.ok) {
+        throw new Error('Failed to fetch part')
+      }
+      return response.json()
+    },
+    ...queryConfig
   })
 
   const part = partResponse?.part
@@ -41,22 +56,34 @@ export function PartDetails({ partId }: PartDetailsProps) {
   // Fetch explanations for each explanation_id
   const explanationQueries = useQueries({
     queries: (part?.explanation_ids ?? []).map(explanationId => ({
-      queryKey: ['explanation', sessionId, explanationId],
+      queryKey: queryKeys.explanation(sessionId, explanationId.toString()),
       queryFn: async () => {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/${explanationId}.json`)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch explanation ${explanationId}`)
+        }
         const data = await response.json()
-        return data as ExplanationResponse
-      }
+        return data as Promise<ExplanationResponse>
+      },
+      ...queryConfig
     }))
   })
 
   const isLoadingExplanations = explanationQueries.some(query => query.isLoading)
+  const hasExplanationError = explanationQueries.some(query => query.error)
+  const isLoading = isPartLoading || isLoadingExplanations
+  const hasError = partError || hasExplanationError
+  
   const explanations = explanationQueries
-    .filter(query => query.data?.explanation)
-    .map(query => query.data.explanation)
+    .filter(query => query.data)
+    .map(query => query.data!)
+  
+  if (hasError) {
+    return <div className="text-red-500">Error loading data</div>
+  }
 
-  if (isPartLoading) {
-    return <div className="animate-pulse">Loading part details...</div>
+  if (isLoading) {
+    return <div className="animate-pulse">Loading...</div>
   }
 
   if (!part) {
@@ -128,8 +155,6 @@ export function PartDetails({ partId }: PartDetailsProps) {
           </div>
         )}
       </div>
-
-
 
       {/* Explanations */}
       {isLoadingExplanations ? (
