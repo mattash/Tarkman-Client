@@ -9,25 +9,36 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { X, HelpCircle } from 'lucide-react'
-
-interface Explanation {
-  id: number
-  title: string
-  description: string
-  created_at: string
-  updated_at: string
-  row_order: number
-}
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import DOMPurify from 'dompurify'
+import { Explanation } from '../types/explanation'
+import { explanationQueryKeys, fetchCurrentExplanation } from '../queries/explanationQueries'
+import { usePusher } from '../hooks/usePusher'
 
 interface ExplanationDrawerProps {
-  explanation: Explanation
+  sessionId: string
   title?: string
 }
 
 export function ExplanationDrawer({
-  explanation,
+  sessionId,
   title = 'Explanation'
 }: ExplanationDrawerProps) {
+  const queryClient = useQueryClient()
+  const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
+
+  React.useEffect(() => {
+    if (pusherData) {
+      console.log('Pusher received part_change in ExplanationDrawer, invalidating query', pusherData)
+      queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
+    }
+  }, [pusherData, queryClient, sessionId])
+
+  const { data: explanation, isLoading } = useQuery<Explanation | null>({
+    queryKey: explanationQueryKeys.current(sessionId),
+    queryFn: () => fetchCurrentExplanation(sessionId),
+  })
+
   return (
     <Drawer direction="bottom">
       <DrawerTrigger className="fixed bottom-4 right-4 rounded-full bg-tarkman-purple-light" asChild>
@@ -48,10 +59,18 @@ export function ExplanationDrawer({
               </DrawerClose>
             </DrawerHeader>
             <div className="p-4">
-              <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
-              <div className="prose prose-invert max-w-none">
-                {explanation.description}
-              </div>
+              {isLoading ? (
+                <div className="animate-pulse">Loading explanation...</div>
+              ) : explanation ? (
+                <div className="prose max-w-none">
+                  <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(explanation.description) }}
+                  />
+                </div>
+              ) : (
+                <div>No explanation available</div>
+              )}
             </div>
           </div>
         </div>
