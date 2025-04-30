@@ -4,8 +4,12 @@ import ReactMarkdown from 'react-markdown'
 import { usePusher } from '../hooks/usePusher'
 
 interface Explanation {
+  id: number
   title: string
   description: string
+  created_at: string
+  updated_at: string
+  row_order: number
 }
 
 interface CurrentExplanationProps {
@@ -20,8 +24,11 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
     queryKey: ['explanation', sessionId, subscriptionData?.part],
     queryFn: async () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/current.json`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch current explanation')
+      }
       const data = await response.json()
-      return data[0]
+      return data
     },
     enabled: true,
   })
