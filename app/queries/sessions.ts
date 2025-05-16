@@ -10,8 +10,8 @@ export const sessionsKeys = {
   sessionParts: (id: string) => [...sessionsKeys.all, 'session', id, 'parts'] as const,
 }
 
-export async function fetchSessions(): Promise<SessionWrapper[]> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/services.json`)
+export async function fetchSessions(tz: string): Promise<SessionWrapper[]> {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/services.json?tz=${tz}`)
   return response.json()
 }
 

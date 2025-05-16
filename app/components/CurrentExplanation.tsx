@@ -10,32 +10,31 @@ interface CurrentExplanationProps {
 }
 
 export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
-  const queryClient = useQueryClient()
-  const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
-  const [previousExplanation, setPreviousExplanation] = React.useState<Explanation | null>(null)
+  const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
+  const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
 
-  React.useEffect(() => {
-    if (pusherData) {
-      console.log('Pusher received part_change, invalidating current explanation query', pusherData)
-      queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
-    }
-  }, [pusherData, queryClient, sessionId])
-
-  const { data: explanation, isLoading } = useQuery<Explanation | null>({
-    queryKey: explanationQueryKeys.current(sessionId),
-    queryFn: () => fetchCurrentExplanation(sessionId),
+  const { data: explanations, isLoading } = useQuery<Explanation[]>({
+    queryKey: ['explanation', sessionId, subscriptionData?.part],
+    queryFn: async () => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/current.json`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch current explanation')
+      }
+      const data = await response.json()
+      return data.explanations.map((item: { explanation: Explanation }) => item.explanation)
+    },
     enabled: true,
   })
 
   React.useEffect(() => {
-    if (explanation) {
-      setPreviousExplanation(explanation)
+    if (explanations?.length) {
+      setPreviousExplanations(explanations)
     }
-  }, [explanation])
+  }, [explanations])
 
-  const displayExplanation = explanation ?? previousExplanation
+  const displayExplanations = explanations || previousExplanations
 
-  if (!displayExplanation) {
+  if (!displayExplanations?.length) {
     return <div>No explanation available</div>
   }
 
@@ -46,9 +45,13 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
           Updating...
         </div>
       )}
-      <div className="prose-invert">
-        <h1 className="text-2xl font-bold mb-4">{displayExplanation.title}</h1>
-        <ReactMarkdown>{displayExplanation.description}</ReactMarkdown>
+      <div className="space-y-6">
+        {displayExplanations.map((explanation) => (
+          <div key={explanation.id} className="prose-invert">
+            <h1 className="text-2xl font-bold mb-4">{explanation.title}</h1>
+            <ReactMarkdown>{explanation.description}</ReactMarkdown>
+          </div>
+        ))}
       </div>
     </div>
   )

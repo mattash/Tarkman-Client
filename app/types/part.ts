@@ -8,8 +8,9 @@ export interface Part {
   hy_east: string | null
   hy_west: string | null
   posture: string | null
-  page: number
+  page: number | null
   explanation_ids: string[]
+  assignment: string | null
   /**
    * Indicates the speed category for the part. Matches the server-side
    * DURATION_TYPES enum and is useful for analytics but should not be relied on

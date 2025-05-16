@@ -9,19 +9,14 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { X, HelpCircle } from 'lucide-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import DOMPurify from 'dompurify'
-import { Explanation } from '../types/explanation'
-import { explanationQueryKeys, fetchCurrentExplanation } from '../queries/explanationQueries'
-import { usePusher } from '../hooks/usePusher'
 
 interface ExplanationDrawerProps {
-  sessionId: string
+  children: React.ReactNode
   title?: string
 }
 
 export function ExplanationDrawer({
-  sessionId,
+  children,
   title = 'Explanation'
 }: ExplanationDrawerProps) {
   const queryClient = useQueryClient()
@@ -59,18 +54,7 @@ export function ExplanationDrawer({
               </DrawerClose>
             </DrawerHeader>
             <div className="p-4">
-              {isLoading ? (
-                <div className="animate-pulse">Loading explanation...</div>
-              ) : explanation ? (
-                <div className="prose max-w-none">
-                  <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(explanation.description) }}
-                  />
-                </div>
-              ) : (
-                <div>No explanation available</div>
-              )}
+              {children}
             </div>
           </div>
         </div>
