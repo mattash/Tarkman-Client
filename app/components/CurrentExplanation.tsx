@@ -1,16 +1,9 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import { usePusher } from '../hooks/usePusher'
-
-interface Explanation {
-  id: number
-  title: string
-  description: string
-  created_at: string
-  updated_at: string
-  row_order: number
-}
+import { Explanation } from '../types/explanation'
+import { explanationQueryKeys, fetchCurrentExplanation } from '../queries/explanationQueries'
 
 interface CurrentExplanationProps {
   sessionId: string
