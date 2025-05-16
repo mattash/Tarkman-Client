@@ -19,6 +19,21 @@ export function ExplanationDrawer({
   children,
   title = 'Explanation'
 }: ExplanationDrawerProps) {
+  const queryClient = useQueryClient()
+  const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
+
+  React.useEffect(() => {
+    if (pusherData) {
+      console.log('Pusher received part_change in ExplanationDrawer, invalidating query', pusherData)
+      queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
+    }
+  }, [pusherData, queryClient, sessionId])
+
+  const { data: explanation, isLoading } = useQuery<Explanation | null>({
+    queryKey: explanationQueryKeys.current(sessionId),
+    queryFn: () => fetchCurrentExplanation(sessionId),
+  })
+
   return (
     <Drawer direction="bottom">
       <DrawerTrigger className="fixed bottom-4 right-4 rounded-full bg-tarkman-purple-light" asChild>
