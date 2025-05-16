@@ -10,22 +10,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { X, HelpCircle } from 'lucide-react'
 
-interface Explanation {
-  id: number
-  title: string
-  description: string
-  created_at: string
-  updated_at: string
-  row_order: number
-}
-
 interface ExplanationDrawerProps {
-  explanation: Explanation
+  children: React.ReactNode
   title?: string
 }
 
 export function ExplanationDrawer({
-  explanation,
+  children,
   title = 'Explanation'
 }: ExplanationDrawerProps) {
   return (
@@ -48,10 +39,7 @@ export function ExplanationDrawer({
               </DrawerClose>
             </DrawerHeader>
             <div className="p-4">
-              <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
-              <div className="prose prose-invert max-w-none">
-                {explanation.description}
-              </div>
+              {children}
             </div>
           </div>
         </div>

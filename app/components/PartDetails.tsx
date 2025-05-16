@@ -5,7 +5,7 @@ import { Route } from '../routes/sessions.$id.part.$partId'
 import DOMPurify from 'dompurify'
 import { FastForwardButton } from './FastForwardButton'
 
-interface ExplanationApiResponse {
+interface Explanation {
   id: number
   title: string
   description: string
@@ -13,8 +13,6 @@ interface ExplanationApiResponse {
   updated_at: string
   row_order: number
 }
-
-type ExplanationResponse = ExplanationApiResponse
 
 interface PartResponse {
   part: Part
@@ -26,7 +24,7 @@ interface PartDetailsProps {
 
 const queryKeys = {
   part: (sessionId: string, partId: number) => ['part', sessionId, partId],
-  explanation: (sessionId: string, explanationId: string) => ['explanation', sessionId, explanationId]
+  explanation: (liturgyId: string, explanationId: string) => ['explanation', liturgyId, explanationId]
 }
 
 const queryConfig = {
@@ -58,13 +56,14 @@ export function PartDetails({ partId }: PartDetailsProps) {
     queries: (part?.explanation_ids ?? []).map(explanationId => ({
       queryKey: queryKeys.explanation(sessionId, explanationId.toString()),
       queryFn: async () => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/${explanationId}.json`)
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${sessionId}/explanations/${explanationId}.json`)
         if (!response.ok) {
           throw new Error(`Failed to fetch explanation ${explanationId}`)
         }
         const data = await response.json()
-        return data as Promise<ExplanationResponse>
+        return data.explanation as Explanation
       },
+      enabled: !!part,
       ...queryConfig
     }))
   })

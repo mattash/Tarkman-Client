@@ -5,13 +5,14 @@ import { SessionCard } from './SessionCard'
 import { fetchSessions, sessionsKeys } from '../queries/sessions'
 
 export function SessionList() {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
   const { 
     data: sessions = [], 
     isLoading, 
     error 
   } = useQuery<SessionWrapper[]>({
     queryKey: sessionsKeys.list(),
-    queryFn: fetchSessions
+    queryFn: () => fetchSessions(tz)
   })
 
   if (isLoading) {

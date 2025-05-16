@@ -3,7 +3,7 @@ export interface SessionData {
     liturgy: string
     date: string
     church_name: string
-    avatar_url: string
+    church_avatar: string
     occupied: boolean
     num_of_parts: number
     current_part_position: number

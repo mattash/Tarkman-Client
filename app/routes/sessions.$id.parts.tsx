@@ -16,7 +16,7 @@ export const Route = createFileRoute('/sessions/$id/parts')({
       <div>
         <SessionParts sessionId={id} />
         {!auth.user && (
-          <ExplanationDrawer title="Explanation">
+          <ExplanationDrawer title="Explanations">
             <CurrentExplanation sessionId={id} />
           </ExplanationDrawer>
         )}
