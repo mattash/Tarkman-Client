@@ -12,7 +12,7 @@ interface CurrentExplanationProps {
 export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
   const queryClient = useQueryClient()
   const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
-  const [previousExplanation, setPreviousExplanation] = React.useState<Explanation | null>(null)
+  const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
 
   React.useEffect(() => {
     if (pusherData) {
@@ -21,21 +21,21 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
     }
   }, [pusherData, queryClient, sessionId])
 
-  const { data: explanation, isLoading } = useQuery<Explanation | null>({
+  const { data: explanations, isLoading } = useQuery<Explanation[]>({
     queryKey: explanationQueryKeys.current(sessionId),
     queryFn: () => fetchCurrentExplanation(sessionId),
     enabled: true,
   })
 
   React.useEffect(() => {
-    if (explanation) {
-      setPreviousExplanation(explanation)
+    if (explanations) {
+      setPreviousExplanations(explanations)
     }
-  }, [explanation])
+  }, [explanations])
 
-  const displayExplanation = explanation ?? previousExplanation
+  const displayExplanations = explanations ?? previousExplanations
 
-  if (!displayExplanation) {
+  if (!displayExplanations?.length) {
     return <div>No explanation available</div>
   }
 
@@ -46,9 +46,13 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
           Updating...
         </div>
       )}
-      <div className="prose-invert">
-        <h1 className="text-2xl font-bold mb-4">{displayExplanation.title}</h1>
-        <ReactMarkdown>{displayExplanation.description}</ReactMarkdown>
+      <div className="prose-invert space-y-8">
+        {displayExplanations.map((explanation) => (
+          <div key={explanation.id}>
+            <h1 className="text-2xl font-bold mb-4">{explanation.title}</h1>
+            <ReactMarkdown>{explanation.description}</ReactMarkdown>
+          </div>
+        ))}
       </div>
     </div>
   )

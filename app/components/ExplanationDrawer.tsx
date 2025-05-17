@@ -34,7 +34,7 @@ export function ExplanationDrawer({
     }
   }, [pusherData, queryClient, sessionId])
 
-  const { data: explanation, isLoading } = useQuery<Explanation | null>({
+  const { data: explanations, isLoading } = useQuery<Explanation[]>({
     queryKey: explanationQueryKeys.current(sessionId),
     queryFn: () => fetchCurrentExplanation(sessionId),
   })
@@ -61,12 +61,16 @@ export function ExplanationDrawer({
             <div className="p-4">
               {isLoading ? (
                 <div className="animate-pulse">Loading explanation...</div>
-              ) : explanation ? (
-                <div className="prose max-w-none">
-                  <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(explanation.description) }}
-                  />
+              ) : explanations?.length ? (
+                <div className="prose max-w-none space-y-8">
+                  {explanations.map((explanation) => (
+                    <div key={explanation.id}>
+                      <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(explanation.description) }}
+                      />
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div>No explanation available</div>
