@@ -10,10 +10,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { X, HelpCircle } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import DOMPurify from 'dompurify'
 import { Explanation } from '../types/explanation'
 import { explanationQueryKeys, fetchCurrentExplanation } from '../queries/explanationQueries'
 import { usePusher } from '../hooks/usePusher'
+import ReactMarkdown from 'react-markdown'
 
 interface ExplanationDrawerProps {
   sessionId: string
@@ -29,7 +29,6 @@ export function ExplanationDrawer({
 
   React.useEffect(() => {
     if (pusherData) {
-      console.log('Pusher received part_change in ExplanationDrawer, invalidating query', pusherData)
       queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
     }
   }, [pusherData, queryClient, sessionId])
@@ -62,13 +61,11 @@ export function ExplanationDrawer({
               {isLoading ? (
                 <div className="animate-pulse">Loading explanation...</div>
               ) : explanations?.length ? (
-                <div className="prose max-w-none space-y-8">
+                <div className="prose max-w-none space-y-4">
                   {explanations.map((explanation) => (
                     <div key={explanation.id}>
                       <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
-                      <div 
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(explanation.description) }}
-                      />
+                        <ReactMarkdown>{explanation.description}</ReactMarkdown>
                     </div>
                   ))}
                 </div>

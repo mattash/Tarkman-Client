@@ -16,7 +16,6 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
 
   React.useEffect(() => {
     if (pusherData) {
-      console.log('Pusher received part_change, invalidating current explanation query', pusherData)
       queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
     }
   }, [pusherData, queryClient, sessionId])
@@ -28,7 +27,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
   })
 
   React.useEffect(() => {
-    if (explanations) {
+    if (explanations?.length) {
       setPreviousExplanations(explanations)
     }
   }, [explanations])
@@ -46,7 +45,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
           Updating...
         </div>
       )}
-      <div className="prose-invert space-y-8">
+      <div className="prose-invert space-y-6">
         {displayExplanations.map((explanation) => (
           <div key={explanation.id}>
             <h1 className="text-2xl font-bold mb-4">{explanation.title}</h1>
