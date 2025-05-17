@@ -1,39 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api'
+import { sessionsKeys, prevPart, nextPart } from '@/queries/sessions'
 
 interface SessionControlsProps {
   sessionId: number
 }
 
-interface SessionPartResponse {
-  id: number
-  current_part: {
-    id: number
-    name: string
-    metadata: Record<string, unknown>
-  }
-}
-
 export function SessionControls({ sessionId }: SessionControlsProps) {
   const queryClient = useQueryClient()
 
-  const prevMutation = useMutation<SessionPartResponse>({
-    mutationFn: async () => {
-      const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`)
-      return data
-    },
+  const prevMutation = useMutation({
+    mutationFn: () => prevPart(sessionId.toString()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions', sessionId] })
+      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId.toString()) })
     }
   })
 
-  const nextMutation = useMutation<SessionPartResponse>({
-    mutationFn: async () => {
-      const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`)
-      return data
-    },
+  const nextMutation = useMutation({
+    mutationFn: () => nextPart(sessionId.toString()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions', sessionId] })
+      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId.toString()) })
     }
   })
 

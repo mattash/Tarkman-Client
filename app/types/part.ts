@@ -8,22 +8,13 @@ export interface Part {
   hy_east: string | null
   hy_west: string | null
   posture: string | null
-  page: number | null
-  explanation_ids: string[]
-  assignment: string | null
-  /**
-   * Indicates the speed category for the part. Matches the server-side
-   * DURATION_TYPES enum and is useful for analytics but should not be relied on
-   * for UI timing – prefer `effective_duration_ms` for precise timing.
-   */
+  sheet_music: string | null
   duration_type: 'default' | 'very_slow' | 'slow' | 'fast' | 'very_fast' | 'custom'
-
-  /**
-   * Estimated time in milliseconds required to perform/read the entire part.
-   * This value is used to determine the auto-scroll duration so that the part
-   * stays on screen for roughly the required amount of time.
-   */
+  page: number | null
+  explanation_ids: number[]
   effective_duration_ms: number
+  position: number
+  assignment?: string | null
 }
 
 export interface PartWrapper {
@@ -32,7 +23,7 @@ export interface PartWrapper {
 
 export interface SessionPartData {
   session: {
-    current_part_id: string
+    current_part_id: number
   }
 }
 
@@ -43,4 +34,8 @@ export interface UpdateData {
 export interface PartsResponse {
   parts: PartWrapper[]
   sessionData: SessionPartData
+}
+
+export interface PartResponse {
+  part: Part
 }

@@ -1,35 +1,21 @@
 import * as React from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { sessionsKeys, setPart } from '@/queries/sessions'
 
 interface FastForwardButtonProps {
   sessionId: string
   partId: number
 }
 
-interface SessionPartResponse {
-  id: number
-  current_part: {
-    id: number
-    name: string
-    metadata: Record<string, unknown>
-  }
-}
-
 export function FastForwardButton({ sessionId, partId }: FastForwardButtonProps) {
   const queryClient = useQueryClient()
   const auth = useAuth()
 
-  const setPartMutation = useMutation<SessionPartResponse>({
-    mutationFn: async () => {
-      const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/set_part`, {
-        part_id: partId
-      })
-      return data
-    },
+  const setPartMutation = useMutation({
+    mutationFn: () => setPart(sessionId, partId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions', sessionId] })
+      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
     }
   })
 

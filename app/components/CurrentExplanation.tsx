@@ -10,19 +10,19 @@ interface CurrentExplanationProps {
 }
 
 export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
-  const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
+  const queryClient = useQueryClient()
+  const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
   const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
 
+  React.useEffect(() => {
+    if (pusherData) {
+      queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
+    }
+  }, [pusherData, queryClient, sessionId])
+
   const { data: explanations, isLoading } = useQuery<Explanation[]>({
-    queryKey: ['explanation', sessionId, subscriptionData?.part],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/current.json`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch current explanation')
-      }
-      const data = await response.json()
-      return data.explanations.map((item: { explanation: Explanation }) => item.explanation)
-    },
+    queryKey: explanationQueryKeys.current(sessionId),
+    queryFn: () => fetchCurrentExplanation(sessionId),
     enabled: true,
   })
 
@@ -32,7 +32,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
     }
   }, [explanations])
 
-  const displayExplanations = explanations || previousExplanations
+  const displayExplanations = explanations ?? previousExplanations
 
   if (!displayExplanations?.length) {
     return <div>No explanation available</div>
@@ -45,9 +45,9 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
           Updating...
         </div>
       )}
-      <div className="space-y-6">
+      <div className="prose-invert space-y-6">
         {displayExplanations.map((explanation) => (
-          <div key={explanation.id} className="prose-invert">
+          <div key={explanation.id}>
             <h1 className="text-2xl font-bold mb-4">{explanation.title}</h1>
             <ReactMarkdown>{explanation.description}</ReactMarkdown>
           </div>

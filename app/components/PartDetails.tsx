@@ -1,4 +1,5 @@
 import * as React from 'react'
+import ReactMarkdown from 'react-markdown'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { Part } from '../types/part'
 import { Explanation } from '../types/explanation'
@@ -153,8 +154,8 @@ export function PartDetails({ partId }: PartDetailsProps) {
               <h4 className="text-lg font-semibold mb-2">{explanation.title}</h4>
               <div 
                 className="prose prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(explanation.description) }}
               />
+                <ReactMarkdown>{explanation.description}</ReactMarkdown>
             </div>
           ))}
         </div>
