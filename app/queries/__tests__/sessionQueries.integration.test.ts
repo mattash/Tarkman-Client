@@ -31,9 +31,7 @@ describe('sessionQueries integration tests', () => {
       }
       // Store token in localStorage (api.ts will pick this up)
       localStorage.setItem('token', response.token)
-      console.log('Successfully authenticated')
     } catch (error) {
-      console.error('Failed to authenticate:', error)
       throw new Error('Authentication required for integration tests')
     }
   })
@@ -47,7 +45,6 @@ describe('sessionQueries integration tests', () => {
     it('should fetch sessions', async () => {
       try {
         const sessions = await fetchSessions()
-        console.log('Raw sessions response:', sessions)
         
         expect(sessions).toBeDefined()
         expect(Array.isArray(sessions)).toBe(true)
@@ -76,7 +73,6 @@ describe('sessionQueries integration tests', () => {
     it('should fetch session parts', async () => {
       try {
         const response = await fetchSessionParts(TEST_SESSION_ID)
-        console.log('Session parts response:', response)
         
         expect(response.parts).toBeDefined()
         expect(Array.isArray(response.parts)).toBe(true)
@@ -108,7 +104,6 @@ describe('sessionQueries integration tests', () => {
     it('should set part', async () => {
       try {
         const response = await setPart(TEST_SESSION_ID, TEST_PART_ID)
-        console.log('Set part response:', response)
         
         expect(response.status).toBeDefined()
         expect(response.current_part_id).toBeDefined()
@@ -124,7 +119,6 @@ describe('sessionQueries integration tests', () => {
     it('should go to previous part', async () => {
       try {
         const response = await prevPart(TEST_SESSION_ID)
-        console.log('Prev part response:', response)
         
         expect(response.status).toBeDefined()
         expect(response.current_part_id).toBeDefined()
@@ -140,7 +134,6 @@ describe('sessionQueries integration tests', () => {
     it('should go to next part', async () => {
       try {
         const response = await nextPart(TEST_SESSION_ID)
-        console.log('Next part response:', response)
         
         expect(response.status).toBeDefined()
         expect(response.current_part_id).toBeDefined()

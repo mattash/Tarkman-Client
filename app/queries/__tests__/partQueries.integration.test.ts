@@ -28,9 +28,7 @@ describe('partQueries integration tests', () => {
       }
       // Store token in localStorage (api.ts will pick this up)
       localStorage.setItem('token', response.token)
-      console.log('Successfully authenticated')
     } catch (error) {
-      console.error('Failed to authenticate:', error)
       throw new Error('Authentication required for integration tests')
     }
   })
@@ -44,7 +42,6 @@ describe('partQueries integration tests', () => {
     it('should fetch part details', async () => {
       try {
         const response = await fetchPart(TEST_SESSION_ID, TEST_PART_ID)
-        console.log('Part response:', response)
         
         expect(response.part).toBeDefined()
         expect(response.part.id).toBeDefined()

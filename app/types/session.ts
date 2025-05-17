@@ -9,7 +9,7 @@ export interface SessionData {
     current_part_position: number
     current_part_id: number
     page: number
-    posture: any // Adjust the type as needed
+    posture: string | null
     readings: {
       gospel: string
       epistle: string
@@ -24,6 +24,11 @@ export interface SessionData {
 
 export interface SessionWrapper {
     session: SessionData
+}
+
+export interface SessionPartResponse {
+  status: string
+  current_part_id: number
 }
 
 export interface Part {

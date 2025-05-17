@@ -6,6 +6,8 @@ export interface Explanation {
   created_at: string
   updated_at: string
   row_order: number
+  liturgy_id: number
+  user_id: number
 }
 
 export interface ExplanationWrapper {
