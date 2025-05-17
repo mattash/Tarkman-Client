@@ -17,7 +17,6 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
     - uses: actions/checkout@v4
@@ -28,4 +27,9 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run build --if-present
-    - run: npm test
+    - name: Run tests
+      env:
+        VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        VITE_TEST_USERNAME: ${{ secrets.VITE_TEST_USERNAME }}
+        VITE_TEST_PASSWORD: ${{ secrets.VITE_TEST_PASSWORD }}
+      run: npm test
