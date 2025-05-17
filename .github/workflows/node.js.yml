@@ -30,6 +30,6 @@ jobs:
     - name: Run tests
       env:
         VITE_API_URL: ${{ secrets.VITE_API_URL }}
-        VITE_TEST_USERNAME: ${{ secrets.VITE_TEST_USERNAME }}
+        VITE_TEST_USERNAME: ${{ secrets.VITE_TEST_EMAIL }}
         VITE_TEST_PASSWORD: ${{ secrets.VITE_TEST_PASSWORD }}
       run: npm test
