@@ -10,6 +10,7 @@ export interface Part {
   posture: string | null
   page: number
   explanation_ids: string[]
+  position: number
   /**
    * Indicates the speed category for the part. Matches the server-side
    * DURATION_TYPES enum and is useful for analytics but should not be relied on

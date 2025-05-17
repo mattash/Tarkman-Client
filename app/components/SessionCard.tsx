@@ -15,7 +15,7 @@ export function SessionCard({ session }: SessionCardProps) {
       className="p-4 border rounded-lg hover:shadow-lg transition-shadow bg-gray-800 border-tarkman-purple"
     >
       <img
-        src={session.avatar_url}
+        src={session.church_avatar}
         alt={session.church_name}
         className="w-full h-48 object-cover rounded mb-2"
       />

@@ -10,9 +10,18 @@ export const sessionsKeys = {
   sessionParts: (id: string) => [...sessionsKeys.all, 'session', id, 'parts'] as const,
 }
 
+interface SessionsResponse {
+  sessions?: SessionWrapper[]
+}
+
 export async function fetchSessions(): Promise<SessionWrapper[]> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/services.json`)
-  return response.json()
+  try {
+    const { data } = await api.get<SessionWrapper[]>('/services.json')
+    return Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error fetching sessions:', error)
+    throw error
+  }
 }
 
 export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
