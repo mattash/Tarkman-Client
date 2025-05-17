@@ -15,7 +15,9 @@ export const Route = createFileRoute('/sessions/$id/parts')({
       <div>
         <SessionParts sessionId={id} />
         {!auth.user && (
-          <ExplanationDrawer sessionId={id} title="Explanation" />
+          <ExplanationDrawer title="Explanations">
+            <CurrentExplanation sessionId={id} />
+          </ExplanationDrawer>
         )}
         {auth.user && (
           <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-1000">

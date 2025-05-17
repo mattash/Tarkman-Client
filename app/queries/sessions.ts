@@ -22,7 +22,6 @@ export async function fetchSessions(): Promise<SessionWrapper[]> {
     console.error('Error fetching sessions:', error)
     throw error
   }
-}
 
 export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
   const [partsResponse, sessionResponse] = await Promise.all([

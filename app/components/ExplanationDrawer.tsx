@@ -16,12 +16,12 @@ import { usePusher } from '../hooks/usePusher'
 import ReactMarkdown from 'react-markdown'
 
 interface ExplanationDrawerProps {
-  sessionId: string
+  children: React.ReactNode
   title?: string
 }
 
 export function ExplanationDrawer({
-  sessionId,
+  children,
   title = 'Explanation'
 }: ExplanationDrawerProps) {
   const queryClient = useQueryClient()

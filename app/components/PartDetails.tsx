@@ -6,8 +6,7 @@ import { Explanation } from '../types/explanation'
 import { Route } from '../routes/sessions.$id.part.$partId'
 import DOMPurify from 'dompurify'
 import { FastForwardButton } from './FastForwardButton'
-import { explanationQueryKeys, fetchExplanation } from '../queries/explanationQueries'
-import { partQueryKeys, fetchPart } from '../queries/partQueries'
+import { fetchPart, partQueryKeys } from '@/queries/partQueries'
 
 interface PartResponse {
   part: Part
@@ -17,6 +16,11 @@ interface PartDetailsProps {
   partId: number
 }
 
+const queryKeys = {
+  part: (sessionId: string, partId: number) => ['part', sessionId, partId],
+  explanation: (liturgyId: string, explanationId: string) => ['explanation', liturgyId, explanationId]
+}
+        
 const queryConfig = {
   staleTime: 5 * 60 * 1000, // 5 minutes
   cacheTime: 10 * 60 * 1000, // 10 minutes
@@ -38,8 +42,16 @@ export function PartDetails({ partId }: PartDetailsProps) {
   // Fetch explanations using refactored query
   const explanationQueries = useQueries({
     queries: (part?.explanation_ids ?? []).map(explanationId => ({
-      queryKey: explanationQueryKeys.detail(sessionId, explanationId.toString()),
-      queryFn: () => fetchExplanation(sessionId, explanationId.toString()),
+      queryKey: queryKeys.explanation(sessionId, explanationId.toString()),
+      queryFn: async () => {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${sessionId}/explanations/${explanationId}.json`)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch explanation ${explanationId}`)
+        }
+        const data = await response.json()
+        return data.explanation as Explanation
+      },
+      enabled: !!part,
       ...queryConfig
     }))
   })
