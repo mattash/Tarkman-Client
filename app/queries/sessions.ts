@@ -14,9 +14,13 @@ interface SessionsResponse {
   sessions?: SessionWrapper[]
 }
 
-export async function fetchSessions(): Promise<SessionWrapper[]> {
+export async function fetchSessions(tz: string): Promise<SessionWrapper[]> {
   try {
-    const { data } = await api.get<SessionWrapper[]>('/services.json')
+    const { data } = await api.get<SessionWrapper[]>('/services.json', {
+      params: {
+        tz
+      }
+    })
     return Array.isArray(data) ? data : []
   } catch (error) {
     console.error('Error fetching sessions:', error)

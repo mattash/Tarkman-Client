@@ -16,13 +16,13 @@ import { usePusher } from '../hooks/usePusher'
 import ReactMarkdown from 'react-markdown'
 
 interface ExplanationDrawerProps {
-  children: React.ReactNode
-  title?: string
+  title?: string,
+  sessionId: string
 }
 
 export function ExplanationDrawer({
-  children,
-  title = 'Explanation'
+  title = 'Explanation',
+  sessionId
 }: ExplanationDrawerProps) {
   const queryClient = useQueryClient()
   const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
