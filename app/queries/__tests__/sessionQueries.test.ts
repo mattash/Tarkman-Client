@@ -64,14 +64,18 @@ describe('sessionQueries', () => {
       const mockResponse = [{ session: mockSessionData }]
       vi.mocked(api.get).mockResolvedValueOnce({ data: mockResponse })
 
-      const result = await fetchSessions()
+      const result = await fetchSessions('UTC')
       expect(result).toEqual(mockResponse)
-      expect(api.get).toHaveBeenCalledWith('/services.json')
+      expect(api.get).toHaveBeenCalledWith('/services.json', {
+        params: {
+          tz: 'UTC'
+        }
+      })
     })
 
     it('should handle fetch error', async () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
-      await expect(fetchSessions()).rejects.toThrow('Network error')
+      await expect(fetchSessions('UTC')).rejects.toThrow('Network error')
     })
   })
 
