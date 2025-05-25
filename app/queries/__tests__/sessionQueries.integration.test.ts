@@ -44,7 +44,7 @@ describe('sessionQueries integration tests', () => {
   describe('fetchSessions', () => {
     it('should fetch sessions', async () => {
       try {
-        const sessions = await fetchSessions()
+        const sessions = await fetchSessions('UTC')
         
         expect(sessions).toBeDefined()
         expect(Array.isArray(sessions)).toBe(true)
