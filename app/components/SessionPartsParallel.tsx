@@ -180,7 +180,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
               className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
             >
               <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <ReactMarkdown className="text-8xl prose prose-invert max-w-none">
+              <ReactMarkdown className="text-9xl prose prose-invert max-w-none">
                 {part.translit.split('\n').map(line => line.trimStart()).join('\n\n')}
               </ReactMarkdown>
             </div>
@@ -189,7 +189,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
               className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
             >
               <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <ReactMarkdown className="text-8xl prose prose-invert max-w-none">
+              <ReactMarkdown className="text-9xl prose prose-invert max-w-none">
                 {part.en.split('\n').map(line => line.trimStart()).join('\n\n')}
               </ReactMarkdown>
             </div>
