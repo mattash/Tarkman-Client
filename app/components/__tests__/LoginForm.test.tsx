@@ -68,7 +68,7 @@ describe('LoginForm', () => {
   it('should call login API and navigate on successful login', async () => {
     const user = userEvent.setup()
     const mockResponse = {
-      user: { id: 1, email: 'test@example.com', name: 'Test User' },
+      user: { id: 1, email: 'test@example.com', name: 'Test User', roles: [] },
       token: 'test-token-123',
     }
 
@@ -141,7 +141,7 @@ describe('LoginForm', () => {
 
     // Second attempt succeeds
     vi.mocked(login).mockResolvedValueOnce({
-      user: { id: 1, email: 'test@example.com', name: 'Test User' },
+      user: { id: 1, email: 'test@example.com', name: 'Test User', roles: [] },
       token: 'test-token',
     })
 
@@ -198,3 +198,4 @@ describe('LoginForm', () => {
     expect(passwordInput).toBeRequired()
   })
 })
+

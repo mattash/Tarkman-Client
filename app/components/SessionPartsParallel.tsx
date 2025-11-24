@@ -128,7 +128,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   React.useEffect(() => {
     if (data?.sessionData.session.current_part_id) {
       const currentId = data.sessionData.session.current_part_id
-      setCurrentPartId(currentId)
+      setCurrentPartId(String(currentId))
       const currentPartElement = partsRef.current[currentId]
       if (currentPartElement) {
         smoothScrollToPart(currentPartElement)

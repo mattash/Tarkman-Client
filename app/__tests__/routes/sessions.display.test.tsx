@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createMemoryHistory, RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from '@/routeTree.gen'
 import type { ReactNode } from 'react'
-import type { SessionWrapper } from '@/types/session'
+import { createMockSession } from '../factories/mockSessionFactory'
 
 // Mock the Navbar component
 vi.mock('@/components/Navbar', () => ({
@@ -51,32 +51,30 @@ const createTestWrapper = () => {
   )
 }
 
-const mockSessionData: SessionWrapper = {
-  session: {
-    id: 10,
-    liturgy: 'Divine Liturgy',
-    liturgy_id: 1,
-    date: '2025-11-24',
-    church_name: 'St. John',
-    occupied: true,
-    num_of_parts: 10,
-    current_part_position: 5,
-    current_part_id: 50,
-    current_liturgy_id: 1,
-    page: 15,
-    posture: 'stand',
-    readings: {
-      gospel: 'John 3:16',
-      epistle: 'Romans 8:28',
-    },
-    options: {
-      gospel: 'John 3:16',
-      epistle: 'Romans 8:28',
-      before_message: 'Welcome to our service!',
-      after_message: 'Thank you for attending!',
-    },
+const mockSessionData = createMockSession({
+  id: 10,
+  liturgy: 'Divine Liturgy',
+  liturgy_id: 1,
+  date: '2025-11-24',
+  church_name: 'St. John',
+  occupied: true,
+  num_of_parts: 10,
+  current_part_position: 5,
+  current_part_id: 50,
+  current_liturgy_id: 1,
+  page: 15,
+  posture: 'stand',
+  readings: {
+    gospel: 'John 3:16',
+    epistle: 'Romans 8:28',
   },
-}
+  options: {
+    gospel: 'John 3:16',
+    epistle: 'Romans 8:28',
+    before_message: 'Welcome to our service!',
+    after_message: 'Thank you for attending!',
+  },
+})
 
 describe('sessions.display route', () => {
   beforeEach(() => {

@@ -155,3 +155,4 @@ describe('useSessionPolling', () => {
     expect(fetchCall[1].headers).toHaveProperty('X-Polling-Client', 'true')
   })
 })
+

@@ -39,6 +39,7 @@ describe('AuthContext', () => {
         id: 1,
         email: 'test@example.com',
         name: 'Test User',
+        roles: [],
       }
       const mockToken = 'test-token-123'
 
@@ -59,6 +60,7 @@ describe('AuthContext', () => {
         id: 1,
         email: 'test@example.com',
         name: 'Test User',
+        roles: [],
       }
       const mockToken = 'test-token-123'
 
@@ -80,6 +82,7 @@ describe('AuthContext', () => {
         id: 1,
         email: 'test@example.com',
         name: 'Test User',
+        roles: [],
       }
 
       act(() => {
@@ -109,6 +112,7 @@ describe('AuthContext', () => {
         id: 1,
         email: 'test@example.com',
         name: 'Test User',
+        roles: [],
       }
 
       act(() => {
@@ -132,7 +136,7 @@ describe('AuthContext', () => {
       })
 
       act(() => {
-        result.current.setAuth({ id: 1, email: 'test@example.com', name: 'Test' }, 'test-token')
+        result.current.setAuth({ id: 1, email: 'test@example.com', name: 'Test', roles: [] }, 'test-token')
       })
 
       act(() => {
@@ -150,6 +154,7 @@ describe('AuthContext', () => {
         id: 1,
         email: 'test@example.com',
         name: 'Test User',
+        roles: [],
       }
       const mockToken = 'saved-token-123'
 
@@ -187,3 +192,4 @@ describe('AuthContext', () => {
     })
   })
 })
+
