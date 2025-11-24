@@ -1,6 +1,7 @@
 export interface SessionData {
     id: number
     liturgy: string
+    liturgy_id?: number
     date: string
     church_name: string
     church_avatar: string
@@ -8,6 +9,12 @@ export interface SessionData {
     num_of_parts: number
     current_part_position: number
     current_part_id: number
+    current_liturgy_id?: number
+    liturgies?: {
+      id: number
+      name: string
+      position: number
+    }[]
     page: number
     posture: string | null
     readings: {

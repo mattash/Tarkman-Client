@@ -44,6 +44,7 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading parts</div>
+  if (!data?.parts?.length) return <div>No parts available for this session.</div>
 
   return (
     <div className="bg-gray-800 text-white p-4 rounded-lg shadow-md">
@@ -52,7 +53,7 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
         onLanguageChange={setSelectedLang} 
       />
       <ul className="space-y-4">
-        {data?.parts.map(({ part }) => (
+        {(data?.parts ?? []).map(({ part }) => (
           <PartCard
             key={part.id}
             ref={(el) => {
