@@ -128,7 +128,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   React.useEffect(() => {
     if (data?.sessionData.session.current_part_id) {
       const currentId = data.sessionData.session.current_part_id
-      setCurrentPartId(currentId)
+      setCurrentPartId(String(currentId))
       const currentPartElement = partsRef.current[currentId]
       if (currentPartElement) {
         smoothScrollToPart(currentPartElement)
@@ -159,10 +159,11 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading parts</div>
+  if (!data?.parts?.length) return <div>No parts available for this session.</div>
 
   return (
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
-      {data?.parts.map(({ part }) => {
+      {(data?.parts ?? []).map(({ part }) => {
         const isCurrentPart = part.id === Number(currentPartId)
         return (
           <div 

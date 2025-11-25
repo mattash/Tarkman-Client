@@ -13,6 +13,7 @@ vi.mock('../../api', () => ({
 const mockSessionData = {
   id: 1,
   liturgy: 'Divine Liturgy',
+  liturgy_id: 1,
   date: '2024-03-20',
   church_name: 'St. Mary',
   church_avatar: 'https://example.com/avatar.jpg',
@@ -20,6 +21,7 @@ const mockSessionData = {
   num_of_parts: 10,
   current_part_position: 5,
   current_part_id: 123,
+  current_liturgy_id: 1,
   page: 1,
   posture: 'standing',
   readings: {
@@ -74,8 +76,10 @@ describe('sessionQueries', () => {
     })
 
     it('should handle fetch error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
       await expect(fetchSessions('UTC')).rejects.toThrow('Network error')
+      consoleSpy.mockRestore()
     })
   })
 
@@ -85,12 +89,14 @@ describe('sessionQueries', () => {
       const mockSessionResponse = { session: mockSessionData }
 
       global.fetch = vi.fn()
-        .mockImplementationOnce(() => Promise.resolve({
-          json: () => Promise.resolve(mockPartsData)
-        }))
-        .mockImplementationOnce(() => Promise.resolve({
+        .mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockSessionResponse)
-        }))
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockPartsData)
+        } as Response)
 
       const result = await fetchSessionParts('1')
       expect(result).toEqual({
@@ -98,13 +104,42 @@ describe('sessionQueries', () => {
         sessionData: mockSessionResponse
       })
       expect(global.fetch).toHaveBeenCalledTimes(2)
-      expect(global.fetch).toHaveBeenCalledWith(`${import.meta.env.VITE_API_URL}/s/1/parts.json`)
       expect(global.fetch).toHaveBeenCalledWith(`${import.meta.env.VITE_API_URL}/s/1.json`)
+      expect(global.fetch).toHaveBeenCalledWith(`${import.meta.env.VITE_API_URL}/s/1/parts.json`)
+    })
+
+    it('falls back to liturgy parts when session parts fail', async () => {
+      const mockSessionResponse = { session: mockSessionData }
+      const mockLiturgyParts = { parts: mockPartsResponse.parts }
+
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockSessionResponse)
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: false,
+          json: vi.fn()
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockLiturgyParts)
+        } as Response)
+
+      const result = await fetchSessionParts('1')
+      expect(result).toEqual({
+        parts: mockLiturgyParts.parts,
+        sessionData: mockSessionResponse
+      })
+      expect(global.fetch).toHaveBeenCalledWith(`${import.meta.env.VITE_API_URL}/liturgies/1/parts.json`)
     })
 
     it('should handle fetch error', async () => {
-      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'))
-      await expect(fetchSessionParts('1')).rejects.toThrow('Network error')
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        json: vi.fn()
+      } as unknown as Response)
+      await expect(fetchSessionParts('1')).rejects.toThrow('Failed to fetch session 1')
     })
   })
 
@@ -115,7 +150,7 @@ describe('sessionQueries', () => {
 
       const result = await setPart('1', 123)
       expect(result).toEqual(mockResponse)
-      expect(api.post).toHaveBeenCalledWith('/s/1/set_part.json', { part_id: 123 })
+      expect(api.post).toHaveBeenCalledWith('/s/1/set_part.json', { part_id: 123, transitioned_at: undefined })
     })
 
     it('should handle API error', async () => {
@@ -131,7 +166,7 @@ describe('sessionQueries', () => {
 
       const result = await prevPart('1')
       expect(result).toEqual(mockResponse)
-      expect(api.post).toHaveBeenCalledWith('/s/1/prev.json')
+      expect(api.post).toHaveBeenCalledWith('/s/1/prev.json', { transitioned_at: undefined })
     })
 
     it('should handle API error', async () => {
@@ -147,7 +182,7 @@ describe('sessionQueries', () => {
 
       const result = await nextPart('1')
       expect(result).toEqual(mockResponse)
-      expect(api.post).toHaveBeenCalledWith('/s/1/next.json')
+      expect(api.post).toHaveBeenCalledWith('/s/1/next.json', { transitioned_at: undefined })
     })
 
     it('should handle API error', async () => {

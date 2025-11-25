@@ -1,3 +1,5 @@
+import { SessionWrapper } from './session'
+
 export interface Part {
   id: number
   role: string
@@ -21,19 +23,13 @@ export interface PartWrapper {
   part: Part
 }
 
-export interface SessionPartData {
-  session: {
-    current_part_id: number
-  }
-}
-
 export interface UpdateData {
   part: string
 }
 
 export interface PartsResponse {
   parts: PartWrapper[]
-  sessionData: SessionPartData
+  sessionData: SessionWrapper
 }
 
 export interface PartResponse {

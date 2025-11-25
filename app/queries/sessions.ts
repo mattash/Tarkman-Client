@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 import { SessionWrapper } from '../types/session'
-import { Part, SessionPartData, PartsResponse } from '../types/part'
+import { PartsResponse } from '../types/part'
 import { api } from '../api'
 
 export const sessionsKeys = {
@@ -29,18 +29,37 @@ export async function fetchSessions(tz: string): Promise<SessionWrapper[]> {
 }
 
 export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
-  const [partsResponse, sessionResponse] = await Promise.all([
-    fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts.json`),
-    fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}.json`)
-  ])
-  
-  const partsData: PartsResponse = await partsResponse.json()
-  const sessionData = await sessionResponse.json()
-  
-  return {
-    parts: partsData.parts,
-    sessionData
+  const sessionResponse = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}.json`)
+  if (!sessionResponse.ok) {
+    throw new Error(`Failed to fetch session ${sessionId}`)
   }
+
+  const sessionData: SessionWrapper = await sessionResponse.json()
+  const liturgyId = sessionData?.session?.current_liturgy_id ?? sessionData?.session?.liturgy_id
+
+  const partsResponse = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts.json`)
+
+  if (partsResponse.ok) {
+    const partsData = await partsResponse.json()
+    return {
+      parts: partsData.parts ?? [],
+      sessionData,
+    }
+  }
+
+  // Fallback to liturgy parts if session parts are unavailable (e.g., multi-liturgy sessions)
+  if (liturgyId) {
+    const liturgyPartsResponse = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/parts.json`)
+    if (liturgyPartsResponse.ok) {
+      const liturgyPartsData = await liturgyPartsResponse.json()
+      return {
+        parts: liturgyPartsData.parts ?? [],
+        sessionData,
+      }
+    }
+  }
+
+  throw new Error(`Failed to load parts for session ${sessionId}`)
 }
 
 interface SessionPartResponse {
@@ -48,19 +67,24 @@ interface SessionPartResponse {
   current_part_id: number
 }
 
-export async function setPart(sessionId: string, partId: number): Promise<SessionPartResponse> {
+export async function setPart(sessionId: string, partId: number, transitionedAt?: string): Promise<SessionPartResponse> {
   const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/set_part.json`, {
-    part_id: partId
+    part_id: partId,
+    transitioned_at: transitionedAt
   })
   return data
 }
 
-export async function prevPart(sessionId: string): Promise<SessionPartResponse> {
-  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`)
+export async function prevPart(sessionId: string, transitionedAt?: string): Promise<SessionPartResponse> {
+  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`, {
+    transitioned_at: transitionedAt
+  })
   return data
 }
 
-export async function nextPart(sessionId: string): Promise<SessionPartResponse> {
-  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`)
+export async function nextPart(sessionId: string, transitionedAt?: string): Promise<SessionPartResponse> {
+  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`, {
+    transitioned_at: transitionedAt
+  })
   return data
 } 

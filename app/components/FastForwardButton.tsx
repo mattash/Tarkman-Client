@@ -13,7 +13,7 @@ export function FastForwardButton({ sessionId, partId }: FastForwardButtonProps)
   const auth = useAuth()
 
   const setPartMutation = useMutation({
-    mutationFn: () => setPart(sessionId, partId),
+    mutationFn: () => setPart(sessionId, partId, new Date().toISOString()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
     }

@@ -9,14 +9,14 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
   const queryClient = useQueryClient()
 
   const prevMutation = useMutation({
-    mutationFn: () => prevPart(sessionId.toString()),
+    mutationFn: () => prevPart(sessionId.toString(), new Date().toISOString()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId.toString()) })
     }
   })
 
   const nextMutation = useMutation({
-    mutationFn: () => nextPart(sessionId.toString()),
+    mutationFn: () => nextPart(sessionId.toString(), new Date().toISOString()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId.toString()) })
     }
