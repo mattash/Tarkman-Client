@@ -76,8 +76,10 @@ describe('sessionQueries', () => {
     })
 
     it('should handle fetch error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
       await expect(fetchSessions('UTC')).rejects.toThrow('Network error')
+      consoleSpy.mockRestore()
     })
   })
 

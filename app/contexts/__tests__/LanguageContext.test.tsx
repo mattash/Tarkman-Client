@@ -1,13 +1,18 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { LanguageProvider, useLanguage, type Language } from '../LanguageContext'
 
 describe('LanguageContext', () => {
   describe('useLanguage hook', () => {
     it('should throw error when used outside LanguageProvider', () => {
+      const consoleSpy = vi.spyOn(console, 'error')
+      consoleSpy.mockImplementation(() => {})
+
       expect(() => {
         renderHook(() => useLanguage())
       }).toThrow('useLanguage must be used within a LanguageProvider')
+
+      consoleSpy.mockRestore()
     })
 
     it('should provide initial state with "en" as default language', () => {

@@ -6,6 +6,11 @@ export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   test: {
     environment: 'jsdom',
+    environmentOptions: {
+      jsdom: {
+        url: 'https://www.tarkman.app',
+      },
+    },
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     coverage: {

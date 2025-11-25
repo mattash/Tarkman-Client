@@ -18,6 +18,10 @@ const shouldSkipIntegrationTests = !import.meta.env.VITE_TEST_EMAIL || !import.m
 // Integration tests - will skip if credentials not provided
 describe.skipIf(shouldSkipIntegrationTests)('sessionQueries integration tests', () => {
   beforeAll(async () => {
+    // Use fetch adapter for axios to avoid JSDOM XHR CORS issues
+    // @ts-ignore - Adapter type might not include string 'fetch' in all versions but it is supported in runtime
+    api.defaults.adapter = 'fetch'
+
     // Verify that we have the required environment variables
     if (!import.meta.env.VITE_API_URL) {
       throw new Error('VITE_API_URL environment variable is required for integration tests')
@@ -41,7 +45,7 @@ describe.skipIf(shouldSkipIntegrationTests)('sessionQueries integration tests', 
       // Store token in localStorage (api.ts will pick this up)
       localStorage.setItem('token', response.token)
     } catch (error) {
-      console.warn('⚠️  Integration tests skipped: Authentication failed')
+      console.warn('⚠️  Authentication failed: Continuing with public endpoints')
     }
   })
 

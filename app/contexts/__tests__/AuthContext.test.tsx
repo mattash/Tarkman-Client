@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { AuthProvider, useAuth } from '../AuthContext'
 import type { User } from '@/types/auth'
@@ -14,9 +14,14 @@ describe('AuthContext', () => {
 
   describe('useAuth hook', () => {
     it('should throw error when used outside AuthProvider', () => {
+      const consoleSpy = vi.spyOn(console, 'error')
+      consoleSpy.mockImplementation(() => {})
+
       expect(() => {
         renderHook(() => useAuth())
       }).toThrow('useAuth must be used within an AuthProvider')
+
+      consoleSpy.mockRestore()
     })
 
     it('should provide initial state with null user and token', () => {

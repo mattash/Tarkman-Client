@@ -38,7 +38,7 @@ describe.skipIf(shouldSkipIntegrationTests)('partQueries integration tests', () 
       // Store token in localStorage (api.ts will pick this up)
       localStorage.setItem('token', response.token)
     } catch (error) {
-      console.warn('⚠️  Integration tests skipped: Authentication failed')
+      console.warn('⚠️  Authentication failed: Continuing with public endpoints')
     }
   })
 

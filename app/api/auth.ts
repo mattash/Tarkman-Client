@@ -3,7 +3,7 @@ import type { AuthResponse, LoginCredentials } from '@/types/auth';
 const API_BASE = import.meta.env.VITE_API_URL;
 
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE}/users/sign_in/`, {
+  const response = await fetch(`${API_BASE}/users/sign_in`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -18,7 +18,21 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
     throw new Error(error.error || 'Login failed');
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Check headers for token if not in body
+  if (!data.token) {
+    const authHeader = response.headers.get('Authorization');
+    const xAuthToken = response.headers.get('x-auth-token');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      data.token = authHeader.substring(7);
+    } else if (xAuthToken) {
+      data.token = xAuthToken;
+    }
+  }
+
+  return data;
 }
 
 export async function logout(token: string): Promise<void> {
@@ -30,4 +44,4 @@ export async function logout(token: string): Promise<void> {
     },
     credentials: 'include',
   });
-} 
+}
