@@ -20,7 +20,11 @@ export function SessionCard({ session }: SessionCardProps) {
         className="w-full h-48 object-cover rounded mb-2"
       />
       <h2 className="font-semibold">{session.church_name}</h2>
-      <p>{session.liturgy}</p>
+      <p>
+        {session.liturgies && session.liturgies.length > 0
+          ? session.liturgies.map((l) => l.name).join(', ')
+          : session.liturgy}
+      </p>
       <p className="text-gray-600">
         {new Date(session.date + 'T00:00:00').toLocaleDateString()}
       </p>
