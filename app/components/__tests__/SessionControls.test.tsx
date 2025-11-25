@@ -61,7 +61,7 @@ describe('SessionControls', () => {
     await user.click(prevButton)
 
     await waitFor(() => {
-      expect(prevPart).toHaveBeenCalledWith('123')
+      expect(prevPart).toHaveBeenCalledWith('123', expect.any(String))
     })
   })
 
@@ -80,7 +80,7 @@ describe('SessionControls', () => {
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(nextPart).toHaveBeenCalledWith('123')
+      expect(nextPart).toHaveBeenCalledWith('123', expect.any(String))
     })
   })
 
@@ -198,7 +198,7 @@ describe('SessionControls', () => {
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(nextPart).toHaveBeenCalledWith('456')
+      expect(nextPart).toHaveBeenCalledWith('456', expect.any(String))
     })
   })
 })

@@ -72,7 +72,7 @@ describe('FastForwardButton', () => {
     await user.click(button)
 
     await waitFor(() => {
-      expect(mockSetPart).toHaveBeenCalledWith('123', 456)
+      expect(mockSetPart).toHaveBeenCalledWith('123', 456, expect.any(String))
     })
   })
 

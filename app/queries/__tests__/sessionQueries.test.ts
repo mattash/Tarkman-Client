@@ -148,7 +148,7 @@ describe('sessionQueries', () => {
 
       const result = await setPart('1', 123)
       expect(result).toEqual(mockResponse)
-      expect(api.post).toHaveBeenCalledWith('/s/1/set_part.json', { part_id: 123 })
+      expect(api.post).toHaveBeenCalledWith('/s/1/set_part.json', { part_id: 123, transitioned_at: undefined })
     })
 
     it('should handle API error', async () => {
@@ -164,7 +164,7 @@ describe('sessionQueries', () => {
 
       const result = await prevPart('1')
       expect(result).toEqual(mockResponse)
-      expect(api.post).toHaveBeenCalledWith('/s/1/prev.json')
+      expect(api.post).toHaveBeenCalledWith('/s/1/prev.json', { transitioned_at: undefined })
     })
 
     it('should handle API error', async () => {
@@ -180,7 +180,7 @@ describe('sessionQueries', () => {
 
       const result = await nextPart('1')
       expect(result).toEqual(mockResponse)
-      expect(api.post).toHaveBeenCalledWith('/s/1/next.json')
+      expect(api.post).toHaveBeenCalledWith('/s/1/next.json', { transitioned_at: undefined })
     })
 
     it('should handle API error', async () => {

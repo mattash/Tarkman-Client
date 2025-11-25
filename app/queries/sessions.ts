@@ -67,19 +67,24 @@ interface SessionPartResponse {
   current_part_id: number
 }
 
-export async function setPart(sessionId: string, partId: number): Promise<SessionPartResponse> {
+export async function setPart(sessionId: string, partId: number, transitionedAt?: string): Promise<SessionPartResponse> {
   const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/set_part.json`, {
-    part_id: partId
+    part_id: partId,
+    transitioned_at: transitionedAt
   })
   return data
 }
 
-export async function prevPart(sessionId: string): Promise<SessionPartResponse> {
-  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`)
+export async function prevPart(sessionId: string, transitionedAt?: string): Promise<SessionPartResponse> {
+  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`, {
+    transitioned_at: transitionedAt
+  })
   return data
 }
 
-export async function nextPart(sessionId: string): Promise<SessionPartResponse> {
-  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`)
+export async function nextPart(sessionId: string, transitionedAt?: string): Promise<SessionPartResponse> {
+  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`, {
+    transitioned_at: transitionedAt
+  })
   return data
 } 
