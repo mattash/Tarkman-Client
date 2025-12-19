@@ -85,7 +85,7 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000 }: Explan
   }, [sessionId])
 
   return (
-    <div className="fixed top-4 right-4 z-40 flex flex-col items-end gap-4 pointer-events-none scale-110">
+    <div className="fixed top-4 right-4 z-40 flex flex-col items-end gap-4 pointer-events-none origin-top-right scale-[2]">
       <div
         className={`pointer-events-auto flex items-center gap-3 px-6 py-3 rounded-full bg-gray-900/90 text-white shadow-lg ring-2 ring-gray-700 transition-all ${
           isHighlighting ? 'ring-4 ring-purple-400/60 animate-pulse shadow-purple-400/40' : ''
