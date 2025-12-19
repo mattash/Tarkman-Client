@@ -42,10 +42,15 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
   }, [isOpen])
 
   const handleStatusSelect = (status: SessionStatus) => {
+    if (statusMutation.isPending) {
+      return
+    }
+
     if (status === 'showing_custom') {
       setCustomMessageModalOpen(true)
       setIsOpen(false)
     } else {
+      setIsOpen(false)
       statusMutation.mutate({ status })
     }
   }
@@ -84,7 +89,8 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
               <button
                 key={status}
                 onClick={() => handleStatusSelect(status)}
-                className={`w-full text-left px-4 py-2 text-gray-900 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg ${
+                disabled={statusMutation.isPending}
+                className={`w-full text-left px-4 py-2 text-gray-900 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg disabled:opacity-50 disabled:cursor-not-allowed ${
                   status === currentStatus ? 'bg-gray-50 font-semibold' : ''
                 }`}
               >
