@@ -38,7 +38,7 @@ export function StatusOverlay({ status, statusMessage, sessionOptions }: StatusO
       case 'showing_epistle':
         return 'Epistle'
       case 'showing_welcome':
-        return ''
+        return null // no title if welcome message exists
       case 'showing_custom':
         return 'Announcement'
       case 'paused':

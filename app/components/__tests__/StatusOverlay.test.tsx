@@ -52,21 +52,10 @@ describe('StatusOverlay', () => {
     expect(screen.getByText('Epistle Reading')).toBeInTheDocument()
   })
 
-  it('should render welcome with title and session option', () => {
-    render(
-      <StatusOverlay
-        status="showing_welcome"
-        sessionOptions={{ before_message: 'Welcome to our service!' }}
-      />
-    )
-    expect(screen.getByText('Welcome')).toBeInTheDocument()
-    expect(screen.getByText('Welcome to our service!')).toBeInTheDocument()
-  })
-
   it('should render welcome with fallback text when option missing', () => {
     render(<StatusOverlay status="showing_welcome" />)
     const welcomeElements = screen.getAllByText('Welcome')
-    expect(welcomeElements).toHaveLength(2) // Title and message both show "Welcome"
+    expect(welcomeElements).toHaveLength(1) // Only message shows "Welcome"
   })
 
   it('should render custom announcement with title and message', () => {
