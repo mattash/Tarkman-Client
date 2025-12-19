@@ -58,12 +58,17 @@ export function ProjectorExplanation({
 
   const displayExplanations = explanations ?? previousExplanations
 
+  const explanationUrl = React.useMemo(() => {
+    if (typeof window === 'undefined') {
+      return ''
+    }
+    // Generate QR code URL - points to the explanations page for this session
+    return `${window.location.origin}/sessions/${sessionId}/explanations`
+  }, [sessionId])
+
   if (!isVisible || !displayExplanations?.length) {
     return null
   }
-
-  // Generate QR code URL - points to the explanations page for this session
-  const explanationUrl = `${window.location.origin}/sessions/${sessionId}/explanations`
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center overflow-y-auto">
@@ -133,9 +138,7 @@ export function ProjectorExplanation({
               />
             </div>
 
-            <div className="text-xs text-gray-400 text-center mt-2">
-              {window.location.origin}/sessions/{sessionId}/explanations
-            </div>
+            <div className="text-xs text-gray-400 text-center mt-2">{explanationUrl}</div>
           </div>
         </div>
 
