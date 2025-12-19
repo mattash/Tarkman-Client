@@ -4,7 +4,10 @@ import {
   fetchCurrentExplanation,
   fetchLiturgyExplanations,
   fetchLiturgyExplanation,
-  fetchPartExplanations
+  fetchPartExplanations,
+  fetchExplanationCitations,
+  fetchExplanationRatings,
+  explanationQueryKeys
 } from '../explanationQueries'
 
 const mockExplanation = {
@@ -21,6 +24,35 @@ const mockExplanationsResponse = {
   explanations: [
     { explanation: mockExplanation },
     { explanation: { ...mockExplanation, id: 2 } }
+  ]
+}
+
+const mockCitation = {
+  id: 1,
+  citation_type: 0,
+  text: 'John 3:16',
+  source: 'Bible',
+  url: 'https://example.com',
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z'
+}
+
+const mockCitationsResponse = {
+  citations: [mockCitation, { ...mockCitation, id: 2, citation_type: 1 }]
+}
+
+const mockRatingsResponse = {
+  average_rating: 4.5,
+  rating_count: 10,
+  ratings: [
+    {
+      id: 1,
+      explanation_id: 1,
+      user_id: 1,
+      rating: 5,
+      comment: 'Great explanation!',
+      created_at: '2024-01-01T00:00:00Z'
+    }
   ]
 }
 
@@ -145,14 +177,123 @@ describe('explanationQueries', () => {
       )
     })
 
+    it('should return empty array for 404', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404
+      })
+
+      const result = await fetchPartExplanations('123', '1')
+      expect(result).toEqual([])
+    })
+
     it('should throw an error when the request fails', async () => {
       global.fetch = vi.fn().mockResolvedValue({
-        ok: false
+        ok: false,
+        status: 500
       })
 
       await expect(fetchPartExplanations('123', '1')).rejects.toThrow(
         'Failed to fetch part explanations for part 1'
       )
+    })
+  })
+
+  describe('fetchExplanationCitations', () => {
+    it('should fetch explanation citations', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockCitationsResponse)
+      })
+
+      const result = await fetchExplanationCitations('123', '1')
+      expect(result).toEqual(mockCitationsResponse.citations)
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/liturgies/123/explanations/1/citations.json')
+      )
+    })
+
+    it('should return empty array for 404', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404
+      })
+
+      const result = await fetchExplanationCitations('123', '1')
+      expect(result).toEqual([])
+    })
+
+    it('should throw an error when the request fails', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500
+      })
+
+      await expect(fetchExplanationCitations('123', '1')).rejects.toThrow(
+        'Failed to fetch citations'
+      )
+    })
+
+    it('should handle missing citations array in response', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ citations: null })
+      })
+
+      const result = await fetchExplanationCitations('123', '1')
+      expect(result).toEqual([])
+    })
+  })
+
+  describe('fetchExplanationRatings', () => {
+    it('should fetch explanation ratings', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockRatingsResponse)
+      })
+
+      const result = await fetchExplanationRatings('123', '1')
+      expect(result).toEqual(mockRatingsResponse)
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/liturgies/123/explanations/1/ratings.json')
+      )
+    })
+
+    it('should return zero ratings for 404', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404
+      })
+
+      const result = await fetchExplanationRatings('123', '1')
+      expect(result).toEqual({
+        average_rating: 0,
+        rating_count: 0,
+        ratings: []
+      })
+    })
+
+    it('should throw an error when the request fails', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500
+      })
+
+      await expect(fetchExplanationRatings('123', '1')).rejects.toThrow(
+        'Failed to fetch ratings'
+      )
+    })
+  })
+
+  describe('explanationQueryKeys', () => {
+    it('should generate correct query keys for citations', () => {
+      const key = explanationQueryKeys.citations('liturgy123', 'explanation456')
+      expect(key).toEqual(['explanation', 'liturgy', 'liturgy123', 'explanation456', 'citations'])
+    })
+
+    it('should generate correct query keys for ratings', () => {
+      const key = explanationQueryKeys.ratings('liturgy123', 'explanation456')
+      expect(key).toEqual(['explanation', 'liturgy', 'liturgy123', 'explanation456', 'ratings'])
     })
   })
 }) 

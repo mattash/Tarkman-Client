@@ -14,6 +14,9 @@ import { Explanation } from '../types/explanation'
 import { explanationQueryKeys, fetchCurrentExplanation } from '../queries/explanationQueries'
 import { usePusher } from '../hooks/usePusher'
 import ReactMarkdown from 'react-markdown'
+import { TagBadge } from './TagBadge'
+import { RatingDisplay } from './RatingDisplay'
+import { CitationsList } from './CitationsList'
 
 interface ExplanationDrawerProps {
   title?: string,
@@ -61,11 +64,51 @@ export function ExplanationDrawer({
               {isLoading ? (
                 <div className="animate-pulse">Loading explanation...</div>
               ) : explanations?.length ? (
-                <div className="prose max-w-none space-y-4">
+                <div className="prose max-w-none space-y-6">
                   {explanations.map((explanation) => (
-                    <div key={explanation.id}>
-                      <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
+                    <div key={explanation.id} className="space-y-3">
+                      <div>
+                        <h2 className="text-xl font-semibold mb-2">{explanation.title}</h2>
+
+                        {/* Tags */}
+                        {explanation.tags && explanation.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {explanation.tags.map((tag, index) => (
+                              <TagBadge key={index} tag={tag} />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Rating */}
+                        {explanation.average_rating !== undefined && explanation.rating_count !== undefined && (
+                          <div className="mb-3">
+                            <RatingDisplay
+                              averageRating={explanation.average_rating}
+                              ratingCount={explanation.rating_count}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Summary */}
+                      {explanation.summary && (
+                        <div className="text-sm italic text-gray-600 border-l-4 border-blue-200 pl-3 py-1">
+                          {explanation.summary}
+                        </div>
+                      )}
+
+                      {/* Description */}
+                      <div className="text-gray-800">
                         <ReactMarkdown>{explanation.description}</ReactMarkdown>
+                      </div>
+
+                      {/* Citations */}
+                      {explanation.liturgy_id && (
+                        <CitationsList
+                          liturgyId={explanation.liturgy_id.toString()}
+                          explanationId={explanation.id.toString()}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

@@ -1,4 +1,11 @@
-import { Explanation, ExplanationsResponse, ExplanationWrapper } from '../types/explanation'
+import {
+  Explanation,
+  ExplanationsResponse,
+  ExplanationWrapper,
+  Citation,
+  CitationsResponse,
+  RatingsResponse
+} from '../types/explanation'
 import { api } from '../api'
 
 export const explanationQueryKeys = {
@@ -8,6 +15,8 @@ export const explanationQueryKeys = {
   liturgy: (liturgyId: string) => ['explanation', 'liturgy', liturgyId] as const,
   liturgyDetail: (liturgyId: string, explanationId: string) => ['explanation', 'liturgy', liturgyId, explanationId] as const,
   partExplanations: (liturgyId: string, partId: string) => ['explanation', 'liturgy', liturgyId, 'part', partId] as const,
+  citations: (liturgyId: string, explanationId: string) => ['explanation', 'liturgy', liturgyId, explanationId, 'citations'] as const,
+  ratings: (liturgyId: string, explanationId: string) => ['explanation', 'liturgy', liturgyId, explanationId, 'ratings'] as const,
 }
 
 export async function fetchExplanation(sessionId: string, explanationId: string): Promise<Explanation> {
@@ -48,18 +57,18 @@ export async function fetchLiturgyExplanation(liturgyId: string, explanationId: 
 
 export async function fetchPartExplanations(liturgyId: string, partId: string): Promise<Explanation[]> {
   const response = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/parts/${partId}/explanations.json`)
-  
+
   // Return empty array for 404s instead of throwing
   if (response.status === 404) {
     return []
   }
-  
+
   if (!response.ok) {
     throw new Error(`Failed to fetch part explanations for part ${partId}`)
   }
-  
+
   const data = await response.json()
-  
+
   // Handle both response structures
   if (data.explanations) {
     return data.explanations.map((wrapper: ExplanationWrapper) => wrapper.explanation)
@@ -68,4 +77,45 @@ export async function fetchPartExplanations(liturgyId: string, partId: string): 
   } else {
     return []
   }
+}
+
+export async function fetchExplanationCitations(
+  liturgyId: string,
+  explanationId: string
+): Promise<Citation[]> {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/explanations/${explanationId}/citations.json`
+  )
+
+  // Return empty array for 404s instead of throwing
+  if (response.status === 404) {
+    return []
+  }
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch citations')
+  }
+
+  const data: CitationsResponse = await response.json()
+  return data.citations || []
+}
+
+export async function fetchExplanationRatings(
+  liturgyId: string,
+  explanationId: string
+): Promise<RatingsResponse> {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/explanations/${explanationId}/ratings.json`
+  )
+
+  // Return zero ratings for 404s instead of throwing
+  if (response.status === 404) {
+    return { average_rating: 0, rating_count: 0, ratings: [] }
+  }
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch ratings')
+  }
+
+  return response.json()
 } 
