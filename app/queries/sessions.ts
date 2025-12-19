@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { SessionWrapper } from '../types/session'
 import { PartsResponse } from '../types/part'
+import { StatusUpdateRequest, StatusUpdateResponse } from '../types/status'
 import { api } from '../api'
 
 export const sessionsKeys = {
@@ -24,6 +25,16 @@ export async function fetchSessions(tz: string): Promise<SessionWrapper[]> {
     return Array.isArray(data) ? data : []
   } catch (error) {
     console.error('Error fetching sessions:', error)
+    throw error
+  }
+}
+
+export async function fetchSession(sessionId: string): Promise<SessionWrapper> {
+  try {
+    const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
+    return data
+  } catch (error) {
+    console.error(`Error fetching session ${sessionId}:`, error)
     throw error
   }
 }
@@ -86,5 +97,16 @@ export async function nextPart(sessionId: string, transitionedAt?: string): Prom
   const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`, {
     transitioned_at: transitionedAt
   })
+  return data
+}
+
+export async function updateSessionStatus(
+  sessionId: string,
+  request: StatusUpdateRequest
+): Promise<StatusUpdateResponse> {
+  const { data } = await api.patch<StatusUpdateResponse>(
+    `/s/${sessionId}/update_status.json`,
+    request
+  )
   return data
 } 

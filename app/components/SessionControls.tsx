@@ -1,5 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { sessionsKeys, prevPart, nextPart } from '@/queries/sessions'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { sessionsKeys, prevPart, nextPart, fetchSession } from '@/queries/sessions'
+import { SessionWrapper } from '@/types/session'
+import { SessionStatusControl } from './SessionStatusControl'
 
 interface SessionControlsProps {
   sessionId: number
@@ -7,6 +9,12 @@ interface SessionControlsProps {
 
 export function SessionControls({ sessionId }: SessionControlsProps) {
   const queryClient = useQueryClient()
+
+  const { data: sessionData } = useQuery<SessionWrapper>({
+    queryKey: sessionsKeys.session(sessionId.toString()),
+    queryFn: () => fetchSession(sessionId.toString()),
+    staleTime: 1000
+  })
 
   const prevMutation = useMutation({
     mutationFn: () => prevPart(sessionId.toString(), new Date().toISOString()),
@@ -50,19 +58,24 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
         className="px-5 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Next part"
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          className="h-8 w-8" 
-          viewBox="0 0 20 20" 
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-8 w-8"
+          viewBox="0 0 20 20"
           fill="currentColor"
         >
-          <path 
-            fillRule="evenodd" 
-            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" 
-            clipRule="evenodd" 
+          <path
+            fillRule="evenodd"
+            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+            clipRule="evenodd"
           />
         </svg>
       </button>
+
+      <SessionStatusControl
+        sessionId={sessionId}
+        currentStatus={sessionData?.session?.status}
+      />
     </div>
   )
 } 

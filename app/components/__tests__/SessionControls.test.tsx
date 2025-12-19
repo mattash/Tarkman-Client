@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionControls } from '../SessionControls'
+import { SessionWrapper } from '@/types/session'
 
 // Mock the session queries
 vi.mock('@/queries/sessions', () => ({
@@ -11,9 +12,33 @@ vi.mock('@/queries/sessions', () => ({
   },
   prevPart: vi.fn(),
   nextPart: vi.fn(),
+  fetchSession: vi.fn(),
 }))
 
-import { prevPart, nextPart } from '@/queries/sessions'
+import { prevPart, nextPart, fetchSession } from '@/queries/sessions'
+
+const mockSession: SessionWrapper = {
+  session: {
+    id: 123,
+    liturgy: 'Test liturgy',
+    liturgy_id: 1,
+    date: '2024-01-01',
+    church_name: 'Test Church',
+    church_avatar: '',
+    occupied: false,
+    num_of_parts: 3,
+    current_part_position: 1,
+    current_part_id: 1,
+    current_liturgy_id: 1,
+    liturgies: [],
+    page: 1,
+    posture: null,
+    readings: { gospel: '', epistle: '' },
+    options: { gospel: '', epistle: '', before_message: '', after_message: '' },
+    status: 'active',
+    status_message: null,
+  },
+}
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -35,6 +60,7 @@ const createWrapper = () => {
 describe('SessionControls', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(fetchSession).mockResolvedValue(mockSession)
   })
 
   it('should render previous and next buttons', () => {

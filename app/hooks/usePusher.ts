@@ -1,13 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Pusher from 'pusher-js'
 
 interface PusherMessage {
-  part: string
-  // Add other fields that might come from Pusher
+  part?: string
+  status?: string
+  status_message?: string | null
 }
 
-export function usePusher(channelName: string, eventName: string) {
+export function usePusher(channelName: string, eventName: string | string[]) {
   const [data, setData] = useState<PusherMessage | null>(null)
+
+  // Convert eventName to a stable string key for dependency comparison
+  const eventKey = useMemo(() => {
+    return Array.isArray(eventName) ? [...eventName].sort().join(',') : eventName
+  }, [eventName])
 
   useEffect(() => {
     // Initialize Pusher with your credentials
@@ -16,15 +22,22 @@ export function usePusher(channelName: string, eventName: string) {
     })
 
     const channel = pusher.subscribe(channelName)
-    channel.bind(eventName, (newData: PusherMessage) => {
-      setData(newData)
+
+    const events = Array.isArray(eventName) ? eventName : [eventName]
+
+    events.forEach(event => {
+      channel.bind(event, (newData: PusherMessage) => {
+        setData(newData)
+      })
     })
 
     return () => {
-      channel.unbind(eventName)
+      events.forEach(event => {
+        channel.unbind(event)
+      })
       pusher.unsubscribe(channelName)
     }
-  }, [channelName, eventName])
+  }, [channelName, eventKey])
 
   return data
 } 
