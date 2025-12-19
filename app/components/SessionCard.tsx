@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import { SessionData } from '../types/session'
+import { StatusBadge } from './StatusBadge'
 
 interface SessionCardProps {
   session: SessionData
@@ -19,7 +20,10 @@ export function SessionCard({ session }: SessionCardProps) {
         alt={session.church_name}
         className="w-full h-48 object-cover rounded mb-2"
       />
-      <h2 className="font-semibold">{session.church_name}</h2>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h2 className="font-semibold">{session.church_name}</h2>
+        <StatusBadge status={session.status} size="sm" />
+      </div>
       <p>
         {session.liturgies && session.liturgies.length > 0
           ? session.liturgies.map((l) => l.name).join(', ')

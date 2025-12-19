@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchSessions, fetchSessionParts, setPart, prevPart, nextPart } from '../sessions'
+import { fetchSessions, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus } from '../sessions'
 import { api } from '../../api'
 
 // Mock api
 vi.mock('../../api', () => ({
   api: {
     get: vi.fn(),
-    post: vi.fn()
+    post: vi.fn(),
+    patch: vi.fn()
   }
 }))
 
@@ -188,6 +189,71 @@ describe('sessionQueries', () => {
     it('should handle API error', async () => {
       vi.mocked(api.post).mockRejectedValueOnce(new Error('API error'))
       await expect(nextPart('1')).rejects.toThrow('API error')
+    })
+  })
+
+  describe('updateSessionStatus', () => {
+    it('should update status to paused successfully', async () => {
+      const mockResponse = {
+        status: 'Session status updated',
+        current_status: 'paused' as const,
+        status_message: null
+      }
+      vi.mocked(api.patch).mockResolvedValueOnce({ data: mockResponse })
+
+      const result = await updateSessionStatus('1', { status: 'paused' })
+      expect(result).toEqual(mockResponse)
+      expect(api.patch).toHaveBeenCalledWith('/s/1/update_status.json', { status: 'paused' })
+    })
+
+    it('should update status with custom message', async () => {
+      const mockResponse = {
+        status: 'Session status updated',
+        current_status: 'showing_custom' as const,
+        status_message: 'Test announcement'
+      }
+      vi.mocked(api.patch).mockResolvedValueOnce({ data: mockResponse })
+
+      const result = await updateSessionStatus('1', {
+        status: 'showing_custom',
+        status_message: 'Test announcement'
+      })
+      expect(result).toEqual(mockResponse)
+      expect(api.patch).toHaveBeenCalledWith('/s/1/update_status.json', {
+        status: 'showing_custom',
+        status_message: 'Test announcement'
+      })
+    })
+
+    it('should update status to showing_gospel', async () => {
+      const mockResponse = {
+        status: 'Session status updated',
+        current_status: 'showing_gospel' as const,
+        status_message: null
+      }
+      vi.mocked(api.patch).mockResolvedValueOnce({ data: mockResponse })
+
+      const result = await updateSessionStatus('1', { status: 'showing_gospel' })
+      expect(result).toEqual(mockResponse)
+      expect(api.patch).toHaveBeenCalledWith('/s/1/update_status.json', { status: 'showing_gospel' })
+    })
+
+    it('should update status back to active', async () => {
+      const mockResponse = {
+        status: 'Session status updated',
+        current_status: 'active' as const,
+        status_message: null
+      }
+      vi.mocked(api.patch).mockResolvedValueOnce({ data: mockResponse })
+
+      const result = await updateSessionStatus('1', { status: 'active' })
+      expect(result).toEqual(mockResponse)
+      expect(api.patch).toHaveBeenCalledWith('/s/1/update_status.json', { status: 'active' })
+    })
+
+    it('should handle API error', async () => {
+      vi.mocked(api.patch).mockRejectedValueOnce(new Error('Unauthorized'))
+      await expect(updateSessionStatus('1', { status: 'paused' })).rejects.toThrow('Unauthorized')
     })
   })
 }) 

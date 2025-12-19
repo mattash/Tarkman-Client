@@ -27,6 +27,8 @@ export interface SessionData {
       before_message: string
       after_message: string
     }
+    status?: 'active' | 'paused' | 'showing_gospel' | 'showing_epistle' | 'showing_welcome' | 'showing_custom'
+    status_message?: string | null
 }
 
 export interface SessionWrapper {

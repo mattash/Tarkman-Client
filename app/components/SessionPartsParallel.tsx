@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { usePusher } from '../hooks/usePusher'
 import { fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
@@ -14,7 +14,8 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   const scrollAnimationRef = React.useRef<number | null>(null)
   const scrollTimeoutRef = React.useRef<number | null>(null)
   const [currentPartId, setCurrentPartId] = React.useState<string | null>(null)
-  const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
+  const queryClient = useQueryClient()
+  const subscriptionData = usePusher(`channel_${sessionId}`, ['part_change', 'status_change'])
 
   const smoothScrollToPart = React.useCallback((element: HTMLElement) => {
     // Retrieve the server-provided estimate for how long it should take to
@@ -144,7 +145,11 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
         smoothScrollToPart(currentPartElement)
       }
     }
-  }, [subscriptionData, smoothScrollToPart])
+    // Handle status changes by invalidating session query
+    if (subscriptionData?.status) {
+      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
+    }
+  }, [subscriptionData, smoothScrollToPart, queryClient, sessionId])
 
   React.useEffect(() => {
     return () => {

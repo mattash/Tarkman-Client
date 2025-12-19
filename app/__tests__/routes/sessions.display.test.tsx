@@ -31,6 +31,11 @@ vi.mock('@/components/Message', () => ({
   ),
 }))
 
+// Mock the StatusOverlay component
+vi.mock('@/components/StatusOverlay', () => ({
+  StatusOverlay: () => null,
+}))
+
 // Mock the useSessionPolling hook
 const mockUseSessionPolling = vi.fn()
 vi.mock('@/hooks/useSessionPolling', () => ({
@@ -184,6 +189,7 @@ describe('sessions.display route', () => {
       session: {
         ...mockSessionData.session,
         current_part_position: 0,
+        status: 'active' as const,
       },
     }
 
@@ -218,6 +224,7 @@ describe('sessions.display route', () => {
         ...mockSessionData.session,
         current_part_position: 9, // num_of_parts - 1
         num_of_parts: 10,
+        status: 'active' as const,
       },
     }
 
