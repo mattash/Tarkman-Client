@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { sessionsKeys, prevPart, nextPart } from '@/queries/sessions'
+import { sessionsKeys, prevPart, nextPart, fetchSession } from '@/queries/sessions'
 import { SessionWrapper } from '@/types/session'
 import { SessionStatusControl } from './SessionStatusControl'
 
@@ -12,6 +12,7 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
 
   const { data: sessionData } = useQuery<SessionWrapper>({
     queryKey: sessionsKeys.session(sessionId.toString()),
+    queryFn: () => fetchSession(sessionId.toString()),
     staleTime: 1000
   })
 

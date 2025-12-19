@@ -29,6 +29,16 @@ export async function fetchSessions(tz: string): Promise<SessionWrapper[]> {
   }
 }
 
+export async function fetchSession(sessionId: string): Promise<SessionWrapper> {
+  try {
+    const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
+    return data
+  } catch (error) {
+    console.error(`Error fetching session ${sessionId}:`, error)
+    throw error
+  }
+}
+
 export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
   const sessionResponse = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}.json`)
   if (!sessionResponse.ok) {
