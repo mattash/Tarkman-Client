@@ -1,9 +1,10 @@
+import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { SessionPartsParallel } from '../components/SessionPartsParallel'
 import { useSessionPolling } from '../hooks/useSessionPolling'
-import { SessionWrapper } from '../types/session'
 import { Message } from '../components/Message'
 import { StatusOverlay } from '../components/StatusOverlay'
+import { ExplanationIndicator } from '../components/ExplanationIndicator'
 
 export const Route = createFileRoute('/sessions/display')({
   component: RouteComponent,
@@ -41,6 +42,7 @@ function RouteComponent() {
       {showWelcomeMessage && <Message message={options.before_message} />}
       {showFarewellMessage && <Message message={options.after_message} />}
       <SessionPartsParallel sessionId={sessionWrapper.session.id.toString()} />
+      <ExplanationIndicator sessionId={sessionWrapper.session.id.toString()} />
     </>
   )
 }

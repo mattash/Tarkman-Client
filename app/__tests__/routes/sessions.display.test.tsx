@@ -11,6 +11,13 @@ vi.mock('@/components/Navbar', () => ({
   Navbar: () => <div data-testid="navbar">Navbar</div>,
 }))
 
+// Mock the ExplanationIndicator component
+vi.mock('@/components/ExplanationIndicator', () => ({
+  ExplanationIndicator: ({ sessionId }: { sessionId: string }) => (
+    <div data-testid="explanation-indicator">Explanation Indicator {sessionId}</div>
+  ),
+}))
+
 // Mock the AuthProvider
 vi.mock('@/contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
