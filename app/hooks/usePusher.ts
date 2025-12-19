@@ -12,7 +12,7 @@ export function usePusher(channelName: string, eventName: string | string[]) {
 
   // Convert eventName to a stable string key for dependency comparison
   const eventKey = useMemo(() => {
-    return Array.isArray(eventName) ? eventName.sort().join(',') : eventName
+    return Array.isArray(eventName) ? [...eventName].sort().join(',') : eventName
   }, [eventName])
 
   useEffect(() => {

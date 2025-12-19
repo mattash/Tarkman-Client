@@ -148,9 +148,11 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
         smoothScrollToPart(currentPartElement)
       }
     }
-    // Handle status changes by invalidating session query
+    // Handle status changes by invalidating both session and currentSession queries
+    // The display route uses ['currentSession'] from useSessionPolling
     if (subscriptionData?.status) {
       queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
+      queryClient.invalidateQueries({ queryKey: ['currentSession'] })
     }
   }, [subscriptionData, smoothScrollToPart, queryClient, sessionId])
 
