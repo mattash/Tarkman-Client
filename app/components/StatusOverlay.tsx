@@ -53,7 +53,7 @@ export function StatusOverlay({ status, statusMessage, sessionOptions }: StatusO
 
   return (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 animate-fade-in" aria-live="polite">
-      <div className="w-[90%] max-w-5xl bg-gray-800/95 text-white px-16 py-12 rounded-lg shadow-2xl">
+      <div className="w-[90%] max-w-screen-2xl bg-gray-800/95 text-white px-16 py-12 rounded-lg shadow-2xl">
         {title && (
           <h2 className="text-5xl font-bold text-center mb-8 text-purple-300">
             {title}
