@@ -15,7 +15,10 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   const scrollTimeoutRef = React.useRef<number | null>(null)
   const [currentPartId, setCurrentPartId] = React.useState<string | null>(null)
   const queryClient = useQueryClient()
-  const subscriptionData = usePusher(`channel_${sessionId}`, ['part_change', 'status_change'])
+
+  // Memoize the events array to prevent creating new reference on every render
+  const pusherEvents = React.useMemo(() => ['part_change', 'status_change'], [])
+  const subscriptionData = usePusher(`channel_${sessionId}`, pusherEvents)
 
   const smoothScrollToPart = React.useCallback((element: HTMLElement) => {
     // Retrieve the server-provided estimate for how long it should take to

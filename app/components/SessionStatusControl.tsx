@@ -25,6 +25,7 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
     },
     onError: (error) => {
       console.error('Failed to update status:', error)
+      // Keep modal open and preserve message so user can retry
     }
   })
 

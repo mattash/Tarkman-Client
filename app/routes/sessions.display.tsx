@@ -27,8 +27,9 @@ function RouteComponent() {
   }
 
   const { current_part_position, num_of_parts, options, status, status_message } = sessionWrapper.session
-  const showWelcomeMessage = current_part_position === 0 && options.before_message && status === 'active'
-  const showFarewellMessage = current_part_position === (num_of_parts - 1) && options.after_message && status === 'active'
+  // Treat undefined status as 'active' for backward compatibility
+  const showWelcomeMessage = current_part_position === 0 && options.before_message && (!status || status === 'active')
+  const showFarewellMessage = current_part_position === (num_of_parts - 1) && options.after_message && (!status || status === 'active')
 
   return (
     <>

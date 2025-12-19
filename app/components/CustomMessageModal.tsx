@@ -14,13 +14,12 @@ export function CustomMessageModal({ isOpen, onClose, onSubmit, isPending }: Cus
     e.preventDefault()
     if (message.trim()) {
       onSubmit(message.trim())
-      setMessage('')
+      // Don't clear message here - let the parent component handle it on success
     }
   }
 
   const handleClose = () => {
     if (!isPending) {
-      setMessage('')
       onClose()
     }
   }
@@ -35,6 +34,13 @@ export function CustomMessageModal({ isOpen, onClose, onSubmit, isPending }: Cus
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
       return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen, isPending])
+
+  // Clear message when modal closes after successful submission
+  React.useEffect(() => {
+    if (!isOpen && !isPending) {
+      setMessage('')
     }
   }, [isOpen, isPending])
 
