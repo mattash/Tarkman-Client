@@ -108,7 +108,7 @@ describe('CurrentExplanation', () => {
     await waitFor(() => {
       expect(screen.getByText('No Active Explanation')).toBeInTheDocument()
     })
-    expect(screen.getByText('There is currently no explanation for this part of the service')).toBeInTheDocument()
+    expect(screen.getByText('Tarkman does not currently have an active explanation for this part of the service. Check back next week for an update.')).toBeInTheDocument()
   })
 
   it('should render previous explanation with "Previous Explanation" message', async () => {
