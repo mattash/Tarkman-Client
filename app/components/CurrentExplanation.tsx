@@ -69,7 +69,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
               ) : (
                 <div className="space-y-2">
                   <p className="text-2xl font-semibold text-gray-300">No Active Explanation</p>
-                  <p className="text-base">There is currently no explanation for this part of the service</p>
+                  <p className="text-base">Tarkman does not currently have an active explanation for this part of the service. Check back next week for an update.</p>
                 </div>
               )}
             </div>
