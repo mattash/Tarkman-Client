@@ -15,6 +15,8 @@ vi.mock('@/queries/explanationQueries', () => ({
   explanationQueryKeys: {
     current: (sessionId: string) => ['explanation', sessionId, 'current'],
     upcoming: (sessionId: string) => ['explanation', sessionId, 'upcoming'],
+    citations: (liturgyId: string, explanationId: string) => ['explanation', 'liturgy', liturgyId, explanationId, 'citations'],
+    ratings: (liturgyId: string, explanationId: string) => ['explanation', 'liturgy', liturgyId, explanationId, 'ratings'],
   },
   fetchCurrentExplanation: vi.fn(),
   fetchUpcomingExplanations: vi.fn(),
@@ -26,6 +28,7 @@ vi.mock('react-markdown', () => ({
 }))
 
 import { fetchCurrentExplanation, fetchUpcomingExplanations } from '@/queries/explanationQueries'
+import { usePusher } from '@/hooks/usePusher'
 
 const mockExplanation: Explanation = {
   id: 1,
@@ -76,6 +79,7 @@ const createWrapper = () => {
 describe('CurrentExplanation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(usePusher).mockReturnValue(null)
   })
 
   it('should render current explanation when available', async () => {
@@ -122,6 +126,7 @@ describe('CurrentExplanation', () => {
 
     // Now simulate the explanation disappearing
     vi.mocked(fetchCurrentExplanation).mockResolvedValue([])
+    vi.mocked(usePusher).mockReturnValue({} as any)
 
     rerender(<CurrentExplanation sessionId="123" />)
 
@@ -148,7 +153,7 @@ describe('CurrentExplanation', () => {
     })
     expect(screen.getByText('Upcoming Explanation')).toBeInTheDocument()
     expect(screen.getByText('Second Upcoming')).toBeInTheDocument()
-    expect(screen.getByText('Upcoming summary')).toBeInTheDocument()
+    expect(screen.getAllByText('Upcoming summary').length).toBeGreaterThan(0)
   })
 
   it('should not render upcoming section when no upcoming explanations', async () => {
