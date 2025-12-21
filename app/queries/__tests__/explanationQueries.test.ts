@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   fetchExplanation,
   fetchCurrentExplanation,
+  fetchUpcomingExplanations,
   fetchLiturgyExplanations,
   fetchLiturgyExplanation,
   fetchPartExplanations,
@@ -108,6 +109,55 @@ describe('explanationQueries', () => {
 
       await expect(fetchCurrentExplanation('123')).rejects.toThrow(
         'Failed to fetch current explanation'
+      )
+    })
+  })
+
+  describe('fetchUpcomingExplanations', () => {
+    it('should fetch upcoming explanations with default lookahead', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockExplanationsResponse)
+      })
+
+      const result = await fetchUpcomingExplanations('123')
+      expect(result).toEqual(mockExplanationsResponse.explanations.map(e => e.explanation))
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/s/123/explanations/upcoming.json?lookahead=3')
+      )
+    })
+
+    it('should fetch upcoming explanations with custom lookahead', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockExplanationsResponse)
+      })
+
+      const result = await fetchUpcomingExplanations('123', 5)
+      expect(result).toEqual(mockExplanationsResponse.explanations.map(e => e.explanation))
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/s/123/explanations/upcoming.json?lookahead=5')
+      )
+    })
+
+    it('should return empty array for 404', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404
+      })
+
+      const result = await fetchUpcomingExplanations('123')
+      expect(result).toEqual([])
+    })
+
+    it('should throw an error when the request fails with non-404 status', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500
+      })
+
+      await expect(fetchUpcomingExplanations('123')).rejects.toThrow(
+        'Failed to fetch upcoming explanations'
       )
     })
   })
@@ -286,6 +336,16 @@ describe('explanationQueries', () => {
   })
 
   describe('explanationQueryKeys', () => {
+    it('should generate correct query keys for current', () => {
+      const key = explanationQueryKeys.current('session123')
+      expect(key).toEqual(['explanation', 'session123', 'current'])
+    })
+
+    it('should generate correct query keys for upcoming', () => {
+      const key = explanationQueryKeys.upcoming('session123')
+      expect(key).toEqual(['explanation', 'session123', 'upcoming'])
+    })
+
     it('should generate correct query keys for citations', () => {
       const key = explanationQueryKeys.citations('liturgy123', 'explanation456')
       expect(key).toEqual(['explanation', 'liturgy', 'liturgy123', 'explanation456', 'citations'])
