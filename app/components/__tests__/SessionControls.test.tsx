@@ -72,16 +72,6 @@ describe('SessionControls', () => {
     expect(screen.getByLabelText('Next part')).toBeInTheDocument()
   })
 
-  it('should render a display link for the current session', () => {
-    render(<SessionControls sessionId={123} />, {
-      wrapper: createWrapper(),
-    })
-
-    const displayLink = screen.getByRole('link', { name: 'Open display view' })
-    expect(displayLink).toHaveAttribute('href', '/sessions/123/display')
-    expect(displayLink).toHaveAttribute('target', '_blank')
-  })
-
   it('should call prevPart when previous button is clicked', async () => {
     const user = userEvent.setup()
     vi.mocked(prevPart).mockResolvedValueOnce({

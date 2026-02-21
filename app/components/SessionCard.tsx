@@ -9,29 +9,43 @@ interface SessionCardProps {
 
 export function SessionCard({ session }: SessionCardProps) {
   return (
-    <Link
-      key={session.id}
-      to="/sessions/$id/parts"
-      params={{ id: session.id.toString() }}
-      className="p-4 border rounded-lg hover:shadow-lg transition-shadow bg-gray-800 border-tarkman-purple"
-    >
-      <img
-        src={session.church_avatar}
-        alt={session.church_name}
-        className="w-full h-48 object-cover rounded mb-2"
-      />
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h2 className="font-semibold">{session.church_name}</h2>
-        <StatusBadge status={session.status} size="sm" />
+    <div className="p-4 border rounded-lg hover:shadow-lg transition-shadow bg-gray-800 border-tarkman-purple">
+      <Link
+        key={session.id}
+        to="/sessions/$id/parts"
+        params={{ id: session.id.toString() }}
+        className="block"
+      >
+        <img
+          src={session.church_avatar}
+          alt={session.church_name}
+          className="w-full h-48 object-cover rounded mb-2"
+        />
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h2 className="font-semibold">{session.church_name}</h2>
+          <StatusBadge status={session.status} size="sm" />
+        </div>
+        <p>
+          {session.liturgies && session.liturgies.length > 0
+            ? session.liturgies.map((l) => l.name).join(', ')
+            : session.liturgy}
+        </p>
+        <p className="text-gray-600">
+          {new Date(session.date + 'T00:00:00').toLocaleDateString()}
+        </p>
+      </Link>
+
+      <div className="mt-3">
+        <Link
+          to="/sessions/$id/display"
+          params={{ id: session.id.toString() }}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"
+        >
+          Display
+        </Link>
       </div>
-      <p>
-        {session.liturgies && session.liturgies.length > 0
-          ? session.liturgies.map((l) => l.name).join(', ')
-          : session.liturgy}
-      </p>
-      <p className="text-gray-600">
-        {new Date(session.date + 'T00:00:00').toLocaleDateString()}
-      </p>
-    </Link>
+    </div>
   )
 } 

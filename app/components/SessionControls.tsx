@@ -72,16 +72,6 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
         </svg>
       </button>
 
-      <a
-        href={`/sessions/${sessionId}/display`}
-        target="_blank"
-        rel="noreferrer"
-        className="px-5 py-3 bg-gray-800 text-white rounded hover:bg-gray-900"
-        aria-label="Open display view"
-      >
-        Display
-      </a>
-
       <SessionStatusControl
         sessionId={sessionId}
         currentStatus={sessionData?.session?.status}
