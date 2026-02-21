@@ -20,6 +20,7 @@ import { Route as PartIdImport } from './routes/part.$id'
 import { Route as SessionsStatusDisplayImport } from './routes/sessions.status.display'
 import { Route as SessionsIdPartsImport } from './routes/sessions.$id.parts'
 import { Route as SessionsIdExplanationsImport } from './routes/sessions.$id.explanations'
+import { Route as SessionsIdDisplayImport } from './routes/sessions.$id.display'
 import { Route as SessionsIdPartPartIdImport } from './routes/sessions.$id.part.$partId'
 
 // Create/Update Routes
@@ -78,6 +79,12 @@ const SessionsIdExplanationsRoute = SessionsIdExplanationsImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const SessionsIdDisplayRoute = SessionsIdDisplayImport.update({
+  id: '/sessions/$id/display',
+  path: '/sessions/$id/display',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const SessionsIdPartPartIdRoute = SessionsIdPartPartIdImport.update({
   id: '/sessions/$id/part/$partId',
   path: '/sessions/$id/part/$partId',
@@ -130,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessionsDisplayImport
       parentRoute: typeof rootRoute
     }
+    '/sessions/$id/display': {
+      id: '/sessions/$id/display'
+      path: '/sessions/$id/display'
+      fullPath: '/sessions/$id/display'
+      preLoaderRoute: typeof SessionsIdDisplayImport
+      parentRoute: typeof rootRoute
+    }
     '/sessions/$id/explanations': {
       id: '/sessions/$id/explanations'
       path: '/sessions/$id/explanations'
@@ -170,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/part/$id': typeof PartIdRoute
   '/sessions/display': typeof SessionsDisplayRoute
+  '/sessions/$id/display': typeof SessionsIdDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
   '/sessions/status/display': typeof SessionsStatusDisplayRoute
@@ -183,6 +198,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/part/$id': typeof PartIdRoute
   '/sessions/display': typeof SessionsDisplayRoute
+  '/sessions/$id/display': typeof SessionsIdDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
   '/sessions/status/display': typeof SessionsStatusDisplayRoute
@@ -197,6 +213,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/part/$id': typeof PartIdRoute
   '/sessions/display': typeof SessionsDisplayRoute
+  '/sessions/$id/display': typeof SessionsIdDisplayRoute
   '/sessions/$id/explanations': typeof SessionsIdExplanationsRoute
   '/sessions/$id/parts': typeof SessionsIdPartsRoute
   '/sessions/status/display': typeof SessionsStatusDisplayRoute
@@ -212,6 +229,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/part/$id'
     | '/sessions/display'
+    | '/sessions/$id/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
     | '/sessions/status/display'
@@ -224,6 +242,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/part/$id'
     | '/sessions/display'
+    | '/sessions/$id/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
     | '/sessions/status/display'
@@ -236,6 +255,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/part/$id'
     | '/sessions/display'
+    | '/sessions/$id/display'
     | '/sessions/$id/explanations'
     | '/sessions/$id/parts'
     | '/sessions/status/display'
@@ -250,6 +270,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PartIdRoute: typeof PartIdRoute
   SessionsDisplayRoute: typeof SessionsDisplayRoute
+  SessionsIdDisplayRoute: typeof SessionsIdDisplayRoute
   SessionsIdExplanationsRoute: typeof SessionsIdExplanationsRoute
   SessionsIdPartsRoute: typeof SessionsIdPartsRoute
   SessionsStatusDisplayRoute: typeof SessionsStatusDisplayRoute
@@ -263,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PartIdRoute: PartIdRoute,
   SessionsDisplayRoute: SessionsDisplayRoute,
+  SessionsIdDisplayRoute: SessionsIdDisplayRoute,
   SessionsIdExplanationsRoute: SessionsIdExplanationsRoute,
   SessionsIdPartsRoute: SessionsIdPartsRoute,
   SessionsStatusDisplayRoute: SessionsStatusDisplayRoute,
@@ -285,6 +307,7 @@ export const routeTree = rootRoute
         "/login",
         "/part/$id",
         "/sessions/display",
+        "/sessions/$id/display",
         "/sessions/$id/explanations",
         "/sessions/$id/parts",
         "/sessions/status/display",
@@ -308,6 +331,9 @@ export const routeTree = rootRoute
     },
     "/sessions/display": {
       "filePath": "sessions.display.tsx"
+    },
+    "/sessions/$id/display": {
+      "filePath": "sessions.$id.display.tsx"
     },
     "/sessions/$id/explanations": {
       "filePath": "sessions.$id.explanations.tsx"
