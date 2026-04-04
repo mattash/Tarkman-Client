@@ -171,13 +171,17 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   if (error) return <div>Error loading parts</div>
   if (!data?.parts?.length) return <div>No parts available for this session.</div>
 
+  const HIDDEN_SENTINELS = new Set(['HOLD', 'NA', 'EMPTY'])
+
   return (
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
       {(data?.parts ?? []).map(({ part }) => {
         const isCurrentPart = part.id === Number(currentPartId)
+        const hideTranslit = HIDDEN_SENTINELS.has(part.translit?.trim())
+        const hideEn = HIDDEN_SENTINELS.has(part.en?.trim())
         return (
-          <div 
-            className="grid grid-cols-2 gap-5 mb-5" 
+          <div
+            className={`grid ${hideTranslit || hideEn ? 'grid-cols-1' : 'grid-cols-2'} gap-5 mb-5`}
             key={part.id}
             data-duration-ms={part.effective_duration_ms}
             ref={(el) => {
@@ -186,24 +190,28 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
               }
             }}
           >
-            <div
-              key={`translit-${part.id}`}
-              className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
-            >
-              <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <ReactMarkdown className="text-9xl prose prose-invert max-w-none">
-                {part.translit.split('\n').map(line => line.trimStart()).join('\n\n')}
-              </ReactMarkdown>
-            </div>
-            <div
-              key={`en-${part.id}`}
-              className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
-            >
-              <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <ReactMarkdown className="text-9xl prose prose-invert max-w-none">
-                {part.en.split('\n').map(line => line.trimStart()).join('\n\n')}
-              </ReactMarkdown>
-            </div>
+            {!hideTranslit && (
+              <div
+                key={`translit-${part.id}`}
+                className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
+              >
+                <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
+                <ReactMarkdown className="text-9xl prose prose-invert max-w-none">
+                  {part.translit.split('\n').map(line => line.trimStart()).join('\n\n')}
+                </ReactMarkdown>
+              </div>
+            )}
+            {!hideEn && (
+              <div
+                key={`en-${part.id}`}
+                className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
+              >
+                <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
+                <ReactMarkdown className="text-9xl prose prose-invert max-w-none">
+                  {part.en.split('\n').map(line => line.trimStart()).join('\n\n')}
+                </ReactMarkdown>
+              </div>
+            )}
           </div>
         )
       })}
