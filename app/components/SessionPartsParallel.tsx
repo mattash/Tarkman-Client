@@ -177,8 +177,8 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
       {(data?.parts ?? []).map(({ part }) => {
         const isCurrentPart = part.id === Number(currentPartId)
-        const hideTranslit = HIDDEN_SENTINELS.has(part.translit?.trim())
-        const hideEn = HIDDEN_SENTINELS.has(part.en?.trim())
+        const hideTranslit = HIDDEN_SENTINELS.has(part.translit?.trim().toUpperCase())
+        const hideEn = HIDDEN_SENTINELS.has(part.en?.trim().toUpperCase())
         return (
           <div
             className={`grid ${hideTranslit || hideEn ? 'grid-cols-1' : 'grid-cols-2'} gap-5 mb-5`}
