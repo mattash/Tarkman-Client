@@ -37,7 +37,7 @@ Integration tests require authentication credentials. To run them:
 - **Build Tool**: Vite 5
 - **Routing**: TanStack Router (file-based routing)
 - **Data Fetching**: TanStack Query with custom query keys and functions
-- **Real-time**: Pusher for live service updates
+- **Real-time**: ActionCable (WebSocket) for live service updates
 - **Styling**: Tailwind CSS + Radix UI primitives
 - **API Client**: Axios with interceptors for auth
 
@@ -68,9 +68,9 @@ export const queryKeys = {
 - Refresh failure redirects to `/login`
 
 #### 4. Real-time Updates
-- `usePusher` hook subscribes to Pusher channels for live service updates
+- `useActionCable` hook (exported as `usePusher` for backward compat) subscribes to Rails ActionCable channels for live service updates
 - `useSessionPolling` provides fallback polling for display routes
-- Real-time part updates broadcast via Pusher events
+- Real-time part updates broadcast via ActionCable events (`part_change`, `status_change`, `explanation_updated`)
 
 #### 5. Session and Parts Data Model
 The application centers around **Sessions** (church services) that contain **Parts** (liturgical sections):
@@ -102,7 +102,7 @@ app/
 ├── api.ts                  # Axios instance with auth interceptors
 ├── components/             # Reusable UI components
 ├── contexts/              # Global state (AuthContext, LanguageContext)
-├── hooks/                 # Custom hooks (usePusher, useSessionPolling, usePartScroll)
+├── hooks/                 # Custom hooks (useActionCable, usePusher, useSessionPolling, usePartScroll)
 ├── queries/               # TanStack Query functions and keys
 │   ├── sessions.ts        # Session and parts fetching/mutations
 │   ├── partQueries.ts     # Individual part fetching
@@ -126,8 +126,8 @@ import { SessionParts } from '@/components/SessionParts'
 Required variables in `.env.local`:
 - `VITE_API_URL`: Backend API base URL
 - `VITE_DEFAULT_CHURCH_ID`: Fallback church ID
-- `VITE_PUSHER_APP_KEY`: Pusher app key
-- `VITE_PUSHER_CLUSTER`: Pusher cluster (e.g., `eu`)
+- `VITE_ACTIONCABLE_URL` (optional): Full ActionCable WebSocket URL (e.g., `wss://api.example.com/cable`). Defaults to `/cable` on the same origin.
+- `VITE_PUSHER_APP_KEY`: Pusher app key (deprecated — no longer used)
 
 ## Code Style (from .cursorrules)
 
