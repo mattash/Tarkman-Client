@@ -119,7 +119,7 @@ describe('useActionCable', () => {
     })
   })
 
-  it('should convert pusher-style channel name to SessionChannel', async () => {
+  it('should convert pusher-style channel name to SessionChannel params', async () => {
     let capturedId: unknown = null
     const mockConsumer = {
       subscriptions: {
@@ -135,7 +135,25 @@ describe('useActionCable', () => {
     renderHook(() => useActionCable('channel_999', 'part_change'))
     await waitFor(() => {})
 
-    // Should convert "channel_999" → JSON stringified identifier for ActionCable
-    expect(capturedId).toEqual('{"channel":"SessionChannel","id":"999"}')
+    expect(capturedId).toEqual({ channel: 'SessionChannel', id: '999' })
+  })
+
+  it('should parse JSON ActionCable identifiers into params', async () => {
+    let capturedId: unknown = null
+    const mockConsumer = {
+      subscriptions: {
+        create: (id: unknown) => {
+          capturedId = id
+          return { subscribe: vi.fn(), unsubscribe: vi.fn() }
+        },
+      },
+      disconnect: vi.fn(),
+    }
+    vi.mocked(createConsumer).mockReturnValueOnce(mockConsumer as unknown as ReturnType<typeof createConsumer>)
+
+    renderHook(() => useActionCable('{"channel":"SessionChannel","id":"999"}', 'part_change'))
+    await waitFor(() => {})
+
+    expect(capturedId).toEqual({ channel: 'SessionChannel', id: '999' })
   })
 })
