@@ -7,9 +7,14 @@ interface ActionCableEnvelope {
 }
 
 interface ActionCableMessage {
-  part?: string
+  part?: string | number
   status?: string
   status_message?: string | null
+}
+
+type ActionCableChannelIdentifier = string | {
+  channel: string
+  id?: string | number
 }
 
 // ActionCable URL - defaults to same host's /cable path
@@ -22,18 +27,34 @@ function getActionCableUrl(): string | undefined {
   return undefined
 }
 
-function getChannelIdentifier(channelName: string, id?: string | number): string {
+function isActionCableChannelIdentifier(value: unknown): value is Exclude<ActionCableChannelIdentifier, string> {
+  return typeof value === 'object' &&
+    value !== null &&
+    'channel' in value &&
+    typeof value.channel === 'string'
+}
+
+function getChannelIdentifier(channelName: string): ActionCableChannelIdentifier {
   // Support both pusher-style "channel_123" and ActionCable-style { channel: "SessionChannel", id: 123 }
   if (channelName.startsWith('channel_')) {
     // Legacy Pusher channel name → convert to SessionChannel
     const idPart = channelName.replace('channel_', '')
-    return JSON.stringify({ channel: 'SessionChannel', id: idPart })
+    return { channel: 'SessionChannel', id: idPart }
   }
   if (channelName.startsWith('user_')) {
     const userId = channelName.replace('user_', '')
-    return JSON.stringify({ channel: 'UserChannel', id: userId })
+    return { channel: 'UserChannel', id: userId }
   }
-  // Already a JSON identifier
+
+  try {
+    const parsedIdentifier = JSON.parse(channelName)
+    if (isActionCableChannelIdentifier(parsedIdentifier)) {
+      return parsedIdentifier
+    }
+  } catch {
+    // Plain ActionCable channel names, like "SessionChannel", are valid strings.
+  }
+
   return channelName
 }
 

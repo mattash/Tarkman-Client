@@ -141,8 +141,8 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   }, [data, smoothScrollToPart])
 
   React.useEffect(() => {
-    if (subscriptionData?.part) {
-      setCurrentPartId(subscriptionData.part)
+    if (subscriptionData?.part !== undefined) {
+      setCurrentPartId(String(subscriptionData.part))
       const currentPartElement = partsRef.current[subscriptionData.part]
       if (currentPartElement) {
         smoothScrollToPart(currentPartElement)

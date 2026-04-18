@@ -37,8 +37,8 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
   }, [data, handlePartUpdated])
 
   React.useEffect(() => {
-    if (subscriptionData) {
-      handlePartUpdated(subscriptionData)
+    if (subscriptionData?.part !== undefined) {
+      handlePartUpdated({ part: subscriptionData.part })
     }
   }, [subscriptionData, handlePartUpdated])
 
