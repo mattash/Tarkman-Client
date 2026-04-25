@@ -176,13 +176,14 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
   return (
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
       {(data?.parts ?? []).map(({ part }) => {
+        const key = part.liturgy_part_id ?? part.id
         const isCurrentPart = part.id === Number(currentPartId)
         const hideTranslit = HIDDEN_SENTINELS.has(part.translit?.trim().toUpperCase())
         const hideEn = HIDDEN_SENTINELS.has(part.en?.trim().toUpperCase())
         return (
           <div
             className={`grid ${hideTranslit || hideEn ? 'grid-cols-1' : 'grid-cols-2'} gap-5 mb-5`}
-            key={part.id}
+            key={key}
             data-duration-ms={part.effective_duration_ms}
             ref={(el) => {
               if (el) {
@@ -192,7 +193,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
           >
             {!hideTranslit && (
               <div
-                key={`translit-${part.id}`}
+                key={`translit-${key}`}
                 className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
               >
                 <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
@@ -203,7 +204,7 @@ export function SessionPartsParallel({ sessionId }: SessionPartsParallelProps) {
             )}
             {!hideEn && (
               <div
-                key={`en-${part.id}`}
+                key={`en-${key}`}
                 className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
               >
                 <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>

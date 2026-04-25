@@ -4,6 +4,7 @@ export function createMockPart(overrides: Partial<PartWrapper['part']> = {}): Pa
   return {
     part: {
       id: 1,
+      liturgy_part_id: 1,
       role: 'priest',
       grabar: 'Հայր մեր, որ յերկինս ես',
       translit: 'Hayr mer, vor y yerkinus yes',
@@ -34,6 +35,7 @@ export function createMockPartWithExplanations(overrides: Partial<PartWrapper['p
 export function createMockPartList(count: number = 5): PartWrapper[] {
   return Array.from({ length: count }, (_, i) => createMockPart({
     id: i + 1,
+    liturgy_part_id: i + 100,
     position: i + 1,
     role: i % 2 === 0 ? 'priest' : 'choir',
     page: Math.floor(i / 2) + 1,
