@@ -7,11 +7,12 @@ export const LANG_FIELD_MAP = {
   translit: 'translit',
   en: 'en',
   hyw: 'hy_west',
+  grabar: 'grabar',
 } as const
 
 interface SessionPartsSingleProps {
   sessionId: string
-  lang1?: 'translit' | 'en' | 'hyw'
+  lang1?: 'translit' | 'en' | 'hyw' | 'grabar'
 }
 
 export function SessionPartsSingle({ sessionId, lang1 = 'translit' }: SessionPartsSingleProps) {
