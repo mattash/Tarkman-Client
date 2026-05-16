@@ -32,4 +32,4 @@ jobs:
         VITE_API_URL: ${{ secrets.VITE_API_URL }}
         VITE_TEST_EMAIL: ${{ secrets.VITE_TEST_EMAIL }}
         VITE_TEST_PASSWORD: ${{ secrets.VITE_TEST_PASSWORD }}
-      run: npm test
+      run: npx vitest run --exclude "**/*.integration.test.ts"

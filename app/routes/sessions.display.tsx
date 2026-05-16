@@ -1,17 +1,58 @@
 import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { SessionPartsParallel } from '../components/SessionPartsParallel'
+import { SessionPartsSingle } from '../components/SessionPartsSingle'
 import { useSessionPolling } from '../hooks/useSessionPolling'
+import { useUserSessionPolling } from '../hooks/useUserSessionPolling'
+import { fetchDisplayLink, displayLinkKeys } from '../queries/displayLinks'
 import { Message } from '../components/Message'
 import { StatusOverlay } from '../components/StatusOverlay'
+import { MinimalStatusView } from '../components/MinimalStatusView'
 import { ExplanationIndicator } from '../components/ExplanationIndicator'
 
 export const Route = createFileRoute('/sessions/display')({
   component: RouteComponent,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      token: typeof search.token === 'string' ? search.token : undefined,
+    }
+  },
 })
 
 function RouteComponent() {
-  const { data: sessionWrapper, isLoading, isError } = useSessionPolling()
+  const { token } = Route.useSearch()
+
+  // Fetch display link config when token is present
+  const {
+    data: config,
+    isLoading: configLoading,
+    isError: configError,
+  } = useQuery({
+    queryKey: displayLinkKeys.detail(token || ''),
+    queryFn: () => fetchDisplayLink(token!),
+    enabled: !!token,
+    retry: false,
+  })
+
+  // Existing default-church polling (no token path)
+  const {
+    data: defaultSession,
+    isLoading: defaultLoading,
+    isError: defaultError,
+  } = useSessionPolling()
+
+  // User-scoped polling (token path)
+  const {
+    data: userSession,
+    isLoading: userLoading,
+    isError: userError,
+  } = useUserSessionPolling(config?.user_id?.toString() || null)
+
+  const usingToken = !!token
+  const sessionWrapper = usingToken ? userSession : defaultSession
+  const isLoading = usingToken ? configLoading || userLoading : defaultLoading
+  const isError = usingToken ? configError || userError : defaultError
 
   const loadingView = (
     <div className="flex items-center justify-center min-h-screen">
@@ -22,15 +63,58 @@ function RouteComponent() {
     </div>
   )
 
-  // Show loading view for both loading and error states
+  // Invalid or expired display link token
+  if (token && configError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Invalid or expired display link.</p>
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading || isError || !sessionWrapper) {
     return loadingView
   }
 
   const { current_part_position, num_of_parts, options, status, status_message } = sessionWrapper.session
-  // Treat undefined status as 'active' for backward compatibility
-  const showWelcomeMessage = current_part_position === 0 && options.before_message && (!status || status === 'active')
-  const showFarewellMessage = current_part_position === (num_of_parts - 1) && options.after_message && (!status || status === 'active')
+
+  // Resolve preferences: token config overrides, otherwise defaults
+  const showNotifications = config?.show_notifications ?? true
+  const showExplanations = config?.show_explanations ?? true
+  const mode = config?.mode ?? 'parallel'
+  const lang1 = config?.lang1 ?? 'translit'
+  const lang2 = config?.lang2 ?? 'en'
+  const statusView = config?.status_view ?? 'full'
+
+  const showWelcomeMessage = showNotifications &&
+    current_part_position === 0 &&
+    options.before_message &&
+    (!status || status === 'active')
+  const showFarewellMessage = showNotifications &&
+    current_part_position === num_of_parts - 1 &&
+    options.after_message &&
+    (!status || status === 'active')
+
+  // Minimal status view for pages_only / posture_only
+  if (statusView === 'pages_only') {
+    return (
+      <MinimalStatusView
+        statusView="pages_only"
+        page={sessionWrapper.session.page}
+      />
+    )
+  }
+
+  if (statusView === 'posture_only') {
+    return (
+      <MinimalStatusView
+        statusView="posture_only"
+        posture={sessionWrapper.session.posture}
+      />
+    )
+  }
 
   return (
     <>
@@ -38,11 +122,28 @@ function RouteComponent() {
         status={status || 'active'}
         statusMessage={status_message}
         sessionOptions={options}
+        enabled={statusView === 'full'}
       />
       {showWelcomeMessage && <Message message={options.before_message} />}
       {showFarewellMessage && <Message message={options.after_message} />}
-      <SessionPartsParallel sessionId={sessionWrapper.session.id.toString()} />
-      <ExplanationIndicator sessionId={sessionWrapper.session.id.toString()} />
+
+      {mode === 'parallel' ? (
+        <SessionPartsParallel
+          sessionId={sessionWrapper.session.id.toString()}
+          lang1={lang1}
+          lang2={lang2}
+        />
+      ) : (
+        <SessionPartsSingle
+          sessionId={sessionWrapper.session.id.toString()}
+          lang1={lang1}
+        />
+      )}
+
+      <ExplanationIndicator
+        sessionId={sessionWrapper.session.id.toString()}
+        enabled={showExplanations}
+      />
     </>
   )
 }

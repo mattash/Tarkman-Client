@@ -8,9 +8,10 @@ import { Explanation } from '@/types/explanation'
 interface ExplanationIndicatorProps {
   sessionId: string
   qrDurationMs?: number
+  enabled?: boolean
 }
 
-export function ExplanationIndicator({ sessionId, qrDurationMs = 20000 }: ExplanationIndicatorProps) {
+export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled = true }: ExplanationIndicatorProps) {
   const queryClient = useQueryClient()
   const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
   const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
@@ -29,6 +30,7 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000 }: Explan
     queryKey: explanationQueryKeys.current(sessionId),
     queryFn: () => fetchCurrentExplanation(sessionId),
     staleTime: 30 * 1000,
+    enabled,
   })
 
   React.useEffect(() => {
@@ -83,6 +85,8 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000 }: Explan
     }
     return `${window.location.origin}/sessions/${sessionId}/explanations`
   }, [sessionId])
+
+  if (!enabled) return null
 
   return (
     <div className="fixed top-4 right-4 z-40 flex flex-col items-end gap-6 pointer-events-none origin-top-right scale-[2]">
