@@ -23,10 +23,11 @@ async function fetchCurrentSession(): Promise<SessionWrapper | null> {
   return data as SessionWrapper
 }
 
-export function useSessionPolling() {
+export function useSessionPolling(options?: { enabled?: boolean }) {
   return useQuery<SessionWrapper | null>({
     queryKey: ['currentSession'],
     queryFn: fetchCurrentSession,
+    enabled: options?.enabled !== false,
     retry: true,
     retryDelay: (attemptIndex) => Math.min(1000 * (2 ** attemptIndex), 30000),
     refetchInterval: (query) => {

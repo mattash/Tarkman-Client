@@ -2,21 +2,13 @@ import * as React from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSessionParts } from '../hooks/useSessionParts'
 import { LANG_FIELD_MAP } from './SessionPartsSingle'
-import { Part } from '../types/part'
+import { PartTextField, getPartTextField, shouldHideSessionPartText } from './sessionPartsUtils'
 
 interface SessionPartsParallelProps {
   sessionId: string
   lang1?: 'translit' | 'en' | 'hyw'
   lang2?: 'translit' | 'en' | 'hyw'
 }
-
-type PartTextField = 'translit' | 'en' | 'hy_west'
-
-function getPartTextField(part: Part, field: PartTextField): string {
-  return part[field] ?? ''
-}
-
-const HIDDEN_SENTINELS = new Set(['HOLD', 'NA', 'EMPTY'])
 
 export function SessionPartsParallel({ sessionId, lang1 = 'translit', lang2 = 'en' }: SessionPartsParallelProps) {
   const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId)
@@ -34,8 +26,8 @@ export function SessionPartsParallel({ sessionId, lang1 = 'translit', lang2 = 'e
         const isCurrentPart = part.id === Number(currentPartId)
         const text1 = getPartTextField(part, field1)
         const text2 = getPartTextField(part, field2)
-        const hide1 = HIDDEN_SENTINELS.has(text1?.trim().toUpperCase())
-        const hide2 = HIDDEN_SENTINELS.has(text2?.trim().toUpperCase())
+        const hide1 = shouldHideSessionPartText(text1)
+        const hide2 = shouldHideSessionPartText(text2)
 
         return (
           <div

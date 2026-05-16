@@ -1,7 +1,7 @@
 import * as React from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSessionParts } from '../hooks/useSessionParts'
-import { Part } from '../types/part'
+import { PartTextField, getPartTextField, shouldHideSessionPartText } from './sessionPartsUtils'
 
 export const LANG_FIELD_MAP = {
   translit: 'translit',
@@ -9,20 +9,10 @@ export const LANG_FIELD_MAP = {
   hyw: 'hy_west',
 } as const
 
-export type LangKey = keyof typeof LANG_FIELD_MAP
-
-type PartTextField = 'translit' | 'en' | 'hy_west'
-
-function getPartTextField(part: Part, field: PartTextField): string {
-  return part[field] ?? ''
-}
-
 interface SessionPartsSingleProps {
   sessionId: string
   lang1?: 'translit' | 'en' | 'hyw'
 }
-
-const HIDDEN_SENTINELS = new Set(['HOLD', 'NA', 'EMPTY'])
 
 export function SessionPartsSingle({ sessionId, lang1 = 'translit' }: SessionPartsSingleProps) {
   const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId)
@@ -38,7 +28,7 @@ export function SessionPartsSingle({ sessionId, lang1 = 'translit' }: SessionPar
       {(data?.parts ?? []).map(({ part }) => {
         const isCurrentPart = part.id === Number(currentPartId)
         const text = getPartTextField(part, field)
-        const hide = HIDDEN_SENTINELS.has(text?.trim().toUpperCase())
+        const hide = shouldHideSessionPartText(text)
 
         if (hide) return null
 

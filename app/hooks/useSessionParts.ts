@@ -130,6 +130,7 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
     if (subscriptionData?.status) {
       queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
       queryClient.invalidateQueries({ queryKey: ['currentSession'] })
+      queryClient.invalidateQueries({ queryKey: ['userCurrentSession'] })
     }
   }, [subscriptionData, smoothScrollToPart, queryClient, sessionId, options])
 
@@ -147,9 +148,7 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
 
   return {
     partsRef,
-    smoothScrollToPart,
     currentPartId,
-    setCurrentPartId,
     isLoading,
     error,
     data,

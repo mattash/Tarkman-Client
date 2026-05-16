@@ -40,7 +40,7 @@ function RouteComponent() {
     data: defaultSession,
     isLoading: defaultLoading,
     isError: defaultError,
-  } = useSessionPolling()
+  } = useSessionPolling({ enabled: !token })
 
   // User-scoped polling (token path)
   const {
