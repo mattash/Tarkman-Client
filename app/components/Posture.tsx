@@ -41,11 +41,7 @@ const postureIcons = {
 } as const
 
 export function Posture({ posture }: PostureProps) {
-  if (!posture) {
-    return null
-  }
-
-  const postureKey = posture.toLowerCase() as keyof typeof postureIcons
+  const postureKey = (posture ?? 'stand').toLowerCase() as keyof typeof postureIcons
   const Icon = postureIcons[postureKey] || postureIcons.stand
 
   return Icon
