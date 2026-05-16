@@ -6,8 +6,8 @@ import { PartTextField, getPartTextField, shouldHideSessionPartText } from './se
 
 interface SessionPartsParallelProps {
   sessionId: string
-  lang1?: 'translit' | 'en' | 'hyw'
-  lang2?: 'translit' | 'en' | 'hyw'
+  lang1?: 'translit' | 'en' | 'hyw' | 'grabar'
+  lang2?: 'translit' | 'en' | 'hyw' | 'grabar'
 }
 
 export function SessionPartsParallel({ sessionId, lang1 = 'translit', lang2 = 'en' }: SessionPartsParallelProps) {
