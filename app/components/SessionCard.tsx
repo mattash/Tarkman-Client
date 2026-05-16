@@ -39,6 +39,7 @@ export function SessionCard({ session }: SessionCardProps) {
         <Link
           to="/sessions/$id/display"
           params={{ id: session.id.toString() }}
+          search={{ token: undefined, mode: undefined, lang1: undefined, lang2: undefined, show_explanations: undefined, show_notifications: undefined, status_view: undefined }}
           target="_blank"
           rel="noreferrer"
           className="inline-flex px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"

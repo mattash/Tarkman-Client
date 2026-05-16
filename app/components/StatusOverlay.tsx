@@ -9,9 +9,11 @@ interface StatusOverlayProps {
     epistle?: string
     before_message?: string
   }
+  enabled?: boolean
 }
 
-export function StatusOverlay({ status, statusMessage, sessionOptions }: StatusOverlayProps) {
+export function StatusOverlay({ status, statusMessage, sessionOptions, enabled = true }: StatusOverlayProps) {
+  if (!enabled) return null
   if (status === 'active') return null
 
   const getMessage = () => {

@@ -43,10 +43,42 @@ vi.mock('@/components/StatusOverlay', () => ({
   StatusOverlay: () => null,
 }))
 
+// Mock the MinimalStatusView component
+vi.mock('@/components/MinimalStatusView', () => ({
+  MinimalStatusView: ({ statusView, page, posture }: { statusView: string; page?: number; posture?: string }) => (
+    <div data-testid="minimal-status-view" data-status-view={statusView}>
+      {statusView === 'pages_only' ? `Page: ${page}` : `Posture: ${posture}`}
+    </div>
+  ),
+}))
+
+// Mock the SessionPartsSingle component
+vi.mock('@/components/SessionPartsSingle', () => ({
+  SessionPartsSingle: ({ sessionId, lang1 }: { sessionId: string; lang1?: string }) => (
+    <div data-testid="session-parts-single">Single Parts for {sessionId} ({lang1})</div>
+  ),
+}))
+
 // Mock the useSessionPolling hook
 const mockUseSessionPolling = vi.fn()
 vi.mock('@/hooks/useSessionPolling', () => ({
   useSessionPolling: () => mockUseSessionPolling(),
+}))
+
+// Mock the useUserSessionPolling hook
+const mockUseUserSessionPolling = vi.fn()
+vi.mock('@/hooks/useUserSessionPolling', () => ({
+  useUserSessionPolling: () => mockUseUserSessionPolling(),
+}))
+
+// Mock fetchDisplayLink
+const mockFetchDisplayLink = vi.fn()
+vi.mock('@/queries/displayLinks', () => ({
+  fetchDisplayLink: (...args: unknown[]) => mockFetchDisplayLink(...args),
+  displayLinkKeys: {
+    all: ['displayLinks'] as const,
+    detail: (token: string) => ['displayLinks', token] as const,
+  },
 }))
 
 const createTestWrapper = () => {
@@ -91,6 +123,11 @@ const mockSessionData = createMockSession({
 describe('sessions.display route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseUserSessionPolling.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: false,
+    })
   })
 
   it('should show loading view when isLoading is true', () => {
@@ -341,5 +378,162 @@ describe('sessions.display route', () => {
     )
 
     expect(screen.queryByTestId('message')).not.toBeInTheDocument()
+  })
+
+  describe('with token (display link)', () => {
+    beforeEach(() => {
+      mockUseSessionPolling.mockReturnValue({
+        data: null,
+        isLoading: false,
+        isError: false,
+      })
+      mockUseUserSessionPolling.mockReturnValue({
+        data: null,
+        isLoading: false,
+        isError: false,
+      })
+      mockFetchDisplayLink.mockReset()
+    })
+
+    it('should show invalid token error when display link fetch fails', async () => {
+      mockFetchDisplayLink.mockRejectedValue(new Error('Not found'))
+
+      const history = createMemoryHistory({
+        initialEntries: ['/sessions/display?token=bad-token-fail'],
+      })
+
+      const router = createRouter({
+        routeTree,
+        history,
+      })
+
+      render(
+        <RouterProvider router={router} />,
+        { wrapper: createTestWrapper() }
+      )
+
+      await waitFor(() => {
+        expect(screen.getByText('Invalid or expired display link.')).toBeInTheDocument()
+      })
+    })
+
+    it('should render session in single mode with lang2=null from display link config', async () => {
+      mockFetchDisplayLink.mockResolvedValue({
+        token: 'test-token-single',
+        mode: 'single',
+        lang1: 'en',
+        lang2: null,
+        show_explanations: true,
+        show_notifications: true,
+        status_view: 'full',
+        user_id: 42,
+        church_name: 'St. John',
+      })
+
+      mockUseUserSessionPolling.mockReturnValue({
+        data: mockSessionData,
+        isLoading: false,
+        isError: false,
+      })
+
+      const history = createMemoryHistory({
+        initialEntries: ['/sessions/display?token=test-token-single'],
+      })
+
+      const router = createRouter({
+        routeTree,
+        history,
+      })
+
+      render(
+        <RouterProvider router={router} />,
+        { wrapper: createTestWrapper() }
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId('session-parts-single')).toBeInTheDocument()
+        expect(screen.getByTestId('session-parts-single')).toHaveTextContent('en')
+      })
+    })
+
+    it('should render MinimalStatusView when status_view is pages_only', async () => {
+      mockFetchDisplayLink.mockResolvedValue({
+        token: 'test-token-pages',
+        mode: 'parallel',
+        lang1: 'translit',
+        lang2: 'en',
+        show_explanations: true,
+        show_notifications: true,
+        status_view: 'pages_only',
+        user_id: 42,
+      })
+
+      mockUseUserSessionPolling.mockReturnValue({
+        data: mockSessionData,
+        isLoading: false,
+        isError: false,
+      })
+
+      const history = createMemoryHistory({
+        initialEntries: ['/sessions/display?token=test-token-pages'],
+      })
+
+      const router = createRouter({
+        routeTree,
+        history,
+      })
+
+      render(
+        <RouterProvider router={router} />,
+        { wrapper: createTestWrapper() }
+      )
+
+      await waitFor(() => {
+        const el = screen.getByTestId('minimal-status-view')
+        expect(el).toBeInTheDocument()
+        expect(el).toHaveAttribute('data-status-view', 'pages_only')
+        expect(el).toHaveTextContent('Page: 1')
+      })
+    })
+
+    it('should render MinimalStatusView when status_view is posture_only', async () => {
+      mockFetchDisplayLink.mockResolvedValue({
+        token: 'test-token-posture',
+        mode: 'parallel',
+        lang1: 'translit',
+        lang2: 'en',
+        show_explanations: true,
+        show_notifications: true,
+        status_view: 'posture_only',
+        user_id: 42,
+      })
+
+      mockUseUserSessionPolling.mockReturnValue({
+        data: mockSessionData,
+        isLoading: false,
+        isError: false,
+      })
+
+      const history = createMemoryHistory({
+        initialEntries: ['/sessions/display?token=test-token-posture'],
+      })
+
+      const router = createRouter({
+        routeTree,
+        history,
+      })
+
+      render(
+        <RouterProvider router={router} />,
+        { wrapper: createTestWrapper() }
+      )
+
+      await waitFor(() => {
+        const el = screen.getByTestId('minimal-status-view')
+        expect(el).toBeInTheDocument()
+        expect(el).toHaveAttribute('data-status-view', 'posture_only')
+        expect(el).toHaveTextContent('Posture: stand')
+      })
+    })
   })
 })

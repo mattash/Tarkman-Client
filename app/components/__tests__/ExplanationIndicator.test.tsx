@@ -110,4 +110,20 @@ describe('ExplanationIndicator', () => {
       expect(screen.queryByText(/scan/i)).not.toBeInTheDocument()
     })
   })
+
+  it('returns null when enabled is false but still calls all hooks', () => {
+    const queryClient = createQueryClient()
+
+    render(<ExplanationIndicator sessionId="1" enabled={false} />, {
+      wrapper: createWrapper(queryClient),
+    })
+
+    // When enabled is false, the component should return null
+    // and should NOT have the explanation indicator in the DOM
+    expect(screen.queryByLabelText(/explanation indicator/i)).not.toBeInTheDocument()
+    // The query should not be active (enabled=false gates it)
+    const queryState = queryClient.getQueryState(explanationQueryKeys.current('1'))
+    // When enabled=false, the query exists in pending state but is not active
+    expect(queryState?.fetchStatus).toBe('idle')
+  })
 })
