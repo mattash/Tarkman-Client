@@ -17,7 +17,7 @@ export function MinimalStatusView({ statusView, page, posture }: MinimalStatusVi
         </div>
         <p className="text-[45vw] font-bold text-center w-full flex items-center justify-center"
            style={{ lineHeight: '1' }}>
-          {page ?? '—'}
+          {page && page > 0 ? page : '—'}
         </p>
       </div>
     )
