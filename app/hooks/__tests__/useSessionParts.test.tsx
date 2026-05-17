@@ -143,6 +143,8 @@ describe('useSessionParts hook (integration)', () => {
   // P1.6 — Same subscription data does not re-scroll on rerender
   it('same subscription data does not trigger re-scroll on rerender', async () => {
     const onPartChange = vi.fn()
+    const subscriptionData = { part: '123' }
+    const mockElement = document.createElement('motionGroup')
 
     const { result, rerender } = renderHook(
       () => useSessionParts('test', { onPartChange }),
@@ -153,31 +155,21 @@ describe('useSessionParts hook (integration)', () => {
       expect(result.current.data).toBeDefined()
     })
 
-    // Emit Pusher part
-    vi.mocked(usePusher).mockReturnValue({ part: '123' })
+    result.current.partsRef.current['123'] = mockElement
+
+    // Emit Pusher part (stable object reference, as useActionCable state does on rerender)
+    vi.mocked(usePusher).mockReturnValue(subscriptionData)
     rerender()
 
     await vi.waitFor(() => {
       expect(result.current.currentPartId).toBe('123')
     })
+    expect(smoothScrollToPart).toHaveBeenCalledTimes(1)
 
-    // Clear mock to measure subsequent calls
-    const callsBefore = smoothScrollToPart.mock.calls.length
-
-    // Re-emit same part — React should NOT re-fire the effect
-    // because subscriptionData (the effect dependency) hasn't changed
-    vi.mocked(usePusher).mockReturnValue({ part: '123' })
+    // Rerender without changing subscriptionData — effect must not re-fire
     rerender()
 
-    // The effect depends on subscriptionData. Since usePusher still
-    // returns the same object reference each time (as per the mock),
-    // React will see the same dependency value and skip the effect.
-    // However, if the hook creates a new object each time, this
-    // test verifies that the hook handles it correctly.
-    //
-    // In practice, since we mock usePusher to return the SAME object
-    // `{ part: '123' }` each time, the effect won't re-fire.
-    expect(smoothScrollToPart.mock.calls.length).toBe(callsBefore)
+    expect(smoothScrollToPart).toHaveBeenCalledTimes(1)
   })
 
   // P2.4 — Status-change invalidates queries, no scroll
