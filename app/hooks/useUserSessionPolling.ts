@@ -1,9 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { SessionWrapper } from '../types/session'
 
+function getViewerTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null
+  } catch {
+    return null
+  }
+}
+
 async function fetchUserCurrentSession(userId: string): Promise<SessionWrapper | null> {
+  const tz = getViewerTimeZone()
+  const tzParam = tz ? `?tz=${encodeURIComponent(tz)}` : ''
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/s/${userId}/current.json`,
+    `${import.meta.env.VITE_API_URL}/s/${encodeURIComponent(userId)}/current.json${tzParam}`,
     { headers: { 'X-Polling-Client': 'true' } }
   )
   if (!response.ok) {
