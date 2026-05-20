@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
-import { usePusher } from '@/hooks/usePusher'
+import { useActionCable } from '@/hooks/useActionCable'
 import { explanationQueryKeys, fetchCurrentExplanation } from '@/queries/explanationQueries'
 import { Explanation } from '@/types/explanation'
 
@@ -13,7 +13,7 @@ interface ExplanationIndicatorProps {
 
 export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled = true }: ExplanationIndicatorProps) {
   const queryClient = useQueryClient()
-  const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
+  const actionCableData = useActionCable(`channel_${sessionId}`, 'part_change')
   const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
   const [isHighlighting, setIsHighlighting] = React.useState(false)
   const [showQr, setShowQr] = React.useState(false)
@@ -21,10 +21,10 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
   const qrTimeoutRef = React.useRef<number | null>(null)
 
   React.useEffect(() => {
-    if (pusherData) {
+    if (actionCableData) {
       queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
     }
-  }, [pusherData, queryClient, sessionId])
+  }, [actionCableData, queryClient, sessionId])
 
   const { data: explanations } = useQuery<Explanation[]>({
     queryKey: explanationQueryKeys.current(sessionId),

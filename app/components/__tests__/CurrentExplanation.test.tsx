@@ -5,9 +5,9 @@ import { CurrentExplanation } from '../CurrentExplanation'
 import type { ReactNode } from 'react'
 import type { Explanation } from '@/types/explanation'
 
-// Mock the usePusher hook
-vi.mock('@/hooks/usePusher', () => ({
-  usePusher: vi.fn(() => null),
+// Mock the useActionCable hook
+vi.mock('@/hooks/useActionCable', () => ({
+  useActionCable: vi.fn(() => null),
 }))
 
 // Mock explanation queries
@@ -28,7 +28,7 @@ vi.mock('react-markdown', () => ({
 }))
 
 import { fetchCurrentExplanation, fetchUpcomingExplanations } from '@/queries/explanationQueries'
-import { usePusher } from '@/hooks/usePusher'
+import { useActionCable } from '@/hooks/useActionCable'
 
 const mockExplanation: Explanation = {
   id: 1,
@@ -79,7 +79,7 @@ const createWrapper = () => {
 describe('CurrentExplanation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(usePusher).mockReturnValue(null)
+    vi.mocked(useActionCable).mockReturnValue(null)
   })
 
   it('should render current explanation when available', async () => {
@@ -126,7 +126,7 @@ describe('CurrentExplanation', () => {
 
     // Now simulate the explanation disappearing
     vi.mocked(fetchCurrentExplanation).mockResolvedValue([])
-    vi.mocked(usePusher).mockReturnValue({} as any)
+    vi.mocked(useActionCable).mockReturnValue({} as any)
 
     rerender(<CurrentExplanation sessionId="123" />)
 

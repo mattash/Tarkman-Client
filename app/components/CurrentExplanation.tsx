@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
-import { usePusher } from '../hooks/usePusher'
+import { useActionCable } from '../hooks/useActionCable'
 import { Explanation } from '../types/explanation'
 import { explanationQueryKeys, fetchCurrentExplanation, fetchUpcomingExplanations } from '../queries/explanationQueries'
 import { TagBadge } from './TagBadge'
@@ -15,15 +15,15 @@ interface CurrentExplanationProps {
 
 export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
   const queryClient = useQueryClient()
-  const pusherData = usePusher(`channel_${sessionId}`, 'part_change')
+  const actionCableData = useActionCable(`channel_${sessionId}`, 'part_change')
   const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
 
   React.useEffect(() => {
-    if (pusherData) {
+    if (actionCableData) {
       queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
       queryClient.invalidateQueries({ queryKey: explanationQueryKeys.upcoming(sessionId) })
     }
-  }, [pusherData, queryClient, sessionId])
+  }, [actionCableData, queryClient, sessionId])
 
   const { data: explanations, isLoading } = useQuery<Explanation[]>({
     queryKey: explanationQueryKeys.current(sessionId),

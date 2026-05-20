@@ -8,8 +8,8 @@ import { useSessionParts } from '../useSessionParts'
 // Mock dependencies
 // ---------------------------------------------------------------------------
 
-vi.mock('../usePusher', () => ({
-  usePusher: vi.fn(),
+vi.mock('../useActionCable', () => ({
+  useActionCable: vi.fn(),
 }))
 
 vi.mock('../../queries/sessions', () => ({
@@ -26,7 +26,7 @@ vi.mock('../smoothScrollToPart', () => ({
   smoothScrollToPart: vi.fn(),
 }))
 
-import { usePusher } from '../usePusher'
+import { useActionCable } from '../useActionCable'
 import { fetchSessionParts } from '../../queries/sessions'
 import { smoothScrollToPart } from '../smoothScrollToPart'
 
@@ -96,7 +96,7 @@ function createWrapper(queryClient?: QueryClient) {
 
 describe('useSessionParts hook (integration)', () => {
   beforeEach(() => {
-    vi.mocked(usePusher).mockReturnValue(null)
+    vi.mocked(useActionCable).mockReturnValue(null)
     vi.mocked(fetchSessionParts).mockResolvedValue(makeSessionData())
     vi.mocked(smoothScrollToPart).mockClear()
   })
@@ -158,7 +158,7 @@ describe('useSessionParts hook (integration)', () => {
     result.current.partsRef.current['123'] = mockElement
 
     // Emit Pusher part (stable object reference, as useActionCable state does on rerender)
-    vi.mocked(usePusher).mockReturnValue(subscriptionData)
+    vi.mocked(useActionCable).mockReturnValue(subscriptionData)
     rerender()
 
     await vi.waitFor(() => {
@@ -179,7 +179,7 @@ describe('useSessionParts hook (integration)', () => {
     })
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-    vi.mocked(usePusher).mockReturnValue({ status: 'live' })
+    vi.mocked(useActionCable).mockReturnValue({ status: 'live' })
 
     renderHook(() => useSessionParts('test'), {
       wrapper: createWrapper(queryClient),
@@ -207,7 +207,7 @@ describe('useSessionParts hook (integration)', () => {
     expect(result.current.currentPartId).toBe('123')
 
     // Pusher emits new part
-    vi.mocked(usePusher).mockReturnValue({ part: '456' })
+    vi.mocked(useActionCable).mockReturnValue({ part: '456' })
     rerender()
 
     await vi.waitFor(() => {

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import * as Sentry from '@sentry/react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -16,7 +17,26 @@ const queryClient = new QueryClient({
 
 export const Route = createRootRoute({
   component: RootComponent,
+  errorComponent: ErrorComponent,
 })
+
+function ErrorComponent({ error }: { error: unknown }) {
+  React.useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+  console.error('[Tarkman Error]', error)
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+      <p className="text-xl font-semibold text-red-400 mb-4">Something went wrong</p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-primary text-white rounded hover:opacity-90"
+      >
+        Reload
+      </button>
+    </div>
+  )
+}
 
 function RootComponent() {
   return (

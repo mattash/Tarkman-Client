@@ -1,6 +1,6 @@
 import { Part } from '../types/part'
 
-export type PartTextField = 'translit' | 'en' | 'hy_west'
+export type PartTextField = 'translit' | 'en' | 'hy_west' | 'grabar'
 
 export function getPartTextField(part: Part, field: PartTextField): string {
   return part[field] ?? ''

@@ -1,12 +1,12 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { usePusher } from './usePusher'
+import { useActionCable } from './useActionCable'
 import { fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
 import { smoothScrollToPart } from './smoothScrollToPart'
 
 interface UseSessionPartsOptions {
-  /** Called when the current part changes (via Pusher or initial data). */
+  /** Called when the current part changes (via ActionCable or initial data). */
   onPartChange?: (partId: string) => void
 }
 
@@ -17,13 +17,13 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
   const [currentPartId, setCurrentPartId] = React.useState<string | null>(null)
   const queryClient = useQueryClient()
 
-  // Destructure onPartChange so the Pusher effect does not depend on the
+  // Destructure onPartChange so the ActionCable effect does not depend on the
   // whole options object (avoids re-scroll on rerender when an inline
   // object literal is passed).
   const onPartChange = options?.onPartChange
 
-  const pusherEvents = React.useMemo(() => ['part_change', 'status_change'], [])
-  const subscriptionData = usePusher(`channel_${sessionId}`, pusherEvents)
+  const actionCableEvents = React.useMemo(() => ['part_change', 'status_change'], [])
+  const subscriptionData = useActionCable(`channel_${sessionId}`, actionCableEvents)
 
   const handleScroll = React.useCallback(
     (element: HTMLElement) => {
@@ -59,7 +59,7 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
     }
   }, [data, handleScroll])
 
-  // Handle Pusher part changes.
+  // Handle ActionCable part changes.
   React.useEffect(() => {
     if (subscriptionData?.part !== undefined) {
       const partId = String(subscriptionData.part)
