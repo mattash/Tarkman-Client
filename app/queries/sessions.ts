@@ -40,33 +40,31 @@ export async function fetchSession(sessionId: string): Promise<SessionWrapper> {
 }
 
 export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
-  const sessionResponse = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}.json`)
-  if (!sessionResponse.ok) {
+  // 1. Fetch session (with auto-attached auth + 401 refresh)
+  let sessionData: SessionWrapper
+  try {
+    const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
+    sessionData = data
+  } catch {
     throw new Error(`Failed to fetch session ${sessionId}`)
   }
-
-  const sessionData: SessionWrapper = await sessionResponse.json()
   const liturgyId = sessionData?.session?.current_liturgy_id ?? sessionData?.session?.liturgy_id
 
-  const partsResponse = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts.json`)
-
-  if (partsResponse.ok) {
-    const partsData = await partsResponse.json()
-    return {
-      parts: partsData.parts ?? [],
-      sessionData,
-    }
+  // 2. Try session parts
+  try {
+    const { data: partsData } = await api.get(`/s/${sessionId}/parts.json`)
+    return { parts: partsData.parts ?? [], sessionData }
+  } catch {
+    // swallow — fall through to liturgy fallback
   }
 
-  // Fallback to liturgy parts if session parts are unavailable (e.g., multi-liturgy sessions)
+  // 3. Fallback to liturgy parts
   if (liturgyId) {
-    const liturgyPartsResponse = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/parts.json`)
-    if (liturgyPartsResponse.ok) {
-      const liturgyPartsData = await liturgyPartsResponse.json()
-      return {
-        parts: liturgyPartsData.parts ?? [],
-        sessionData,
-      }
+    try {
+      const { data: liturgyPartsData } = await api.get(`/liturgies/${liturgyId}/parts.json`)
+      return { parts: liturgyPartsData.parts ?? [], sessionData }
+    } catch {
+      // swallow — fall through to final error
     }
   }
 
