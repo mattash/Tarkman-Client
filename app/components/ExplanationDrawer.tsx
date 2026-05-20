@@ -43,7 +43,7 @@ export function ExplanationDrawer({
 
   return (
     <Drawer direction="bottom">
-      <DrawerTrigger className="fixed bottom-4 right-4 rounded-full bg-tarkman-purple-light" asChild>
+      <DrawerTrigger className="fixed bottom-4 right-4 pb-safe rounded-full bg-tarkman-purple-light" asChild>
         <Button>
           Need help
           <HelpCircle className="h-4 w-4" />
