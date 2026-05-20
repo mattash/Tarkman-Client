@@ -18,7 +18,7 @@ function LoginPage() {
   }, [user, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 sm:px-6">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 sm:px-6">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold">
           Sign in to your account
