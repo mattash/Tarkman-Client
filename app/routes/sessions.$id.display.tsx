@@ -12,6 +12,7 @@ import { DisplayLanguage } from '@/types/displayLink'
 
 export const Route = createFileRoute('/sessions/$id/display')({
   component: RouteComponent,
+  errorComponent: DisplayErrorComponent,
   validateSearch: (search: Record<string, unknown>) => {
     return {
       token: typeof search.token === 'string' ? search.token : undefined,
@@ -37,6 +38,25 @@ export const Route = createFileRoute('/sessions/$id/display')({
     }
   },
 })
+
+function DisplayErrorComponent({ error }: { error: unknown }) {
+  console.error('[Tarkman Display Error]', error)
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen text-center bg-gray-900">
+      <p className="text-4xl font-bold text-red-500 mb-4">⚠️</p>
+      <p className="text-xl font-semibold text-red-400 mb-2">Display Error</p>
+      <p className="text-gray-400 mb-8">
+        The session view encountered an error. This may be a network hiccup or a temporary issue.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-6 py-3 bg-primary text-white rounded-lg text-lg hover:opacity-90 transition-opacity"
+      >
+        Retry
+      </button>
+    </div>
+  )
+}
 
 function RouteComponent() {
   const { id } = Route.useParams()
