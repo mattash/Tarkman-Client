@@ -1,4 +1,5 @@
 import * as React from 'react'
+import * as Sentry from '@sentry/react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -20,6 +21,9 @@ export const Route = createRootRoute({
 })
 
 function ErrorComponent({ error }: { error: unknown }) {
+  React.useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
   console.error('[Tarkman Error]', error)
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">

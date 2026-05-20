@@ -14,11 +14,13 @@ export default defineConfig({
     }),
     react(),
     tsconfigPaths(),
-    ...(process.env.NODE_ENV === 'production'
+    ...(process.env.NODE_ENV === 'production' &&
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG
       ? [
           sentryVitePlugin({
-            org: 'put-org-slug-here',
-            project: 'tarkman-client',
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT || 'tarkman-client',
             authToken: process.env.SENTRY_AUTH_TOKEN,
           }),
         ]
