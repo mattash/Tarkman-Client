@@ -1,3 +1,5 @@
+import * as React from 'react'
+import * as Sentry from '@sentry/react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { fetchSession, sessionsKeys } from '@/queries/sessions'
@@ -40,6 +42,9 @@ export const Route = createFileRoute('/sessions/$id/display')({
 })
 
 function DisplayErrorComponent({ error }: { error: unknown }) {
+  React.useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
   console.error('[Tarkman Display Error]', error)
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center bg-gray-900">
