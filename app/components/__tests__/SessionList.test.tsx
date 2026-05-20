@@ -52,7 +52,7 @@ describe('SessionList', () => {
 
     render(<SessionList />, { wrapper: createWrapper() })
 
-    expect(screen.getByText('Loading sessions...')).toBeInTheDocument()
+    expect(screen.getByText('Loading sessions…')).toBeInTheDocument()
   })
 
   it('should render error state when fetch fails', async () => {
@@ -61,17 +61,17 @@ describe('SessionList', () => {
     render(<SessionList />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('Error loading sessions')).toBeInTheDocument()
+      expect(screen.getByText('Failed to load sessions')).toBeInTheDocument()
     })
   })
 
-  it('should render "No services available" when sessions is not an array', async () => {
+  it('should render empty state when sessions is null', async () => {
     vi.mocked(fetchSessions).mockResolvedValue(null as any)
 
     render(<SessionList />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('No services available')).toBeInTheDocument()
+      expect(screen.getByText('No services scheduled')).toBeInTheDocument()
     })
   })
 
@@ -130,13 +130,14 @@ describe('SessionList', () => {
     })
   })
 
-  it('should handle empty sessions array', async () => {
+  it('should render empty state when sessions array is empty', async () => {
     vi.mocked(fetchSessions).mockResolvedValue([])
 
     render(<SessionList />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('Current Services')).toBeInTheDocument()
+      expect(screen.getByText('No services scheduled')).toBeInTheDocument()
+      expect(screen.getByText('Check back soon for upcoming services')).toBeInTheDocument()
       expect(screen.queryAllByTestId('session-card')).toHaveLength(0)
     })
   })
