@@ -11,7 +11,7 @@ import './styles.css'
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN as string | undefined,
   environment: (import.meta.env.VITE_SENTRY_ENVIRONMENT as string) || 'development',
-  release: `tarkman-client@${process.env.npm_package_version || 'unknown'}`,
+  release: `tarkman-client@${import.meta.env.VITE_APP_VERSION || 'unknown'}`,
   integrations: [
     Sentry.browserTracingIntegration(),
     Sentry.replayIntegration({
