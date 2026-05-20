@@ -4,9 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ExplanationDrawer } from '../ExplanationDrawer'
 import type { ReactNode } from 'react'
 
-// Mock the usePusher hook
-vi.mock('@/hooks/usePusher', () => ({
-  usePusher: vi.fn(() => null),
+// Mock the useActionCable hook
+vi.mock('@/hooks/useActionCable', () => ({
+  useActionCable: vi.fn(() => null),
 }))
 
 // Mock explanation queries

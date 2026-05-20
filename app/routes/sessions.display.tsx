@@ -114,7 +114,7 @@ function RouteComponent() {
     return (
       <MinimalStatusView
         statusView="posture_only"
-        posture={sessionWrapper.session.posture}
+        posture={sessionWrapper.session.posture ?? undefined}
       />
     )
   }

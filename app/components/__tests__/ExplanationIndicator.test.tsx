@@ -5,8 +5,8 @@ import { ExplanationIndicator } from '../ExplanationIndicator'
 import { createMockExplanation } from '@/__tests__/factories/mockExplanationFactory'
 import { explanationQueryKeys } from '@/queries/explanationQueries'
 
-vi.mock('@/hooks/usePusher', () => ({
-  usePusher: vi.fn(() => null),
+vi.mock('@/hooks/useActionCable', () => ({
+  useActionCable: vi.fn(() => null),
 }))
 
 const createWrapper = (queryClient: QueryClient) => {

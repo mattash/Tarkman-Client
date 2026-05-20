@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
-import { usePusher } from '../hooks/usePusher'
+import { useActionCable } from '../hooks/useActionCable'
 import { usePartScroll } from '../hooks/usePartScroll'
 import { LanguageSelector } from './LanguageSelector'
 import PartCard from './PartCard'
@@ -17,7 +17,7 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
   const { selectedLang, setSelectedLang } = useLanguage()
   const { partsRef, handlePartUpdated } = usePartScroll()
   
-  const subscriptionData = usePusher(`channel_${sessionId}`, 'part_change')
+  const subscriptionData = useActionCable(`channel_${sessionId}`, 'part_change')
 
   const { 
     data, 

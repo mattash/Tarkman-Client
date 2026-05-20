@@ -18,9 +18,9 @@ const createWrapper = () => {
   )
 }
 
-// Mock usePusher hook
-vi.mock('@/hooks/usePusher', () => ({
-  usePusher: vi.fn(() => null),
+// Mock useActionCable hook
+vi.mock('@/hooks/useActionCable', () => ({
+  useActionCable: vi.fn(() => null),
 }))
 
 describe('ProjectorExplanation', () => {
