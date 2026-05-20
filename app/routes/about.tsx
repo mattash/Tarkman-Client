@@ -10,7 +10,7 @@ function About() {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       <h1 className="text-3xl font-bold mb-6">About Tarkman</h1>
 
-      <div className="prose prose-lg dark:prose-invert max-w-none">
+      <div className="prose prose-lg prose-invert max-w-none">
         <p>
           Tarkman is a digital platform designed to enhance the experience of Armenian Church services
           by providing real-time liturgical texts, translations, and explanations.
