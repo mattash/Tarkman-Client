@@ -5,8 +5,13 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from "path"
 
+// Read version from package.json for Sentry release tracking
+const pkg = require('./package.json') as { version: string }
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
+  },
   plugins: [
     TanStackRouterVite({
       routesDirectory: './app/routes',
