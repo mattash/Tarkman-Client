@@ -47,12 +47,12 @@ export function SessionList() {
 
   if (!Array.isArray(sessions) || sessions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+      <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        <p className="text-base font-semibold text-foreground">No services scheduled</p>
-        <p className="text-sm mt-1 text-muted-foreground">Check back soon for upcoming services</p>
+        <p className="text-base font-semibold text-gray-300">No services scheduled</p>
+        <p className="text-sm mt-1 text-gray-400">Check back soon for upcoming services</p>
       </div>
     )
   }
