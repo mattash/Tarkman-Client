@@ -10,6 +10,22 @@ const LazyQRCodeSVG = React.lazy(() =>
   })),
 )
 
+interface QrCodeWithReadySignalProps {
+  onReady: () => void
+  value: string
+  size: number
+  level: 'L' | 'M' | 'Q' | 'H'
+  includeMargin: boolean
+}
+
+function QrCodeWithReadySignal({ onReady, value, size, level, includeMargin }: QrCodeWithReadySignalProps) {
+  React.useEffect(() => {
+    onReady()
+  }, [onReady])
+
+  return <LazyQRCodeSVG value={value} size={size} level={level} includeMargin={includeMargin} />
+}
+
 interface ExplanationIndicatorProps {
   sessionId: string
   qrDurationMs?: number
@@ -22,8 +38,20 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
   const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
   const [isHighlighting, setIsHighlighting] = React.useState(false)
   const [showQr, setShowQr] = React.useState(false)
+  const [activeQrKey, setActiveQrKey] = React.useState<string | null>(null)
   const lastSeenSignatureRef = React.useRef<string | null>(null)
   const qrTimeoutRef = React.useRef<number | null>(null)
+
+  const scheduleQrHide = React.useCallback(() => {
+    if (qrTimeoutRef.current !== null) {
+      window.clearTimeout(qrTimeoutRef.current)
+    }
+
+    qrTimeoutRef.current = window.setTimeout(() => {
+      setShowQr(false)
+      setIsHighlighting(false)
+    }, qrDurationMs)
+  }, [qrDurationMs])
 
   React.useEffect(() => {
     if (actionCableData) {
@@ -72,16 +100,12 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
 
     lastSeenSignatureRef.current = signature
     setIsHighlighting(true)
+    setActiveQrKey(signature)
     setShowQr(true)
 
     if (qrTimeoutRef.current !== null) {
       window.clearTimeout(qrTimeoutRef.current)
     }
-
-    qrTimeoutRef.current = window.setTimeout(() => {
-      setShowQr(false)
-      setIsHighlighting(false)
-    }, qrDurationMs)
   }, [displayExplanations])
 
   const explanationUrl = React.useMemo(() => {
@@ -116,7 +140,16 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
           <div className="text-sm font-semibold text-center mb-2">Scan & Learn</div>
           <div className="flex justify-center mb-3">
             <React.Suspense fallback={null}>
-              <LazyQRCodeSVG value={explanationUrl} size={200} level="M" includeMargin={true} />
+              {activeQrKey && (
+                <QrCodeWithReadySignal
+                  key={activeQrKey}
+                  onReady={scheduleQrHide}
+                  value={explanationUrl}
+                  size={200}
+                  level="M"
+                  includeMargin={true}
+                />
+              )}
             </React.Suspense>
           </div>
           <div className="text-[11px] text-gray-300 text-center break-all">
