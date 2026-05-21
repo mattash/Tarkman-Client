@@ -17,6 +17,9 @@ vi.mock('@tanstack/react-router', () => ({
 
 import { login } from '@/api/auth'
 
+const getSubmitButton = () =>
+  screen.getByRole('button', { name: /sign in to your account/i })
+
 const renderLoginForm = () => {
   return render(
     <AuthProvider>
@@ -40,7 +43,7 @@ describe('LoginForm', () => {
   it('should render login button', () => {
     renderLoginForm()
 
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument()
+    expect(getSubmitButton()).toBeInTheDocument()
   })
 
   it('should update email input value when user types', async () => {
@@ -78,7 +81,7 @@ describe('LoginForm', () => {
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/password/i)
-    const submitButton = screen.getByRole('button', { name: /login/i })
+    const submitButton = getSubmitButton()
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'password123')
@@ -106,7 +109,7 @@ describe('LoginForm', () => {
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/password/i)
-    const submitButton = screen.getByRole('button', { name: /login/i })
+    const submitButton = getSubmitButton()
 
     await user.type(emailInput, 'wrong@example.com')
     await user.type(passwordInput, 'wrongpassword')
@@ -129,7 +132,7 @@ describe('LoginForm', () => {
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/password/i)
-    const submitButton = screen.getByRole('button', { name: /login/i })
+    const submitButton = getSubmitButton()
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'wrongpassword')
@@ -163,7 +166,7 @@ describe('LoginForm', () => {
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/password/i)
-    const submitButton = screen.getByRole('button', { name: /login/i })
+    const submitButton = getSubmitButton()
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'password')
@@ -198,4 +201,3 @@ describe('LoginForm', () => {
     expect(passwordInput).toBeRequired()
   })
 })
-

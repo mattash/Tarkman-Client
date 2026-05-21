@@ -17,7 +17,6 @@ const TEST_EXPLANATION_ID = '1'
 
 describe('explanationQueries integration tests', () => {
   beforeAll(() => {
-    // Verify that we have the required environment variables
     if (!import.meta.env.VITE_API_URL) {
       throw new Error('VITE_API_URL environment variable is required for integration tests')
     }
