@@ -74,7 +74,7 @@ describe('sessions.status.display route', () => {
     vi.clearAllMocks()
   })
 
-  it('should show loading view when isLoading is true', () => {
+  it('should show loading view when isLoading is true', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: null,
       isLoading: true,
@@ -95,10 +95,10 @@ describe('sessions.status.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('Waiting for session...')).toBeInTheDocument()
+    expect(await screen.findByText('Waiting for session...')).toBeInTheDocument()
   })
 
-  it('should show loading view when isError is true', () => {
+  it('should show loading view when isError is true', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: null,
       isLoading: false,
@@ -119,10 +119,10 @@ describe('sessions.status.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('Waiting for session...')).toBeInTheDocument()
+    expect(await screen.findByText('Waiting for session...')).toBeInTheDocument()
   })
 
-  it('should show "No active session" when sessionWrapper is null', () => {
+  it('should show "No active session" when sessionWrapper is null', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: null,
       isLoading: false,
@@ -143,10 +143,10 @@ describe('sessions.status.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('No active session')).toBeInTheDocument()
+    expect(await screen.findByText('No active session')).toBeInTheDocument()
   })
 
-  it('should display page number when session data is available', () => {
+  it('should display page number when session data is available', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: mockSessionData,
       isLoading: false,
@@ -167,10 +167,10 @@ describe('sessions.status.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('42')).toBeInTheDocument()
+    expect(await screen.findByText('42')).toBeInTheDocument()
   })
 
-  it('should display Posture component with correct posture', () => {
+  it('should display Posture component with correct posture', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: mockSessionData,
       isLoading: false,
@@ -191,11 +191,11 @@ describe('sessions.status.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByTestId('posture')).toBeInTheDocument()
+    expect(await screen.findByTestId('posture')).toBeInTheDocument()
     expect(screen.getByTestId('posture')).toHaveTextContent('Posture: stand')
   })
 
-  it('should display BookOpen icon', () => {
+  it('should display BookOpen icon', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: mockSessionData,
       isLoading: false,
@@ -217,11 +217,12 @@ describe('sessions.status.display route', () => {
     )
 
     // Check for the SVG element from lucide-react
+    await screen.findByText('42')
     const bookIcon = container.querySelector('svg')
     expect(bookIcon).toBeInTheDocument()
   })
 
-  it('should display different page numbers correctly', () => {
+  it('should display different page numbers correctly', async () => {
     const sessionWithDifferentPage = {
       ...mockSessionData,
       session: {
@@ -250,10 +251,10 @@ describe('sessions.status.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('123')).toBeInTheDocument()
+    expect(await screen.findByText('123')).toBeInTheDocument()
   })
 
-  it('should display different postures correctly', () => {
+  it('should display different postures correctly', async () => {
     const sessionWithSitting = {
       ...mockSessionData,
       session: {
@@ -282,6 +283,6 @@ describe('sessions.status.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByTestId('posture')).toHaveTextContent('Posture: sit')
+    expect(await screen.findByTestId('posture')).toHaveTextContent('Posture: sit')
   })
 })

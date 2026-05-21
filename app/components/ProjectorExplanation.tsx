@@ -6,7 +6,12 @@ import { Explanation } from '../types/explanation'
 import { explanationQueryKeys, fetchCurrentExplanation } from '../queries/explanationQueries'
 import { TagBadge } from './TagBadge'
 import { X } from 'lucide-react'
-import { QRCodeSVG } from 'qrcode.react'
+
+const LazyQRCodeSVG = React.lazy(() =>
+  import('qrcode.react').then((module) => ({
+    default: module.QRCodeSVG,
+  })),
+)
 
 interface ProjectorExplanationProps {
   sessionId: string
@@ -130,12 +135,9 @@ export function ProjectorExplanation({
             </div>
 
             <div className="bg-white p-4 rounded-lg">
-              <QRCodeSVG
-                value={explanationUrl}
-                size={200}
-                level="M"
-                includeMargin={true}
-              />
+              <React.Suspense fallback={null}>
+                <LazyQRCodeSVG value={explanationUrl} size={200} level="M" includeMargin={true} />
+              </React.Suspense>
             </div>
 
             <div className="text-xs text-gray-400 text-center mt-2">{explanationUrl}</div>
