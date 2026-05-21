@@ -18,7 +18,7 @@ export const Route = createFileRoute('/sessions/$id/parts')({
           <ExplanationDrawer title="Explanations" sessionId={id} />
         )}
         {auth.user && (
-          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-1000">
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 pb-safe z-1000">
             <SessionControls sessionId={parseInt(id)} />
           </div>
         )}

@@ -6,6 +6,11 @@ export default {
   ],
   theme: {
   	extend: {
+  		padding: {
+  			safe: 'env(safe-area-inset-bottom)',
+  			'safe-left': 'env(safe-area-inset-left)',
+  			'safe-right': 'env(safe-area-inset-right)',
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

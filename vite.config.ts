@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -39,4 +39,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./app"),
     },
   },
-}) 
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './vitest.setup.ts',
+  },
+})

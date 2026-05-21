@@ -43,12 +43,14 @@ export function ExplanationDrawer({
 
   return (
     <Drawer direction="bottom">
-      <DrawerTrigger className="fixed bottom-4 right-4 rounded-full bg-tarkman-purple-light" asChild>
-        <Button>
-          Need help
-          <HelpCircle className="h-4 w-4" />
-        </Button>
-      </DrawerTrigger>
+      <div className="fixed bottom-4 right-4 pb-safe">
+        <DrawerTrigger className="rounded-full bg-tarkman-purple-light" asChild>
+          <Button>
+            Need help
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+        </DrawerTrigger>
+      </div>
       <DrawerContent className="bg-gray-100 flex flex-col rounded-t-[10px] mt-24 h-[80%] lg:h-[320px] fixed bottom-0 left-0 right-0 outline-none">
         <div className="p-4 bg-white rounded-t-[10px] flex-1 overflow-y-auto">
           <div className="max-w-md mx-auto space-y-4">

@@ -6,11 +6,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { routeTree } from '@/routeTree.gen'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { login, logout } from '@/api/auth'
+import { fetchSessions } from '@/queries/sessions'
 
 // Mock the login API
 vi.mock('@/api/auth', () => ({
   login: vi.fn(),
   logout: vi.fn(),
+}))
+
+vi.mock('@/queries/sessions', () => ({
+  sessionsKeys: {
+    all: ['sessions'],
+    list: () => ['sessions', 'list'],
+    session: (id: string) => ['sessions', 'session', id],
+    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+  },
+  fetchSessions: vi.fn(),
 }))
 
 // Mock the session polling to avoid errors in dashboard
@@ -40,6 +51,7 @@ describe('Authentication Flow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    vi.mocked(fetchSessions).mockResolvedValue([])
   })
 
   it('should allow user to login and logout', async () => {
@@ -71,7 +83,7 @@ describe('Authentication Flow', () => {
     await user.type(screen.getByLabelText(/password/i), 'password123')
     
     // 3. Submit form
-    await user.click(screen.getByRole('button', { name: /login/i }))
+    await user.click(screen.getByRole('button', { name: /sign in to your account/i }))
 
     // 4. Verify navigation to home/dashboard (look for elements that appear after login)
     // Note: Depending on your app structure, you might check for specific dashboard content
@@ -126,4 +138,3 @@ describe('Authentication Flow', () => {
     expect(screen.queryByText(/sign out/i)).not.toBeInTheDocument()
   })
 })
-

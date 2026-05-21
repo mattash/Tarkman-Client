@@ -8,6 +8,6 @@ export function AuthLink() {
     return auth?.user ? (
       <LogoutButton />
     ) : (
-      <Link to="/login" className="bg-tarkman-purple-dark text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-tarkman-purple-light hover:text-white transition-colors">Login</Link>
+      <Link to="/login" className="bg-tarkman-purple-dark text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-tarkman-purple-light hover:text-white transition-colors inline-flex items-center">Login</Link>
     );
   }

@@ -18,7 +18,7 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: null, token: null }),
 }))
 
-const createTestRouter = (initialRoute: string = '/') => {
+const createTestRouter = (initialRoute: string = '/about') => {
   const history = createMemoryHistory({ initialEntries: [initialRoute] })
   return createRouter({ routeTree, history })
 }
@@ -101,8 +101,11 @@ describe('Navbar', () => {
     const servicesLinks = screen.getAllByText('Services')
     expect(servicesLinks.length).toBeGreaterThan(1)
 
-    // Click a mobile menu link (get the last one which is in the mobile menu)
-    await user.click(servicesLinks[servicesLinks.length - 1])
+    const aboutLinks = screen.getAllByText('About')
+    expect(aboutLinks.length).toBeGreaterThan(1)
+
+    // Click a mobile menu link that does not navigate to the sessions page
+    await user.click(aboutLinks[aboutLinks.length - 1])
 
     // Menu should close (hamburger icon shows open state)
     await user.click(menuButton) // Reopen to verify state changed

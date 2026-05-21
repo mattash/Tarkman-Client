@@ -29,7 +29,7 @@ describe.skipIf(shouldSkipIntegrationTests)('sessionQueries integration tests', 
 
     // Skip tests if credentials not provided
     if (!import.meta.env.VITE_TEST_EMAIL || !import.meta.env.VITE_TEST_PASSWORD) {
-      console.warn('⚠️  Integration tests skipped: Set VITE_TEST_EMAIL and VITE_TEST_PASSWORD to run')
+      console.warn('Integration tests skipped: Set VITE_TEST_EMAIL and VITE_TEST_PASSWORD to run authenticated API tests')
       return
     }
 
