@@ -130,7 +130,7 @@ describe('sessions.display route', () => {
     })
   })
 
-  it('should show loading view when isLoading is true', () => {
+  it('should show loading view when isLoading is true', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: null,
       isLoading: true,
@@ -151,10 +151,10 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('Waiting for session...')).toBeInTheDocument()
+    expect(await screen.findByText('Waiting for session...')).toBeInTheDocument()
   })
 
-  it('should show loading view when isError is true', () => {
+  it('should show loading view when isError is true', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: null,
       isLoading: false,
@@ -175,10 +175,10 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('Waiting for session...')).toBeInTheDocument()
+    expect(await screen.findByText('Waiting for session...')).toBeInTheDocument()
   })
 
-  it('should show loading view when sessionWrapper is null', () => {
+  it('should show loading view when sessionWrapper is null', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: null,
       isLoading: false,
@@ -199,10 +199,10 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByText('Waiting for session...')).toBeInTheDocument()
+    expect(await screen.findByText('Waiting for session...')).toBeInTheDocument()
   })
 
-  it('should render SessionPartsParallel when session data is available', () => {
+  it('should render SessionPartsParallel when session data is available', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: mockSessionData,
       isLoading: false,
@@ -223,11 +223,11 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    expect(screen.getByTestId('session-parts-parallel')).toBeInTheDocument()
+    expect(await screen.findByTestId('session-parts-parallel')).toBeInTheDocument()
     expect(screen.getByTestId('session-parts-parallel')).toHaveTextContent('Parallel Parts for 10')
   })
 
-  it('should show welcome message when at position 0 and before_message is set', () => {
+  it('should show welcome message when at position 0 and before_message is set', async () => {
     const sessionAtStart = {
       ...mockSessionData,
       session: {
@@ -257,11 +257,11 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    const messages = screen.getAllByTestId('message')
+    const messages = await screen.findAllByTestId('message')
     expect(messages[0]).toHaveTextContent('Welcome to our service!')
   })
 
-  it('should show farewell message when at last position and after_message is set', () => {
+  it('should show farewell message when at last position and after_message is set', async () => {
     const sessionAtEnd = {
       ...mockSessionData,
       session: {
@@ -292,11 +292,11 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
-    const messages = screen.getAllByTestId('message')
+    const messages = await screen.findAllByTestId('message')
     expect(messages[0]).toHaveTextContent('Thank you for attending!')
   })
 
-  it('should not show welcome message when not at position 0', () => {
+  it('should not show welcome message when not at position 0', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: mockSessionData,
       isLoading: false,
@@ -317,10 +317,11 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
+    await screen.findByTestId('session-parts-parallel')
     expect(screen.queryByText('Welcome to our service!')).not.toBeInTheDocument()
   })
 
-  it('should not show farewell message when not at last position', () => {
+  it('should not show farewell message when not at last position', async () => {
     mockUseSessionPolling.mockReturnValue({
       data: mockSessionData,
       isLoading: false,
@@ -341,10 +342,11 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
+    await screen.findByTestId('session-parts-parallel')
     expect(screen.queryByText('Thank you for attending!')).not.toBeInTheDocument()
   })
 
-  it('should not show welcome message when before_message is empty', () => {
+  it('should not show welcome message when before_message is empty', async () => {
     const sessionNoWelcome = {
       ...mockSessionData,
       session: {
@@ -377,6 +379,7 @@ describe('sessions.display route', () => {
       { wrapper: createTestWrapper() }
     )
 
+    await screen.findByTestId('session-parts-parallel')
     expect(screen.queryByTestId('message')).not.toBeInTheDocument()
   })
 

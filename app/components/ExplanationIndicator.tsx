@@ -1,9 +1,14 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { QRCodeSVG } from 'qrcode.react'
 import { useActionCable } from '@/hooks/useActionCable'
 import { explanationQueryKeys, fetchCurrentExplanation } from '@/queries/explanationQueries'
 import { Explanation } from '@/types/explanation'
+
+const LazyQRCodeSVG = React.lazy(() =>
+  import('qrcode.react').then((module) => ({
+    default: module.QRCodeSVG,
+  })),
+)
 
 interface ExplanationIndicatorProps {
   sessionId: string
@@ -110,12 +115,9 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
         <div className="pointer-events-auto bg-gray-900/95 text-white rounded-lg shadow-2xl p-5 w-72 border border-purple-500/40 transition duration-300">
           <div className="text-sm font-semibold text-center mb-2">Scan & Learn</div>
           <div className="flex justify-center mb-3">
-            <QRCodeSVG
-              value={explanationUrl}
-              size={200}
-              level="M"
-              includeMargin={true}
-            />
+            <React.Suspense fallback={null}>
+              <LazyQRCodeSVG value={explanationUrl} size={200} level="M" includeMargin={true} />
+            </React.Suspense>
           </div>
           <div className="text-[11px] text-gray-300 text-center break-all">
             {explanationUrl}
@@ -125,4 +127,3 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
     </div>
   )
 }
-

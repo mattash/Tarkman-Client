@@ -2,9 +2,16 @@ import * as React from 'react'
 import * as Sentry from '@sentry/react'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Navbar } from '@/components/Navbar'
+
+const ReactQueryDevtools = import.meta.env.DEV
+  ? React.lazy(() =>
+      import('@tanstack/react-query-devtools').then((module) => ({
+        default: module.ReactQueryDevtools,
+      })),
+    )
+  : null
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,7 +55,11 @@ function RootComponent() {
             <Outlet />
           </main>
         </div>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {ReactQueryDevtools && (
+          <React.Suspense fallback={null}>
+            <ReactQueryDevtools initialIsOpen={false} />
+          </React.Suspense>
+        )}
       </AuthProvider>
     </QueryClientProvider>
   )

@@ -12,6 +12,17 @@ export default defineConfig({
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-dom/client'],
+          'vendor-tanstack': ['@tanstack/react-query', '@tanstack/react-router'],
+          'vendor-sentry': ['@sentry/react'],
+        },
+      },
+    },
+  },
   plugins: [
     TanStackRouterVite({
       routesDirectory: './app/routes',

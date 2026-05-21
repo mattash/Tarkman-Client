@@ -76,7 +76,7 @@ describe('Authentication Flow', () => {
     render(<RouterProvider router={router} />, { wrapper: createWrapper() })
 
     // 1. Verify we are on login page
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+    expect(await screen.findByLabelText(/email/i)).toBeInTheDocument()
 
     // 2. Fill in login form
     await user.type(screen.getByLabelText(/email/i), 'test@example.com')
