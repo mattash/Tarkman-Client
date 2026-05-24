@@ -29,6 +29,10 @@ export function ProjectorExplanation({
   const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
 
   React.useEffect(() => {
+    setPreviousExplanations([])
+  }, [sessionId])
+
+  React.useEffect(() => {
     if (actionCableData) {
       queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
     }
