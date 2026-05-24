@@ -52,12 +52,13 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
     if (data?.sessionData.session.current_part_id != null) {
       const currentId = data.sessionData.session.current_part_id
       setCurrentPartId(String(currentId))
+      onPartChange?.(String(currentId))
       const currentPartElement = partsRef.current[currentId]
       if (currentPartElement) {
         handleScroll(currentPartElement)
       }
     }
-  }, [data, handleScroll])
+  }, [data, handleScroll, onPartChange])
 
   // Handle ActionCable part changes.
   React.useEffect(() => {
