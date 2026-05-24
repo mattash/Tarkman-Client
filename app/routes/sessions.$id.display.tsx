@@ -34,8 +34,8 @@ export const Route = createFileRoute('/sessions/$id/display')({
         ? search.show_notifications === '1' || search.show_notifications === 'true'
         : undefined,
       status_view: typeof search.status_view === 'string' &&
-        (search.status_view === 'full' || search.status_view === 'pages_only' || search.status_view === 'posture_only')
-        ? search.status_view as 'full' | 'pages_only' | 'posture_only'
+        (search.status_view === 'full' || search.status_view === 'pages_only' || search.status_view === 'posture_only' || search.status_view === 'none')
+        ? search.status_view as 'full' | 'pages_only' | 'posture_only' | 'none'
         : undefined,
     }
   },
@@ -131,6 +131,9 @@ function RouteComponent() {
     options.after_message &&
     (!status || status === 'active')
 
+  // None status view: skip overlays, messages, show only parts + explanations
+  const isNoneView = statusView === 'none'
+
   // Minimal status view for pages_only / posture_only
   if (statusView === 'pages_only') {
     return (
@@ -152,14 +155,16 @@ function RouteComponent() {
 
   return (
     <>
-      <StatusOverlay
-        status={status || 'active'}
-        statusMessage={status_message}
-        sessionOptions={options}
-        enabled={statusView === 'full'}
-      />
-      {showWelcomeMessage && <Message message={options.before_message} />}
-      {showFarewellMessage && <Message message={options.after_message} />}
+      {!isNoneView && (
+        <StatusOverlay
+          status={status || 'active'}
+          statusMessage={status_message}
+          sessionOptions={options}
+          enabled={statusView === 'full'}
+        />
+      )}
+      {!isNoneView && showWelcomeMessage && <Message message={options.before_message} />}
+      {!isNoneView && showFarewellMessage && <Message message={options.after_message} />}
 
       {mode === 'parallel' ? (
         <SessionPartsParallel
