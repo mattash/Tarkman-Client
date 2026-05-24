@@ -15,8 +15,8 @@ Sentry.init({
   integrations: [
     Sentry.browserTracingIntegration(),
     Sentry.replayIntegration({
-      maskAllText: false,
-      blockAllMedia: false,
+      maskAllText: true,
+      blockAllMedia: true,
     }),
   ],
   tracesSampleRate: import.meta.env.VITE_SENTRY_ENVIRONMENT === 'development' ? 0 : 0.1,

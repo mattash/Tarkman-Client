@@ -195,6 +195,41 @@ describe('AuthContext', () => {
       expect(result.current.token).toBeNull()
       expect(result.current.user).toBeNull()
     })
+
+    it('handles corrupt user JSON', () => {
+      localStorage.setItem('token', 'xxx')
+      localStorage.setItem('user', 'not-json')
+
+      expect(() => {
+        renderHook(() => useAuth(), {
+          wrapper: AuthProvider,
+        })
+      }).not.toThrow()
+
+      const { result } = renderHook(() => useAuth(), {
+        wrapper: AuthProvider,
+      })
+
+      expect(result.current.user).toBeNull()
+      expect(result.current.token).toBeNull()
+    })
+
+    it('handles empty user string', () => {
+      localStorage.setItem('token', 'xxx')
+      localStorage.setItem('user', '')
+
+      expect(() => {
+        renderHook(() => useAuth(), {
+          wrapper: AuthProvider,
+        })
+      }).not.toThrow()
+
+      const { result } = renderHook(() => useAuth(), {
+        wrapper: AuthProvider,
+      })
+
+      expect(result.current.user).toBeNull()
+      expect(result.current.token).toBeNull()
+    })
   })
 })
-
