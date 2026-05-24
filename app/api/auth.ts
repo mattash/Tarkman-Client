@@ -14,15 +14,15 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
   });
 
   if (!response.ok) {
+    let errorBody: unknown;
     try {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
-    } catch (e) {
-      if (e instanceof SyntaxError || (e instanceof Error && e.message.includes('JSON'))) {
-        throw new Error(`Login failed (${response.status})`);
-      }
-      throw e;
+      errorBody = await response.json();
+    } catch {
+      throw new Error(`Login failed (${response.status})`);
     }
+
+    const error = errorBody as { error?: string };
+    throw new Error(error.error || 'Login failed');
   }
 
   const data = await response.json();
