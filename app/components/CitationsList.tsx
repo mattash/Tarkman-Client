@@ -1,3 +1,4 @@
+import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Collapsible,
@@ -68,6 +69,32 @@ export function CitationsList({ liturgyId, explanationId }: CitationsListProps) 
       <ExternalLink className="h-4 w-4" key="external" />,
     ]
 
+    const renderVisitSourceLink = (url: string | null | undefined): React.ReactNode => {
+      try {
+        const parsed = new URL(url || '')
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return null
+        }
+
+        return (
+          <>
+            {' — '}
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline inline-flex items-center gap-1"
+            >
+              Visit source
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </>
+        )
+      } catch {
+        return null
+      }
+    }
+
     return (
       <Collapsible
         key={type}
@@ -95,20 +122,7 @@ export function CitationsList({ liturgyId, explanationId }: CitationsListProps) 
                   <div className="font-medium text-gray-900">{citation.text}</div>
                   <div className="text-xs text-gray-600">
                     {citation.source}
-                    {citation.url && type === 2 && (
-                      <>
-                        {' — '}
-                        <a
-                          href={citation.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
-                        >
-                          Visit source
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </>
-                    )}
+                    {type === 2 && renderVisitSourceLink(citation.url)}
                   </div>
                 </div>
               </li>
