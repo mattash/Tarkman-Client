@@ -18,14 +18,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } catch {
-        // Corrupt user data — clear auth state
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
     }
   }, []);
 

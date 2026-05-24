@@ -17,10 +17,6 @@ api.interceptors.request.use((config) => {
   }
   return config
 })
-
-// Shared in-flight refresh promise to deduplicate concurrent 401s
-let refreshPromise: Promise<string | null> | null = null
-
 api.interceptors.response.use(
   (response) => {
     const newToken = response.headers['x-auth-token'] || response.data?.token
@@ -31,25 +27,13 @@ api.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
-    const url = originalRequest?.url ?? ''
-    
-    // Do not retry the refresh endpoint itself — recurse guard
-    if (error.response?.status === 401 && url.endsWith('/refresh-token')) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
-      return Promise.reject(error)
-    }
     
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true
       
       try {
-        // Share one in-flight refresh across concurrent 401s
-        if (!refreshPromise) {
-          refreshPromise = api.post('/refresh-token').then(r => r.data.token).catch(() => null)
-        }
-        const newToken = await refreshPromise
-        refreshPromise = null
+        const response = await api.post('/refresh-token')
+        const newToken = response.data.token
         
         if (newToken) {
           localStorage.setItem('token', newToken)
@@ -57,14 +41,11 @@ api.interceptors.response.use(
           
           return api(originalRequest)
         }
-      } catch {
-        // refreshPromise already caught above, but belt and suspenders
-        refreshPromise = null
+      } catch (refreshError) {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
       }
-      
-      localStorage.removeItem('token')
-      window.location.href = '/login'
-      return Promise.reject(error)
     }
     
     return Promise.reject(error)

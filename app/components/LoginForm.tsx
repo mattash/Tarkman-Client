@@ -7,15 +7,12 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { setAuth } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
     setError('');
-    setIsSubmitting(true);
 
     try {
       const response = await login({ email, password });
@@ -23,8 +20,6 @@ export function LoginForm() {
       navigate({ to: '/' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -66,11 +61,10 @@ export function LoginForm() {
 
       <button
         type="submit"
-        disabled={isSubmitting}
         aria-label="Sign in to your account"
-        className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
       >
-        {isSubmitting ? 'Signing in…' : 'Login'}
+        Login
       </button>
     </form>
   );

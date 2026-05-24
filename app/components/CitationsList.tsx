@@ -98,25 +98,15 @@ export function CitationsList({ liturgyId, explanationId }: CitationsListProps) 
                     {citation.url && type === 2 && (
                       <>
                         {' — '}
-                        {((): React.ReactNode => {
-                          try {
-                            const parsed = new URL(citation.url || '');
-                            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                              return (
-                                <a
-                                  href={citation.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline inline-flex items-center gap-1"
-                                >
-                                  Visit source
-                                  <ExternalLink className="h-3 w-3" />
-                                </a>
-                              );
-                            }
-                          } catch {}
-                          return null;
-                        })()}
+                        <a
+                          href={citation.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          Visit source
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                       </>
                     )}
                   </div>
