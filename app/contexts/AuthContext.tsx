@@ -24,6 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        setToken(null);
+        setUser(null);
       }
     }
   }, []);
