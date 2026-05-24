@@ -83,6 +83,8 @@ export function useActionCable(
   }, [channelName])
 
   useEffect(() => {
+    setData(null)
+
     const url = getActionCableUrl()
     const consumer = createConsumer(url)
 
@@ -96,6 +98,7 @@ export function useActionCable(
 
     return () => {
       subscriptionRef.current?.unsubscribe()
+      consumer.disconnect()
       subscriptionRef.current = null
     }
   }, [identifier, events.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
