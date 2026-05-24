@@ -14,8 +14,12 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Login failed');
+    try {
+      const error = await response.json();
+      throw new Error(error.error || 'Login failed');
+    } catch {
+      throw new Error(`Login failed (${response.status})`);
+    }
   }
 
   const data = await response.json();
@@ -36,7 +40,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
 }
 
 export async function logout(token: string): Promise<void> {
-  await fetch(`${API_BASE}/users/sign_out`, {
+  const response = await fetch(`${API_BASE}/users/sign_out`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -44,4 +48,8 @@ export async function logout(token: string): Promise<void> {
     },
     credentials: 'include',
   });
+
+  if (!response.ok) {
+    throw new Error('Logout failed');
+  }
 }
