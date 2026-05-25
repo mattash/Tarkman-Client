@@ -4,11 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run --exclude '**/*.integration.test.ts' --exclude '**/*.integration.test.tsx' --exclude 'app/__tests__/integration/**'",
     "test:coverage": "vitest run --coverage --exclude '**/*.integration.test.ts'",
-    "test:integration": "vitest run 'app/**/__tests__/**/*.integration.test.ts' 'app/**/__tests__/**/*.integration.test.tsx' 'app/__tests__/integration/**/*.test.ts' 'app/__tests__/integration/**/*.test.tsx'",
+    "test:integration": "vitest run $(find app -path '*/__tests__/*.integration.test.ts' -o -path '*/__tests__/*.integration.test.tsx' -o -path 'app/__tests__/integration/*.test.ts' -o -path 'app/__tests__/integration/*.test.tsx')",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
