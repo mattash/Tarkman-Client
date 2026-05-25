@@ -1,4 +1,4 @@
-import { SessionWrapper } from './session'
+import type { SessionWrapper } from './session'
 
 export interface Part {
   id: number
