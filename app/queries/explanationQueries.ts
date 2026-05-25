@@ -6,7 +6,7 @@ import {
   CitationsResponse,
   RatingsResponse
 } from '../types/explanation'
-import { api } from '../api'
+import { api } from '@/api'
 
 export const explanationQueryKeys = {
   all: (sessionId: string) => ['explanation', sessionId] as const,
@@ -20,79 +20,79 @@ export const explanationQueryKeys = {
   ratings: (liturgyId: string, explanationId: string) => ['explanation', 'liturgy', liturgyId, explanationId, 'ratings'] as const,
 }
 
+function getErrorStatus(error: unknown): number | undefined {
+  return (error as { response?: { status?: number } }).response?.status
+}
+
 export async function fetchExplanation(sessionId: string, explanationId: string): Promise<Explanation> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/${explanationId}.json`)
-  if (!response.ok) {
+  try {
+    const { data } = await api.get<ExplanationWrapper>(`/s/${sessionId}/explanations/${explanationId}.json`)
+    return data.explanation
+  } catch {
     throw new Error(`Failed to fetch explanation ${explanationId}`)
   }
-  const data: ExplanationWrapper = await response.json()
-  return data.explanation
 }
 
 export async function fetchCurrentExplanation(sessionId: string): Promise<Explanation[]> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/current.json`)
-  if (!response.ok) {
+  try {
+    const { data } = await api.get<ExplanationsResponse>(`/s/${sessionId}/explanations/current.json`)
+    return data.explanations.map(wrapper => wrapper.explanation)
+  } catch {
     throw new Error('Failed to fetch current explanation')
   }
-  const data: ExplanationsResponse = await response.json()
-  return data.explanations.map(wrapper => wrapper.explanation)
 }
 
 export async function fetchUpcomingExplanations(sessionId: string, lookahead: number = 3): Promise<Explanation[]> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/explanations/upcoming.json?lookahead=${lookahead}`)
-
-  // Return empty array for 404s instead of throwing
-  if (response.status === 404) {
-    return []
-  }
-
-  if (!response.ok) {
+  try {
+    const { data } = await api.get<ExplanationsResponse>(`/s/${sessionId}/explanations/upcoming.json`, {
+      params: { lookahead },
+    })
+    return data.explanations.map(wrapper => wrapper.explanation)
+  } catch (error) {
+    // Return empty array for 404s instead of throwing
+    if (getErrorStatus(error) === 404) {
+      return []
+    }
     throw new Error('Failed to fetch upcoming explanations')
   }
-
-  const data: ExplanationsResponse = await response.json()
-  return data.explanations.map(wrapper => wrapper.explanation)
 }
 
 export async function fetchLiturgyExplanations(liturgyId: string): Promise<Explanation[]> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/explanations.json`)
-  if (!response.ok) {
+  try {
+    const { data } = await api.get<ExplanationsResponse>(`/liturgies/${liturgyId}/explanations.json`)
+    return data.explanations.map(wrapper => wrapper.explanation)
+  } catch {
     throw new Error('Failed to fetch liturgy explanations')
   }
-  const data: ExplanationsResponse = await response.json()
-  return data.explanations.map(wrapper => wrapper.explanation)
 }
 
 export async function fetchLiturgyExplanation(liturgyId: string, explanationId: string): Promise<Explanation> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/explanations/${explanationId}.json`)
-  if (!response.ok) {
+  try {
+    const { data } = await api.get<ExplanationWrapper>(`/liturgies/${liturgyId}/explanations/${explanationId}.json`)
+    return data.explanation
+  } catch {
     throw new Error(`Failed to fetch liturgy explanation ${explanationId}`)
   }
-  const data: ExplanationWrapper = await response.json()
-  return data.explanation
 }
 
 export async function fetchPartExplanations(liturgyId: string, partId: string): Promise<Explanation[]> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/parts/${partId}/explanations.json`)
+  try {
+    const { data } = await api.get<ExplanationsResponse | Explanation[]>(`/liturgies/${liturgyId}/parts/${partId}/explanations.json`)
 
-  // Return empty array for 404s instead of throwing
-  if (response.status === 404) {
-    return []
-  }
-
-  if (!response.ok) {
+    // Handle both response structures
+    if ('explanations' in data && data.explanations) {
+      return data.explanations.map((wrapper: ExplanationWrapper) => wrapper.explanation)
+    } else if (Array.isArray(data)) {
+      return data
+    } else {
+      return []
+    }
+  } catch (error) {
+    // Return empty array for 404s instead of throwing
+    if (getErrorStatus(error) === 404) {
+      return []
+    }
     throw new Error(`Failed to fetch part explanations for part ${partId}`)
-  }
-
-  const data = await response.json()
-
-  // Handle both response structures
-  if (data.explanations) {
-    return data.explanations.map((wrapper: ExplanationWrapper) => wrapper.explanation)
-  } else if (Array.isArray(data)) {
-    return data
-  } else {
-    return []
   }
 }
 
@@ -100,39 +100,34 @@ export async function fetchExplanationCitations(
   liturgyId: string,
   explanationId: string
 ): Promise<Citation[]> {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/explanations/${explanationId}/citations.json`
-  )
-
-  // Return empty array for 404s instead of throwing
-  if (response.status === 404) {
-    return []
-  }
-
-  if (!response.ok) {
+  try {
+    const { data } = await api.get<CitationsResponse>(
+      `/liturgies/${liturgyId}/explanations/${explanationId}/citations.json`
+    )
+    return data.citations || []
+  } catch (error) {
+    // Return empty array for 404s instead of throwing
+    if (getErrorStatus(error) === 404) {
+      return []
+    }
     throw new Error('Failed to fetch citations')
   }
-
-  const data: CitationsResponse = await response.json()
-  return data.citations || []
 }
 
 export async function fetchExplanationRatings(
   liturgyId: string,
   explanationId: string
 ): Promise<RatingsResponse> {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/explanations/${explanationId}/ratings.json`
-  )
-
-  // Return zero ratings for 404s instead of throwing
-  if (response.status === 404) {
-    return { average_rating: 0, rating_count: 0, ratings: [] }
-  }
-
-  if (!response.ok) {
+  try {
+    const { data } = await api.get<RatingsResponse>(
+      `/liturgies/${liturgyId}/explanations/${explanationId}/ratings.json`
+    )
+    return data
+  } catch (error) {
+    // Return zero ratings for 404s instead of throwing
+    if (getErrorStatus(error) === 404) {
+      return { average_rating: 0, rating_count: 0, ratings: [] }
+    }
     throw new Error('Failed to fetch ratings')
   }
-
-  return response.json()
 } 

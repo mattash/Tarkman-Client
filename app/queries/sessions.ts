@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { SessionWrapper } from '../types/session'
 import { PartsResponse } from '../types/part'
 import { StatusUpdateRequest, StatusUpdateResponse } from '../types/status'
-import { api } from '../api'
+import { api } from '@/api'
 
 export const sessionsKeys = {
   all: ['sessions'] as const,
@@ -40,33 +40,35 @@ export async function fetchSession(sessionId: string): Promise<SessionWrapper> {
 }
 
 export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
-  const sessionResponse = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}.json`)
-  if (!sessionResponse.ok) {
+  let sessionData: SessionWrapper
+  try {
+    const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
+    sessionData = data
+  } catch {
     throw new Error(`Failed to fetch session ${sessionId}`)
   }
 
-  const sessionData: SessionWrapper = await sessionResponse.json()
   const liturgyId = sessionData?.session?.current_liturgy_id ?? sessionData?.session?.liturgy_id
 
-  const partsResponse = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts.json`)
-
-  if (partsResponse.ok) {
-    const partsData = await partsResponse.json()
+  try {
+    const { data: partsData } = await api.get<PartsResponse>(`/s/${sessionId}/parts.json`)
     return {
       parts: partsData.parts ?? [],
       sessionData,
     }
+  } catch {
+    // Fallback to liturgy parts if session parts are unavailable (e.g., multi-liturgy sessions)
   }
 
-  // Fallback to liturgy parts if session parts are unavailable (e.g., multi-liturgy sessions)
   if (liturgyId) {
-    const liturgyPartsResponse = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${liturgyId}/parts.json`)
-    if (liturgyPartsResponse.ok) {
-      const liturgyPartsData = await liturgyPartsResponse.json()
+    try {
+      const { data: liturgyPartsData } = await api.get<PartsResponse>(`/liturgies/${liturgyId}/parts.json`)
       return {
         parts: liturgyPartsData.parts ?? [],
         sessionData,
       }
+    } catch {
+      // Throw the shared failure below.
     }
   }
 

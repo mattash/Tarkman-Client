@@ -4,6 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CitationsList } from '../CitationsList'
 import { createMockCitation } from '@/__tests__/factories/mockExplanationFactory'
 import userEvent from '@testing-library/user-event'
+import { api } from '@/api'
+
+vi.mock('@/api', () => ({
+  api: {
+    get: vi.fn(),
+  },
+}))
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -30,10 +37,7 @@ describe('CitationsList', () => {
       createMockCitation({ id: 3, citation_type: 2, text: 'External source', source: 'Book', url: 'https://example.com' }),
     ]
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ citations: mockCitations }),
-    })
+    vi.mocked(api.get).mockResolvedValue({ data: { citations: mockCitations } })
 
     render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),
@@ -53,10 +57,7 @@ describe('CitationsList', () => {
       createMockCitation({ id: 3, citation_type: 1 }),
     ]
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ citations: mockCitations }),
-    })
+    vi.mocked(api.get).mockResolvedValue({ data: { citations: mockCitations } })
 
     render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),
@@ -74,10 +75,7 @@ describe('CitationsList', () => {
       createMockCitation({ id: 1, citation_type: 0, text: 'Matthew 6:9-13' }),
     ]
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ citations: mockCitations }),
-    })
+    vi.mocked(api.get).mockResolvedValue({ data: { citations: mockCitations } })
 
     render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),
@@ -106,10 +104,7 @@ describe('CitationsList', () => {
       }),
     ]
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ citations: mockCitations }),
-    })
+    vi.mocked(api.get).mockResolvedValue({ data: { citations: mockCitations } })
 
     render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),
@@ -124,7 +119,7 @@ describe('CitationsList', () => {
   })
 
   it('should show loading state while fetching citations', () => {
-    global.fetch = vi.fn().mockReturnValue(new Promise(() => {})) // Never resolves
+    vi.mocked(api.get).mockReturnValue(new Promise(() => {})) // Never resolves
 
     const { container } = render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),
@@ -136,10 +131,7 @@ describe('CitationsList', () => {
   })
 
   it('should render nothing when there are no citations', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ citations: [] }),
-    })
+    vi.mocked(api.get).mockResolvedValue({ data: { citations: [] } })
 
     const { container } = render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),
@@ -151,10 +143,7 @@ describe('CitationsList', () => {
   })
 
   it('should handle API errors gracefully', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-    })
+    vi.mocked(api.get).mockRejectedValue({ response: { status: 500 } })
 
     const { container } = render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),
@@ -170,10 +159,7 @@ describe('CitationsList', () => {
       createMockCitation({ id: 1, citation_type: 0 }), // Only scripture
     ]
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ citations: mockCitations }),
-    })
+    vi.mocked(api.get).mockResolvedValue({ data: { citations: mockCitations } })
 
     render(<CitationsList liturgyId="1" explanationId="1" />, {
       wrapper: createWrapper(),

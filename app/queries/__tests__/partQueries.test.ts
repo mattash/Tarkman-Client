@@ -1,5 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fetchPart } from '../partQueries'
+import { api } from '@/api'
+
+vi.mock('@/api', () => ({
+  api: {
+    get: vi.fn(),
+  },
+}))
 
 describe('partQueries', () => {
   const mockPart = {
@@ -20,41 +27,28 @@ describe('partQueries', () => {
   }
 
   beforeEach(() => {
-    vi.spyOn(global, 'fetch')
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('fetchPart', () => {
     it('should fetch part details successfully', async () => {
       const mockResponse = { part: mockPart }
-      const mockFetch = vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      } as Response)
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockResponse })
 
       const result = await fetchPart('123', 1)
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${import.meta.env.VITE_API_URL}/s/123/parts/1.json`
-      )
+      expect(api.get).toHaveBeenCalledWith('/s/123/parts/1.json')
       expect(result).toEqual(mockResponse)
     })
 
     it('should handle non-ok response', async () => {
-      const mockFetch = vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found'
-      } as Response)
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Failed to fetch part'))
 
       await expect(fetchPart('123', 1)).rejects.toThrow('Failed to fetch part')
     })
 
     it('should handle network error', async () => {
-      const mockFetch = vi.mocked(global.fetch).mockRejectedValueOnce(
+      vi.mocked(api.get).mockRejectedValueOnce(
         new Error('Network error')
       )
 
