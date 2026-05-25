@@ -290,8 +290,8 @@ describe('smoothScrollToPart (P2)', () => {
 
     smoothScrollToPart(el, refs)
 
-    const snapCall = scroll.scrollTo.mock.calls[0][0]
-    expect(snapCall.top).toBe(-200)
+    const snapCall = (scroll.scrollTo as ReturnType<typeof vi.fn>).mock.calls[0] as [ScrollToOptions, ...unknown[]]
+    expect(snapCall[0].top).toBe(-200)
   })
 
   it('very tall element with fallback speed completes animation', () => {
