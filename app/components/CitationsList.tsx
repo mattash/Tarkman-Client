@@ -70,8 +70,12 @@ export function CitationsList({ liturgyId, explanationId }: CitationsListProps) 
     ]
 
     const renderVisitSourceLink = (url: string | null | undefined): React.ReactNode => {
+      if (!url) {
+        return null
+      }
+
       try {
-        const parsed = new URL(url || '')
+        const parsed = new URL(url)
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
           return null
         }
