@@ -80,7 +80,7 @@ export async function fetchPartExplanations(liturgyId: string, partId: string): 
     const { data } = await api.get<ExplanationsResponse | Explanation[]>(`/liturgies/${liturgyId}/parts/${partId}/explanations.json`)
 
     // Handle both response structures
-    if ('explanations' in data) {
+    if ('explanations' in data && data.explanations) {
       return data.explanations.map((wrapper: ExplanationWrapper) => wrapper.explanation)
     } else if (Array.isArray(data)) {
       return data
