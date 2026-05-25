@@ -4,6 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ProjectorExplanation } from '../ProjectorExplanation'
 import { createMockExplanation } from '@/__tests__/factories/mockExplanationFactory'
 import userEvent from '@testing-library/user-event'
+import { api } from '@/api'
+
+vi.mock('@/api', () => ({
+  api: {
+    get: vi.fn(),
+  },
+}))
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -49,9 +56,8 @@ describe('ProjectorExplanation', () => {
       tags: ['theology', 'practice'],
     })
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     const { container } = render(
@@ -76,9 +82,8 @@ describe('ProjectorExplanation', () => {
       summary: 'This is a test summary',
     })
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     render(
@@ -98,9 +103,8 @@ describe('ProjectorExplanation', () => {
       tags: ['theology', 'history'],
     })
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     render(
@@ -119,9 +123,8 @@ describe('ProjectorExplanation', () => {
   it('should call onClose when ESC key is pressed', async () => {
     const mockExplanation = createMockExplanation()
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     render(
@@ -145,9 +148,8 @@ describe('ProjectorExplanation', () => {
     const user = userEvent.setup()
     const mockExplanation = createMockExplanation()
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     render(
@@ -168,7 +170,7 @@ describe('ProjectorExplanation', () => {
   })
 
   it('should not render during initial loading state', async () => {
-    global.fetch = vi.fn().mockReturnValue(new Promise(() => {})) // Never resolves
+    vi.mocked(api.get).mockReturnValue(new Promise(() => {})) // Never resolves
 
     const { container } = render(
       <ProjectorExplanation sessionId="1" isVisible={true} onClose={mockOnClose} />,
@@ -183,9 +185,8 @@ describe('ProjectorExplanation', () => {
   })
 
   it('should not render when there are no explanations', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [] },
     })
 
     const { container } = render(
@@ -204,9 +205,8 @@ describe('ProjectorExplanation', () => {
   it('should display keyboard hint', async () => {
     const mockExplanation = createMockExplanation()
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     render(
@@ -224,9 +224,8 @@ describe('ProjectorExplanation', () => {
   it('should display QR code section', async () => {
     const mockExplanation = createMockExplanation()
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     render(
@@ -247,9 +246,8 @@ describe('ProjectorExplanation', () => {
       tags: ['theology'],
     })
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ explanations: [{ explanation: mockExplanation }] }),
+    vi.mocked(api.get).mockResolvedValue({
+      data: { explanations: [{ explanation: mockExplanation }] },
     })
 
     const { container } = render(
