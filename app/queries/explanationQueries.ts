@@ -81,7 +81,7 @@ export async function fetchPartExplanations(liturgyId: string, partId: string): 
 
     // Handle both response structures
     if ('explanations' in data) {
-      return data.explanations.map((wrapper: ExplanationWrapper) => wrapper.explanation)
+      return (data.explanations || []).map((wrapper: ExplanationWrapper) => wrapper.explanation)
     } else if (Array.isArray(data)) {
       return data
     } else {
