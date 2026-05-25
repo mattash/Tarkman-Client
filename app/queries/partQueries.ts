@@ -1,4 +1,5 @@
 import { Part } from '../types/part'
+import { api } from '@/api'
 
 interface PartResponse {
   part: Part
@@ -10,9 +11,6 @@ export const partQueryKeys = {
 }
 
 export async function fetchPart(sessionId: string, partId: number): Promise<PartResponse> {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/s/${sessionId}/parts/${partId}.json`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch part')
-  }
-  return response.json()
+  const { data } = await api.get<PartResponse>(`/s/${sessionId}/parts/${partId}.json`)
+  return data
 } 

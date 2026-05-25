@@ -10,6 +10,13 @@ import {
   fetchExplanationRatings,
   explanationQueryKeys
 } from '../explanationQueries'
+import { api } from '@/api'
+
+vi.mock('@/api', () => ({
+  api: {
+    get: vi.fn(),
+  },
+}))
 
 const mockExplanation = {
   id: 1,
@@ -65,22 +72,15 @@ describe('explanationQueries', () => {
   describe('fetchExplanation', () => {
     it('should fetch a single explanation', async () => {
       const mockResponse = { explanation: mockExplanation }
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockResponse })
 
       const result = await fetchExplanation('123', '1')
       expect(result).toEqual(mockExplanation)
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/s/123/explanations/1.json')
-      )
+      expect(api.get).toHaveBeenCalledWith('/s/123/explanations/1.json')
     })
 
     it('should throw an error when the request fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false
-      })
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Request failed'))
 
       await expect(fetchExplanation('123', '1')).rejects.toThrow(
         'Failed to fetch explanation 1'
@@ -90,22 +90,15 @@ describe('explanationQueries', () => {
 
   describe('fetchCurrentExplanation', () => {
     it('should fetch current explanations', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockExplanationsResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockExplanationsResponse })
 
       const result = await fetchCurrentExplanation('123')
       expect(result).toEqual(mockExplanationsResponse.explanations.map(e => e.explanation))
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/s/123/explanations/current.json')
-      )
+      expect(api.get).toHaveBeenCalledWith('/s/123/explanations/current.json')
     })
 
     it('should throw an error when the request fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false
-      })
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Request failed'))
 
       await expect(fetchCurrentExplanation('123')).rejects.toThrow(
         'Failed to fetch current explanation'
@@ -115,46 +108,34 @@ describe('explanationQueries', () => {
 
   describe('fetchUpcomingExplanations', () => {
     it('should fetch upcoming explanations with default lookahead', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockExplanationsResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockExplanationsResponse })
 
       const result = await fetchUpcomingExplanations('123')
       expect(result).toEqual(mockExplanationsResponse.explanations.map(e => e.explanation))
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/s/123/explanations/upcoming.json?lookahead=3')
-      )
+      expect(api.get).toHaveBeenCalledWith('/s/123/explanations/upcoming.json', {
+        params: { lookahead: 3 },
+      })
     })
 
     it('should fetch upcoming explanations with custom lookahead', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockExplanationsResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockExplanationsResponse })
 
       const result = await fetchUpcomingExplanations('123', 5)
       expect(result).toEqual(mockExplanationsResponse.explanations.map(e => e.explanation))
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/s/123/explanations/upcoming.json?lookahead=5')
-      )
+      expect(api.get).toHaveBeenCalledWith('/s/123/explanations/upcoming.json', {
+        params: { lookahead: 5 },
+      })
     })
 
     it('should return empty array for 404', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 404 } })
 
       const result = await fetchUpcomingExplanations('123')
       expect(result).toEqual([])
     })
 
     it('should throw an error when the request fails with non-404 status', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 500 } })
 
       await expect(fetchUpcomingExplanations('123')).rejects.toThrow(
         'Failed to fetch upcoming explanations'
@@ -164,22 +145,15 @@ describe('explanationQueries', () => {
 
   describe('fetchLiturgyExplanations', () => {
     it('should fetch liturgy explanations', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockExplanationsResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockExplanationsResponse })
 
       const result = await fetchLiturgyExplanations('123')
       expect(result).toEqual(mockExplanationsResponse.explanations.map(e => e.explanation))
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/liturgies/123/explanations.json')
-      )
+      expect(api.get).toHaveBeenCalledWith('/liturgies/123/explanations.json')
     })
 
     it('should throw an error when the request fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false
-      })
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Request failed'))
 
       await expect(fetchLiturgyExplanations('123')).rejects.toThrow(
         'Failed to fetch liturgy explanations'
@@ -190,22 +164,15 @@ describe('explanationQueries', () => {
   describe('fetchLiturgyExplanation', () => {
     it('should fetch a single liturgy explanation', async () => {
       const mockResponse = { explanation: mockExplanation }
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockResponse })
 
       const result = await fetchLiturgyExplanation('123', '1')
       expect(result).toEqual(mockExplanation)
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/liturgies/123/explanations/1.json')
-      )
+      expect(api.get).toHaveBeenCalledWith('/liturgies/123/explanations/1.json')
     })
 
     it('should throw an error when the request fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false
-      })
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Request failed'))
 
       await expect(fetchLiturgyExplanation('123', '1')).rejects.toThrow(
         'Failed to fetch liturgy explanation 1'
@@ -215,33 +182,22 @@ describe('explanationQueries', () => {
 
   describe('fetchPartExplanations', () => {
     it('should fetch part explanations', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockExplanationsResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockExplanationsResponse })
 
       const result = await fetchPartExplanations('123', '1')
       expect(result).toEqual(mockExplanationsResponse.explanations.map(e => e.explanation))
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/liturgies/123/parts/1/explanations.json')
-      )
+      expect(api.get).toHaveBeenCalledWith('/liturgies/123/parts/1/explanations.json')
     })
 
     it('should return empty array for 404', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 404 } })
 
       const result = await fetchPartExplanations('123', '1')
       expect(result).toEqual([])
     })
 
     it('should throw an error when the request fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 500 } })
 
       await expect(fetchPartExplanations('123', '1')).rejects.toThrow(
         'Failed to fetch part explanations for part 1'
@@ -251,33 +207,22 @@ describe('explanationQueries', () => {
 
   describe('fetchExplanationCitations', () => {
     it('should fetch explanation citations', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockCitationsResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockCitationsResponse })
 
       const result = await fetchExplanationCitations('123', '1')
       expect(result).toEqual(mockCitationsResponse.citations)
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/liturgies/123/explanations/1/citations.json')
-      )
+      expect(api.get).toHaveBeenCalledWith('/liturgies/123/explanations/1/citations.json')
     })
 
     it('should return empty array for 404', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 404 } })
 
       const result = await fetchExplanationCitations('123', '1')
       expect(result).toEqual([])
     })
 
     it('should throw an error when the request fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 500 } })
 
       await expect(fetchExplanationCitations('123', '1')).rejects.toThrow(
         'Failed to fetch citations'
@@ -285,10 +230,7 @@ describe('explanationQueries', () => {
     })
 
     it('should handle missing citations array in response', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ citations: null })
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: { citations: null } })
 
       const result = await fetchExplanationCitations('123', '1')
       expect(result).toEqual([])
@@ -297,23 +239,15 @@ describe('explanationQueries', () => {
 
   describe('fetchExplanationRatings', () => {
     it('should fetch explanation ratings', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockRatingsResponse)
-      })
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockRatingsResponse })
 
       const result = await fetchExplanationRatings('123', '1')
       expect(result).toEqual(mockRatingsResponse)
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/liturgies/123/explanations/1/ratings.json')
-      )
+      expect(api.get).toHaveBeenCalledWith('/liturgies/123/explanations/1/ratings.json')
     })
 
     it('should return zero ratings for 404', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 404 } })
 
       const result = await fetchExplanationRatings('123', '1')
       expect(result).toEqual({
@@ -324,10 +258,7 @@ describe('explanationQueries', () => {
     })
 
     it('should throw an error when the request fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500
-      })
+      vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 500 } })
 
       await expect(fetchExplanationRatings('123', '1')).rejects.toThrow(
         'Failed to fetch ratings'

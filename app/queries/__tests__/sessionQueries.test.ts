@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchSessions, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus } from '../sessions'
-import { api } from '../../api'
+import { api } from '@/api'
 
 // Mock api
-vi.mock('../../api', () => ({
+vi.mock('@/api', () => ({
   api: {
     get: vi.fn(),
     post: vi.fn(),
@@ -85,63 +85,47 @@ describe('sessionQueries', () => {
   })
 
   describe('fetchSessionParts', () => {
-    beforeEach(() => {
-      vi.spyOn(global, 'fetch')
-    })
-
     afterEach(() => {
-      vi.restoreAllMocks()
+      vi.clearAllMocks()
     })
 
     it('should fetch session parts successfully', async () => {
       const mockPartsData = { parts: mockPartsResponse.parts }
       const mockSessionResponse = { session: mockSessionData }
 
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockSessionResponse)
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockPartsData)
-        } as Response)
+      vi.mocked(api.get)
+        .mockResolvedValueOnce({ data: mockSessionResponse })
+        .mockResolvedValueOnce({ data: mockPartsData })
 
       const result = await fetchSessionParts('1')
       expect(result).toEqual({
         parts: mockPartsData.parts,
         sessionData: mockSessionResponse
       })
-      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(api.get).toHaveBeenCalledTimes(2)
+      expect(api.get).toHaveBeenNthCalledWith(1, '/s/1.json')
+      expect(api.get).toHaveBeenNthCalledWith(2, '/s/1/parts.json')
     })
 
     it('falls back to liturgy parts when session parts fail', async () => {
       const mockSessionResponse = { session: mockSessionData }
       const mockLiturgyParts = { parts: mockPartsResponse.parts }
 
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockSessionResponse)
-        } as Response)
-        .mockResolvedValueOnce({ ok: false } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockLiturgyParts)
-        } as Response)
+      vi.mocked(api.get)
+        .mockResolvedValueOnce({ data: mockSessionResponse })
+        .mockRejectedValueOnce(new Error('Session parts unavailable'))
+        .mockResolvedValueOnce({ data: mockLiturgyParts })
 
       const result = await fetchSessionParts('1')
       expect(result).toEqual({
         parts: mockLiturgyParts.parts,
         sessionData: mockSessionResponse
       })
-      expect(global.fetch).toHaveBeenCalledWith(
-        `${import.meta.env.VITE_API_URL}/liturgies/1/parts.json`
-      )
+      expect(api.get).toHaveBeenCalledWith('/liturgies/1/parts.json')
     })
 
     it('should handle fetch error', async () => {
-      vi.mocked(global.fetch).mockResolvedValueOnce({ ok: false } as Response)
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
       await expect(fetchSessionParts('1')).rejects.toThrow('Failed to fetch session 1')
     })
   })
