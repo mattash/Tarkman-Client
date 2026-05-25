@@ -40,16 +40,4 @@ export interface SessionPartResponse {
   current_part_id: number
 }
 
-export interface Part {
-  id: number
-  role: string
-  grabar: string
-  translit: string
-  hy_east: string
-  hy_west: string
-  ru: string
-  en: string
-  explanation_ids: number[]
-  effective_duration_ms: number
-  position: number
-} 
+export type { Part } from './part'
