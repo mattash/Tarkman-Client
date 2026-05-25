@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-e471ac4105-_7e6378d55f",
+  "featureId": "feat_cli-command_e471ac4105",
+  "title": "Login error handling can throw JSON parse errors instead of auth errors",
+  "category": "bug",
+  "severity": "low",
+  "confidence": "high",
+  "triage": "confirmed-bug",
+  "evidence": [
+    {
+      "path": "app/api/auth.ts",
+      "startLine": 16,
+      "endLine": 18,
+      "symbol": "login",
+      "quote": null
+    },
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "startLine": 11,
+      "endLine": 15,
+      "symbol": null,
+      "quote": null
+    }
+  ],
+  "reasoning": "On any non-OK login response, the code unconditionally calls response.json(). If the backend returns an empty body, HTML error page, or another non-JSON payload, login throws the JSON parser exception instead of the intended 'Login failed' fallback. That leaks a transport/parsing detail to callers and loses the API failure context.",
+  "reproduction": "Mock fetch for /users/sign_in to return { ok: false, status: 500, json: () => Promise.reject(new SyntaxError('Unexpected end of JSON input')) }. login(...) rejects with SyntaxError rather than 'Login failed'.",
+  "recommendation": "Wrap error-body parsing in a safe helper or catch JSON parse failures before throwing a normalized Error, using any parsed error message when available and the fallback otherwise.",
+  "whyTestsDoNotAlreadyCoverThis": "The linked auth flow test replaces the real login implementation with vi.fn(), so it never exercises non-OK fetch responses or malformed error bodies.",
+  "suggestedRegressionTest": "Add a login unit test for non-OK responses with an empty or invalid JSON body and assert the rejection message falls back to 'Login failed'.",
+  "minimumFixScope": "Change the non-OK branch in app/api/auth.ts and add a focused test around failed login response parsing.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-e471ac4105_a22c1ce473",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T153315-05a42e",
+  "createdAt": "2026-05-24T15:35:53.946Z",
+  "updatedAt": "2026-05-24T15:35:53.946Z"
+}

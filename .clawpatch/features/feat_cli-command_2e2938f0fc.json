@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_cli-command_2e2938f0fc",
+  "title": "Node source app/components/ui",
+  "summary": "Node/TypeScript source group app/components/ui with 3 files.",
+  "kind": "cli-command",
+  "source": "node-source-group",
+  "confidence": "medium",
+  "entrypoints": [
+    {
+      "path": "package.json",
+      "symbol": "app/components/ui",
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "app/components/ui/button.tsx",
+      "reason": "source group app/components/ui"
+    },
+    {
+      "path": "app/components/ui/collapsible.tsx",
+      "reason": "source group app/components/ui"
+    },
+    {
+      "path": "app/components/ui/drawer.tsx",
+      "reason": "source group app/components/ui"
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "package.json",
+      "reason": "package manifest"
+    }
+  ],
+  "tests": [],
+  "tags": [
+    "node",
+    "typescript",
+    "source-group",
+    "project:tarkman-client-refactor",
+    "project-root:."
+  ],
+  "trustBoundaries": [
+    "user-input",
+    "process-exec"
+  ],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-cli-command-2e2938f0fc-_b142d119f0"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260524T151549-00c97c",
+      "kind": "review",
+      "summary": "1 finding(s); prompt=13598 bytes; approxTokens=3400; includedFiles=4; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-24T15:16:38.842Z"
+    }
+  ],
+  "createdAt": "2026-05-24T15:15:41.238Z",
+  "updatedAt": "2026-05-24T15:16:38.842Z"
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_release_51170e0f9c",
+  "title": "Package script build",
+  "summary": "Package script 'build': vite build",
+  "kind": "release",
+  "source": "package-json-script",
+  "confidence": "medium",
+  "entrypoints": [
+    {
+      "path": "package.json",
+      "symbol": "build",
+      "route": null,
+      "command": "build"
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "package.json",
+      "reason": "entrypoint"
+    }
+  ],
+  "contextFiles": [],
+  "tests": [],
+  "tags": [
+    "node",
+    "package-script",
+    "project:tarkman-client-refactor",
+    "project-root:."
+  ],
+  "trustBoundaries": [
+    "process-exec",
+    "filesystem"
+  ],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-release-51170e0f9c-0e0e_2a0c4d62c1"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260524T154116-c00dfb",
+      "kind": "review",
+      "summary": "1 finding(s); prompt=5807 bytes; approxTokens=1452; includedFiles=1; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-24T15:42:03.593Z"
+    }
+  ],
+  "createdAt": "2026-05-24T15:15:41.238Z",
+  "updatedAt": "2026-05-24T15:42:03.593Z"
+}

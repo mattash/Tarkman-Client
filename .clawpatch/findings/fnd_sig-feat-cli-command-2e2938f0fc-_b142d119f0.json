@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-2e2938f0fc-_b142d119f0",
+  "featureId": "feat_cli-command_2e2938f0fc",
+  "title": "Button defaults to submit inside forms",
+  "category": "bug",
+  "severity": "medium",
+  "confidence": "medium",
+  "triage": "risk",
+  "evidence": [
+    {
+      "path": "app/components/ui/button.tsx",
+      "startLine": 43,
+      "endLine": 51,
+      "symbol": "Button",
+      "quote": null
+    }
+  ],
+  "reasoning": "The shared Button renders a native <button> when asChild is false and forwards props without setting a default type. In HTML, a button inside a form defaults to type=\"submit\", so ordinary action buttons used in forms can submit the form unintentionally unless every caller remembers to pass type=\"button\". Because this is a reusable UI primitive, the impact can appear far from the component definition.",
+  "reproduction": null,
+  "recommendation": "Default the native button case to type=\"button\" while still allowing callers to override with type=\"submit\" or type=\"reset\". Take care not to pass a button-only default through Slot when asChild is true.",
+  "whyTestsDoNotAlreadyCoverThis": "No tests are included for these UI primitives, and there is no interaction test covering Button behavior inside a form.",
+  "suggestedRegressionTest": "Add a React Testing Library test rendering Button inside a form with an onSubmit spy, click it without a type prop, and assert the submit handler is not called; add a second assertion that type=\"submit\" still submits.",
+  "minimumFixScope": "Update app/components/ui/button.tsx to apply a default type only for the non-asChild native button render path.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-2e2938f0fc_29083f76fc",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T151549-00c97c",
+  "createdAt": "2026-05-24T15:16:38.841Z",
+  "updatedAt": "2026-05-24T15:16:38.841Z"
+}

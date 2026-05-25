@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-a3c690f87a-_76b7b926c5",
+  "featureId": "feat_cli-command_a3c690f87a",
+  "title": "Sentry Replay captures page text and media without masking",
+  "category": "security",
+  "severity": "medium",
+  "confidence": "high",
+  "triage": "confirmed-bug",
+  "evidence": [
+    {
+      "path": "app/entry-client.tsx",
+      "startLine": 17,
+      "endLine": 20,
+      "symbol": "Sentry.init",
+      "quote": null
+    },
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "startLine": 81,
+      "endLine": 86,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/__tests__/routes/sessions.display.test.tsx",
+      "startLine": 230,
+      "endLine": 262,
+      "symbol": null,
+      "quote": null
+    }
+  ],
+  "reasoning": "The client enables Sentry Replay with maskAllText:false and blockAllMedia:false, so replay sessions can include rendered user/session text and media. The included tests demonstrate authenticated user input and service/session messages are part of normal UI flows, so this can send potentially sensitive user-input and session content to a third-party telemetry service.",
+  "reproduction": null,
+  "recommendation": "Use privacy-preserving Replay defaults for production, at minimum maskAllText:true and blockAllMedia:true, and selectively unmask only fields that have been reviewed as non-sensitive.",
+  "whyTestsDoNotAlreadyCoverThis": "The tests exercise UI behavior and authentication flows but do not assert telemetry privacy configuration or inspect Sentry Replay options.",
+  "suggestedRegressionTest": "Add an entry-client/Sentry configuration test or a small exported Sentry config helper test that asserts Replay is initialized with text masking and media blocking enabled for production-like environments.",
+  "minimumFixScope": "Change the Sentry replayIntegration options in app/entry-client.tsx and add a focused configuration test if the setup can be factored for testability.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-a3c690f87a_c8af8e27a8",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T153315-05a42e",
+  "createdAt": "2026-05-24T15:34:22.659Z",
+  "updatedAt": "2026-05-24T15:34:22.659Z"
+}

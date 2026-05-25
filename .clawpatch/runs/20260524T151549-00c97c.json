@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260524T151549-00c97c",
+  "command": "review",
+  "args": [
+    "review",
+    "--limit",
+    "5"
+  ],
+  "rootPath": "/Users/oshii/clawd/tarkman-pm-agent/code/Tarkman-Client",
+  "headSha": "8bca93c452afd421bf1f942fc90772ad00809cc0",
+  "startedAt": "2026-05-24T15:15:49.470Z",
+  "finishedAt": "2026-05-24T15:16:48.755Z",
+  "status": "completed",
+  "claimedFeatureIds": [
+    "feat_cli-command_0c2b709c91",
+    "feat_cli-command_18a6ff84d9",
+    "feat_cli-command_1f3f9372f2",
+    "feat_cli-command_2e2938f0fc",
+    "feat_cli-command_4ed2746e64"
+  ],
+  "findingIds": [
+    "fnd_sig-feat-cli-command-18a6ff84d9-_94158246f6",
+    "fnd_sig-feat-cli-command-18a6ff84d9-_50b45f8076",
+    "fnd_sig-feat-cli-command-0c2b709c91-_6ec7f37a36",
+    "fnd_sig-feat-cli-command-2e2938f0fc-_b142d119f0",
+    "fnd_sig-feat-cli-command-4ed2746e64-_d3b3c9e552"
+  ],
+  "patchAttemptIds": [],
+  "errors": []
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-c1c7dd3d52-_f7d6ad6f67",
+  "featureId": "feat_cli-command_c1c7dd3d52",
+  "title": "Initial current part never invokes the documented onPartChange callback",
+  "category": "api-contract",
+  "severity": "medium",
+  "confidence": "high",
+  "triage": "contract-mismatch",
+  "evidence": [
+    {
+      "path": "app/hooks/useSessionParts.ts",
+      "startLine": 8,
+      "endLine": 10,
+      "symbol": "UseSessionPartsOptions.onPartChange",
+      "quote": null
+    },
+    {
+      "path": "app/hooks/useSessionParts.ts",
+      "startLine": 49,
+      "endLine": 60,
+      "symbol": "useSessionParts initial data effect",
+      "quote": null
+    },
+    {
+      "path": "app/hooks/useSessionParts.ts",
+      "startLine": 62,
+      "endLine": 78,
+      "symbol": "useSessionParts ActionCable effect",
+      "quote": null
+    }
+  ],
+  "reasoning": "The option contract says onPartChange is called when the current part changes via ActionCable or initial data, but the initial data effect only sets currentPartId and scrolls. The callback is only invoked in the ActionCable effect. Consumers relying on the callback for initial current-part state will miss the first part until a live update arrives.",
+  "reproduction": null,
+  "recommendation": "Call onPartChange with the stringified current_part_id inside the initial data effect when current_part_id is present, or narrow the option documentation if initial notifications are intentionally unsupported.",
+  "whyTestsDoNotAlreadyCoverThis": "useSessionParts tests cover id 0, ActionCable updates, status-only updates, and rerender behavior, but none passes onPartChange while resolving initial fetch data.",
+  "suggestedRegressionTest": "Add a useSessionParts test that passes an onPartChange spy, resolves fetchSessionParts with current_part_id, and asserts the spy receives the stringified initial id exactly once.",
+  "minimumFixScope": "app/hooks/useSessionParts.ts initial data effect and one focused test in app/hooks/__tests__/useSessionParts.test.tsx",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-c1c7dd3d52_295e3d9944",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T153315-05a42e",
+  "createdAt": "2026-05-24T15:35:30.426Z",
+  "updatedAt": "2026-05-24T15:35:30.426Z"
+}

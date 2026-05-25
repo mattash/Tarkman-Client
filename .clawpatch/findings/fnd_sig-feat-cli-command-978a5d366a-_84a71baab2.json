@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-978a5d366a-_84a71baab2",
+  "featureId": "feat_cli-command_978a5d366a",
+  "title": "Projector overlay can show explanations from the previous session",
+  "category": "bug",
+  "severity": "medium",
+  "confidence": "high",
+  "triage": "confirmed-bug",
+  "evidence": [
+    {
+      "path": "app/components/ProjectorExplanation.tsx",
+      "startLine": 29,
+      "endLine": 29,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/components/ProjectorExplanation.tsx",
+      "startLine": 37,
+      "endLine": 42,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/components/ProjectorExplanation.tsx",
+      "startLine": 44,
+      "endLine": 48,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/components/ProjectorExplanation.tsx",
+      "startLine": 64,
+      "endLine": 75,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/components/ProjectorExplanation.tsx",
+      "startLine": 99,
+      "endLine": 124,
+      "symbol": null,
+      "quote": null
+    }
+  ],
+  "reasoning": "previousExplanations is component state that is updated only when a successful explanations query returns data. The query key changes with sessionId, but the retained previousExplanations state is not cleared when sessionId changes. While the new session query is still loading or returns undefined, displayExplanations falls back to the prior session's explanations, so an open projector can temporarily render old liturgy content under the new session route/QR URL.",
+  "reproduction": "Render ProjectorExplanation with isVisible=true for session A after its explanations have loaded, then rerender the same component instance with sessionId set to session B while the session B query is pending. The component will keep rendering session A explanations because displayExplanations uses explanations ?? previousExplanations.",
+  "recommendation": "Reset previousExplanations when sessionId changes, or key the fallback by sessionId so cached fallback content is only used for the same session. During a session change, prefer a loading/null state until the new session's explanations are available.",
+  "whyTestsDoNotAlreadyCoverThis": "The included tests cover CurrentExplanation fallback behavior, but there is no ProjectorExplanation test exercising a sessionId change while visible. The tests therefore do not detect cross-session stale overlay content.",
+  "suggestedRegressionTest": "Add a ProjectorExplanation test that loads explanations for one session, rerenders with a different sessionId and a pending fetch, and asserts the first session's title/description are not rendered.",
+  "minimumFixScope": "app/components/ProjectorExplanation.tsx",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-978a5d366a_72a58024a7",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T153315-05a42e",
+  "createdAt": "2026-05-24T15:34:26.714Z",
+  "updatedAt": "2026-05-24T15:34:26.714Z"
+}
