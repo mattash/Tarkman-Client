@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_cli-command_e471ac4105",
+  "title": "Node source app/api",
+  "summary": "Node/TypeScript source group app/api with 2 files.",
+  "kind": "cli-command",
+  "source": "node-source-group",
+  "confidence": "medium",
+  "entrypoints": [
+    {
+      "path": "package.json",
+      "symbol": "app/api",
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "app/api/auth.ts",
+      "reason": "source group app/api"
+    },
+    {
+      "path": "app/api/index.ts",
+      "reason": "source group app/api"
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "package.json",
+      "reason": "package manifest"
+    },
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "reason": "associated test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "command": "npm run test"
+    }
+  ],
+  "tags": [
+    "node",
+    "typescript",
+    "source-group",
+    "project:tarkman-client-refactor",
+    "project-root:."
+  ],
+  "trustBoundaries": [
+    "user-input",
+    "process-exec"
+  ],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-cli-command-e471ac4105-_d6a77ac6ee",
+    "fnd_sig-feat-cli-command-e471ac4105-_7e6378d55f"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260524T153315-05a42e",
+      "kind": "review",
+      "summary": "2 finding(s); prompt=14539 bytes; approxTokens=3635; includedFiles=4; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-24T15:35:53.949Z"
+    }
+  ],
+  "createdAt": "2026-05-24T15:15:41.238Z",
+  "updatedAt": "2026-05-24T15:35:53.949Z"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-ffce3cb9f2-_bc48875fae",
+  "featureId": "feat_cli-command_ffce3cb9f2",
+  "title": "Configured test scripts do not run included integration tests",
+  "category": "test-gap",
+  "severity": "low",
+  "confidence": "high",
+  "triage": "test-gap",
+  "evidence": [
+    {
+      "path": "package.json",
+      "startLine": 9,
+      "endLine": 11,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "startLine": 50,
+      "endLine": 139,
+      "symbol": null,
+      "quote": null
+    }
+  ],
+  "reasoning": "The default test script excludes all *.integration.test.ts files, while test:integration only targets app/queries/__tests__/*.integration.test.ts. The included auth integration test is app/__tests__/integration/auth.test.tsx, so it is not selected by either script: it uses .tsx and lives outside app/queries/__tests__. As a result, authentication-flow coverage can silently rot even though it is listed as an associated test for this feature.",
+  "reproduction": "Run npm run test:integration; the configured glob only covers app/queries/__tests__/*.integration.test.ts and will not include app/__tests__/integration/auth.test.tsx.",
+  "recommendation": "Broaden test:integration to include integration tests under app/__tests__/integration and both .ts and .tsx extensions, or move/rename the auth integration test to match the existing integration glob.",
+  "whyTestsDoNotAlreadyCoverThis": "This is a script selection issue: the test exists, but the package scripts shown do not include it in either the normal or integration test command.",
+  "suggestedRegressionTest": "Add a CI or package-script smoke check that runs vitest with the integration glob and includes app/__tests__/integration/auth.test.tsx.",
+  "minimumFixScope": "Update package.json test:integration glob or relocate the integration test to match the configured glob.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-ffce3cb9f2_c9aa4a39a3",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T154116-c00dfb",
+  "createdAt": "2026-05-24T15:41:52.938Z",
+  "updatedAt": "2026-05-24T15:41:52.938Z"
+}

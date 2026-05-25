@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-a3c690f87a-_46cd971beb",
+  "featureId": "feat_cli-command_a3c690f87a",
+  "title": "Integration TSX test is not excluded from the default test script",
+  "category": "build-release",
+  "severity": "low",
+  "confidence": "high",
+  "triage": "risk",
+  "evidence": [
+    {
+      "path": "package.json",
+      "startLine": 9,
+      "endLine": 11,
+      "symbol": "scripts.test",
+      "quote": null
+    },
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "startLine": 1,
+      "endLine": 8,
+      "symbol": null,
+      "quote": null
+    }
+  ],
+  "reasoning": "The default test script excludes only '**/*.integration.test.ts', but the included integration test is named auth.test.tsx under an integration directory. As a result, npm run test will still pick it up even though integration tests appear intended to be separated from the default unit run, while npm run test:integration only targets app/queries/__tests__/*.integration.test.ts and also misses this file.",
+  "reproduction": null,
+  "recommendation": "Update the scripts to consistently include or exclude integration tests, for example exclude '**/*.integration.test.{ts,tsx}' and/or 'app/__tests__/integration/**' from npm run test, and include the TSX integration directory in npm run test:integration if it should remain an integration suite.",
+  "whyTestsDoNotAlreadyCoverThis": "This is a test runner selection/configuration issue; the test files themselves cannot detect that they are being run by the wrong npm script.",
+  "suggestedRegressionTest": "Add a lightweight CI check or npm script dry-run convention that verifies integration test globs include TSX files and that the default test command excludes the integration directory.",
+  "minimumFixScope": "Adjust package.json test and test:integration globs to match the repository's actual integration test locations and extensions.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-a3c690f87a_b84f0f7151",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T153315-05a42e",
+  "createdAt": "2026-05-24T15:34:22.659Z",
+  "updatedAt": "2026-05-24T15:34:22.659Z"
+}

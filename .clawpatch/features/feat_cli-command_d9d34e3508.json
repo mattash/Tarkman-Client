@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_cli-command_d9d34e3508",
+  "title": "Node source app/components#1",
+  "summary": "Node/TypeScript source group app/components#1 with 12 files.",
+  "kind": "cli-command",
+  "source": "node-source-group",
+  "confidence": "medium",
+  "entrypoints": [
+    {
+      "path": "package.json",
+      "symbol": "app/components#1",
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "app/components/AuthLink.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/CitationsList.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/CurrentExplanation.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/CustomMessageModal.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/ExplanationDrawer.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/ExplanationIndicator.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/FastForwardButton.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/LanguageSelector.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/LoginForm.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/LogoutButton.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/Message.tsx",
+      "reason": "source group app/components#1"
+    },
+    {
+      "path": "app/components/MinimalStatusView.tsx",
+      "reason": "source group app/components#1"
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "package.json",
+      "reason": "package manifest"
+    },
+    {
+      "path": "app/components/__tests__/CitationsList.test.tsx",
+      "reason": "associated test"
+    },
+    {
+      "path": "app/components/__tests__/CurrentExplanation.test.tsx",
+      "reason": "associated test"
+    },
+    {
+      "path": "app/components/__tests__/ExplanationDrawer.test.tsx",
+      "reason": "associated test"
+    },
+    {
+      "path": "app/components/__tests__/ExplanationIndicator.test.tsx",
+      "reason": "associated test"
+    },
+    {
+      "path": "app/components/__tests__/FastForwardButton.test.tsx",
+      "reason": "associated test"
+    },
+    {
+      "path": "app/components/__tests__/LanguageSelector.test.tsx",
+      "reason": "associated test"
+    },
+    {
+      "path": "app/components/__tests__/LoginForm.test.tsx",
+      "reason": "associated test"
+    },
+    {
+      "path": "app/components/__tests__/Navbar.test.tsx",
+      "reason": "associated test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "app/components/__tests__/CitationsList.test.tsx",
+      "command": "npm run test"
+    },
+    {
+      "path": "app/components/__tests__/CurrentExplanation.test.tsx",
+      "command": "npm run test"
+    },
+    {
+      "path": "app/components/__tests__/ExplanationDrawer.test.tsx",
+      "command": "npm run test"
+    },
+    {
+      "path": "app/components/__tests__/ExplanationIndicator.test.tsx",
+      "command": "npm run test"
+    },
+    {
+      "path": "app/components/__tests__/FastForwardButton.test.tsx",
+      "command": "npm run test"
+    },
+    {
+      "path": "app/components/__tests__/LanguageSelector.test.tsx",
+      "command": "npm run test"
+    },
+    {
+      "path": "app/components/__tests__/LoginForm.test.tsx",
+      "command": "npm run test"
+    },
+    {
+      "path": "app/components/__tests__/Navbar.test.tsx",
+      "command": "npm run test"
+    }
+  ],
+  "tags": [
+    "node",
+    "typescript",
+    "source-group",
+    "project:tarkman-client-refactor",
+    "project-root:."
+  ],
+  "trustBoundaries": [
+    "user-input",
+    "process-exec"
+  ],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-cli-command-d9d34e3508-_3d939c2366",
+    "fnd_sig-feat-cli-command-d9d34e3508-_c080d51a81"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260524T153315-05a42e",
+      "kind": "review",
+      "summary": "2 finding(s); prompt=103518 bytes; approxTokens=25869; includedFiles=21; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-24T15:35:25.888Z"
+    }
+  ],
+  "createdAt": "2026-05-24T15:15:41.238Z",
+  "updatedAt": "2026-05-24T15:35:25.888Z"
+}

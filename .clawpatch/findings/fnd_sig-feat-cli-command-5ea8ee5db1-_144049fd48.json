@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-5ea8ee5db1-_144049fd48",
+  "featureId": "feat_cli-command_5ea8ee5db1",
+  "title": "Direct session display route drops the supported `none` status view",
+  "category": "bug",
+  "severity": "medium",
+  "confidence": "medium",
+  "triage": "risk",
+  "evidence": [
+    {
+      "path": "app/routes/sessions.$id.display.tsx",
+      "startLine": 36,
+      "endLine": 39,
+      "symbol": "Route.validateSearch",
+      "quote": null
+    },
+    {
+      "path": "app/routes/sessions.$id.display.tsx",
+      "startLine": 117,
+      "endLine": 123,
+      "symbol": "RouteComponent",
+      "quote": null
+    },
+    {
+      "path": "app/routes/sessions.display.tsx",
+      "startLine": 83,
+      "endLine": 101,
+      "symbol": "RouteComponent",
+      "quote": null
+    },
+    {
+      "path": "app/routes/sessions.display.tsx",
+      "startLine": 122,
+      "endLine": 133,
+      "symbol": "RouteComponent",
+      "quote": null
+    }
+  ],
+  "reasoning": "The non-id display route treats `status_view === 'none'` as a valid display preference and suppresses overlays/messages while still rendering parts and explanations. The id-scoped display route resolves the same `statusView` preference shape, but its search validator only accepts `full`, `pages_only`, and `posture_only`. As a result, a direct URL such as `/sessions/123/display?status_view=none` is silently normalized to the default `full`, so overlays/messages remain enabled. Token configs can still carry `none`, making direct search parameters inconsistent with the same display behavior elsewhere.",
+  "reproduction": null,
+  "recommendation": "Add `none` to the accepted `status_view` values in `app/routes/sessions.$id.display.tsx` and mirror the `isNoneView` handling from `sessions.display.tsx` so direct and token-backed display preferences behave consistently.",
+  "whyTestsDoNotAlreadyCoverThis": "The included tests for `sessions.$id.display` only verify the default render and loading state. The broader `sessions.display` tests cover token preferences for `pages_only` and `posture_only`, but no test exercises `status_view=none` as a direct search parameter on the id-scoped route.",
+  "suggestedRegressionTest": "Add a route test for `/sessions/456/display?status_view=none` that mocks an active session and asserts `StatusOverlay` and notification `Message` are not rendered while the session parts and explanation indicator still render.",
+  "minimumFixScope": "Update `app/routes/sessions.$id.display.tsx` search validation and render gating for `status_view: 'none'`; add one focused route test.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-5ea8ee5db1_695502cd58",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T153315-05a42e",
+  "createdAt": "2026-05-24T15:33:54.124Z",
+  "updatedAt": "2026-05-24T15:33:54.124Z"
+}

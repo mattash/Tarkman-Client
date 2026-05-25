@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "featureId": "feat_cli-command_18a6ff84d9",
+  "title": "Node source app/types",
+  "summary": "Node/TypeScript source group app/types with 7 files.",
+  "kind": "cli-command",
+  "source": "node-source-group",
+  "confidence": "medium",
+  "entrypoints": [
+    {
+      "path": "package.json",
+      "symbol": "app/types",
+      "route": null,
+      "command": null
+    }
+  ],
+  "ownedFiles": [
+    {
+      "path": "app/types/auth.ts",
+      "reason": "source group app/types"
+    },
+    {
+      "path": "app/types/displayLink.ts",
+      "reason": "source group app/types"
+    },
+    {
+      "path": "app/types/explanation.ts",
+      "reason": "source group app/types"
+    },
+    {
+      "path": "app/types/index.ts",
+      "reason": "source group app/types"
+    },
+    {
+      "path": "app/types/part.ts",
+      "reason": "source group app/types"
+    },
+    {
+      "path": "app/types/session.ts",
+      "reason": "source group app/types"
+    },
+    {
+      "path": "app/types/status.ts",
+      "reason": "source group app/types"
+    }
+  ],
+  "contextFiles": [
+    {
+      "path": "package.json",
+      "reason": "package manifest"
+    },
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "reason": "associated test"
+    }
+  ],
+  "tests": [
+    {
+      "path": "app/__tests__/integration/auth.test.tsx",
+      "command": "npm run test"
+    }
+  ],
+  "tags": [
+    "node",
+    "typescript",
+    "source-group",
+    "project:tarkman-client-refactor",
+    "project-root:."
+  ],
+  "trustBoundaries": [
+    "user-input",
+    "process-exec"
+  ],
+  "status": "needs-fix",
+  "lock": null,
+  "findingIds": [
+    "fnd_sig-feat-cli-command-18a6ff84d9-_94158246f6",
+    "fnd_sig-feat-cli-command-18a6ff84d9-_50b45f8076"
+  ],
+  "patchAttemptIds": [],
+  "analysisHistory": [
+    {
+      "runId": "20260524T151549-00c97c",
+      "kind": "review",
+      "summary": "2 finding(s); prompt=21362 bytes; approxTokens=5341; includedFiles=9; omittedFiles=0",
+      "provider": "codex",
+      "model": null,
+      "reasoningEffort": null,
+      "createdAt": "2026-05-24T15:16:18.329Z"
+    }
+  ],
+  "createdAt": "2026-05-24T15:15:41.238Z",
+  "updatedAt": "2026-05-24T15:16:18.329Z"
+}

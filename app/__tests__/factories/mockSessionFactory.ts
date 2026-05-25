@@ -47,6 +47,6 @@ export function createMockSessionList(count: number = 3): SessionWrapper[] {
   return Array.from({ length: count }, (_, i) => createMockSession({
     id: i + 1,
     church_name: `Church ${i + 1}`,
-    date: new Date(Date.now() + i * 86400000).toISOString().split('T')[0],
+    date: `2025-01-${String(15 + i).padStart(2, '0')}`,
   }))
 }

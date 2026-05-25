@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-cli-command-ae9e07d2d3-_22fc99bfbe",
+  "featureId": "feat_cli-command_ae9e07d2d3",
+  "title": "Provider test options are accepted but silently ignored",
+  "category": "api-contract",
+  "severity": "medium",
+  "confidence": "high",
+  "triage": "contract-mismatch",
+  "evidence": [
+    {
+      "path": "app/__tests__/utils/test-utils.tsx",
+      "startLine": 9,
+      "endLine": 14,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/__tests__/utils/test-utils.tsx",
+      "startLine": 29,
+      "endLine": 49,
+      "symbol": null,
+      "quote": null
+    },
+    {
+      "path": "app/__tests__/utils/test-utils.tsx",
+      "startLine": 58,
+      "endLine": 76,
+      "symbol": null,
+      "quote": null
+    }
+  ],
+  "reasoning": "The shared render helper exposes initialAuth, initialLanguage, and routerInitialEntries as supported options, but initialAuth only swaps AuthProvider for a fragment without providing the requested auth state, initialLanguage is never passed to LanguageProvider, and routerInitialEntries is destructured but never used to create or provide a router. Tests that pass these options will run under different state than requested, which can either hide auth/language/routing regressions or make route-dependent components fail with missing router context.",
+  "reproduction": "Call renderWithProviders(<ComponentThatReadsAuthOrRouter />, { initialAuth: { user, token }, routerInitialEntries: ['/somewhere'] }). The component will not receive the provided auth state and no RouterProvider is installed.",
+  "recommendation": "Either implement these options fully by providing test-capable Auth, Language, and Router providers, or remove the unsupported options so tests cannot assume state setup that does not happen.",
+  "whyTestsDoNotAlreadyCoverThis": "No linked tests exercise the helper itself or assert that supplied provider options affect rendered context.",
+  "suggestedRegressionTest": "Add a focused test component that reads auth, language, and router location from context, render it with each option, and assert the observed values match the supplied values.",
+  "minimumFixScope": "Update app/__tests__/utils/test-utils.tsx to honor or remove initialAuth, initialLanguage, and routerInitialEntries.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-cli-command-ae9e07d2d3_38553f5bda",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T153315-05a42e",
+  "createdAt": "2026-05-24T15:34:52.633Z",
+  "updatedAt": "2026-05-24T15:34:52.633Z"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "findingId": "fnd_sig-feat-release-51170e0f9c-0e0e_2a0c4d62c1",
+  "featureId": "feat_release_51170e0f9c",
+  "title": "Production build does not run TypeScript type checking",
+  "category": "build-release",
+  "severity": "medium",
+  "confidence": "medium",
+  "triage": "risk",
+  "evidence": [
+    {
+      "path": "package.json",
+      "startLine": 5,
+      "endLine": 11,
+      "symbol": "scripts",
+      "quote": null
+    },
+    {
+      "path": "package.json",
+      "startLine": 58,
+      "endLine": 59,
+      "symbol": "devDependencies",
+      "quote": null
+    }
+  ],
+  "reasoning": "The release build script is only `vite build`. Vite transpiles TypeScript but does not perform full TypeScript semantic type checking by default, so a production bundle can be produced even when the TypeScript compiler would report errors. Because TypeScript is part of the toolchain, this leaves release validation weaker than the project likely expects.",
+  "reproduction": null,
+  "recommendation": "Change the build script to run TypeScript checking before bundling, for example `tsc --noEmit && vite build`, or add a dedicated typecheck script and make release/CI invoke it before `vite build`.",
+  "whyTestsDoNotAlreadyCoverThis": "No tests are included for this package script, and the configured `npm run test` command runs Vitest rather than validating the production build pipeline or TypeScript compiler errors.",
+  "suggestedRegressionTest": "Add a CI/package-script check that runs the build command and fails on a deliberate TypeScript semantic error, or add a script-level test asserting that the build pipeline includes `tsc --noEmit`.",
+  "minimumFixScope": "Update `package.json` scripts so the production build path includes TypeScript semantic checking before `vite build`.",
+  "status": "open",
+  "history": [],
+  "signature": "sig_feat-release-51170e0f9c_0e0e8fda8b",
+  "linkedPatchAttemptIds": [],
+  "createdByRunId": "20260524T154116-c00dfb",
+  "createdAt": "2026-05-24T15:42:03.591Z",
+  "updatedAt": "2026-05-24T15:42:03.591Z"
+}
