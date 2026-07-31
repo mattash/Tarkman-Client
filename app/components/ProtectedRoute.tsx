@@ -8,10 +8,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user) {
+      const redirect = `${window.location.pathname}${window.location.search || ''}${window.location.hash || ''}`;
       navigate({ 
         to: '/login',
         search: {
-          redirect: window.location.pathname
+          redirect
         }
       });
     }
@@ -22,4 +23,4 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
-} 
+}

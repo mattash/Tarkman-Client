@@ -1,11 +1,13 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { logout } from '@/api/auth';
+import { getAuthToken } from '@/utils/authStorage';
 
 export function LogoutButton() {
-  const { token, logout: logoutContext } = useAuth();
+  const { logout: logoutContext } = useAuth();
 
   const handleLogout = async () => {
     try {
+      const token = getAuthToken();
       if (token) {
         await logout(token);
       }

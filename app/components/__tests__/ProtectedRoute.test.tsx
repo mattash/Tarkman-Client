@@ -48,7 +48,10 @@ describe('ProtectedRoute', () => {
     const history = createMemoryHistory({ initialEntries: ['/dashboard'] })
     const router = createRouter({ routeTree, history })
 
-    return render(<RouterProvider router={router as any} />)
+    return {
+      ...render(<RouterProvider router={router as any} />),
+      router,
+    }
   }
 
   it('should render children when user is authenticated', () => {
@@ -73,14 +76,14 @@ describe('ProtectedRoute', () => {
   })
 
   it('should navigate to login when user is not authenticated', async () => {
-    renderProtectedRoute(
+    const { router } = renderProtectedRoute(
       <div data-testid="protected-content">Protected Content</div>,
       { user: null, token: null }
     )
 
-    // Wait for navigation to occur
     await waitFor(() => {
-      expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument()
+      expect(router.state.location.pathname).toBe('/login')
+      expect(router.state.location.search).toEqual({ redirect: '/dashboard' })
     })
   })
 

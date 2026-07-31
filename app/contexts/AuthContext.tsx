@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { User } from '@/types/auth';
+import { clearAuthToken, getAuthToken, setAuthToken } from '@/utils/authStorage';
 
 interface AuthContextType {
   user: User | null;
@@ -10,35 +11,54 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+interface StoredAuth {
+  user: User | null;
+  token: string | null;
+}
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
+function readStoredAuth(): StoredAuth {
+  try {
+    const savedToken = getAuthToken();
     const savedUser = localStorage.getItem('user');
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setToken(null);
-        setUser(null);
-      }
+
+    if (!savedToken || !savedUser) {
+      return { user: null, token: null };
     }
-  }, []);
+
+    return {
+      token: savedToken,
+      user: JSON.parse(savedUser) as User,
+    };
+  } catch {
+    clearStoredAuth();
+    return { user: null, token: null };
+  }
+}
+
+function clearStoredAuth(): void {
+  clearAuthToken();
+  try {
+    localStorage.removeItem('user');
+  } catch {
+    // The in-memory session is still cleared when storage is unavailable.
+  }
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [storedAuth, setStoredAuth] = useState<StoredAuth>(readStoredAuth);
+  const { user, token } = storedAuth;
 
   const setAuth = (newUser: User | null, newToken: string | null) => {
-    setUser(newUser);
-    setToken(newToken);
+    setStoredAuth({ user: newUser, token: newToken });
     if (newUser && newToken) {
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
+      setAuthToken(newToken);
+      try {
+        localStorage.setItem('user', JSON.stringify(newUser));
+      } catch {
+        // The current session remains usable even if it cannot be persisted.
+      }
     } else {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      clearStoredAuth();
     }
   };
 
