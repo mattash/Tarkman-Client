@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createConsumer, Subscription } from '@rails/actioncable'
 
 interface ActionCableEnvelope {
@@ -20,7 +20,23 @@ interface ChannelMessage {
 type ActionCableChannelIdentifier = string | {
   channel: string
   id?: string | number
+  [key: string]: unknown
 }
+
+type ActionCableConsumer = ReturnType<typeof createConsumer>
+type EnvelopeListener = (envelope: ActionCableEnvelope) => void
+
+interface SharedChannel {
+  subscription: Subscription
+  listeners: Set<EnvelopeListener>
+}
+
+interface SharedConnection {
+  consumer: ActionCableConsumer
+  channels: Map<string, SharedChannel>
+}
+
+const sharedConnections = new Map<string | undefined, SharedConnection>()
 
 // ActionCable URL - defaults to same host's /cable path
 // For cross-origin (e.g., Vite dev server → Rails backend), set VITE_ACTIONCABLE_URL
@@ -63,6 +79,67 @@ function getChannelIdentifier(channelName: string): ActionCableChannelIdentifier
   return channelName
 }
 
+function getIdentifierKey(identifier: ActionCableChannelIdentifier): string {
+  if (typeof identifier === 'string') {
+    return `string:${identifier}`
+  }
+
+  const sortedIdentifier = Object.fromEntries(
+    Object.entries(identifier).sort(([left], [right]) => left.localeCompare(right))
+  )
+  return `object:${JSON.stringify(sortedIdentifier)}`
+}
+
+function subscribeToSharedChannel(
+  url: string | undefined,
+  identifier: ActionCableChannelIdentifier,
+  listener: EnvelopeListener
+): () => void {
+  const connectionKey = url
+  let connection = sharedConnections.get(connectionKey)
+
+  if (!connection) {
+    connection = {
+      consumer: createConsumer(url),
+      channels: new Map(),
+    }
+    sharedConnections.set(connectionKey, connection)
+  }
+
+  const channelKey = getIdentifierKey(identifier)
+  let channel = connection.channels.get(channelKey)
+
+  if (!channel) {
+    const listeners = new Set<EnvelopeListener>()
+    const subscription = connection.consumer.subscriptions.create(identifier, {
+      received(envelope: ActionCableEnvelope) {
+        for (const subscribedListener of Array.from(listeners)) {
+          subscribedListener(envelope)
+        }
+      },
+    })
+
+    channel = { subscription, listeners }
+    connection.channels.set(channelKey, channel)
+  }
+
+  channel.listeners.add(listener)
+
+  return () => {
+    channel.listeners.delete(listener)
+
+    if (channel.listeners.size > 0) return
+
+    channel.subscription.unsubscribe()
+    connection.channels.delete(channelKey)
+
+    if (connection.channels.size === 0) {
+      connection.consumer.disconnect()
+      sharedConnections.delete(connectionKey)
+    }
+  }
+}
+
 /**
  * useActionCable — replaces usePusher for ActionCable subscriptions.
  *
@@ -77,11 +154,7 @@ export function useActionCable(
   eventName: string | string[]
 ): ActionCableMessage | null {
   const [channelMessage, setChannelMessage] = useState<ChannelMessage | null>(null)
-  const subscriptionRef = useRef<Subscription | null>(null)
-
-  const events = useMemo(() => {
-    return Array.isArray(eventName) ? eventName : [eventName]
-  }, [eventName])
+  const eventKey = JSON.stringify(Array.isArray(eventName) ? eventName : [eventName])
 
   const identifier = useMemo(() => {
     return getChannelIdentifier(channelName)
@@ -89,27 +162,20 @@ export function useActionCable(
 
   useEffect(() => {
     setChannelMessage(null)
+    const subscribedEvents = new Set(JSON.parse(eventKey) as string[])
 
-    const url = getActionCableUrl()
-    const consumer = createConsumer(url)
-
-    subscriptionRef.current = consumer.subscriptions.create(identifier, {
-      received(envelope: ActionCableEnvelope) {
-        // envelope shape: { event: "part_change", data: { part: "...", status: "..." } }
-        if (!events.includes(envelope.event)) return
+    return subscribeToSharedChannel(
+      getActionCableUrl(),
+      identifier,
+      (envelope) => {
+        if (!subscribedEvents.has(envelope.event)) return
         setChannelMessage({
           channelName,
           message: envelope.data as ActionCableMessage,
         })
-      },
-    })
-
-    return () => {
-      subscriptionRef.current?.unsubscribe()
-      consumer.disconnect()
-      subscriptionRef.current = null
-    }
-  }, [channelName, identifier, events.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+      }
+    )
+  }, [channelName, identifier, eventKey])
 
   return channelMessage?.channelName === channelName
     ? channelMessage.message
