@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { SessionPartsParallel } from '../components/SessionPartsParallel'

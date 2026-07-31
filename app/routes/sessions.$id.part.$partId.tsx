@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { PartDetails } from '../components/PartDetails'
 import { Button } from '@/components/ui/button'
@@ -6,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/sessions/$id/part/$partId')({
   component: PartDetailsPage,
-  validateSearch: (search: Record<string, unknown>) => ({}),
+  validateSearch: () => ({}),
   loader: ({ params: { id, partId } }) => {
     return {
       id,

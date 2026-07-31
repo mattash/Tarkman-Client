@@ -1,5 +1,4 @@
-import * as React from 'react'
-import { SessionStatus } from '@/types/status'
+import type { SessionStatus } from '@/types/status'
 
 interface StatusOverlayProps {
   status: SessionStatus

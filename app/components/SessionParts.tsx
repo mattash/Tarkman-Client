@@ -7,7 +7,6 @@ import { LanguageSelector } from './LanguageSelector'
 import PartCard from './PartCard'
 import { fetchSession, fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
-import { SessionData } from '../types/session'
 
 interface SessionPartsProps {
   sessionId: string

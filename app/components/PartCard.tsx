@@ -3,7 +3,6 @@ import { Part } from '../types/part'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Link } from '@tanstack/react-router'
 import ReactMarkdown from 'react-markdown'
-import clsx from 'clsx'
 
 export interface PartCardProps {
   part: Part
@@ -57,4 +56,4 @@ export function PartCard({ part, sessionId }: PartCardProps, ref: React.Ref<HTML
   )
 }
 
-export default React.forwardRef(PartCard) 
+export default React.forwardRef(PartCard)

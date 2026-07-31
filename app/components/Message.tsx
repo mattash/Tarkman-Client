@@ -1,5 +1,3 @@
-import * as React from 'react'
-
 interface MessageProps {
   message: string
 }
@@ -12,4 +10,4 @@ export function Message({ message }: MessageProps) {
       </div>
     </div>
   )
-} 
+}

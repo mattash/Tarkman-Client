@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { fetchSessions, fetchSessionParts, setPart, prevPart, nextPart } from '../sessions'
 import { login } from '../../api/auth'
-import { SessionWrapper } from '../../types/session'
-import { Part } from '../../types/part'
 import { api } from '../../api'
 
 // Test credentials from environment variables

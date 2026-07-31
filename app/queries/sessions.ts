@@ -1,4 +1,3 @@
-import { QueryClient } from '@tanstack/react-query'
 import { SessionWrapper } from '../types/session'
 import { PartsResponse } from '../types/part'
 import { StatusUpdateRequest, StatusUpdateResponse } from '../types/status'
@@ -13,10 +12,6 @@ export const sessionsKeys = {
 
 export const sessionMutationKeys = {
   controls: (id: string) => ['sessionControls', id] as const,
-}
-
-interface SessionsResponse {
-  sessions?: SessionWrapper[]
 }
 
 export async function fetchSessions(tz: string): Promise<SessionWrapper[]> {

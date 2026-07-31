@@ -1,5 +1,4 @@
-import * as React from 'react'
-import { Language } from '../contexts/LanguageContext'
+import type { Language } from '../contexts/LanguageContext'
 import { LANGUAGES } from '../constants/languages'
 
 interface LanguageSelectorProps {
@@ -25,4 +24,4 @@ export function LanguageSelector({ selectedLang, onLanguageChange }: LanguageSel
       ))}
     </div>
   )
-} 
+}

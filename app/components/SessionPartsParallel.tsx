@@ -1,4 +1,3 @@
-import * as React from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSessionParts } from '../hooks/useSessionParts'
 import { LANG_FIELD_MAP } from './SessionPartsSingle'

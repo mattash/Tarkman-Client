@@ -1,6 +1,5 @@
-import * as React from 'react'
 import { Link } from '@tanstack/react-router'
-import { SessionData } from '../types/session'
+import type { SessionData } from '../types/session'
 import { StatusBadge } from './StatusBadge'
 
 interface SessionCardProps {

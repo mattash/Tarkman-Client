@@ -3,13 +3,11 @@ import { SessionParts } from '../components/SessionParts'
 import { SessionControls } from '@/components/SessionControls'
 import { useAuth } from '@/contexts/AuthContext'
 import { ExplanationDrawer } from '@/components/ExplanationDrawer'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/sessions/$id/parts')({
   component: () => {
     const { id } = Route.useParams()
     const auth = useAuth()
-    const [isExplanationOpen, setIsExplanationOpen] = useState(false)
 
     return (
       <div>
@@ -25,4 +23,4 @@ export const Route = createFileRoute('/sessions/$id/parts')({
       </div>
     )
   },
-}) 
+})

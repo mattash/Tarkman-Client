@@ -92,19 +92,7 @@ describe('Authentication Flow', () => {
       expect(history.location.pathname).toBe('/')
     })
 
-    // 5. Verify Navbar shows logged-in state (e.g., user name or logout button)
-    // Assuming AuthLink renders something specific or Navbar changes
-    // For now, let's verify we can see the Logout button (you might need to open a menu first if on mobile)
-    
-    // Check if desktop auth link is visible or open mobile menu
-    const logoutButtons = screen.queryAllByText(/logout/i)
-    let logoutButton = logoutButtons.find(btn => btn.offsetParent !== null) // Find visible one
-
-    // If not visible, might be in a dropdown or different view - adjusting based on Navbar implementation
-    // Let's look at what we know about Navbar: it has an AuthLink component.
-    
-    // If logout button isn't immediately visible, we might need to interact with UI
-    // But first, let's just verify the state change via API call
+    // 5. Verify the state change through the authentication call.
     expect(login).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123'

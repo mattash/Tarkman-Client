@@ -75,7 +75,7 @@ describe('ExplanationDrawer', () => {
   it('should render help icon', () => {
     vi.mocked(fetchCurrentExplanation).mockResolvedValue([])
 
-    const { container } = render(<ExplanationDrawer sessionId="123" />, {
+    render(<ExplanationDrawer sessionId="123" />, {
       wrapper: createWrapper(),
     })
 
