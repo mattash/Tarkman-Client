@@ -4,36 +4,42 @@ import { useActionCable } from '../useActionCable'
 import { createConsumer } from '@rails/actioncable'
 import type { MockActionCableEnvelope } from '@/__tests__/utils/actioncable-mock'
 
-// Global handler storage for the mock
-let capturedHandler: ((e: MockActionCableEnvelope) => void) | null = null
+interface CapturedSubscription {
+  identifier: unknown
+  handler: ((e: MockActionCableEnvelope) => void) | null
+  unsubscribe: ReturnType<typeof vi.fn>
+}
+
+let capturedSubscriptions: CapturedSubscription[] = []
+const disconnect = vi.fn()
 
 // Mock @rails/actioncable at the top level
 vi.mock('@rails/actioncable', () => ({
   createConsumer: vi.fn(() => ({
     subscriptions: {
-      create: (_id: unknown, handlers: { received?: (e: MockActionCableEnvelope) => void }) => {
-        capturedHandler = handlers.received ?? null
-        return {
-          subscribe: vi.fn(),
+      create: (identifier: unknown, handlers: { received?: (e: MockActionCableEnvelope) => void }) => {
+        const subscription = {
+          identifier,
+          handler: handlers.received ?? null,
           unsubscribe: vi.fn(),
         }
+        capturedSubscriptions.push(subscription)
+        return subscription
       },
     },
-    disconnect: vi.fn(),
+    disconnect,
   })),
 }))
 
 // Helper to emit events in tests
-function emitEvent(envelope: MockActionCableEnvelope) {
-  if (capturedHandler) {
-    capturedHandler(envelope)
-  }
+function emitEvent(envelope: MockActionCableEnvelope, subscriptionIndex = 0) {
+  capturedSubscriptions[subscriptionIndex]?.handler?.(envelope)
 }
 
 describe('useActionCable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedHandler = null
+    capturedSubscriptions = []
   })
 
   it('should initialize with null data', () => {
@@ -50,7 +56,7 @@ describe('useActionCable', () => {
     // Effect runs async — flush pending microtasks
     await waitFor(() => {})
     // Handler should now be captured
-    expect(capturedHandler).not.toBeNull()
+    expect(capturedSubscriptions[0]?.handler).not.toBeNull()
   })
 
   it('should update data when matching event is received', async () => {
@@ -136,41 +142,110 @@ describe('useActionCable', () => {
     expect(result.current).toBeNull()
   })
 
-  it('should convert pusher-style channel name to SessionChannel params', async () => {
-    let capturedId: unknown = null
-    const mockConsumer = {
-      subscriptions: {
-        create: (id: unknown) => {
-          capturedId = id
-          return { subscribe: vi.fn(), unsubscribe: vi.fn() }
-        },
-      },
-      disconnect: vi.fn(),
-    }
-    vi.mocked(createConsumer).mockReturnValueOnce(mockConsumer as unknown as ReturnType<typeof createConsumer>)
+  it('shares a channel subscription until its final listener unmounts', async () => {
+    const partHook = renderHook(() =>
+      useActionCable('channel_shared', 'part_change')
+    )
+    const statusHook = renderHook(() =>
+      useActionCable('channel_shared', 'status_change')
+    )
+    await waitFor(() => {
+      expect(capturedSubscriptions).toHaveLength(1)
+    })
 
+    expect(createConsumer).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      emitEvent({ event: 'part_change', data: { part: 'shared-part' } })
+    })
+    expect(partHook.result.current).toEqual({ part: 'shared-part' })
+    expect(statusHook.result.current).toBeNull()
+
+    partHook.unmount()
+    expect(capturedSubscriptions[0].unsubscribe).not.toHaveBeenCalled()
+    expect(disconnect).not.toHaveBeenCalled()
+
+    act(() => {
+      emitEvent({ event: 'status_change', data: { status: 'paused' } })
+    })
+    expect(statusHook.result.current).toEqual({ status: 'paused' })
+
+    statusHook.unmount()
+    expect(capturedSubscriptions[0].unsubscribe).toHaveBeenCalledOnce()
+    expect(disconnect).toHaveBeenCalledOnce()
+  })
+
+  it('does not resubscribe when an equivalent event array is recreated', async () => {
+    const { rerender } = renderHook(() =>
+      useActionCable('channel_stable', ['part_change', 'status_change'])
+    )
+    await waitFor(() => {
+      expect(capturedSubscriptions).toHaveLength(1)
+    })
+
+    rerender()
+
+    expect(capturedSubscriptions).toHaveLength(1)
+    expect(createConsumer).toHaveBeenCalledTimes(1)
+  })
+
+  it('shares one consumer across distinct channels', async () => {
+    const firstHook = renderHook(() =>
+      useActionCable('channel_first', 'part_change')
+    )
+    const secondHook = renderHook(() =>
+      useActionCable('channel_second', 'part_change')
+    )
+    await waitFor(() => {
+      expect(capturedSubscriptions).toHaveLength(2)
+    })
+
+    expect(createConsumer).toHaveBeenCalledTimes(1)
+
+    firstHook.unmount()
+    expect(capturedSubscriptions[0].unsubscribe).toHaveBeenCalledOnce()
+    expect(disconnect).not.toHaveBeenCalled()
+
+    secondHook.unmount()
+    expect(capturedSubscriptions[1].unsubscribe).toHaveBeenCalledOnce()
+    expect(disconnect).toHaveBeenCalledOnce()
+  })
+
+  it('keeps subscriptions with different channel parameters separate', async () => {
+    const firstHook = renderHook(() =>
+      useActionCable('{"channel":"RoomChannel","room":"first"}', 'part_change')
+    )
+    const secondHook = renderHook(() =>
+      useActionCable('{"channel":"RoomChannel","room":"second"}', 'part_change')
+    )
+    await waitFor(() => {
+      expect(capturedSubscriptions).toHaveLength(2)
+    })
+
+    expect(capturedSubscriptions[0].identifier).toEqual({
+      channel: 'RoomChannel',
+      room: 'first',
+    })
+    expect(capturedSubscriptions[1].identifier).toEqual({
+      channel: 'RoomChannel',
+      room: 'second',
+    })
+
+    firstHook.unmount()
+    secondHook.unmount()
+  })
+
+  it('should convert pusher-style channel name to SessionChannel params', async () => {
     renderHook(() => useActionCable('channel_999', 'part_change'))
     await waitFor(() => {})
 
-    expect(capturedId).toEqual({ channel: 'SessionChannel', id: '999' })
+    expect(capturedSubscriptions[0]?.identifier).toEqual({ channel: 'SessionChannel', id: '999' })
   })
 
   it('should parse JSON ActionCable identifiers into params', async () => {
-    let capturedId: unknown = null
-    const mockConsumer = {
-      subscriptions: {
-        create: (id: unknown) => {
-          capturedId = id
-          return { subscribe: vi.fn(), unsubscribe: vi.fn() }
-        },
-      },
-      disconnect: vi.fn(),
-    }
-    vi.mocked(createConsumer).mockReturnValueOnce(mockConsumer as unknown as ReturnType<typeof createConsumer>)
-
     renderHook(() => useActionCable('{"channel":"SessionChannel","id":"999"}', 'part_change'))
     await waitFor(() => {})
 
-    expect(capturedId).toEqual({ channel: 'SessionChannel', id: '999' })
+    expect(capturedSubscriptions[0]?.identifier).toEqual({ channel: 'SessionChannel', id: '999' })
   })
 })
