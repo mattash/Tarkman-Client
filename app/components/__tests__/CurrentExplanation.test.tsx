@@ -137,6 +137,24 @@ describe('CurrentExplanation', () => {
     expect(screen.getByText('Test Explanation')).toBeInTheDocument()
   })
 
+  it('does not carry previous explanations into a different session', async () => {
+    vi.mocked(fetchCurrentExplanation).mockImplementation(async (sessionId) =>
+      sessionId === '123' ? [mockExplanation] : [],
+    )
+    vi.mocked(fetchUpcomingExplanations).mockResolvedValue([])
+
+    const { rerender } = render(<CurrentExplanation sessionId="123" />, {
+      wrapper: createWrapper(),
+    })
+
+    expect(await screen.findByText('Test Explanation')).toBeInTheDocument()
+
+    rerender(<CurrentExplanation sessionId="456" />)
+
+    expect(await screen.findByText('No Active Explanation')).toBeInTheDocument()
+    expect(screen.queryByText('Test Explanation')).not.toBeInTheDocument()
+  })
+
   it('should render upcoming explanations section when available', async () => {
     vi.mocked(fetchCurrentExplanation).mockResolvedValue([mockExplanation])
     vi.mocked(fetchUpcomingExplanations).mockResolvedValue([

@@ -35,12 +35,18 @@ interface ExplanationIndicatorProps {
 export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled = true }: ExplanationIndicatorProps) {
   const queryClient = useQueryClient()
   const actionCableData = useActionCable(`channel_${sessionId}`, 'part_change')
+  const [stateSessionId, setStateSessionId] = React.useState(sessionId)
   const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
   const [isHighlighting, setIsHighlighting] = React.useState(false)
   const [showQr, setShowQr] = React.useState(false)
   const [activeQrKey, setActiveQrKey] = React.useState<string | null>(null)
   const lastSeenSignatureRef = React.useRef<string | null>(null)
   const qrTimeoutRef = React.useRef<number | null>(null)
+  const stateMatchesSession = stateSessionId === sessionId
+  const sessionPreviousExplanations = stateMatchesSession ? previousExplanations : []
+  const sessionIsHighlighting = stateMatchesSession && isHighlighting
+  const sessionShowQr = stateMatchesSession && showQr
+  const sessionActiveQrKey = stateMatchesSession ? activeQrKey : null
 
   const scheduleQrHide = React.useCallback(() => {
     if (qrTimeoutRef.current !== null) {
@@ -58,6 +64,19 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
       queryClient.invalidateQueries({ queryKey: explanationQueryKeys.current(sessionId) })
     }
   }, [actionCableData, queryClient, sessionId])
+
+  React.useEffect(() => {
+    if (qrTimeoutRef.current !== null) {
+      window.clearTimeout(qrTimeoutRef.current)
+      qrTimeoutRef.current = null
+    }
+    lastSeenSignatureRef.current = null
+    setStateSessionId(sessionId)
+    setPreviousExplanations([])
+    setIsHighlighting(false)
+    setShowQr(false)
+    setActiveQrKey(null)
+  }, [sessionId])
 
   const { data: explanations } = useQuery<Explanation[]>({
     queryKey: explanationQueryKeys.current(sessionId),
@@ -80,7 +99,7 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
     }
   }, [])
 
-  const displayExplanations = explanations ?? previousExplanations
+  const displayExplanations = explanations ?? sessionPreviousExplanations
 
   React.useEffect(() => {
     if (!displayExplanations?.length) {
@@ -121,7 +140,7 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
     <div className="fixed top-4 right-4 z-40 flex flex-col items-end gap-6 pointer-events-none origin-top-right scale-[2]">
       <div
         className={`pointer-events-auto flex items-center gap-4 px-9 py-4 rounded-full bg-gray-900/90 text-white shadow-lg ring-2 ring-gray-700 transition-all ${
-          isHighlighting ? 'ring-4 ring-purple-400/60 animate-pulse shadow-purple-400/40' : ''
+          sessionIsHighlighting ? 'ring-4 ring-purple-400/60 animate-pulse shadow-purple-400/40' : ''
         }`}
         aria-label="Explanation indicator"
       >
@@ -130,19 +149,19 @@ export function ExplanationIndicator({ sessionId, qrDurationMs = 20000, enabled 
         </span>
         <span
           className={`h-6 w-6 rounded-full ${
-            isHighlighting ? 'bg-purple-300 shadow-[0_0_0_8px_rgba(168,85,247,0.35)]' : 'bg-gray-500'
+            sessionIsHighlighting ? 'bg-purple-300 shadow-[0_0_0_8px_rgba(168,85,247,0.35)]' : 'bg-gray-500'
           }`}
         />
       </div>
 
-      {showQr && explanationUrl && (
+      {sessionShowQr && explanationUrl && (
         <div className="pointer-events-auto bg-gray-900/95 text-white rounded-lg shadow-2xl p-5 w-72 border border-purple-500/40 transition duration-300">
           <div className="text-sm font-semibold text-center mb-2">Scan & Learn</div>
           <div className="flex justify-center mb-3">
             <React.Suspense fallback={null}>
-              {activeQrKey && (
+              {sessionActiveQrKey && (
                 <QrCodeWithReadySignal
-                  key={activeQrKey}
+                  key={sessionActiveQrKey}
                   onReady={scheduleQrHide}
                   value={explanationUrl}
                   size={200}

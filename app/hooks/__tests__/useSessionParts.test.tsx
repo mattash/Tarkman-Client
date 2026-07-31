@@ -214,4 +214,38 @@ describe('useSessionParts hook (integration)', () => {
       expect(result.current.currentPartId).toBe('456')
     })
   })
+
+  it('does not let late initial data override an earlier live part update', async () => {
+    let resolveInitialData: (value: ReturnType<typeof makeSessionData>) => void = () => {}
+    vi.mocked(fetchSessionParts).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveInitialData = resolve
+      }),
+    )
+
+    const { result, rerender } = renderHook(
+      () => useSessionParts('test'),
+      { wrapper: createWrapper() },
+    )
+
+    vi.mocked(useActionCable).mockReturnValue({ part: '456' })
+    rerender()
+
+    await vi.waitFor(() => {
+      expect(result.current.currentPartId).toBe('456')
+    })
+
+    const livePartElement = document.createElement('div')
+    result.current.partsRef.current['456'] = livePartElement
+    resolveInitialData(makeSessionData({ current_part_id: 123 }))
+
+    await waitFor(() => {
+      expect(result.current.data).toBeDefined()
+    })
+    expect(result.current.currentPartId).toBe('456')
+    expect(smoothScrollToPart).toHaveBeenCalledWith(
+      livePartElement,
+      expect.any(Object),
+    )
+  })
 })

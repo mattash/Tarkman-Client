@@ -119,6 +119,23 @@ describe('useActionCable', () => {
     })
   })
 
+  it('does not expose the previous channel payload while switching channels', async () => {
+    const { result, rerender } = renderHook(
+      ({ channelName }) => useActionCable(channelName, 'part_change'),
+      { initialProps: { channelName: 'channel_first' } },
+    )
+    await waitFor(() => {})
+
+    act(() => {
+      emitEvent({ event: 'part_change', data: { part: 'first-part' } })
+    })
+    expect(result.current).toEqual({ part: 'first-part' })
+
+    rerender({ channelName: 'channel_second' })
+
+    expect(result.current).toBeNull()
+  })
+
   it('should convert pusher-style channel name to SessionChannel params', async () => {
     let capturedId: unknown = null
     const mockConsumer = {
