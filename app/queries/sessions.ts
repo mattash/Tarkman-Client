@@ -11,6 +11,10 @@ export const sessionsKeys = {
   sessionParts: (id: string) => [...sessionsKeys.all, 'session', id, 'parts'] as const,
 }
 
+export const sessionMutationKeys = {
+  controls: (id: string) => ['sessionControls', id] as const,
+}
+
 interface SessionsResponse {
   sessions?: SessionWrapper[]
 }

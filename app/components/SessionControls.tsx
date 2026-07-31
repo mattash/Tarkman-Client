@@ -1,5 +1,12 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { sessionsKeys, prevPart, nextPart, fetchSession } from '@/queries/sessions'
+import * as React from 'react'
+import { useIsMutating, useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import {
+  sessionsKeys,
+  sessionMutationKeys,
+  prevPart,
+  nextPart,
+  fetchSession,
+} from '@/queries/sessions'
 import { SessionWrapper } from '@/types/session'
 import { SessionStatusControl } from './SessionStatusControl'
 
@@ -9,32 +16,47 @@ interface SessionControlsProps {
 
 export function SessionControls({ sessionId }: SessionControlsProps) {
   const queryClient = useQueryClient()
+  const sessionIdString = sessionId.toString()
+  const mutationKey = sessionMutationKeys.controls(sessionIdString)
+  const pendingCommandCount = useIsMutating({ mutationKey, exact: true })
+  const [commandError, setCommandError] = React.useState<string | null>(null)
 
   const { data: sessionData } = useQuery<SessionWrapper>({
-    queryKey: sessionsKeys.session(sessionId.toString()),
-    queryFn: () => fetchSession(sessionId.toString()),
+    queryKey: sessionsKeys.session(sessionIdString),
+    queryFn: () => fetchSession(sessionIdString),
     staleTime: 1000
   })
 
-  const prevMutation = useMutation({
-    mutationFn: () => prevPart(sessionId.toString(), new Date().toISOString()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId.toString()) })
-    }
+  const partMutation = useMutation({
+    mutationKey,
+    mutationFn: (direction: 'previous' | 'next') => {
+      const transitionedAt = new Date().toISOString()
+      return direction === 'previous'
+        ? prevPart(sessionIdString, transitionedAt)
+        : nextPart(sessionIdString, transitionedAt)
+    },
+    onMutate: () => setCommandError(null),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
+        queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionIdString) }),
+      ])
+    },
+    onError: () => setCommandError('The service position could not be updated. Please try again.'),
   })
 
-  const nextMutation = useMutation({
-    mutationFn: () => nextPart(sessionId.toString(), new Date().toISOString()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId.toString()) })
-    }
-  })
+  const runPartCommand = (direction: 'previous' | 'next') => {
+    if (queryClient.isMutating({ mutationKey, exact: true }) > 0) return
+    partMutation.mutate(direction)
+  }
+
+  const isCommandPending = pendingCommandCount > 0
 
   return (
     <div className="flex gap-4 items-center p-4 rounded-lg bg-white shadow-md">
       <button
-        onClick={() => prevMutation.mutate()}
-        disabled={prevMutation.isPending}
+        onClick={() => runPartCommand('previous')}
+        disabled={isCommandPending}
         className="px-5 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Previous part"
       >
@@ -53,8 +75,8 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
       </button>
 
       <button
-        onClick={() => nextMutation.mutate()}
-        disabled={nextMutation.isPending}
+        onClick={() => runPartCommand('next')}
+        disabled={isCommandPending}
         className="px-5 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Next part"
       >
@@ -76,6 +98,11 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
         sessionId={sessionId}
         currentStatus={sessionData?.session?.status}
       />
+      {commandError && (
+        <p role="alert" className="text-sm font-medium text-red-700">
+          {commandError}
+        </p>
+      )}
     </div>
   )
 } 

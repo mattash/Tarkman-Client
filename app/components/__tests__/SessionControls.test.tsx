@@ -9,10 +9,15 @@ import { SessionWrapper } from '@/types/session'
 vi.mock('@/queries/sessions', () => ({
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
+    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+  },
+  sessionMutationKeys: {
+    controls: (id: string) => ['sessionControls', id],
   },
   prevPart: vi.fn(),
   nextPart: vi.fn(),
   fetchSession: vi.fn(),
+  updateSessionStatus: vi.fn(),
 }))
 
 import { prevPart, nextPart, fetchSession } from '@/queries/sessions'
@@ -132,7 +137,11 @@ describe('SessionControls', () => {
     // Button should be disabled while pending
     await waitFor(() => {
       expect(prevButton).toBeDisabled()
+      expect(screen.getByLabelText('Next part')).toBeDisabled()
     })
+
+    await user.click(screen.getByLabelText('Next part'))
+    expect(nextPart).not.toHaveBeenCalled()
 
     // Resolve the mutation
     resolvePrevPart!({ status: 'success', current_part_id: 122 })
@@ -178,8 +187,6 @@ describe('SessionControls', () => {
 
   it('should handle errors gracefully', async () => {
     const user = userEvent.setup()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     vi.mocked(prevPart).mockRejectedValueOnce(new Error('Network error'))
 
     render(<SessionControls sessionId={123} />, {
@@ -192,9 +199,10 @@ describe('SessionControls', () => {
     // Button should be re-enabled after error
     await waitFor(() => {
       expect(prevButton).not.toBeDisabled()
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'The service position could not be updated. Please try again.',
+      )
     })
-
-    consoleError.mockRestore()
   })
 
   it('should render with correct styling classes', () => {

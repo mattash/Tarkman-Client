@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateSessionStatus, sessionsKeys } from '@/queries/sessions'
+import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query'
+import { updateSessionStatus, sessionsKeys, sessionMutationKeys } from '@/queries/sessions'
 import { SessionStatus, STATUS_LABELS } from '@/types/status'
 import { CustomMessageModal } from './CustomMessageModal'
 
@@ -12,21 +12,28 @@ interface SessionStatusControlProps {
 export function SessionStatusControl({ sessionId, currentStatus = 'active' }: SessionStatusControlProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [customMessageModalOpen, setCustomMessageModalOpen] = React.useState(false)
+  const [commandError, setCommandError] = React.useState<string | null>(null)
   const dropdownRef = React.useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
+  const sessionIdString = sessionId.toString()
+  const mutationKey = sessionMutationKeys.controls(sessionIdString)
+  const pendingCommandCount = useIsMutating({ mutationKey, exact: true })
+  const isCommandPending = pendingCommandCount > 0
 
   const statusMutation = useMutation({
+    mutationKey,
     mutationFn: (request: { status: SessionStatus; status_message?: string }) =>
-      updateSessionStatus(sessionId.toString(), request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId.toString()) })
+      updateSessionStatus(sessionIdString, request),
+    onMutate: () => setCommandError(null),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
+        queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionIdString) }),
+      ])
       setIsOpen(false)
       setCustomMessageModalOpen(false)
     },
-    onError: (error) => {
-      console.error('Failed to update status:', error)
-      // Keep modal open and preserve message so user can retry
-    }
+    onError: () => setCommandError('The service status could not be updated. Please try again.'),
   })
 
   React.useEffect(() => {
@@ -42,7 +49,7 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
   }, [isOpen])
 
   const handleStatusSelect = (status: SessionStatus) => {
-    if (statusMutation.isPending) {
+    if (queryClient.isMutating({ mutationKey, exact: true }) > 0) {
       return
     }
 
@@ -56,6 +63,7 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
   }
 
   const handleCustomMessageSubmit = (message: string) => {
+    if (queryClient.isMutating({ mutationKey, exact: true }) > 0) return
     statusMutation.mutate({ status: 'showing_custom', status_message: message })
   }
 
@@ -64,7 +72,7 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          disabled={statusMutation.isPending}
+          disabled={isCommandPending}
           className="px-4 py-3 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           aria-label="Change session status"
         >
@@ -89,7 +97,7 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
               <button
                 key={status}
                 onClick={() => handleStatusSelect(status)}
-                disabled={statusMutation.isPending}
+                disabled={isCommandPending}
                 className={`w-full text-left px-4 py-2 text-gray-900 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg disabled:opacity-50 disabled:cursor-not-allowed ${
                   status === currentStatus ? 'bg-gray-50 font-semibold' : ''
                 }`}
@@ -105,8 +113,13 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
         isOpen={customMessageModalOpen}
         onClose={() => setCustomMessageModalOpen(false)}
         onSubmit={handleCustomMessageSubmit}
-        isPending={statusMutation.isPending}
+        isPending={isCommandPending}
       />
+      {commandError && (
+        <p role="alert" className="text-sm font-medium text-red-700">
+          {commandError}
+        </p>
+      )}
     </>
   )
 }
