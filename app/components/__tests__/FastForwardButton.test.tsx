@@ -11,6 +11,10 @@ const mockSetPart = vi.fn()
 vi.mock('@/queries/sessions', () => ({
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
+    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+  },
+  sessionMutationKeys: {
+    controls: (id: string) => ['sessionControls', id],
   },
   setPart: (...args: any[]) => mockSetPart(...args),
 }))
@@ -108,5 +112,20 @@ describe('FastForwardButton', () => {
       expect(button).toHaveTextContent('Fast Forward')
     })
   })
-})
 
+  it('should show an actionable error when the update fails', async () => {
+    const user = userEvent.setup()
+    mockUseAuth.mockReturnValue({ user: createMockUser() })
+    mockSetPart.mockRejectedValueOnce(new Error('Network error'))
+
+    render(<FastForwardButton sessionId="123" partId={456} />, {
+      wrapper: createWrapper(),
+    })
+
+    await user.click(screen.getByRole('button', { name: /fast forward/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The service position could not be updated. Please try again.',
+    )
+  })
+})

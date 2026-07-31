@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -6,7 +6,11 @@ import { SessionStatusControl } from '../SessionStatusControl'
 
 vi.mock('@/queries/sessions', () => ({
   sessionsKeys: {
-    session: (id: string) => ['sessions', 'session', id]
+    session: (id: string) => ['sessions', 'session', id],
+    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+  },
+  sessionMutationKeys: {
+    controls: (id: string) => ['sessionControls', id],
   },
   updateSessionStatus: vi.fn()
 }))
@@ -26,6 +30,10 @@ const createWrapper = () => {
 }
 
 describe('SessionStatusControl', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('should render dropdown button with current status', () => {
     render(<SessionStatusControl sessionId={123} currentStatus="active" />, {
       wrapper: createWrapper()
@@ -170,9 +178,8 @@ describe('SessionStatusControl', () => {
     expect(pausedOption).toHaveClass('font-semibold')
   })
 
-  it('should log error when status update fails', async () => {
+  it('should show an actionable error when status update fails', async () => {
     const user = userEvent.setup()
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(updateSessionStatus).mockRejectedValueOnce(new Error('Network error'))
 
     render(<SessionStatusControl sessionId={123} currentStatus="active" />, {
@@ -182,13 +189,8 @@ describe('SessionStatusControl', () => {
     await user.click(screen.getByLabelText('Change session status'))
     await user.click(screen.getByText('Paused'))
 
-    await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Failed to update status:',
-        expect.any(Error)
-      )
-    })
-
-    consoleErrorSpy.mockRestore()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The service status could not be updated. Please try again.',
+    )
   })
 })
