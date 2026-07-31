@@ -109,8 +109,8 @@ describe('useSessionParts hook (integration)', () => {
 
   // P0.5 — Unmount cancels pending animation/timeout
   it('unmount cancels pending animation and timeout without throwing', async () => {
-    const cafSpy = vi.spyOn(window, 'cancelAnimationFrame')
-    const ctSpy = vi.spyOn(window, 'clearTimeout')
+    vi.spyOn(window, 'cancelAnimationFrame')
+    vi.spyOn(window, 'clearTimeout')
 
     const { result, unmount } = renderHook(() => useSessionParts('test'), {
       wrapper: createWrapper(),

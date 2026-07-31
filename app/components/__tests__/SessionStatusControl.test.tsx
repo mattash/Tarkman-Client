@@ -127,7 +127,7 @@ describe('SessionStatusControl', () => {
 
   it('should close dropdown when clicking outside', async () => {
     const user = userEvent.setup()
-    const { container } = render(
+    render(
       <div>
         <SessionStatusControl sessionId={123} currentStatus="active" />
         <div data-testid="outside">Outside</div>

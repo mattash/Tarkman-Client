@@ -1,5 +1,4 @@
-import * as React from 'react'
-import { PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react'
 
 export function Document({ children }: PropsWithChildren) {
   return (
@@ -14,4 +13,4 @@ export function Document({ children }: PropsWithChildren) {
       </body>
     </html>
   )
-} 
+}

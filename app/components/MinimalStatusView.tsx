@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { Posture } from './Posture'
 import { BookOpen } from 'lucide-react'
 

@@ -1,6 +1,5 @@
-import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { SessionWrapper } from '../types/session'
+import type { SessionWrapper } from '../types/session'
 import { SessionCard } from './SessionCard'
 import { fetchSessions, sessionsKeys } from '../queries/sessions'
 
@@ -70,4 +69,4 @@ export function SessionList() {
       </div>
     </div>
   )
-} 
+}

@@ -1,5 +1,3 @@
-import * as React from 'react'
-
 interface PostureProps {
   posture: string | null
 }
@@ -45,4 +43,4 @@ export function Posture({ posture }: PostureProps) {
   const Icon = postureIcons[postureKey] || postureIcons.stand
 
   return Icon
-} 
+}
