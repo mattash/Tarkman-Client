@@ -35,7 +35,7 @@ function PartDetailsPage() {
           </Button>
         </Link>
       </div>
-      <PartDetails partId={parseInt(partId)} />
+      <PartDetails sessionId={id} partId={parseInt(partId, 10)} />
     </div>
   )
-} 
+}
