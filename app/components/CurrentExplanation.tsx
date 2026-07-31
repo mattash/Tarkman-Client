@@ -16,7 +16,13 @@ interface CurrentExplanationProps {
 export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
   const queryClient = useQueryClient()
   const actionCableData = useActionCable(`channel_${sessionId}`, 'part_change')
-  const [previousExplanations, setPreviousExplanations] = React.useState<Explanation[]>([])
+  const [previousExplanationState, setPreviousExplanationState] = React.useState<{
+    sessionId: string
+    explanations: Explanation[]
+  }>({ sessionId, explanations: [] })
+  const previousExplanations = previousExplanationState.sessionId === sessionId
+    ? previousExplanationState.explanations
+    : []
 
   React.useEffect(() => {
     if (actionCableData) {
@@ -39,11 +45,10 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
 
   React.useEffect(() => {
     if (explanations?.length) {
-      setPreviousExplanations(explanations)
+      setPreviousExplanationState({ sessionId, explanations })
     }
-  }, [explanations])
+  }, [explanations, sessionId])
 
-  const displayExplanations = explanations ?? previousExplanations
   const hasCurrentExplanations = explanations && explanations.length > 0
   const hasUpcomingExplanations = upcomingExplanations && upcomingExplanations.length > 0
   const hasPreviousExplanations = !hasCurrentExplanations && previousExplanations.length > 0
@@ -216,4 +221,4 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
       )}
     </div>
   )
-} 
+}

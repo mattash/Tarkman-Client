@@ -12,6 +12,11 @@ interface ActionCableMessage {
   status_message?: string | null
 }
 
+interface ChannelMessage {
+  channelName: string
+  message: ActionCableMessage
+}
+
 type ActionCableChannelIdentifier = string | {
   channel: string
   id?: string | number
@@ -71,7 +76,7 @@ export function useActionCable(
   channelName: string,
   eventName: string | string[]
 ): ActionCableMessage | null {
-  const [data, setData] = useState<ActionCableMessage | null>(null)
+  const [channelMessage, setChannelMessage] = useState<ChannelMessage | null>(null)
   const subscriptionRef = useRef<Subscription | null>(null)
 
   const events = useMemo(() => {
@@ -83,7 +88,7 @@ export function useActionCable(
   }, [channelName])
 
   useEffect(() => {
-    setData(null)
+    setChannelMessage(null)
 
     const url = getActionCableUrl()
     const consumer = createConsumer(url)
@@ -92,7 +97,10 @@ export function useActionCable(
       received(envelope: ActionCableEnvelope) {
         // envelope shape: { event: "part_change", data: { part: "...", status: "..." } }
         if (!events.includes(envelope.event)) return
-        setData(envelope.data as ActionCableMessage)
+        setChannelMessage({
+          channelName,
+          message: envelope.data as ActionCableMessage,
+        })
       },
     })
 
@@ -101,7 +109,9 @@ export function useActionCable(
       consumer.disconnect()
       subscriptionRef.current = null
     }
-  }, [identifier, events.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [channelName, identifier, events.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return data
+  return channelMessage?.channelName === channelName
+    ? channelMessage.message
+    : null
 }

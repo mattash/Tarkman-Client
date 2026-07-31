@@ -13,10 +13,19 @@ interface UseSessionPartsOptions {
 export function useSessionParts(sessionId: string, options?: UseSessionPartsOptions) {
   const partsRef = React.useRef<Record<string, HTMLElement>>({})
   const lastNotifiedPartIdRef = React.useRef<string | null>(null)
+  const hasHandledInitialDataRef = React.useRef(false)
+  const receivedLivePartBeforeInitialDataRef = React.useRef(false)
+  const latestLivePartIdRef = React.useRef<string | null>(null)
   const scrollAnimationRef = React.useRef<number | null>(null)
   const scrollTimeoutRef = React.useRef<number | null>(null)
-  const [currentPartId, setCurrentPartId] = React.useState<string | null>(null)
+  const [currentPartState, setCurrentPartState] = React.useState<{
+    sessionId: string
+    partId: string | null
+  }>({ sessionId, partId: null })
   const queryClient = useQueryClient()
+  const currentPartId = currentPartState.sessionId === sessionId
+    ? currentPartState.partId
+    : null
 
   // Destructure onPartChange so the ActionCable effect does not depend on the
   // whole options object (avoids re-scroll on rerender when an inline
@@ -51,13 +60,29 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
   // Use != null so that a part with id 0 is not ignored.
   React.useEffect(() => {
     lastNotifiedPartIdRef.current = null
+    hasHandledInitialDataRef.current = false
+    receivedLivePartBeforeInitialDataRef.current = false
+    latestLivePartIdRef.current = null
+    partsRef.current = {}
+    setCurrentPartState({ sessionId, partId: null })
   }, [sessionId])
 
   React.useEffect(() => {
     if (data?.sessionData.session.current_part_id != null) {
+      const isInitialData = !hasHandledInitialDataRef.current
+      hasHandledInitialDataRef.current = true
+      if (isInitialData && receivedLivePartBeforeInitialDataRef.current) {
+        const livePartId = latestLivePartIdRef.current
+        const livePartElement = livePartId ? partsRef.current[livePartId] : undefined
+        if (livePartElement) {
+          handleScroll(livePartElement)
+        }
+        return
+      }
+
       const currentId = data.sessionData.session.current_part_id
       const partId = String(currentId)
-      setCurrentPartId(partId)
+      setCurrentPartState({ sessionId, partId })
       if (lastNotifiedPartIdRef.current !== partId) {
         lastNotifiedPartIdRef.current = partId
         onPartChange?.(partId)
@@ -67,13 +92,17 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
         handleScroll(currentPartElement)
       }
     }
-  }, [data, handleScroll, onPartChange])
+  }, [data, handleScroll, onPartChange, sessionId])
 
   // Handle ActionCable part changes.
   React.useEffect(() => {
     if (subscriptionData?.part !== undefined) {
+      if (!hasHandledInitialDataRef.current) {
+        receivedLivePartBeforeInitialDataRef.current = true
+      }
       const partId = String(subscriptionData.part)
-      setCurrentPartId(partId)
+      latestLivePartIdRef.current = partId
+      setCurrentPartState({ sessionId, partId })
       if (lastNotifiedPartIdRef.current !== partId) {
         lastNotifiedPartIdRef.current = partId
         onPartChange?.(partId)
