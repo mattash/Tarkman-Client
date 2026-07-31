@@ -1,6 +1,4 @@
-import * as React from 'react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { PartDetails } from '../components/PartDetails'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 
@@ -9,9 +7,6 @@ export const Route = createFileRoute('/part/$id')({
 })
 
 function PartDetailsPage() {
-  const { id } = Route.useParams()
-  const navigate = useNavigate()
-
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
@@ -28,7 +23,13 @@ function PartDetailsPage() {
           </Button>
         </Link>
       </div>
-      <PartDetails partId={parseInt(id)} />
+      <div className="rounded-lg bg-gray-800 p-6 text-white">
+        <h1 className="text-2xl font-semibold">Open this part from a service</h1>
+        <p className="mt-3 text-gray-300">
+          This older link does not identify the service needed to load the part and its explanations.
+          Return to the service list and open the part from there.
+        </p>
+      </div>
     </div>
   )
-} 
+}

@@ -1,24 +1,17 @@
-import * as React from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { Part } from '../types/part'
-import { Explanation } from '../types/explanation'
-import { Route } from '../routes/sessions.$id.part.$partId'
-import DOMPurify from 'dompurify'
 import { FastForwardButton } from './FastForwardButton'
 import { fetchPart, partQueryKeys } from '@/queries/partQueries'
+import { explanationQueryKeys, fetchExplanation } from '@/queries/explanationQueries'
 
 interface PartResponse {
   part: Part
 }
 
 interface PartDetailsProps {
+  sessionId: string
   partId: number
-}
-
-const queryKeys = {
-  part: (sessionId: string, partId: number) => ['part', sessionId, partId],
-  explanation: (liturgyId: string, explanationId: string) => ['explanation', liturgyId, explanationId]
 }
         
 const queryConfig = {
@@ -27,9 +20,7 @@ const queryConfig = {
   retry: 2
 }
 
-export function PartDetails({ partId }: PartDetailsProps) {
-  const { id: sessionId } = Route.useParams()
-
+export function PartDetails({ sessionId, partId }: PartDetailsProps) {
   // Fetch part details using refactored query
   const { data: partResponse, isLoading: isPartLoading, error: partError } = useQuery<PartResponse>({
     queryKey: partQueryKeys.detail(sessionId, partId),
@@ -42,15 +33,8 @@ export function PartDetails({ partId }: PartDetailsProps) {
   // Fetch explanations using refactored query
   const explanationQueries = useQueries({
     queries: (part?.explanation_ids ?? []).map(explanationId => ({
-      queryKey: queryKeys.explanation(sessionId, explanationId.toString()),
-      queryFn: async () => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/liturgies/${sessionId}/explanations/${explanationId}.json`)
-        if (!response.ok) {
-          throw new Error(`Failed to fetch explanation ${explanationId}`)
-        }
-        const data = await response.json()
-        return data.explanation as Explanation
-      },
+      queryKey: explanationQueryKeys.detail(sessionId, explanationId.toString()),
+      queryFn: () => fetchExplanation(sessionId, explanationId.toString()),
       enabled: !!part,
       ...queryConfig
     }))
@@ -63,7 +47,7 @@ export function PartDetails({ partId }: PartDetailsProps) {
   
   const explanations = explanationQueries
     .filter(query => query.data)
-    .map(query => query.data!) as Explanation[]
+    .map(query => query.data!)
   
   if (hasError) {
     return <div className="text-red-500">Error loading data</div>
@@ -152,14 +136,11 @@ export function PartDetails({ partId }: PartDetailsProps) {
           {explanations.map((explanation) => (
             <div key={explanation.id} className="bg-gray-700 p-4 rounded prose prose-invert max-w-none">
               <h4 className="text-lg font-semibold mb-2">{explanation.title}</h4>
-              <div 
-                className="prose prose-invert max-w-none"
-              />
-                <ReactMarkdown>{explanation.description}</ReactMarkdown>
+              <ReactMarkdown>{explanation.description}</ReactMarkdown>
             </div>
           ))}
         </div>
       ) : null}
     </div>
   )
-} 
+}
