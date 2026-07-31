@@ -9,15 +9,17 @@ import type { ReactNode } from 'react'
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
+const createQueryClient = () =>
+  new QueryClient({
     defaultOptions: {
       queries: {
         retry: false, // Disable retry for tests
+        gcTime: 0,
       },
     },
   })
 
+const createWrapper = (queryClient = createQueryClient()) => {
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
@@ -100,40 +102,70 @@ describe('useSessionPolling', () => {
     expect(result.current.data).toBeNull()
   })
 
-  it('should handle fetch errors with retry', async () => {
-    // Mock multiple failed attempts (hook has retry: true)
-    mockFetch.mockResolvedValue({
-      ok: false,
-      json: async () => ({}),
-    })
+  it('should recover when a retry succeeds', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSessionData,
+      })
 
     const { result } = renderHook(() => useSessionPolling(), {
       wrapper: createWrapper(),
     })
 
-    // Initially should be loading
     expect(result.current.isLoading).toBe(true)
 
-    // The hook will retry failed requests, so we just verify it's attempting to fetch
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalled()
-    })
+    await waitFor(
+      () => {
+        expect(result.current.data).toEqual(mockSessionData)
+      },
+      { timeout: 2500 },
+    )
+    expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
-  it('should use correct query key', () => {
+  it('should cache the result under the current-session query key', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockSessionData,
     })
+    const queryClient = createQueryClient()
 
-    const { result } = renderHook(() => useSessionPolling(), {
-      wrapper: createWrapper(),
+    renderHook(() => useSessionPolling(), {
+      wrapper: createWrapper(queryClient),
     })
 
-    expect(result.current.data).toBeUndefined() // Initially undefined until loaded
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['currentSession'])).toEqual(mockSessionData)
+    })
+  })
 
-    // The query key should be ['currentSession']
-    // This is verified implicitly by the hook working correctly
+  it('does not fetch while disabled and starts when enabled', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockSessionData,
+    })
+    let enabled = false
+
+    const { result, rerender } = renderHook(
+      () => useSessionPolling({ enabled }),
+      { wrapper: createWrapper() },
+    )
+
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(mockFetch).not.toHaveBeenCalled()
+
+    enabled = true
+    rerender()
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(mockSessionData)
+    })
+    expect(mockFetch).toHaveBeenCalledOnce()
   })
 
   it('should include X-Polling-Client header', async () => {
@@ -155,4 +187,3 @@ describe('useSessionPolling', () => {
     expect(fetchCall[1].headers).toHaveProperty('X-Polling-Client', 'true')
   })
 })
-
