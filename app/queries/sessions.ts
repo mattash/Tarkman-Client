@@ -43,13 +43,18 @@ export async function fetchSession(sessionId: string): Promise<SessionWrapper> {
   }
 }
 
-export async function fetchSessionParts(sessionId: string): Promise<PartsResponse> {
-  let sessionData: SessionWrapper
-  try {
-    const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
-    sessionData = data
-  } catch {
-    throw new Error(`Failed to fetch session ${sessionId}`)
+export async function fetchSessionParts(
+  sessionId: string,
+  knownSessionData?: SessionWrapper
+): Promise<PartsResponse> {
+  let sessionData = knownSessionData
+  if (!sessionData) {
+    try {
+      const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
+      sessionData = data
+    } catch {
+      throw new Error(`Failed to fetch session ${sessionId}`)
+    }
   }
 
   const liturgyId = sessionData?.session?.current_liturgy_id ?? sessionData?.session?.liturgy_id

@@ -3,15 +3,22 @@ import ReactMarkdown from 'react-markdown'
 import { useSessionParts } from '../hooks/useSessionParts'
 import { LANG_FIELD_MAP } from './SessionPartsSingle'
 import { PartTextField, getPartTextField, shouldHideSessionPartText } from './sessionPartsUtils'
+import type { SessionWrapper } from '../types/session'
 
 interface SessionPartsParallelProps {
   sessionId: string
   lang1?: 'translit' | 'en' | 'hyw' | 'grabar'
   lang2?: 'translit' | 'en' | 'hyw' | 'grabar'
+  sessionData?: SessionWrapper
 }
 
-export function SessionPartsParallel({ sessionId, lang1 = 'translit', lang2 = 'en' }: SessionPartsParallelProps) {
-  const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId)
+export function SessionPartsParallel({
+  sessionId,
+  lang1 = 'translit',
+  lang2 = 'en',
+  sessionData,
+}: SessionPartsParallelProps) {
+  const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId, { sessionData })
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading parts</div>

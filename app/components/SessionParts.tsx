@@ -1,11 +1,11 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useActionCable } from '../hooks/useActionCable'
 import { usePartScroll } from '../hooks/usePartScroll'
 import { LanguageSelector } from './LanguageSelector'
 import PartCard from './PartCard'
-import { fetchSessionParts, sessionsKeys } from '../queries/sessions'
+import { fetchSession, fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
 import { SessionData } from '../types/session'
 
@@ -16,6 +16,7 @@ interface SessionPartsProps {
 export function SessionParts({ sessionId }: SessionPartsProps) {
   const { selectedLang, setSelectedLang } = useLanguage()
   const { partsRef, handlePartUpdated } = usePartScroll()
+  const queryClient = useQueryClient()
   
   const subscriptionData = useActionCable(`channel_${sessionId}`, 'part_change')
 
@@ -25,7 +26,14 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
     error 
   } = useQuery<PartsResponse>({
     queryKey: sessionsKeys.sessionParts(sessionId),
-    queryFn: () => fetchSessionParts(sessionId),
+    queryFn: async () => {
+      const sessionData = await queryClient.fetchQuery({
+        queryKey: sessionsKeys.session(sessionId),
+        queryFn: () => fetchSession(sessionId),
+        staleTime: 1000,
+      })
+      return fetchSessionParts(sessionId, sessionData)
+    },
     staleTime: 0,
     refetchOnMount: true
   })
