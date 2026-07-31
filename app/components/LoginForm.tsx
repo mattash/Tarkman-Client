@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { login } from '@/api/auth';
+import { getSafeRedirectPath } from '@/utils/authRedirect';
 
-export function LoginForm() {
+interface LoginFormProps {
+  redirectTo?: string;
+}
+
+export function LoginForm({ redirectTo }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,7 +26,7 @@ export function LoginForm() {
     try {
       const response = await login({ email, password });
       setAuth(response.user, response.token);
-      navigate({ to: '/' });
+      navigate({ to: getSafeRedirectPath(redirectTo) });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

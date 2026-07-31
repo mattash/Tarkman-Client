@@ -11,6 +11,13 @@ export function AuthLink() {
     return auth?.user ? (
       <LogoutButton />
     ) : (
-      <Link to="/login" className={authLinkClassName} activeProps={{ className: activeAuthLinkClassName }}>Login</Link>
+      <Link
+        to="/login"
+        search={{ redirect: undefined }}
+        className={authLinkClassName}
+        activeProps={{ className: activeAuthLinkClassName }}
+      >
+        Login
+      </Link>
     );
   }

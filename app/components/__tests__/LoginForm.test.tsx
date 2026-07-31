@@ -20,10 +20,10 @@ import { login } from '@/api/auth'
 const getSubmitButton = () =>
   screen.getByRole('button', { name: /sign in to your account/i })
 
-const renderLoginForm = () => {
+const renderLoginForm = (redirectTo?: string) => {
   return render(
     <AuthProvider>
-      <LoginForm />
+      <LoginForm redirectTo={redirectTo} />
     </AuthProvider>
   )
 }
@@ -93,6 +93,42 @@ describe('LoginForm', () => {
         password: 'password123',
       })
     })
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/' })
+    })
+  })
+
+  it('should return to a safe protected route after login', async () => {
+    const user = userEvent.setup()
+    vi.mocked(login).mockResolvedValueOnce({
+      user: { id: 1, email: 'test@example.com', name: 'Test User', roles: [] },
+      token: 'test-token-123',
+    })
+
+    renderLoginForm('/dashboard?tab=service#controls')
+
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com')
+    await user.type(screen.getByLabelText(/password/i), 'password123')
+    await user.click(getSubmitButton())
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard?tab=service#controls' })
+    })
+  })
+
+  it('should reject an external return location after login', async () => {
+    const user = userEvent.setup()
+    vi.mocked(login).mockResolvedValueOnce({
+      user: { id: 1, email: 'test@example.com', name: 'Test User', roles: [] },
+      token: 'test-token-123',
+    })
+
+    renderLoginForm('https://example.com/steal-token')
+
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com')
+    await user.type(screen.getByLabelText(/password/i), 'password123')
+    await user.click(getSubmitButton())
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/' })

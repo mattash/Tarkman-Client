@@ -49,6 +49,17 @@ describe('API interceptors', () => {
       await mockApi.get('/test')
     })
 
+    it('should remove an inherited Authorization header when the token is cleared', async () => {
+      mockApi.defaults.headers.common.Authorization = 'Bearer stale-token'
+
+      mock.onGet('/public').reply((config) => {
+        expect(config.headers?.Authorization).toBeUndefined()
+        return [200, { data: 'public' }]
+      })
+
+      await mockApi.get('/public')
+    })
+
     it('should add Authorization header to POST requests', async () => {
       localStorage.setItem('token', 'post-token')
 
@@ -70,15 +81,16 @@ describe('API interceptors', () => {
       expect(localStorage.getItem('token')).toBe('new-token-from-header')
     })
 
-    it('should update token from response data', async () => {
+    it('should not treat a non-authentication response token as a bearer token', async () => {
+      localStorage.setItem('token', 'authenticated-token')
       mock.onGet('/test').reply(200, { token: 'new-token-from-data', data: 'success' })
 
       await mockApi.get('/test')
 
-      expect(localStorage.getItem('token')).toBe('new-token-from-data')
+      expect(localStorage.getItem('token')).toBe('authenticated-token')
     })
 
-    it('should prefer x-auth-token header over response data token', async () => {
+    it('should use x-auth-token header when response data has another token', async () => {
       mock.onGet('/test').reply(
         200,
         { token: 'data-token', data: 'success' },
@@ -88,6 +100,18 @@ describe('API interceptors', () => {
       await mockApi.get('/test')
 
       expect(localStorage.getItem('token')).toBe('header-token')
+    })
+
+    it('should not replace authentication with a display-link capability token', async () => {
+      localStorage.setItem('token', 'authenticated-token')
+      mock.onGet('/display_links/public-capability').reply(200, {
+        token: 'public-capability',
+        mode: 'parallel',
+      })
+
+      await mockApi.get('/display_links/public-capability')
+
+      expect(localStorage.getItem('token')).toBe('authenticated-token')
     })
 
     it('should not update token when neither header nor data has token', async () => {
@@ -250,7 +274,8 @@ describe('API interceptors', () => {
       expect(results[1].data).toEqual({ data: 'data2' })
       expect(results[2].data).toEqual({ data: 'data3' })
 
-      // Refresh should have been called (though in practice this may vary based on timing)
+      const refreshRequests = mock.history.post.filter(({ url }) => url === '/refresh-token')
+      expect(refreshRequests).toHaveLength(1)
       expect(localStorage.getItem('token')).toBe('refreshed-token')
     })
   })
