@@ -107,6 +107,21 @@ describe('sessionQueries', () => {
       expect(api.get).toHaveBeenNthCalledWith(2, '/s/1/parts.json')
     })
 
+    it('reuses known session data when fetching parts', async () => {
+      const mockPartsData = { parts: mockPartsResponse.parts }
+      const mockSessionResponse = { session: mockSessionData }
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockPartsData })
+
+      const result = await fetchSessionParts('1', mockSessionResponse)
+
+      expect(result).toEqual({
+        parts: mockPartsData.parts,
+        sessionData: mockSessionResponse
+      })
+      expect(api.get).toHaveBeenCalledOnce()
+      expect(api.get).toHaveBeenCalledWith('/s/1/parts.json')
+    })
+
     it('falls back to liturgy parts when session parts fail', async () => {
       const mockSessionResponse = { session: mockSessionData }
       const mockLiturgyParts = { parts: mockPartsResponse.parts }

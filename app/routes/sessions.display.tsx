@@ -137,11 +137,13 @@ function RouteComponent() {
           sessionId={sessionWrapper.session.id.toString()}
           lang1={lang1}
           lang2={lang2}
+          sessionData={sessionWrapper}
         />
       ) : (
         <SessionPartsSingle
           sessionId={sessionWrapper.session.id.toString()}
           lang1={lang1}
+          sessionData={sessionWrapper}
         />
       )}
 

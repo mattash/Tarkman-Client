@@ -13,6 +13,7 @@ vi.mock('../useActionCable', () => ({
 }))
 
 vi.mock('../../queries/sessions', () => ({
+  fetchSession: vi.fn(),
   fetchSessionParts: vi.fn(),
   sessionsKeys: {
     all: ['sessions'] as const,
@@ -27,7 +28,7 @@ vi.mock('../smoothScrollToPart', () => ({
 }))
 
 import { useActionCable } from '../useActionCable'
-import { fetchSessionParts } from '../../queries/sessions'
+import { fetchSession, fetchSessionParts } from '../../queries/sessions'
 import { smoothScrollToPart } from '../smoothScrollToPart'
 
 // ---------------------------------------------------------------------------
@@ -97,6 +98,7 @@ function createWrapper(queryClient?: QueryClient) {
 describe('useSessionParts hook (integration)', () => {
   beforeEach(() => {
     vi.mocked(useActionCable).mockReturnValue(null)
+    vi.mocked(fetchSession).mockResolvedValue(makeSessionData().sessionData)
     vi.mocked(fetchSessionParts).mockResolvedValue(makeSessionData())
     vi.mocked(smoothScrollToPart).mockClear()
   })
@@ -121,6 +123,39 @@ describe('useSessionParts hook (integration)', () => {
     // Unmount must not throw; cleanup runs
     unmount()
     expect(true).toBe(true)
+  })
+
+  it('passes parent-loaded session data to the parts request', async () => {
+    const sessionData = makeSessionData().sessionData
+
+    const { result } = renderHook(
+      () => useSessionParts('test', { sessionData }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.data).toBeDefined()
+    })
+
+    expect(fetchSession).not.toHaveBeenCalled()
+    expect(fetchSessionParts).toHaveBeenCalledWith('test', sessionData)
+  })
+
+  it('loads missing session data through the canonical session query', async () => {
+    const sessionData = makeSessionData().sessionData
+    vi.mocked(fetchSession).mockResolvedValue(sessionData)
+
+    const { result } = renderHook(
+      () => useSessionParts('test'),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => {
+      expect(result.current.data).toBeDefined()
+    })
+
+    expect(fetchSession).toHaveBeenCalledWith('test')
+    expect(fetchSessionParts).toHaveBeenCalledWith('test', sessionData)
   })
 
   // P1.5 — Part id 0 not treated as falsy

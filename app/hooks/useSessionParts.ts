@@ -1,13 +1,16 @@
 import * as React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useActionCable } from './useActionCable'
-import { fetchSessionParts, sessionsKeys } from '../queries/sessions'
+import { fetchSession, fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
+import type { SessionWrapper } from '../types/session'
 import { smoothScrollToPart } from './smoothScrollToPart'
 
 interface UseSessionPartsOptions {
   /** Called when the current part changes (via ActionCable or initial data). */
   onPartChange?: (partId: string) => void
+  /** Session data already loaded by a parent route. */
+  sessionData?: SessionWrapper
 }
 
 export function useSessionParts(sessionId: string, options?: UseSessionPartsOptions) {
@@ -31,6 +34,7 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
   // whole options object (avoids re-scroll on rerender when an inline
   // object literal is passed).
   const onPartChange = options?.onPartChange
+  const knownSessionData = options?.sessionData
 
   const actionCableEvents = React.useMemo(() => ['part_change', 'status_change'], [])
   const subscriptionData = useActionCable(`channel_${sessionId}`, actionCableEvents)
@@ -51,7 +55,14 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
     error,
   } = useQuery<PartsResponse>({
     queryKey: sessionsKeys.sessionParts(sessionId),
-    queryFn: () => fetchSessionParts(sessionId),
+    queryFn: async () => {
+      const sessionData = knownSessionData ?? await queryClient.fetchQuery({
+        queryKey: sessionsKeys.session(sessionId),
+        queryFn: () => fetchSession(sessionId),
+        staleTime: 1000,
+      })
+      return fetchSessionParts(sessionId, sessionData)
+    },
     staleTime: 0,
     refetchOnMount: true,
   })

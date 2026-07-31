@@ -2,6 +2,7 @@ import * as React from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSessionParts } from '../hooks/useSessionParts'
 import { PartTextField, getPartTextField, shouldHideSessionPartText } from './sessionPartsUtils'
+import type { SessionWrapper } from '../types/session'
 
 export const LANG_FIELD_MAP = {
   translit: 'translit',
@@ -13,10 +14,15 @@ export const LANG_FIELD_MAP = {
 interface SessionPartsSingleProps {
   sessionId: string
   lang1?: 'translit' | 'en' | 'hyw' | 'grabar'
+  sessionData?: SessionWrapper
 }
 
-export function SessionPartsSingle({ sessionId, lang1 = 'translit' }: SessionPartsSingleProps) {
-  const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId)
+export function SessionPartsSingle({
+  sessionId,
+  lang1 = 'translit',
+  sessionData,
+}: SessionPartsSingleProps) {
+  const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId, { sessionData })
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading parts</div>

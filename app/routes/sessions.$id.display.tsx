@@ -171,11 +171,13 @@ function RouteComponent() {
           sessionId={id}
           lang1={lang1}
           lang2={lang2}
+          sessionData={sessionWrapper}
         />
       ) : (
         <SessionPartsSingle
           sessionId={id}
           lang1={lang1}
+          sessionData={sessionWrapper}
         />
       )}
 
