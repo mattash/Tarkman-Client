@@ -8,6 +8,7 @@ import { TagBadge } from './TagBadge'
 import { RatingDisplay } from './RatingDisplay'
 import { CitationsList } from './CitationsList'
 import { ChevronRight, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface CurrentExplanationProps {
   sessionId: string
@@ -20,6 +21,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
     sessionId: string
     explanations: Explanation[]
   }>({ sessionId, explanations: [] })
+  const [retryingSessionId, setRetryingSessionId] = React.useState<string | null>(null)
   const previousExplanations = previousExplanationState.sessionId === sessionId
     ? previousExplanationState.explanations
     : []
@@ -31,7 +33,7 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
     }
   }, [actionCableData, queryClient, sessionId])
 
-  const { data: explanations, isLoading } = useQuery<Explanation[]>({
+  const { data: explanations, isLoading, isError, isFetching, refetch } = useQuery<Explanation[]>({
     queryKey: explanationQueryKeys.current(sessionId),
     queryFn: () => fetchCurrentExplanation(sessionId),
     enabled: true,
@@ -52,6 +54,19 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
   const hasCurrentExplanations = explanations && explanations.length > 0
   const hasUpcomingExplanations = upcomingExplanations && upcomingExplanations.length > 0
   const hasPreviousExplanations = !hasCurrentExplanations && previousExplanations.length > 0
+  const isManualRetrying = retryingSessionId === sessionId
+  const shouldShowError = isError || isManualRetrying
+  const isRetrying = isManualRetrying || isFetching
+
+  const handleRetry = () => {
+    const retrySessionId = sessionId
+    setRetryingSessionId(retrySessionId)
+    void refetch().finally(() => {
+      setRetryingSessionId((currentSessionId) => (
+        currentSessionId === retrySessionId ? null : currentSessionId
+      ))
+    })
+  }
 
   return (
     <div className="max-w-4xl mx-auto relative">
@@ -61,8 +76,21 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
         </div>
       )}
 
+      {shouldShowError && (
+        <div role="alert" className="mb-8 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-amber-100">
+          <h2 className="text-lg font-semibold">Explanation temporarily unavailable</h2>
+          <p className="mt-1 text-sm">Please try again in a moment.</p>
+          {(hasCurrentExplanations || hasPreviousExplanations) && (
+            <p className="mt-2 text-sm">Showing the last available explanation.</p>
+          )}
+          <Button className="mt-3" disabled={isRetrying} onClick={handleRetry}>
+            {isRetrying ? 'Retrying...' : 'Try again'}
+          </Button>
+        </div>
+      )}
+
       {/* No active explanations - show helpful message and upcoming */}
-      {!hasCurrentExplanations && !isLoading && (
+      {!hasCurrentExplanations && !isLoading && !shouldShowError && (
         <div className="space-y-8">
           <div className="text-center py-12 space-y-4">
             <div className="text-gray-400 text-xl">
@@ -126,6 +154,52 @@ export function CurrentExplanation({ sessionId }: CurrentExplanationProps) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {shouldShowError && !hasCurrentExplanations && hasPreviousExplanations && (
+        <div className="opacity-60 space-y-8">
+          {previousExplanations.map((explanation) => (
+            <div key={explanation.id} className="space-y-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-3">{explanation.title}</h1>
+
+                {explanation.tags && explanation.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {explanation.tags.map((tag, index) => (
+                      <TagBadge key={index} tag={tag} />
+                    ))}
+                  </div>
+                )}
+
+                {explanation.average_rating !== undefined && explanation.rating_count !== undefined && (
+                  <div className="mb-4">
+                    <RatingDisplay
+                      averageRating={explanation.average_rating}
+                      ratingCount={explanation.rating_count}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {explanation.summary && (
+                <div className="text-lg italic text-gray-300 border-l-4 border-blue-400 pl-4 py-2">
+                  {explanation.summary}
+                </div>
+              )}
+
+              <div className="text-gray-100 text-lg">
+                <ReactMarkdown>{explanation.description}</ReactMarkdown>
+              </div>
+
+              {explanation.liturgy_id && (
+                <CitationsList
+                  liturgyId={explanation.liturgy_id.toString()}
+                  explanationId={explanation.id.toString()}
+                />
+              )}
+            </div>
+          ))}
         </div>
       )}
 
