@@ -1,6 +1,12 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+const apiUrl = import.meta.env.VITE_API_URL
+
+if (typeof apiUrl !== 'string' || apiUrl.trim().length === 0) {
+  vi.stubEnv('VITE_API_URL', 'https://example.test')
+}
+
 const createStorageMock = () => {
   let store: Record<string, string> = {}
 

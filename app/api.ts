@@ -1,8 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import { apiBaseUrl } from '@/config/environment'
 import { clearAuthToken, getAuthToken, setAuthToken } from '@/utils/authStorage'
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
