@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchSessions, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus } from '../sessions'
+import { fetchSessions, fetchSession, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus } from '../sessions'
 import { api } from '@/api'
 
 // Mock api
@@ -62,6 +62,10 @@ describe('sessionQueries', () => {
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   describe('fetchSessions', () => {
     it('should fetch sessions successfully', async () => {
       const mockResponse = [{ session: mockSessionData }]
@@ -76,11 +80,46 @@ describe('sessionQueries', () => {
       })
     })
 
-    it('should handle fetch error', async () => {
+    it('propagates the original error without logging it', async () => {
+      const requestError = Object.assign(new Error('Request failed'), {
+        config: {
+          headers: {
+            Authorization: 'Bearer fetch-sessions-test-token'
+          }
+        }
+      })
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
-      await expect(fetchSessions('UTC')).rejects.toThrow('Network error')
-      consoleSpy.mockRestore()
+      vi.mocked(api.get).mockRejectedValueOnce(requestError)
+
+      await expect(fetchSessions('UTC')).rejects.toBe(requestError)
+      expect(consoleSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('fetchSession', () => {
+    it('should fetch a session successfully', async () => {
+      const mockResponse = { session: mockSessionData }
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockResponse })
+
+      const result = await fetchSession('1')
+
+      expect(result).toEqual(mockResponse)
+      expect(api.get).toHaveBeenCalledWith('/s/1.json')
+    })
+
+    it('propagates the original error without logging it', async () => {
+      const requestError = Object.assign(new Error('Request failed'), {
+        config: {
+          headers: {
+            Authorization: 'Bearer fetch-session-test-token'
+          }
+        }
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(api.get).mockRejectedValueOnce(requestError)
+
+      await expect(fetchSession('1')).rejects.toBe(requestError)
+      expect(consoleSpy).not.toHaveBeenCalled()
     })
   })
 
