@@ -29,6 +29,7 @@ export function ExplanationDrawer({
 }: ExplanationDrawerProps) {
   const queryClient = useQueryClient()
   const actionCableData = useActionCable(`channel_${sessionId}`, 'part_change')
+  const [retryingSessionId, setRetryingSessionId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (actionCableData) {
@@ -36,10 +37,23 @@ export function ExplanationDrawer({
     }
   }, [actionCableData, queryClient, sessionId])
 
-  const { data: explanations, isLoading } = useQuery<Explanation[]>({
+  const { data: explanations, isLoading, isError, isFetching, refetch } = useQuery<Explanation[]>({
     queryKey: explanationQueryKeys.current(sessionId),
     queryFn: () => fetchCurrentExplanation(sessionId),
   })
+  const isManualRetrying = retryingSessionId === sessionId
+  const shouldShowError = isError || isManualRetrying
+  const isRetrying = isManualRetrying || isFetching
+
+  const handleRetry = () => {
+    const retrySessionId = sessionId
+    setRetryingSessionId(retrySessionId)
+    void refetch().finally(() => {
+      setRetryingSessionId((currentSessionId) => (
+        currentSessionId === retrySessionId ? null : currentSessionId
+      ))
+    })
+  }
 
   return (
     <Drawer direction="bottom">
@@ -63,7 +77,19 @@ export function ExplanationDrawer({
               </DrawerClose>
             </DrawerHeader>
             <div className="p-4">
-              {isLoading ? (
+              {shouldShowError && (
+                <div role="alert" className="mb-4 rounded-lg border border-amber-500/50 bg-amber-50 p-4 text-amber-950">
+                  <h2 className="text-lg font-semibold">Explanation temporarily unavailable</h2>
+                  <p className="mt-1 text-sm">Please try again in a moment.</p>
+                  {explanations?.length ? (
+                    <p className="mt-2 text-sm">Showing the last available explanation.</p>
+                  ) : null}
+                  <Button className="mt-3" disabled={isRetrying} onClick={handleRetry}>
+                    {isRetrying ? 'Retrying...' : 'Try again'}
+                  </Button>
+                </div>
+              )}
+              {isLoading && !shouldShowError ? (
                 <div className="animate-pulse">Loading explanation...</div>
               ) : explanations?.length ? (
                 <div className="prose max-w-none space-y-6">
@@ -114,13 +140,13 @@ export function ExplanationDrawer({
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : !shouldShowError ? (
                 <div>No explanation available</div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
       </DrawerContent>
     </Drawer>
   )
-} 
+}

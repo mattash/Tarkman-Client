@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CurrentExplanation } from '../CurrentExplanation'
 import type { ReactNode } from 'react'
@@ -109,6 +110,64 @@ describe('CurrentExplanation', () => {
       expect(screen.getByText('No Active Explanation')).toBeInTheDocument()
     })
     expect(screen.getByText('Tarkman does not currently have an active explanation for this part of the service. Check back next week for an update.')).toBeInTheDocument()
+  })
+
+  it('shows an unavailable alert instead of an empty state when the current query fails', async () => {
+    vi.mocked(fetchCurrentExplanation).mockRejectedValue(new Error('Request failed'))
+    vi.mocked(fetchUpcomingExplanations).mockResolvedValue([])
+
+    render(<CurrentExplanation sessionId="123" />, {
+      wrapper: createWrapper(),
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Explanation temporarily unavailable')
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    expect(screen.queryByText('No Active Explanation')).not.toBeInTheDocument()
+  })
+
+  it('retries an unavailable explanation and renders the recovered content', async () => {
+    let resolveRetry!: (value: Explanation[]) => void
+    const retryPromise = new Promise<Explanation[]>((resolve) => {
+      resolveRetry = resolve
+    })
+    vi.mocked(fetchCurrentExplanation)
+      .mockRejectedValueOnce(new Error('Request failed'))
+      .mockReturnValueOnce(retryPromise)
+    vi.mocked(fetchUpcomingExplanations).mockResolvedValue([])
+    const user = userEvent.setup()
+
+    render(<CurrentExplanation sessionId="123" />, {
+      wrapper: createWrapper(),
+    })
+
+    await user.click(await screen.findByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByRole('button', { name: 'Retrying...' })).toBeDisabled()
+
+    resolveRetry([mockExplanation])
+
+    expect(await screen.findByText('Test Explanation')).toBeInTheDocument()
+    expect(fetchCurrentExplanation).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps same-session content visible with a stale label after a failed refetch', async () => {
+    vi.mocked(fetchCurrentExplanation).mockResolvedValueOnce([mockExplanation])
+    vi.mocked(fetchUpcomingExplanations).mockResolvedValue([])
+
+    const { rerender } = render(<CurrentExplanation sessionId="123" />, {
+      wrapper: createWrapper(),
+    })
+
+    expect(await screen.findByText('Test Explanation')).toBeInTheDocument()
+
+    vi.mocked(fetchCurrentExplanation).mockRejectedValueOnce(new Error('Request failed'))
+    vi.mocked(useActionCable).mockReturnValue({} as never)
+    rerender(<CurrentExplanation sessionId="123" />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Explanation temporarily unavailable')
+    expect(screen.getByText('Showing the last available explanation.')).toBeInTheDocument()
+    expect(screen.getByText('Test Explanation')).toBeInTheDocument()
+    expect(screen.queryByText('Previous Explanation')).not.toBeInTheDocument()
   })
 
   it('should render previous explanation with "Previous Explanation" message', async () => {
