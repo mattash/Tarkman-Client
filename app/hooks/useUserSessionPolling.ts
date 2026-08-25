@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { apiBaseUrl } from '@/config/environment'
 import { SessionWrapper } from '../types/session'
 
 function getViewerTimeZone(): string | null {
@@ -13,7 +14,7 @@ async function fetchUserCurrentSession(userId: string): Promise<SessionWrapper |
   const tz = getViewerTimeZone()
   const tzParam = tz ? `?tz=${encodeURIComponent(tz)}` : ''
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/s/${encodeURIComponent(userId)}/current.json${tzParam}`,
+    `${apiBaseUrl}/s/${encodeURIComponent(userId)}/current.json${tzParam}`,
     { headers: { 'X-Polling-Client': 'true' } }
   )
   if (!response.ok) {

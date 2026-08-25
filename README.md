@@ -6,7 +6,7 @@ A modern React + Vite front-end for the [Tarkman](https://tarkman.app) platform 
 
 ## ✨ Features
 
-- **Real-time service tracking** powered by [Pusher](https://pusher.com/)
+- **Real-time service tracking** powered by ActionCable
 - **Multilingual support** (Classical Armenian, English, Russian)
 - **Large-screen display mode** for in-church projectors (`/sessions/display` route)
 - **Rich explanations drawer** with on-demand liturgical context
@@ -24,7 +24,7 @@ A modern React + Vite front-end for the [Tarkman](https://tarkman.app) platform 
 | Routing       | [@tanstack/react-router](https://tanstack.com/router) |
 | Data Fetching | [@tanstack/react-query](https://tanstack.com/query)    |
 | Styling       | [Tailwind CSS v3](https://tailwindcss.com/) |
-| Realtime      | [Pusher JS](https://pusher.com/)            |
+| Realtime      | ActionCable (WebSocket)                     |
 | UI Primitives | [Radix UI](https://www.radix-ui.com/) + [Vaul](https://vaul.sh/) |
 
 ---
@@ -49,14 +49,24 @@ npm install # or pnpm install / yarn
 
 ### 3. Configure Environment Variables
 
-Create a `.env.local` file in the project root and populate the required variables:
+Copy `.env.example` to `.env.local` and set the required API URL. The other
+runtime settings are optional:
 
 ```env
-VITE_API_URL=https://api.tarkman.app              # Base URL of Tarkman backend
-VITE_DEFAULT_CHURCH_ID=2                         # Fallback church ID
-VITE_PUSHER_APP_KEY=pk_XXXXXXXXXXXXXXXXXXXXXXXX  # Pusher credentials
-VITE_PUSHER_CLUSTER=eu                           # Pusher cluster
+VITE_API_URL=https://api.example.com
+
+# Optional: defaults to 2 when unset
+VITE_DEFAULT_CHURCH_ID=2
+
+# Optional: defaults to same-origin /cable when unset
+# VITE_ACTIONCABLE_URL=wss://api.example.com/cable
+
+# Optional: runtime error reporting configuration
+# VITE_SENTRY_DSN=https://examplePublicKey@o0.ingest.sentry.io/0
+# VITE_SENTRY_ENVIRONMENT=production
 ```
+
+`VITE_APP_VERSION` is supplied by the production build and should not be set manually.
 
 ### 4. Run the Dev Server
 
@@ -81,7 +91,7 @@ npm run preview   # serve the production build locally
 app/
  ├─ components/         # Reusable UI components
  ├─ contexts/           # React context providers (auth, language)
- ├─ hooks/              # Custom hooks (Pusher, polling, etc.)
+ ├─ hooks/              # Custom hooks (ActionCable, polling, etc.)
  ├─ queries/            # API abstraction & TanStack Query keys
  ├─ routes/             # File-based routes (compiled by TanStack Router)
  ├─ types/              # Shared TypeScript interfaces
@@ -124,4 +134,4 @@ Contributions are welcome! Please:
 
 [ISC](LICENSE)
 
-Copyright © 2024 
+Copyright © 2024

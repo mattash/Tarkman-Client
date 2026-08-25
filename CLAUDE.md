@@ -68,7 +68,7 @@ export const queryKeys = {
 - Refresh failure redirects to `/login`
 
 #### 4. Real-time Updates
-- `useActionCable` hook (exported as `usePusher` for backward compat) subscribes to Rails ActionCable channels for live service updates
+- `useActionCable` hook (also exported under a legacy compatibility name) subscribes to Rails ActionCable channels for live service updates
 - `useSessionPolling` provides fallback polling for display routes
 - Real-time part updates broadcast via ActionCable events (`part_change`, `status_change`, `explanation_updated`)
 
@@ -102,7 +102,7 @@ app/
 ├── api.ts                  # Axios instance with auth interceptors
 ├── components/             # Reusable UI components
 ├── contexts/              # Global state (AuthContext, LanguageContext)
-├── hooks/                 # Custom hooks (useActionCable, usePusher, useSessionPolling, usePartScroll)
+├── hooks/                 # Custom hooks (useActionCable, useSessionPolling, usePartScroll)
 ├── queries/               # TanStack Query functions and keys
 │   ├── sessions.ts        # Session and parts fetching/mutations
 │   ├── partQueries.ts     # Individual part fetching
@@ -123,11 +123,12 @@ import { SessionParts } from '@/components/SessionParts'
 ```
 
 ### Environment Variables
-Required variables in `.env.local`:
+Copy `.env.example` to `.env.local` and set the required API URL:
 - `VITE_API_URL`: Backend API base URL
-- `VITE_DEFAULT_CHURCH_ID`: Fallback church ID
+- `VITE_DEFAULT_CHURCH_ID` (optional): Fallback church ID; defaults to `2`
 - `VITE_ACTIONCABLE_URL` (optional): Full ActionCable WebSocket URL (e.g., `wss://api.example.com/cable`). Defaults to `/cable` on the same origin.
-- `VITE_PUSHER_APP_KEY`: Pusher app key (deprecated — no longer used)
+- `VITE_SENTRY_DSN` and `VITE_SENTRY_ENVIRONMENT` (optional): Runtime error reporting configuration.
+- `VITE_APP_VERSION`: Supplied by the production build; do not set it manually.
 
 ## Code Style (from .cursorrules)
 

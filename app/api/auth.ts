@@ -1,6 +1,7 @@
+import { apiBaseUrl } from '@/config/environment';
 import type { AuthResponse, LoginCredentials } from '@/types/auth';
 
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = apiBaseUrl;
 
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE}/users/sign_in`, {
