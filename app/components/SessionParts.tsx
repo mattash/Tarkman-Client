@@ -62,7 +62,7 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
       <ul className="space-y-4">
         {(data?.parts ?? []).map(({ part }) => (
           <PartCard
-            key={part.id}
+            key={part.liturgy_part_id ?? part.id}
             ref={(el) => {
               if (el) {
                 partsRef.current[part.id] = el

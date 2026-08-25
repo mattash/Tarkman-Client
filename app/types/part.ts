@@ -2,6 +2,7 @@ import type { SessionWrapper } from './session'
 
 export interface Part {
   id: number
+  liturgy_part_id?: number
   role: string
   grabar: string
   translit: string

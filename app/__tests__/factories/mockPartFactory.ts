@@ -4,6 +4,7 @@ export function createMockPart(overrides: Partial<PartWrapper['part']> = {}): Pa
   return {
     part: {
       id: 1,
+      liturgy_part_id: 1,
       role: 'priest',
       grabar: 'Հայր մեր, որ յերկինս ես',
       translit: 'Hayr mer, vor y yerkinus yes',

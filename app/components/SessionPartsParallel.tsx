@@ -38,7 +38,7 @@ export function SessionPartsParallel({
         return (
           <div
             className={`grid ${hide1 || hide2 ? 'grid-cols-1' : 'grid-cols-2'} gap-5 mb-5`}
-            key={part.id}
+            key={part.liturgy_part_id ?? part.id}
             data-duration-ms={part.effective_duration_ms}
             ref={(el) => {
               if (el) {
