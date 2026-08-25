@@ -15,27 +15,17 @@ export const sessionMutationKeys = {
 }
 
 export async function fetchSessions(tz: string): Promise<SessionWrapper[]> {
-  try {
-    const { data } = await api.get<SessionWrapper[]>('/services.json', {
-      params: {
-        tz
-      }
-    })
-    return Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('Error fetching sessions:', error)
-    throw error
-  }
+  const { data } = await api.get<SessionWrapper[]>('/services.json', {
+    params: {
+      tz
+    }
+  })
+  return Array.isArray(data) ? data : []
 }
 
 export async function fetchSession(sessionId: string): Promise<SessionWrapper> {
-  try {
-    const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
-    return data
-  } catch (error) {
-    console.error(`Error fetching session ${sessionId}:`, error)
-    throw error
-  }
+  const { data } = await api.get<SessionWrapper>(`/s/${sessionId}.json`)
+  return data
 }
 
 export async function fetchSessionParts(
