@@ -6,7 +6,6 @@ interface ImportMetaEnv {
   readonly VITE_ACTIONCABLE_URL?: string;
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_SENTRY_ENVIRONMENT?: string;
-  readonly VITE_APP_VERSION: string;
   readonly VITE_TEST_EMAIL?: string;
   readonly VITE_TEST_PASSWORD?: string;
   readonly VITE_TEST_SESSION_ID?: string;

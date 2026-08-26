@@ -66,8 +66,6 @@ VITE_DEFAULT_CHURCH_ID=2
 # VITE_SENTRY_ENVIRONMENT=production
 ```
 
-`VITE_APP_VERSION` is supplied by the production build and should not be set manually.
-
 ### 4. Run the Dev Server
 
 ```bash
