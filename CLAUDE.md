@@ -1,5 +1,20 @@
 # CLAUDE.md
 
+## Repository layout
+
+- `apps/web` contains the existing Vite client. All web-relative paths below
+  (`app/`, `public/`, `.env*`, configs and `dist/`) are relative to `apps/web`.
+- Root `npm run dev/build/preview/typecheck/test/test:coverage/test:integration`
+  scripts run in `apps/web` via explicit npm prefixes. Each app has its own
+  `package-lock.json` and `node_modules`; there are no npm workspaces or root
+  dependencies. Install with `npm ci --prefix apps/web` and, separately,
+  `npm ci --prefix apps/mobile` from the repository root.
+  Run direct `npx vitest` commands from `apps/web`.
+- `apps/mobile` is a separate managed Expo Router app. Use `npm run mobile` from
+  root; see `apps/mobile/README.md`. Run all EAS commands only in `apps/mobile`.
+  EAS is intentionally unlinked until the owner chooses an Expo account/team.
+- Vercel uses repository root configuration and serves `apps/web/dist`.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Development Commands
@@ -13,7 +28,7 @@ npm run preview       # Preview the production bundle locally
 
 ### Testing
 ```bash
-npm test              # Run all tests in watch mode
+npm test              # Run web unit tests once
 npm run test:coverage # Run tests with coverage report
 npm run test:integration # Run integration tests only
 

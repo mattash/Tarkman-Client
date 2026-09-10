@@ -1,5 +1,20 @@
 # Repository Guidelines
 
+## Repository layout
+
+- `apps/web` contains the existing Vite client. All web-relative paths below
+  (`app/`, `public/`, `.env*`, configs and `dist/`) are relative to `apps/web`.
+- Root `npm run dev/build/preview/typecheck/test/test:coverage/test:integration`
+  scripts run in `apps/web` via explicit npm prefixes. Each app has its own
+  `package-lock.json` and `node_modules`; there are no npm workspaces or root
+  dependencies. Install with `npm ci --prefix apps/web` and, separately,
+  `npm ci --prefix apps/mobile` from the repository root.
+  Run direct `npx vitest` commands from `apps/web`.
+- `apps/mobile` is a separate managed Expo Router app. Use `npm run mobile` from
+  root; see `apps/mobile/README.md`. Run all EAS commands only in `apps/mobile`.
+  EAS is intentionally unlinked until the owner chooses an Expo account/team.
+- Vercel uses repository root configuration and serves `apps/web/dist`.
+
 ## Project Structure & Module Organization
 - Frontend lives in `app/` (React + TypeScript). Key folders: `components/` (UI atoms/organisms), `routes/` (TanStack Router tree compiled into `routeTree.gen.ts`), `queries/` (API wrappers + TanStack Query keys), `contexts/` and `hooks/` for shared state and utilities, `types/` for shared interfaces.
 - Vite entry points: `document.tsx` and `entry-client.tsx`. Styles are centralized in `app/styles.css` with Tailwind layers; design tokens in `tailwind.config.js`.
