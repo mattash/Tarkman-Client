@@ -2,6 +2,7 @@
   "expo": {
     "name": "Tarkman",
     "slug": "tarkman",
+    "owner": "mesropash",
     "version": "0.1.0",
     "scheme": "tarkman",
     "platforms": [
@@ -21,6 +22,12 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c76aa8c8-fb02-40b5-b4ae-8469b1bbeb47"
+      }
+    }
   }
 }
