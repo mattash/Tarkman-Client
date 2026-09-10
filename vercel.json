@@ -1,13 +1,13 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
+  "buildCommand": "npm run build --prefix apps/web",
+  "devCommand": "npm run dev --prefix apps/web",
+  "installCommand": "npm ci --prefix apps/web",
   "framework": "vite",
-  "outputDirectory": "dist",
+  "outputDirectory": "apps/web/dist",
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
-} 
+}

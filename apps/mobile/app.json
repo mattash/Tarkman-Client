@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Tarkman",
+    "slug": "tarkman",
+    "version": "0.1.0",
+    "scheme": "tarkman",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "ios": {
+      "bundleIdentifier": "app.tarkman"
+    },
+    "android": {
+      "package": "app.tarkman"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

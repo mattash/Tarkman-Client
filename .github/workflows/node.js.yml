@@ -14,6 +14,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: apps/web
+
     strategy:
       matrix:
         node-version: [18.x, 20.x, 22.x]
@@ -25,11 +29,33 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: apps/web/package-lock.json
     - run: npm ci
-    - run: npm run build --if-present
+    - run: npm run typecheck
+    - run: npm run build
     - name: Run tests
       env:
         VITE_API_URL: ${{ secrets.VITE_API_URL }}
         VITE_TEST_EMAIL: ${{ secrets.VITE_TEST_EMAIL }}
         VITE_TEST_PASSWORD: ${{ secrets.VITE_TEST_PASSWORD }}
       run: npm test
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+    - uses: actions/checkout@v4
+    # SDK 57 requires Node >=22.13; the web matrix/runtime stays under #68.
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22.x
+        cache: 'npm'
+        cache-dependency-path: apps/mobile/package-lock.json
+    - run: npm ci
+    - run: npm ls --all
+    - run: npx expo-doctor
+    - run: npm run typecheck
+    - run: npm run config
+    - run: npm run export:web
