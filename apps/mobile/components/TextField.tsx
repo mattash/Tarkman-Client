@@ -1,10 +1,10 @@
-import { useId, useState } from 'react'
+import { useId, useState, type Ref } from 'react'
 import { TextInput, View, type TextInputProps } from 'react-native'
 import { useTheme } from '../design/ThemeProvider'
 import { radii, spacing, touchTarget, typography } from '../design/tokens'
 import { AppText } from './AppText'
 
-export interface TextFieldProps extends TextInputProps { label: string; error?: string }
+export interface TextFieldProps extends TextInputProps { ref?: Ref<TextInput>; label: string; error?: string }
 export function TextField({ label, error, style, onFocus, onBlur, editable = true, ...props }: TextFieldProps) {
   const { colors } = useTheme()
   const [focused, setFocused] = useState(false)

@@ -8,6 +8,7 @@ import { initialState } from '../features/live/state'
 import { normalizeParts, normalizeSession } from '../features/live/contracts'
 import LiveScreen from '../app/index'
 jest.mock('../features/live/useReader')
+jest.mock('../features/auth/AuthProvider', () => ({ useAuth: () => ({ state: { status: 'signedOut' } }) }))
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
 const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider>{children}</ThemeProvider>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
