@@ -18,8 +18,15 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const languageOpener = useRef<View>(null), explanationOpener = useRef<View>(null), activeOpener = useRef<View>(null)
   const part = state.session ? currentPart(state.session, state.parts) : undefined
   return <View style={{ flex: 1 }}>
-    <ScrollView style={{ flexGrow: 0, maxHeight: '50%' }} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-      <AppButton variant="quiet" onPress={back}>All services</AppButton>
+    <View testID="reader-header-actions" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, padding: spacing.md, maxWidth: 800, width: '100%', alignSelf: 'center', flexShrink: 0 }}>
+      <View style={{ flexShrink: 1 }}>
+        <AppButton variant="quiet" onPress={back}>All services</AppButton>
+      </View>
+      {!state.following && <View style={{ flexShrink: 1 }}>
+        <AppButton accessibilityHint="Resumes automatically following the current part." onPress={() => { dispatch({ type: 'follow' }); retry() }}>Return to live</AppButton>
+      </View>}
+    </View>
+    <ScrollView testID="reader-header-details" style={{ flexGrow: 0, maxHeight: '50%' }} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, maxWidth: 800, width: '100%', alignSelf: 'center' }}>
       <AppText variant="heading">{state.session?.title ?? `Session ${id}`}</AppText>
       <ReaderStatus state={state} retry={retry} />
       {state.session && state.session.status !== 'active' && <AppText accessibilityLiveRegion="polite">{state.session.status === 'paused' ? 'Service paused' : `Service status: ${state.session.status.replaceAll('_', ' ')}`}{state.session.message ? ` · ${state.session.message}` : ''}</AppText>}
@@ -30,9 +37,6 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       {state.session && !part && !state.loading && <AppText variant="caption">The current part is not available. You can browse the readings.</AppText>}
     </ScrollView>
     {!state.loading && <PartList parts={state.parts} currentKey={part?.key} following={state.following} language={language} manual={() => dispatch({ type: 'manual' })} />}
-    {!state.following && <View style={{ padding: spacing.md, maxWidth: 800, width: '100%', alignSelf: 'center', flexShrink: 0 }}>
-      <AppButton accessibilityHint="Resumes automatically following the current part." onPress={() => { dispatch({ type: 'follow' }); retry() }}>Return to live</AppButton>
-    </View>}
     <AppModal visible={sheet !== null} title={sheet === 'language' ? 'Reading language' : 'Current part explanation'} openerRef={activeOpener} onDismiss={() => setSheet(null)}>
       {sheet === 'language' ? sampleLanguages.map(item => <AppButton key={item.value} variant={item.value === language ? 'primary' : 'secondary'} accessibilityState={{ selected: item.value === language }} onPress={() => { setLanguage(item.value); setSheet(null) }}>{item.label}</AppButton>) : <>
         <AppText variant="caption" tone="muted">Explanations follow the service’s current part, even while you read elsewhere.</AppText>
