@@ -1,8 +1,8 @@
 # Tarkman mobile
 
-Managed Expo SDK 57, React Native and Expo Router. The home route is a native-first
-design-system gallery with static liturgy examples (`en`, `ru`, `grabar`,
-`translit`). It makes no API/auth requests. The production website remains the
+Managed Expo SDK 57, React Native and Expo Router. The home route is a public, read-only live-session reader. The `/gallery` route
+retains the Expo 05 static liturgy examples (`en`, `ru`, `grabar`, `translit`) and
+works without network configuration. The production website remains the
 separate Vite app in `../web`.
 
 ## Develop and verify
@@ -12,8 +12,8 @@ Use Node >=22.13; install each app independently. No workspaces or root install.
 ```sh
 cd apps/mobile
 npm ci
-npm start                  # Expo Go or an existing development client
-npm run ios                # requires local simulator tooling
+npm start -- --dev-client   # existing local development client
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios # local build/install
 npm run web
 npm run lint
 npm run typecheck
@@ -27,8 +27,8 @@ npm ls --all
 
 Core is a source-linked `file:` dependency. After installing both apps, run
 `npm run core:test` and `npm run core:check-consumers` at repository root. The
-static gallery uses core types only; its samples and labels are local, so Metro
-needs no custom core resolver. Runtime core integration remains separate work.
+reader and gallery use core language types; their narrower response models match
+nullable Rails fields. Metro needs no custom core resolver.
 
 NativeWind **4** with Tailwind **3** is configured through `global.css`, the
 NativeWind preset, Babel and `withNativeWind` in Metro. Scanning is limited to
@@ -151,8 +151,83 @@ This gallery adds only automatic appearance and the Expo font plugin. No EAS
 commands, credentials, build profiles or deployment settings change. Run any
 future EAS operations only from `apps/mobile` under separate release authorization.
 
-The gallery needs no environment file. `.env.example` reserves public values for
-future networking work; do not put secrets in `EXPO_PUBLIC_*`. Authentication,
-networking, web-screen migration and native publication remain separate tasks.
+The gallery needs no environment file. Live-reader endpoint configuration is
+described below. Authentication and native publication remain separate tasks.
 
 See [review validation and screenshots](qa/expo73/VALIDATION.md) for the latest browser evidence and remaining native QA.
+
+
+## Public live reader / Expo 06
+
+Set only `EXPO_PUBLIC_API_URL` (API base URL) and
+`EXPO_PUBLIC_ACTIONCABLE_URL` (complete cable URL) in your local development
+shell or untracked local environment. No endpoint is guessed and no environment
+values are committed by this feature. Missing/invalid settings show a safe
+configuration screen; the gallery still works. Restart Metro after changes; use
+`--clear` when exporting with different environment values to avoid stale Metro
+transforms. These values are bundled and **public**, never secrets.
+
+HTTPS/WSS are required outside development. In development only, HTTP/WS are
+accepted for localhost, loopback, private IPv4 LAN addresses and `.local` hosts.
+Credentials, query strings and fragments are rejected for both endpoints. The
+API base may contain a path prefix; the cable endpoint must be explicit. Use a
+reachable local backend on a physical device (its localhost is the phone).
+Existing Rails origin policy must already permit the chosen client origin; this
+slice does not change backend or production configuration.
+
+Public reads only: `/services.json?tz=...`, `/s/:id.json`, `/s/:id/parts.json`, and
+`/s/:id/explanations/current.json`. Requests omit credentials, disallow redirects
+and disable HTTP caching. No login, session controls/creation, private sessions,
+auth identifiers, offline storage, EAS/release work, or display-mode parity.
+Rails itself may record analytics on public GETs; the client does not send writes.
+Variable English fields that Rails emits as HTML remain inert literal text under
+the existing limited Markdown renderer; this slice does not add an HTML engine.
+
+The `/` screen discovers public services or opens a numeric session ID. Parts
+retain Rails ordering and occurrence identity (`liturgy_part_id`), including
+multi-liturgy repetitions. Current-part resolution uses part and liturgy together;
+position is a secondary discriminator. Scrolling by touch, wheel or keyboard
+pauses automatic targeting. Return to live resumes it; a live event never clears
+the manual-reading preference. Native FlatList targeting uses measured list
+estimates and bounded retries, without DOM measurements. Language and explanation
+sheets reuse Expo 05 modal focus/dismissal and typography primitives.
+
+`features/live` separates defensive parsing/configuration, GET transport, a
+mockable cable interface, lifecycle ownership, recovery state and UI. Built-in
+fetch/WebSocket need no client libraries. `expo-network ~57.0.2` matches the SDK
+57 bundled module manifest and [Expo Network documentation](https://docs.expo.dev/versions/latest/sdk/network/).
+The cable adapter implements Rails `actioncable-v1-json`: welcome, subscription
+confirmation, pings, messages, rejection, disconnect and bounded reconnection.
+The identifier is exactly `{ channel: "SessionChannel", id: sessionId }`.
+
+Connect/reconnect, `part_change`, `status_change`, `explanation_updated`, network
+restoration and foreground return refetch all reader data. A 30-second foreground
+poll catches missed events and service-list changes. A canonical session recheck
+detects transitions during the parallel reads; invalidated responses are discarded
+and coalesced into one rerun. Requests time out after 12 seconds. Backgrounding,
+network loss, route exit and session changes dispose sockets/timers and abort
+requests. Explanation failures remain separate from readable parts; stale
+explanations are hidden until recovery. No content survives process exit.
+
+Rails discovery currently means sessions on the client's date, not a guaranteed
+in-progress service. There is no authoritative ended timestamp in this contract.
+A service leaving discovery is labeled “no longer listed live”; its readings
+remain available. Server status messages are displayed as text, without projector
+or control behavior. The APIs have no atomic snapshot/version contract, so the
+session recheck plus periodic recovery reduces, but cannot eliminate, every
+cross-request race.
+
+Run the local build with the already configured development client:
+
+```sh
+cd apps/mobile
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios
+```
+
+Do not use Expo Go for native acceptance or substitute an EAS cloud build. See
+[Expo 06 validation](qa/expo74/VALIDATION.md) for exact checks and screenshots.
+**Native handshake follow-up:** a real iPhone must connect to an appropriate
+existing Rails endpoint and verify subscription confirmation, part/status and
+explanation updates, lock/background/foreground, airplane-mode/Wi-Fi restoration,
+long multi-liturgy targeting, Dynamic Type, VoiceOver and modal/keyboard focus.
+Simulator build success and mocked web tests do not prove that handshake.

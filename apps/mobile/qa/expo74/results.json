@@ -1,0 +1,128 @@
+[
+  {
+    "name": "phone",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "buttons": [
+      {
+        "label": "All services",
+        "width": 358,
+        "height": 44
+      },
+      {
+        "label": "Choose reading language",
+        "width": 98.3125,
+        "height": 44
+      },
+      {
+        "label": "Explain current part",
+        "width": 177.421875,
+        "height": 44
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "requests": 43,
+    "socketConnections": 2,
+    "manualScrollPreserved": true,
+    "modalFocus": true,
+    "longLanguages": true,
+    "injectedFaultErrors": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    ]
+  },
+  {
+    "name": "tablet",
+    "width": 820,
+    "height": 1180,
+    "overflow": false,
+    "buttons": [
+      {
+        "label": "All services",
+        "width": 768,
+        "height": 44
+      },
+      {
+        "label": "Choose reading language",
+        "width": 98.3125,
+        "height": 44
+      },
+      {
+        "label": "Explain current part",
+        "width": 177.421875,
+        "height": 44
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "requests": 42,
+    "socketConnections": 2,
+    "manualScrollPreserved": true,
+    "modalFocus": true,
+    "longLanguages": true
+  },
+  {
+    "name": "desktop",
+    "width": 1440,
+    "height": 1000,
+    "overflow": false,
+    "buttons": [
+      {
+        "label": "All services",
+        "width": 768,
+        "height": 44
+      },
+      {
+        "label": "Choose reading language",
+        "width": 98.3125,
+        "height": 44
+      },
+      {
+        "label": "Explain current part",
+        "width": 177.421875,
+        "height": 44
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "requests": 42,
+    "socketConnections": 2,
+    "manualScrollPreserved": true,
+    "modalFocus": true,
+    "longLanguages": true
+  },
+  {
+    "name": "dark",
+    "width": 390,
+    "height": 844,
+    "overflow": false,
+    "buttons": [
+      {
+        "label": "All services",
+        "width": 358,
+        "height": 44
+      },
+      {
+        "label": "Choose reading language",
+        "width": 98.3125,
+        "height": 44
+      },
+      {
+        "label": "Explain current part",
+        "width": 177.421875,
+        "height": 44
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "requests": 42,
+    "socketConnections": 2,
+    "manualScrollPreserved": true,
+    "modalFocus": true,
+    "longLanguages": true
+  }
+]

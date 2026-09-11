@@ -1,0 +1,77 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || '/Users/mattash/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs=require('node:fs'), assert=require('node:assert/strict');
+const out=process.cwd()+'/apps/mobile/qa/expo74';
+(async()=>{
+ const browser=await chromium.launch({headless:true,channel:'chrome'}); const results=[];
+ try {
+  const config=await browser.newPage({viewport:{width:390,height:844}});
+  await config.goto('http://127.0.0.1:8094'); await config.getByRole('alert').filter({hasText:'not configured'}).waitFor();
+  await config.screenshot({path:out+'/config-phone.png'});
+  await config.getByRole('button',{name:'Explore the design gallery'}).click();
+  await config.getByText('A space for prayer.',{exact:true}).waitFor();await config.getByRole('button',{name:'Live services',exact:true}).click();await config.getByRole('alert').filter({hasText:'not configured'}).waitFor(); await config.close();
+  for(const [name,width,height,colorScheme] of [['phone',390,844,'light'],['tablet',820,1180,'light'],['desktop',1440,1000,'light'],['dark',390,844,'dark']]) {
+   const page=await browser.newPage({viewport:{width,height},colorScheme}); const errors=[],warnings=[],sockets=[],requests=[];
+   page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error')errors.push(m.text());if(m.type()==='warning')warnings.push(m.text())});
+   let current=1,mode='normal',explanation='A moment of prayer.';
+   if(name==='phone') await page.addInitScript(()=>{window.qaOnline=false;Object.defineProperty(navigator,'onLine',{get:()=>window.qaOnline})});
+   const session=()=>({session:{id:7,liturgy:'Sunday prayer',church_name:'Public test service',current_part_id:current,current_liturgy_id:current>35?20:10,current_part_position:current,status:'active'}});
+   const parts=Array.from({length:70},(_,i)=>({part:{id:i+1,liturgy_id:i>=35?20:10,liturgy_part_id:i+101,position:i+1,role:'Choir',en:`Reading ${i+1}. `+'We gather in prayer and listen together. '.repeat(12),ru:`Чтение ${i+1}. `+'Господи, помилуй нас и даруй нам мир. '.repeat(18),grabar:`${i+1}. `+'Հայր մեր, որ յերկինս ես, սուրբ եղիցի անուն քո։ '.repeat(18),translit:'Hayr mer, vor hergins yes.'}}));
+   await page.route('https://reader.invalid/**',async route=>{
+    const url=new URL(route.request().url()); requests.push(url.pathname);
+    if(mode==='error') return route.fulfill({status:503,contentType:'application/json',body:'{}'});
+    const data=url.pathname==='/services.json' ? mode==='empty'?{message:'No services'}:[session()]
+      :url.pathname.endsWith('/parts.json')?{parts}
+      :url.pathname.includes('/explanations/')?{explanations:[{explanation:{id:1,liturgy_part_id:current+100,title:'Why we pray',description:explanation}}]}:session();
+    await route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
+   });
+   await page.routeWebSocket('wss://reader.invalid/cable',ws=>{
+    sockets.push(ws);ws.send(JSON.stringify({type:'welcome'}));
+    ws.onMessage(data=>{const command=JSON.parse(data);if(command.command==='subscribe')ws.send(JSON.stringify({identifier:command.identifier,type:'confirm_subscription'}))});
+   });
+   const broadcast=(event,data)=>sockets.at(-1).send(JSON.stringify({identifier:JSON.stringify({channel:'SessionChannel',id:7}),message:{event,data}}));
+   await page.goto('http://127.0.0.1:8093');
+   if(name==='phone') {await page.getByText('No network connection. Reading will refresh when you reconnect.',{exact:true}).waitFor();await page.screenshot({path:out+'/offline-phone.png'});await page.evaluate(()=>{window.qaOnline=true;window.dispatchEvent(new Event('online'))})}
+   await page.getByRole('button',{name:'Open Sunday prayer at Public test service'}).waitFor();
+   await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:`${out}/${name}-discovery.png`});
+   await page.getByRole('button',{name:'Open Sunday prayer at Public test service'}).click();
+   await page.getByText('1 / Choir · Current part',{exact:true}).waitFor();
+   await page.screenshot({path:`${out}/${name}-reading.png`});
+   current=52;broadcast('part_change',{session:7,part:52,liturgy:20,liturgies:[10,20],has_explanations:true,explanation_ids:[1]});
+   await page.getByText('52 / Choir · Current part',{exact:true}).waitFor();
+   await page.waitForFunction(()=>{const e=document.querySelector('[data-testid="reading-lp:152"]');return e&&e.getBoundingClientRect().top>=0&&e.getBoundingClientRect().top<innerHeight});
+   const scroll=page.getByTestId('reading-lp:152');await scroll.hover();await page.mouse.wheel(0,150);
+   await page.getByRole('button',{name:'Return to live'}).waitFor();await page.waitForTimeout(300);
+   const before=await page.evaluate(()=>[...document.querySelectorAll('div')].filter(e=>e.scrollHeight>e.clientHeight+100&&e.scrollTop>0).map(e=>e.scrollTop));
+   current=53;broadcast('part_change',{session:7,part:53,liturgy:20});await page.waitForTimeout(500);
+   const after=await page.evaluate(()=>[...document.querySelectorAll('div')].filter(e=>e.scrollHeight>e.clientHeight+100&&e.scrollTop>0).map(e=>e.scrollTop));assert.deepEqual(after,before,'manual reading moved');
+   await page.getByRole('button',{name:'Return to live'}).click();await page.getByText('53 / Choir · Current part',{exact:true}).waitFor();
+   await page.getByRole('button',{name:'Choose reading language'}).click();
+   await page.getByRole('button',{name:'Գրաբար',exact:true}).click();await page.waitForTimeout(350);
+   assert(await page.getByRole('button',{name:'Choose reading language'}).evaluate(e=>e===document.activeElement),'language focus return');
+   await page.waitForFunction(()=>{const e=document.querySelector('[data-testid="reading-lp:153"]');return e&&e.getBoundingClientRect().top>=150&&e.getBoundingClientRect().top<innerHeight});
+   await page.screenshot({path:`${out}/${name}-armenian.png`});
+   await page.getByRole('button',{name:'Choose reading language'}).click();await page.getByRole('button',{name:'Русский',exact:true}).click();await page.waitForTimeout(350);
+   await page.waitForFunction(()=>{const e=document.querySelector('[data-testid="reading-lp:153"]');return e&&e.getBoundingClientRect().top>=150&&e.getBoundingClientRect().top<innerHeight});
+   await page.screenshot({path:`${out}/${name}-russian.png`});
+   await page.getByRole('button',{name:'Explain current part'}).click();await page.getByText('A moment of prayer.',{exact:true}).waitFor();
+   const close=page.getByRole('button',{name:'Close Current part explanation'});assert(await close.evaluate(e=>e===document.activeElement),'initial modal focus');
+   for(let i=0;i<4;i++){await page.keyboard.press('Tab');assert(await page.evaluate(()=>!!document.activeElement.closest('[aria-modal="true"],[role="dialog"]')),'modal focus trap')}
+   explanation='Updated context for the current reading.';broadcast('explanation_updated',{session_id:7,explanation_id:1});await page.getByText(explanation,{exact:true}).waitFor();
+   await page.screenshot({path:`${out}/${name}-explanation.png`});
+   await page.keyboard.press('Escape');await page.waitForTimeout(100);assert(await page.getByRole('button',{name:'Explain current part'}).evaluate(e=>e===document.activeElement),'explanation focus return');
+   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert(!overflow,'horizontal overflow');
+   const buttons=await page.getByRole('button').evaluateAll(es=>es.map(e=>({label:e.getAttribute('aria-label'),width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height})));assert(buttons.every(b=>b.width>=44&&b.height>=44));
+   mode='empty';await page.getByRole('button',{name:'All services'}).click();await page.getByText('No live service right now',{exact:true}).waitFor();await page.screenshot({path:`${out}/${name}-empty.png`});
+   await page.getByRole('textbox',{name:'Session ID'}).fill('7');await page.getByRole('textbox',{name:'Session ID'}).press('Enter');await page.getByText('This service is no longer listed live. You can continue reading.',{exact:true}).waitFor();
+   assert.equal(errors.length,0,errors.join('\n'));assert.equal(warnings.length,0,warnings.join('\n'));
+   results.push({name,width,height,overflow,buttons,errors:[...errors],warnings:[...warnings],requests:requests.length,socketConnections:sockets.length,manualScrollPreserved:true,modalFocus:true,longLanguages:true});
+   if(name==='phone') {
+    mode='error';sockets.at(-1).close();await page.getByRole('button',{name:'Retry connection'}).waitFor();await page.screenshot({path:out+'/recoverable-error.png'});
+    results.at(-1).injectedFaultErrors=[...errors];assert(errors.every(e=>e.includes('503')));
+    mode='normal';await page.getByRole('button',{name:'Retry connection'}).click();await page.getByText('Could not refresh the service. Check your connection and retry.',{exact:true}).waitFor({state:'hidden'});
+   }
+   await page.close();
+  }
+  fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2));
+ } finally {await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});
