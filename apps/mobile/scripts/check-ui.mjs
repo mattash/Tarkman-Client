@@ -27,5 +27,5 @@ function scan(directory) {
     visit(source)
   }
 }
-for (const dir of ['app', 'components', 'design']) scan(resolve(root, dir))
+for (const dir of ['app', 'components', 'design', 'features']) scan(resolve(root, dir))
 console.log('Mobile UI guard passed: NativeWind 4 / Tailwind 3, no unsupported UI imports or disabled text scaling.')

@@ -5,7 +5,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-  globalIgnores(['dist/**', '.expo/**', 'expo-env.d.ts']),
+  globalIgnores(['ios/**', 'android/**', 'dist/**', '.expo/**', 'expo-env.d.ts']),
   js.configs.recommended,
   {
     files: ['**/*.{ts,tsx,mts,cts}'],

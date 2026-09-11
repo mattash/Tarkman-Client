@@ -1,88 +1,22 @@
-import { useRef, useState } from 'react'
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
+import { useState } from 'react'
+import { ScrollView, View } from 'react-native'
+import { router } from 'expo-router'
 import { AppText } from '../components/AppText'
 import { AppButton } from '../components/AppButton'
-import { Card } from '../components/Surface'
-import { TextField } from '../components/TextField'
-import { AppModal } from '../components/AppModal'
-import { LiturgyText } from '../components/LiturgyText'
-import { ThemeProvider, useTheme } from '../design/ThemeProvider'
-import { prayer, marksSample, sampleLanguages } from '../design/samples'
-import fontLicense from '../assets/fonts/license.json'
-import { spacing, type ThemeName } from '../design/tokens'
-
-export default function HomeScreen() {
-  const { colors } = useTheme()
-  const readingOpener = useRef<View>(null)
-  const licenseOpener = useRef<View>(null)
-  const activeOpener = useRef<View>(null)
-  const [modal, setModal] = useState<'reading' | 'license' | null>(null)
-  const [note, setNote] = useState('')
-  const [message, setMessage] = useState('Try an action below.')
-  return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-    <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}>
-      <View className="w-full max-w-3xl self-center gap-section">
-        <View className="gap-4" style={{ borderTopWidth: 4, borderTopColor: colors.primary, paddingTop: spacing.lg }}>
-          <AppText variant="label" tone="accent">TARKMAN / MOBILE</AppText>
-          <AppText variant="title">A space for prayer.</AppText>
-          <AppText tone="muted">Reading, language, and the small details that bring a service closer.</AppText>
-          <AppText variant="caption" tone="muted">Design gallery · Static liturgy samples</AppText>
-        </View>
-        <View className="gap-4">
-          <AppText variant="heading">01 / Words & languages</AppText>
-          <AppText tone="muted">One prayer, four ways to follow. Press and hold the reading text to select it.</AppText>
-          {sampleLanguages.map(language => <Card key={language.value}>
-            <AppText variant="label" tone="accent" language={language.value}>{language.label}</AppText>
-            <LiturgyText language={language.value} text={prayer[language.value]} />
-          </Card>)}
-          <Card><AppText variant="label">Punctuation & combining marks</AppText>
-            <LiturgyText language="grabar" text={marksSample} />
-            <AppText variant="caption" tone="muted">Decomposed accent stress sample alongside Armenian punctuation.</AppText>
-          </Card>
-        </View>
-        <View className="gap-4">
-          <AppText variant="heading">02 / Reading resilience</AppText>
-          <Card><AppText variant="label">Long reading & limited Markdown</AppText>
-            <LiturgyText text={'In the quiet of this gathering, we listen together. Words may fill many lines, and every line should have room to breathe. '.repeat(4) + '\n\n**Bold reading**, *gentle emphasis*, and `inline code`. [Noto Armenian](https://notofonts.github.io/armenian/)\n<No HTML is rendered.> [Unsafe link](javascript:alert)\nA line break stays a line break.'} />
-          </Card>
-          <Card><AppText variant="label">Missing translation · null</AppText><LiturgyText language="grabar" text={null} />
-            <AppText variant="label">Empty translation</AppText><LiturgyText text="" /></Card>
-        </View>
-        <View className="gap-4">
-          <AppText variant="heading">03 / Light & dark</AppText>
-          {(['light', 'dark'] as ThemeName[]).map(scheme => <ThemeProvider key={scheme} scheme={scheme}><ThemeSample scheme={scheme} /></ThemeProvider>)}
-        </View>
-        <View className="gap-4">
-          <AppText variant="heading">04 / Actions & input</AppText>
-          <Card>
-            <AppButton ref={readingOpener} onPress={() => { activeOpener.current = readingOpener.current; setModal('reading') }}>Open reading sheet</AppButton>
-            <AppButton variant="secondary" onPress={() => setMessage('Reading saved for this preview.')}>Save reading</AppButton>
-            <AppButton variant="quiet" onPress={() => setMessage('Preview reset.')}>Reset preview</AppButton>
-            <AppButton variant="destructive" onPress={() => { setNote(''); setMessage('Preview note cleared.') }}>Clear note</AppButton>
-            <AppButton loading>Preparing reading</AppButton>
-            <AppButton disabled>Unavailable</AppButton>
-            <AppText variant="caption" tone="muted" accessibilityLiveRegion="polite">{message}</AppText>
-            <TextField label="Reading note" placeholder="Add a thought…" value={note} onChangeText={setNote} returnKeyType="done" onSubmitEditing={Keyboard.dismiss} />
-            <TextField label="Email keyboard sample" placeholder="reader@example.org" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={Keyboard.dismiss} />
-            <TextField label="Field with feedback" value="" editable={false} error="This sample is read-only." />
-          </Card>
-        </View>
-        <AppButton ref={licenseOpener} variant="quiet" onPress={() => { activeOpener.current = licenseOpener.current; setModal('license') }}>Font license & attribution</AppButton>
-        <AppText variant="caption" tone="muted">Made for unhurried reading. Text follows your device’s size and appearance settings.</AppText>
-      </View>
-    </ScrollView>
-    <AppModal openerRef={activeOpener} visible={modal !== null} title={modal === 'license' ? 'Font license' : 'The Lord’s Prayer'} onDismiss={() => setModal(null)}>
-      {modal === 'license' ? <AppText selectable variant="caption">{fontLicense.text}</AppText> : <>
-      <LiturgyText language="grabar" text={prayer.grabar} />
-      <TextField label="Sheet note" placeholder="Try typing here…" multiline />
-      <AppText variant="caption" tone="muted">Close with the button, tap outside, or use your device’s back action.</AppText>
-      </>}
-    </AppModal>
-  </KeyboardAvoidingView>
-}
-function ThemeSample({ scheme }: { scheme: ThemeName }) {
-  return <Card><AppText variant="label" tone="accent">{scheme === 'light' ? 'Light / Daytime reading' : 'Dark / Evening reading'}</AppText>
-    <LiturgyText language="grabar" text="Տէ՛ր, ողորմեա։" />
-    <AppText tone="muted">Lord, have mercy.</AppText>
-  </Card>
+import { spacing } from '../design/tokens'
+import { readerConfig } from '../features/live/config'
+import { Discovery } from '../features/live/Discovery'
+import { SessionReader } from '../features/live/SessionReader'
+export default function LiveScreen() {
+  const [id, setId] = useState<number | null>(null)
+  const config = readerConfig()
+  if (!config.endpoints) return <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, maxWidth: 760, alignSelf: 'center' }}>
+    <AppText variant="title">Follow the service.</AppText>
+    <AppText accessibilityRole="alert">{config.error}</AppText>
+    <AppButton variant="secondary" onPress={() => router.push('/gallery')}>Explore the design gallery</AppButton>
+  </ScrollView>
+  return <View style={{ flex: 1 }}>
+    {id === null ? <Discovery endpoints={config.endpoints} open={setId} /> : <SessionReader key={id} endpoints={config.endpoints} id={id} back={() => setId(null)} />}
+    {id === null && <AppButton variant="quiet" onPress={() => router.push('/gallery')}>Design gallery</AppButton>}
+  </View>
 }

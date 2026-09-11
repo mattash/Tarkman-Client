@@ -1,0 +1,169 @@
+
+mobile-ci
+added 1003 packages in 11s
+
+109 packages are looking for funding
+  run `npm fund` for details
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+
+lint
+
+> @tarkman/mobile@0.1.0 lint
+> eslint . --max-warnings 0
+
+
+typecheck
+
+> @tarkman/mobile@0.1.0 typecheck
+> tsc --noEmit
+
+
+jest
+
+PASS tests/live-ui.test.tsx
+PASS tests/review-blockers.test.tsx
+PASS tests/primitives.test.tsx
+PASS tests/live-controller.test.ts
+PASS tests/live-api.test.ts
+PASS tests/live-contracts.test.ts
+PASS tests/live-cable.test.ts
+PASS tests/live-lifecycle.test.ts
+
+Test Suites: 8 passed, 8 total
+Tests:       69 passed, 69 total
+Snapshots:   0 total
+Time:        1.614 s, estimated 2 s
+Ran all test suites.
+
+ui
+
+> @tarkman/mobile@0.1.0 check:ui
+> node scripts/check-ui.mjs
+
+Mobile UI guard passed: NativeWind 4 / Tailwind 3, no unsupported UI imports or disabled text scaling.
+
+fonts
+
+> @tarkman/mobile@0.1.0 check:fonts
+> node scripts/check-fonts.mjs
+
+Regular: static, release SHA-256 matches, Grabar / punctuation / U+0301 / U+0304 covered
+Bold: static, release SHA-256 matches, Grabar / punctuation / U+0301 / U+0304 covered
+
+config
+Expo config command passed; existing public identifiers omitted from excerpt.
+
+ls
+│ │ ├── @typescript-eslint/types@8.70.0 deduped
+│ │ ├── @typescript-eslint/typescript-estree@8.70.0 deduped
+│ │ ├── eslint@10.10.0 deduped
+│ │ └── typescript@6.0.3 deduped
+│ ├── eslint@10.10.0 deduped
+│ └── typescript@6.0.3 deduped
+└── typescript@6.0.3
+
+
+export-final-safe
+_expo/static/css/web-453ac284a5696e814dd2307e77f77d7f.css (6.7KB)
+_expo/static/js/web/entry-25f2b0ce51ae23027deb6996ce07374c.js (1.2MB)
+
+› Files (2):
+index.html (1.4KB)
+metadata.json (49B)
+
+Exported: /private/tmp/expo74-reviewed-safe
+
+export-final-qa
+_expo/static/css/web-453ac284a5696e814dd2307e77f77d7f.css (6.7KB)
+_expo/static/js/web/entry-6e6ee7adc76bff47ec8c378e771c6a1f.js (1.2MB)
+
+› Files (2):
+index.html (1.4KB)
+metadata.json (49B)
+
+Exported: /private/tmp/expo74-reviewed-qa
+
+web-ci
+  run `npm fund` for details
+npm warn install-scripts 4 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   @sentry/cli@2.58.5 (postinstall: node ./scripts/install.js)
+npm warn install-scripts   esbuild@0.23.1 (postinstall: node install.js)
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts   esbuild@0.21.5 (postinstall: node install.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+
+web-typecheck
+
+> tarkman@1.6.1 typecheck
+> npm run typecheck --prefix apps/web --
+
+
+> @tarkman/web@1.6.1 typecheck
+> tsc --noEmit
+
+
+web-test
+ ✓ app/__tests__/routes/sessions.$id.display.test.tsx (2 tests) 238ms
+ ✓ app/hooks/__tests__/useUserSessionPolling.test.tsx (4 tests) 335ms
+ ✓ app/components/__tests__/LogoutButton.test.tsx (3 tests) 693ms
+   ✓ LogoutButton > uses the latest stored token when signing out  527ms
+ ✓ app/queries/__tests__/partQueries.test.ts (3 tests) 6ms
+ ✓ app/__tests__/routes/sessions.$id.explanations.test.tsx (3 tests) 190ms
+ ✓ app/config/__tests__/environment.test.ts (5 tests) 2ms
+ ✓ app/components/__tests__/PartDetails.test.tsx (1 test) 231ms
+ ✓ app/utils/__tests__/authRedirect.test.ts (6 tests) 4ms
+
+ Test Files  38 passed (38)
+      Tests  341 passed (341)
+   Start at  09:19:42
+   Duration  16.37s (transform 1.09s, setup 7.36s, collect 24.72s, tests 19.84s, environment 37.46s, prepare 6.24s)
+
+
+web-build
+dist/index.html                            0.65 kB │ gzip:   0.33 kB
+dist/assets/index-C5ekzEfP.css            58.78 kB │ gzip:   9.46 kB
+dist/assets/index-B0llhS0f.js             16.72 kB │ gzip:   6.25 kB
+dist/assets/vendor-tanstack-DDZUp7U7.js   99.03 kB │ gzip:  30.91 kB
+dist/assets/vendor-react-B20bf5Xv.js     141.47 kB │ gzip:  45.49 kB
+dist/assets/vendor-sentry-DnvXVWIk.js    276.71 kB │ gzip:  90.73 kB
+dist/assets/index-C-eXJG2Q.js            344.73 kB │ gzip: 109.29 kB
+✓ built in 8.78s
+
+core
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2723.080834
+
+> tarkman@1.6.1 core:check
+> node packages/tarkman-core/scripts/check-boundary.mjs
+
+Core boundary passed: local imports only, no platform globals or runtime dependencies
+
+consumers
+
+> tarkman@1.6.1 core:check-consumers
+> node packages/tarkman-core/scripts/check-consumers.mjs
+
+web: public package resolution and live/fixed/future compile probes passed
+mobile: public package resolution and live/fixed/future compile probes passed
+
+ios
+⚠️  Script has ambiguous dependencies causing it to run on every build.
+   To fix, go to: Xcode » Tarkman/Tarkman » Build Phases » '[Expo Dev Launcher] Strip Local Network Keys for Release'
+   Either: Uncheck "Based on dependency analysis", or select output files to trigger the script
+
+› Build Succeeded
+⚠️  ignoring duplicate libraries: '-lc++'
+   └─/Users/mattash/clawd/tarkman-pm-agent/code/Tarkman-Client-Live/apps/mobile/ios/Tarkman.xcodeproj: Tarkman: ld
+
+› 0 error(s), and 2 warning(s)
+
+Waiting on http://localhost:8081
+› Installing /Users/mattash/Library/Developer/Xcode/DerivedData/Tarkman-guaysziycixyodegjqiudomrkflq/Build/Products/Debug-iphonesimulator/Tarkman.app
+› Installing on iPhone 17 Pro
+› Opening on iPhone 17 Pro (app.tarkman)
+› Opening exp+tarkman://expo-development-client/?url=http%3A%2F%2F192.168.1.215%3A8081 on iPhone 17 Pro

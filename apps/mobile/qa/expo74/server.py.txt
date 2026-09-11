@@ -1,0 +1,7 @@
+import http.server,sys,os
+os.chdir(sys.argv[1])
+class Handler(http.server.SimpleHTTPRequestHandler):
+ def do_GET(self):
+  if self.path.split('?')[0] in ['/gallery','/']: self.path='/index.html'
+  super().do_GET()
+http.server.ThreadingHTTPServer(('127.0.0.1',int(sys.argv[2])), Handler).serve_forever()
