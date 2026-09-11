@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, View } from 'react-native'
 import { router } from 'expo-router'
-import { AppButton } from '../../components/AppButton'
-import { AppText } from '../../components/AppText'
-import { Card } from '../../components/Surface'
-import { spacing } from '../../design/tokens'
-import { isUnauthorized, useAuth } from '../../features/auth/AuthProvider'
-import { fetchMyServices, formatServiceDate, statusLabel, type MyService } from '../../features/services/api'
+import { AppButton } from '../../../components/AppButton'
+import { AppText } from '../../../components/AppText'
+import { Card } from '../../../components/Surface'
+import { spacing } from '../../../design/tokens'
+import { isUnauthorized, useAuth } from '../../../features/auth/AuthProvider'
+import { fetchMyServices, formatServiceDate, statusLabel, type MyService } from '../../../features/services/api'
 
 interface ServicesResult { services: MyService[]; loading: boolean; error?: string }
 
@@ -44,6 +44,7 @@ export default function MyServicesScreen() {
         <AppText variant="heading">{service.title}</AppText>
         <AppText tone="muted">{[service.church, formatServiceDate(service.date)].filter(Boolean).join(' · ')}</AppText>
         <AppText variant="caption">{statusLabel(service.status)}</AppText>
+        <AppButton accessibilityLabel={`Open controls for ${service.title}`} onPress={() => router.push(`/services/${service.id}`)}>Open controls</AppButton>
       </Card>)}
       <AppButton variant="secondary" onPress={signOut}>Sign out</AppButton>
     </View>
