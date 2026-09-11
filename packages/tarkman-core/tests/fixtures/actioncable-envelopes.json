@@ -1,0 +1,33 @@
+[
+  {
+    "event": "part_change",
+    "data": {
+      "part": "123",
+      "status": "live"
+    }
+  },
+  {
+    "event": "part_change",
+    "data": {
+      "part": 123
+    }
+  },
+  {
+    "event": "status_change",
+    "data": {
+      "status": "active",
+      "status_message": null
+    }
+  },
+  {
+    "event": "status_change",
+    "data": {
+      "status": "live",
+      "status_message": "Service in progress"
+    }
+  },
+  {
+    "event": "explanation_updated",
+    "data": {}
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "name": "@tarkman/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.mjs && npm run check:boundary",
+    "check:boundary": "node scripts/check-boundary.mjs"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

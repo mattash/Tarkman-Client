@@ -1,0 +1,27 @@
+{
+  "session": {
+    "id": 1,
+    "liturgy": "Divine Liturgy",
+    "liturgy_id": 1,
+    "date": "2024-03-20",
+    "church_name": "St. Mary",
+    "church_avatar": "https://example.com/avatar.jpg",
+    "occupied": true,
+    "num_of_parts": 10,
+    "current_part_position": 5,
+    "current_part_id": 123,
+    "current_liturgy_id": 1,
+    "page": 1,
+    "posture": "standing",
+    "readings": {
+      "gospel": "John 3:16",
+      "epistle": "Romans 8:28"
+    },
+    "options": {
+      "gospel": "John 3:16",
+      "epistle": "Romans 8:28",
+      "before_message": "Before message",
+      "after_message": "After message"
+    }
+  }
+}
