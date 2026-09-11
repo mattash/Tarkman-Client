@@ -53,6 +53,14 @@ describe('my services', () => {
     expect(normalizeMyServices({ error: 'No sessions found' })).toEqual([])
     expect(() => normalizeMyServices({ error: 'Something else' })).toThrow('Unexpected services response.')
   })
+  it('keeps the newest ten services in the server-provided order', () => {
+    const sessions = [...Array.from({ length: 10 }, (_, index) => ({ session: {
+      id: index + 1,
+      liturgy: `Service ${index + 1}`,
+      date: `2026-09-${String(11 - index).padStart(2, '0')}`,
+    } })), { session: { id: 'malformed' } }]
+    expect(normalizeMyServices({ sessions }).map(service => service.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  })
   it('formats calendar dates without shifting the day and labels statuses', () => {
     expect(formatServiceDate('2026-09-13')).toMatch(/13/)
     expect(formatServiceDate('2026-09-13')).toMatch(/2026/)

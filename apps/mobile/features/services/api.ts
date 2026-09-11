@@ -12,7 +12,7 @@ export async function fetchMyServices(authorizedFetch: AuthContextValue['authori
 
 export function normalizeMyServices(value: unknown): MyService[] {
   const data = record(value)
-  if (Array.isArray(data.sessions)) return data.sessions.map(item => {
+  if (Array.isArray(data.sessions)) return data.sessions.slice(0, 10).map(item => {
     const date = record(record(item).session).date
     return { ...normalizeSession(item), date: typeof date === 'string' ? date : null }
   })
