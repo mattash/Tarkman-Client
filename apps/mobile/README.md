@@ -14,10 +14,11 @@ cd apps/mobile
 npm ci
 npm start
 # Alternatively: npm run ios / npm run android
+npm run lint
 npm run typecheck
 npm run web
 npm run export:web
-npx expo config --type public
+npm run config
 npx expo install --check
 npm ls --all
 npx expo-doctor
@@ -34,6 +35,16 @@ old root `node_modules` when migrating from the combined install so Expo cannot
 resolve the web app's React 18. React Native Web
 serves the same placeholder in the browser and exports to `apps/mobile/dist`.
 The deployed website remains the Vite app in `../web`.
+
+Mobile lint uses ESLint 10 with the recommended [TypeScript](https://typescript-eslint.io/getting-started/)
+and [React Hooks](https://react.dev/reference/eslint-plugin-react-hooks) flat
+configs. Expo's preset currently depends on React/import plugins whose peer
+ranges exclude ESLint 10, so those plugins are not installed. Run `npm run lint`
+from `apps/mobile`; CI runs the same command before typecheck and fails on
+warnings as well as errors.
+Generated Expo files and web exports are ignored. No formatting or Tailwind
+class rules are added, leaving the NativeWind v4 direction unconstrained.
+This implements only the lint gate portion of [#78](https://github.com/mattash/Tarkman-Client/issues/78).
 
 SDK 57 requires Node >=22.13 according to the
 [Expo compatibility table](https://docs.expo.dev/versions/latest/). Its engine
