@@ -18,11 +18,11 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const languageOpener = useRef<View>(null), explanationOpener = useRef<View>(null), activeOpener = useRef<View>(null)
   const part = state.session ? currentPart(state.session, state.parts) : undefined
   return <View style={{ flex: 1 }}>
-    <View testID="reader-header-actions" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, padding: spacing.md, maxWidth: 800, width: '100%', alignSelf: 'center', flexShrink: 0 }}>
+    <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, padding: spacing.md, maxWidth: 800, width: '100%', alignSelf: 'center', flexShrink: 0 }}>
       <View style={{ flexShrink: 1 }}>
         <AppButton variant="quiet" onPress={back}>All services</AppButton>
       </View>
-      {!state.following && <View style={{ flexShrink: 1 }}>
+      {!state.following && <View style={{ flexShrink: 1, marginLeft: 'auto' }}>
         <AppButton accessibilityHint="Resumes automatically following the current part." onPress={() => { dispatch({ type: 'follow' }); retry() }}>Return to live</AppButton>
       </View>}
     </View>

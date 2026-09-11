@@ -63,7 +63,7 @@ it('keeps manual header actions above and outside the capped long details scroll
   const actions = screen.getByTestId('reader-header-actions')
   const details = screen.getByTestId('reader-header-details')
   expect(within(actions).getAllByRole('button').map(button => button.props.accessibilityLabel)).toEqual(['All services', 'Return to live'])
-  expect(actions).toHaveStyle({ flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0 })
+  expect(actions).toHaveStyle({ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', flexShrink: 0 })
   expect(actions.parent).toBe(details.parent)
   expect(actions.parent!.children.indexOf(actions)).toBeLessThan(actions.parent!.children.indexOf(details))
   expect(details).toHaveStyle({ flexGrow: 0, maxHeight: '50%' })
