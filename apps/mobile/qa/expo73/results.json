@@ -1,0 +1,230 @@
+[
+  {
+    "name": "phone",
+    "errors": [],
+    "warnings": [],
+    "layout": {
+      "overflow": false,
+      "fonts": [
+        {
+          "family": "NotoSerifArmenian-Regular",
+          "status": "loaded"
+        },
+        {
+          "family": "NotoSerifArmenian-Bold",
+          "status": "loaded"
+        }
+      ],
+      "targets": [
+        {
+          "label": "Open reading sheet",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Save reading",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Reset preview",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Clear note",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Preparing reading",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Unavailable",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Font license & attribution",
+          "width": 342,
+          "height": 44
+        }
+      ]
+    },
+    "focus": "initial close, tab containment, return after Escape/close/backdrop and license passed",
+    "interactions": "links, notes, save/reset/clear, disabled/loading passed"
+  },
+  {
+    "name": "tablet",
+    "errors": [],
+    "warnings": [],
+    "layout": {
+      "overflow": false,
+      "fonts": [
+        {
+          "family": "NotoSerifArmenian-Regular",
+          "status": "loaded"
+        },
+        {
+          "family": "NotoSerifArmenian-Bold",
+          "status": "loaded"
+        }
+      ],
+      "targets": [
+        {
+          "label": "Open reading sheet",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Save reading",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Reset preview",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Clear note",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Preparing reading",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Unavailable",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Font license & attribution",
+          "width": 768,
+          "height": 44
+        }
+      ]
+    },
+    "focus": "initial close, tab containment, return after Escape/close/backdrop and license passed",
+    "interactions": "links, notes, save/reset/clear, disabled/loading passed"
+  },
+  {
+    "name": "desktop",
+    "errors": [],
+    "warnings": [],
+    "layout": {
+      "overflow": false,
+      "fonts": [
+        {
+          "family": "NotoSerifArmenian-Regular",
+          "status": "loaded"
+        },
+        {
+          "family": "NotoSerifArmenian-Bold",
+          "status": "loaded"
+        }
+      ],
+      "targets": [
+        {
+          "label": "Open reading sheet",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Save reading",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Reset preview",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Clear note",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Preparing reading",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Unavailable",
+          "width": 720,
+          "height": 44
+        },
+        {
+          "label": "Font license & attribution",
+          "width": 768,
+          "height": 44
+        }
+      ]
+    },
+    "focus": "initial close, tab containment, return after Escape/close/backdrop and license passed",
+    "interactions": "links, notes, save/reset/clear, disabled/loading passed"
+  },
+  {
+    "name": "dark",
+    "errors": [],
+    "warnings": [],
+    "layout": {
+      "overflow": false,
+      "fonts": [
+        {
+          "family": "NotoSerifArmenian-Regular",
+          "status": "loaded"
+        },
+        {
+          "family": "NotoSerifArmenian-Bold",
+          "status": "loaded"
+        }
+      ],
+      "targets": [
+        {
+          "label": "Open reading sheet",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Save reading",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Reset preview",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Clear note",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Preparing reading",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Unavailable",
+          "width": 294,
+          "height": 44
+        },
+        {
+          "label": "Font license & attribution",
+          "width": 342,
+          "height": 44
+        }
+      ]
+    },
+    "focus": "initial close, tab containment, return after Escape/close/backdrop and license passed",
+    "interactions": "links, notes, save/reset/clear, disabled/loading passed"
+  }
+]

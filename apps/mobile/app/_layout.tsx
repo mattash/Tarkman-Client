@@ -1,5 +1,17 @@
+import '../global.css'
 import { Stack } from 'expo-router'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { StatusBar } from 'expo-status-bar'
+import { ThemeProvider, useTheme } from '../design/ThemeProvider'
+import { ReadingFontProvider } from '../design/ReadingFontProvider'
 
 export default function RootLayout() {
-  return <Stack screenOptions={{ title: 'Tarkman' }} />
+  return <SafeAreaProvider><ThemeProvider><RootContent /></ThemeProvider></SafeAreaProvider>
+}
+function RootContent() {
+  const { colors, scheme } = useTheme()
+  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+    <ReadingFontProvider><Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} /></ReadingFontProvider>
+  </SafeAreaView>
 }
