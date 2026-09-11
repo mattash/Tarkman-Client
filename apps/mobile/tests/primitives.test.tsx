@@ -21,6 +21,18 @@ describe('native primitives', () => {
     expect(action).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: 'Loading' }).props.accessibilityState).toEqual({ busy: true, disabled: true })
   })
+  it('styles buttons with a plain object and dims them only while pressed', async () => {
+    const onPressIn = jest.fn(), onPressOut = jest.fn()
+    await render(<AppButton onPressIn={onPressIn} onPressOut={onPressOut}>Return to live</AppButton>, { wrapper })
+    const button = screen.getByRole('button', { name: 'Return to live' })
+    expect(button).toHaveStyle({ backgroundColor: colors.light.primary, minHeight: 44, minWidth: 44, opacity: 1 })
+    await fireEvent(button, 'pressIn')
+    expect(button).toHaveStyle({ opacity: 0.8 })
+    expect(onPressIn).toHaveBeenCalledTimes(1)
+    await fireEvent(button, 'pressOut')
+    expect(button).toHaveStyle({ opacity: 1 })
+    expect(onPressOut).toHaveBeenCalledTimes(1)
+  })
   it('preserves paragraphs, marks, selection, language and text scaling', async () => {
     const text = prayer.grabar + '\n\n' + marksSample
     await render(<LiturgyText text={text} language="grabar" />, { wrapper })

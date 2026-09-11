@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, jest } from '@jest/globals'
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { fireEvent, render, screen, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { Discovery } from '../features/live/Discovery'
 import { SessionReader } from '../features/live/SessionReader'
@@ -37,13 +37,46 @@ it('shows recoverable errors without presenting failed discovery as empty', asyn
   expect(screen.queryByText('No live service right now')).toBeNull()
   await fireEvent.press(screen.getByRole('button', { name: 'Retry connection' })); expect(retry).toHaveBeenCalled()
 })
-it('renders current occurrence, switches language, returns to live and dismisses explanation sheet', async () => {
+it('hides Return to live while automatically following', async () => {
+  const back = jest.fn()
+  await render(<SessionReader endpoints={endpoints} id={7} back={back} />, { wrapper })
+  expect(screen.queryByRole('button', { name: 'Return to live' })).toBeNull()
+  await fireEvent.press(within(screen.getByTestId('reader-header-actions')).getByRole('button', { name: 'All services' }))
+  expect(back).toHaveBeenCalledTimes(1)
+})
+it('offers Return to live in manual state and resumes following with a refresh', async () => {
+  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, following: false }, retry, dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  const button = screen.getByRole('button', { name: 'Return to live' })
+  expect(button).toBeOnTheScreen()
+  expect(button).toHaveProp('accessibilityHint', 'Resumes automatically following the current part.')
+  expect(button).toHaveStyle({ minHeight: 44, minWidth: 44 })
+  await fireEvent.press(button)
+  expect(dispatch).toHaveBeenCalledWith({ type: 'follow' })
+  expect(retry).toHaveBeenCalledTimes(1)
+  expect(dispatch.mock.invocationCallOrder[0]).toBeLessThan(retry.mock.invocationCallOrder[0])
+})
+it('keeps manual header actions above and outside the capped long details scroll area', async () => {
+  const session = normalizeSession({ session: { id: 7, liturgy: 'Long service title '.repeat(100), status: 'paused', status_message: 'Long status message '.repeat(100) } })
+  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, following: false, session }, retry, dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  const actions = screen.getByTestId('reader-header-actions')
+  const details = screen.getByTestId('reader-header-details')
+  expect(within(actions).getAllByRole('button').map(button => button.props.accessibilityLabel)).toEqual(['All services', 'Return to live'])
+  expect(actions).toHaveStyle({ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', flexShrink: 0 })
+  expect(actions.parent).toBe(details.parent)
+  expect(actions.parent!.children.indexOf(actions)).toBeLessThan(actions.parent!.children.indexOf(details))
+  expect(details).toHaveStyle({ flexGrow: 0, maxHeight: '50%' })
+  expect(within(details).queryByRole('button', { name: 'Return to live' })).toBeNull()
+  expect(within(details).getByText(/Long service title/)).toBeOnTheScreen()
+  expect(within(details).getByText(/Long status message/)).toBeOnTheScreen()
+})
+it('renders current occurrence, switches language and dismisses explanation sheet', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'English prayer', ru: 'Молитва', grabar: 'Հայր մեր', role: 'Choir' } }] })
   jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   expect(screen.getByText('1 / Choir · Current part')).toBeOnTheScreen()
-  await fireEvent.press(screen.getByRole('button', { name: 'Return to live' })); expect(dispatch).toHaveBeenCalledWith({ type: 'follow' })
   await fireEvent.press(screen.getByRole('button', { name: 'Choose reading language' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Русский' }))
   expect(screen.getByText('Молитва')).toBeOnTheScreen()

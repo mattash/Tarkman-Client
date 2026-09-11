@@ -167,3 +167,55 @@ Waiting on http://localhost:8081
 › Installing on iPhone 17 Pro
 › Opening on iPhone 17 Pro (app.tarkman)
 › Opening exp+tarkman://expo-development-client/?url=http%3A%2F%2F192.168.1.215%3A8081 on iPhone 17 Pro
+
+
+=== Return-to-live follow-up, 2026-09-11 ===
+Worktree: Tarkman-Client-ReturnLive; branch: expo/06-return-to-live-fix
+Initial HEAD: b7edc761b77c33717cb33b8efe9bb1e449777b94 (clean)
+npm ci --prefix apps/mobile --no-audit --no-fund: exit 0 (1003 packages)
+
+$ npm test --prefix apps/mobile
+PASS tests/live-api.test.ts
+
+Test Suites: 8 passed, 8 total
+Tests:       71 passed, 71 total
+Snapshots:   0 total
+Time:        10.146 s
+Ran all test suites.
+
+$ npm run lint --prefix apps/mobile
+
+> @tarkman/mobile@0.1.0 lint
+> eslint . --max-warnings 0
+
+
+$ npm run typecheck --prefix apps/mobile
+
+> @tarkman/mobile@0.1.0 typecheck
+> tsc --noEmit
+
+
+$ npm run check:ui --prefix apps/mobile
+
+> @tarkman/mobile@0.1.0 check:ui
+> node scripts/check-ui.mjs
+
+Mobile UI guard passed: NativeWind 4 / Tailwind 3, no unsupported UI imports or disabled text scaling.
+
+From apps/mobile, both exited 0:
+CI=1 EXPO_NO_DOTENV=1 npm run export:web -- --clear --output-dir /private/tmp/returnlive-unconfigured
+CI=1 EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=https://reader.invalid EXPO_PUBLIC_ACTIONCABLE_URL=wss://reader.invalid/cable npm run export:web -- --clear --output-dir /private/tmp/returnlive-fixture
+
+QA_COMPACT=1 node apps/mobile/qa/expo74/browser-qa.cjs.txt: exit 0
+4 viewports passed: deep manual viewport/hit visibility, >=44px target, no overlap/overflow, normal flow, max width, follow targeting/refresh, existing browser scenarios.
+Fresh measurements: results.json; four *-manual.png captures.
+
+From apps/mobile:
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios --device 36FE0459-CDCB-44E9-9230-8B1D0E0704E2 --no-bundler
+Exit 0. Build Succeeded; 0 errors, 2 warnings (duplicate -lc++, dev-launcher script dependencies).
+Installed/opened app.tarkman on iPhone 17 Pro / iOS 26.5 simulator.
+Limit: no worktree Metro started; native JavaScript/runtime and reader interaction not verified.
+No physical-device, safe-area, Dynamic Type, VoiceOver or Rails handshake acceptance.
+
+git diff --check: exit 0
+Protected-path diff: PartList, package.json, package-lock.json, app.json, eas.json unchanged.

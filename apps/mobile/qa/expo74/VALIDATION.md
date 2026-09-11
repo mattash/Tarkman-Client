@@ -1,3 +1,61 @@
+# Return-to-live follow-up — 2026-09-11
+
+Branch `expo/06-return-to-live-fix` (PR #89), validated from the single
+`Tarkman-Client` checkout.
+
+## Final placement
+
+"Return to live" sits in a fixed top row with "All services"
+(`reader-header-actions`), outside the details `ScrollView`, which stays capped
+at 50% height. It shows only while reading manually, keeps the 44pt target and
+the hint "Resumes automatically following the current part.", and pressing it
+dispatches `follow` and then retries. The row wraps: at normal sizes the button
+sits at the right end of the row, and at large text sizes it moves to its own
+line instead of breaking words. The root SafeAreaView keeps the row clear of the
+Dynamic Island.
+
+An earlier commit in this PR placed the control in a footer below the list. That
+placement was superseded. The earlier web evidence — the
+[browser harness](browser-qa.cjs.txt), [results](results.json) and the
+`phone-`, `tablet-`, `desktop-` and `dark-manual.png` captures — measures that
+footer. The harness's manual-state assertions need updating for the top row
+before it is replayed.
+
+## Native iOS check
+
+iPhone 17 Pro simulator with the local development client, running JavaScript
+from this branch's Metro (the bundle was confirmed to contain
+`reader-header-actions`). Data came from the live St. John Divine Liturgy
+session on production, read-only.
+
+- Manually scrolling the list shows "Return to live" at the top right. It stays
+  in place after scrolling about 23 parts away. Tapping it hides the control and
+  returns the list to the highlighted current part. [Capture](ios-manual.png).
+- **Bug found and fixed:** every `AppButton` rendered without its background,
+  radius, padding or minimum size on native. Primary buttons, including "Return
+  to live" and "Open service", were white text on a white screen. NativeWind's
+  native runtime (`react-native-css-interop` 0.2.6) replaces a function-valued
+  `Pressable` `style` with `{}`. `AppButton` now tracks its pressed state with
+  `onPressIn`/`onPressOut` and passes a style object, and an ESLint
+  `no-restricted-syntax` rule rejects function-valued `style` props. Web and
+  Jest were unaffected, which is why earlier checks passed.
+  [Capture after the fix](ios-discovery.png).
+- At the largest text size (`accessibility-extra-extra-extra-large`, cold
+  start), the top row wraps without breaking words and "Return to live" still
+  works. [Capture](ios-large-text-manual.png). The remaining large-text problems
+  — headings breaking mid-word, following landing short of the live part, little
+  room for the readings, and clipping after a live size change — are tracked in
+  #91.
+
+Mobile Jest (**8 suites / 73 tests**), lint (zero warnings), typecheck and the
+UI guard passed. A new primitive test covers the style object and pressed
+state; it fails against the previous `AppButton`.
+
+Not covered here: live part changes while following (the production service was
+not driven), a physical iPhone, and VoiceOver (low priority for in-church use).
+
+---
+
 # Expo 06 / issue #74 — review evidence
 
 Implemented in the isolated `Tarkman-Client-Live` worktree on
