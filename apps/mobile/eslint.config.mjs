@@ -19,6 +19,15 @@ export default defineConfig([
     },
   },
   {
+    files: ['**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: "JSXAttribute[name.name='style'] > JSXExpressionContainer > :matches(ArrowFunctionExpression, FunctionExpression)",
+        message: "NativeWind's native runtime replaces function-valued style props with {}. Pass a style object and track pressed state with onPressIn/onPressOut.",
+      }],
+    },
+  },
+  {
     files: ['*.config.{js,cjs,mjs,ts}', 'scripts/*.mjs'],
     languageOptions: { globals: globals.node },
   },
