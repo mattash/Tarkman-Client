@@ -13,13 +13,5 @@
   "files": [
     "src",
     "dist"
-  ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node --test tests/*.test.mjs && npm run check:boundary",
-    "check:boundary": "node scripts/check-boundary.mjs"
-  },
-  "devDependencies": {
-    "typescript": "6.0.3"
-  }
+  ]
 }

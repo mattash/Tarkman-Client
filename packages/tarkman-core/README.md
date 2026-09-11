@@ -10,14 +10,25 @@ Vite and Expo consume plain TypeScript;
 no prepare hook or prebuilt dist is required for app installs. The local build
 emits JS and declarations to ignored `dist/` for verification and core tests.
 
+Run repository verification from the repository root, in this order:
+
 ```sh
-npm ci --prefix packages/tarkman-core
-npm test --prefix packages/tarkman-core
-npm run build --prefix packages/tarkman-core
-npm run check:boundary --prefix packages/tarkman-core
-# After independent npm ci installs in both apps:
-node packages/tarkman-core/scripts/check-consumers.mjs
+npm ci --prefix apps/web
+npm ls --all --prefix apps/web
+npm ci --prefix apps/mobile
+npm ls --all --prefix apps/mobile
+npm run core:test
+npm run core:check-consumers
 ```
+
+`core:build` and `core:check` can also run separately after web's install.
+Core tests build only core with its own strict, platform-free tsconfig and use
+Node's test runner. The compiler and AST guard explicitly use web's locked
+app-local TypeScript; there is no global compiler lookup or tooling download.
+Consumer compile probes require both installs and use each app's own compiler.
+Core is independently checked, but is not a standalone installable verification
+toolchain: a fresh checkout must install web before building/testing core.
+Do not run a root or core install.
 
 Domain types originate from `apps/web/app/types`; language labels and helpers
 follow `constants/languages.ts` and `LanguageContext`. CSS status colors stay
@@ -63,8 +74,11 @@ nonlocal imports (including type imports/re-exports/dynamic imports), escapes
 outside src, platform globals and runtime dependencies. The compiler has no DOM
 or Node ambient types. Node/TypeScript tooling is confined to tests and scripts.
 
-Core owns its TypeScript dev dependency and lockfile. Run core's `npm ci` as well
-as each app's separate `npm ci`: the apps link to the local core directory, and
-`npm ls --all` traverses that link and checks core's development tooling too.
-App lockfiles retain the linked package's dev-dependency metadata; core tooling
-is installed in core, never added as a runtime dependency or borrowed from an app.
+Core has no dependencies, including devDependencies, and needs no lockfile or
+node_modules. npm links local file dependencies without installing their own
+dependencies, but `npm ls --all` traverses the link and checks devDependencies.
+A separate core install would hide this clean-app CI failure. The package guard
+rejects all dependency fields in core and both app locks, and regression tests
+explicitly reject the original TypeScript devDependency. To verify install
+isolation, start without root/core node_modules or core dist and run the sequence
+above; each app's `npm ls --all` must pass before any core verification.

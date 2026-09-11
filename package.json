@@ -16,6 +16,10 @@
     "mobile:web": "npm run web --prefix apps/mobile --",
     "mobile:export": "npm run export:web --prefix apps/mobile --",
     "mobile:typecheck": "npm run typecheck --prefix apps/mobile",
-    "mobile:config": "npm run config --prefix apps/mobile"
+    "mobile:config": "npm run config --prefix apps/mobile",
+    "core:build": "node apps/web/node_modules/typescript/bin/tsc -p packages/tarkman-core/tsconfig.json",
+    "core:test": "npm run core:build && node --test packages/tarkman-core/tests/*.test.mjs && npm run core:check",
+    "core:check": "node packages/tarkman-core/scripts/check-boundary.mjs",
+    "core:check-consumers": "node packages/tarkman-core/scripts/check-consumers.mjs"
   }
 }

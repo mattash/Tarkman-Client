@@ -1,7 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import ts from 'typescript'
+// Repository verification uses web's locked compiler; core owns no tooling dependencies.
+import ts from '../../../apps/web/node_modules/typescript/lib/typescript.js'
+import { checkPackage } from './check-package.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const sourceRoot = path.join(root, 'src')
@@ -44,10 +46,7 @@ export function inspectSource(source, filename = path.join(sourceRoot, 'probe.ts
 }
 
 export function checkBoundary() {
-  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
-  for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
-    if (Object.keys(manifest[field] ?? {}).length) { throw new Error(`Core must have no ${field}`) }
-  }
+  checkPackage()
   function walk(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const filename = path.join(directory, entry.name)
