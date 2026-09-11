@@ -1,64 +1,58 @@
 # Return-to-live follow-up — 2026-09-11
 
-Work stayed in `Tarkman-Client-ReturnLive`, branch `expo/06-return-to-live-fix`.
-Before edits, the worktree was clean and HEAD matched the prepared `origin/main`
-base `b7edc761b77c33717cb33b8efe9bb1e449777b94`. Read root AGENTS.md,
-CLAUDE.md, README.md, mobile README.md, reader components and existing UI tests.
+Branch `expo/06-return-to-live-fix` (PR #89), validated from the single
+`Tarkman-Client` checkout.
 
-Moved the conditional AppButton from the capped header ScrollView into normal
-flex flow immediately after PartList. The footer is full width, capped at 800,
-with 16pt token padding inside the root SafeAreaView (no duplicated safe-area
-insets). It reserves space without covering readings. PartList is unchanged.
-The hint describes automatic following; pressing dispatches `follow` and retries.
+## Final placement
 
-Fresh mobile Jest: **8 suites / 71 tests passed**, including absence while
-following and manual-state visibility, accessibility hint, dispatch and retry.
-Lint (zero warnings), typecheck, UI guard and both clean Expo web exports passed.
-The export processes used `EXPO_NO_DOTENV=1`; only the fixture export received
-process-local `https://reader.invalid` / `wss://reader.invalid/cable` endpoints.
-No backend or real service was used. No .env, EAS or dependency values changed.
+"Return to live" sits in a fixed top row with "All services"
+(`reader-header-actions`), outside the details `ScrollView`, which stays capped
+at 50% height. It shows only while reading manually, keeps the 44pt target and
+the hint "Resumes automatically following the current part.", and pressing it
+dispatches `follow` and then retries. The row wraps: at normal sizes the button
+sits at the right end of the row, and at large text sizes it moves to its own
+line instead of breaking words. The root SafeAreaView keeps the row clear of the
+Dynamic Island.
 
-The updated [browser harness](browser-qa.cjs.txt) passed all four viewports.
-It deliberately overfills the independent header, targets part 52, then wheels
-6,000px backward in the separate list. Before any click can scroll a control into
-view, it asserts full viewport bounds, hit-test visibility, a >=44px target,
-normal-flow positioning, no list overlap, a full-width/max-800 footer and no
-horizontal overflow. Part 53 arrives without moving the manual offset. Clicking
-Return to live hides it, triggers fresh reads and places part 53 in the list
-viewport. Existing language, modal, empty, offline and recovery checks also pass.
-Normal runs have zero console errors/warnings; injected 503 errors are separate.
+An earlier commit in this PR placed the control in a footer below the list. That
+placement was superseded. The earlier web evidence — the
+[browser harness](browser-qa.cjs.txt), [results](results.json) and the
+`phone-`, `tablet-`, `desktop-` and `dark-manual.png` captures — measures that
+footer. The harness's manual-state assertions need updating for the top row
+before it is replayed.
 
-| Viewport | Return-to-live target | Footer width | Evidence |
-| --- | --- | --- | --- |
-| Phone 390×844 | 358×44px | 390px | [manual](phone-manual.png) |
-| Tablet 820×1180 | 768×44px | 800px | [manual](tablet-manual.png) |
-| Desktop 1440×1000 | 768×44px | 800px | [manual](desktop-manual.png) |
-| Dark phone 390×844 | 358×44px | 390px | [manual](dark-manual.png) |
+## Native iOS check
 
-All four captures were visually inspected. [Results](results.json) contain fresh
-measurements. `QA_COMPACT=1` retains earlier captures and writes only these four
-new PNGs plus results; the earlier screenshots below remain historical evidence.
-Replay from repository root with the two exports served on 8094 (unconfigured)
-and 8093 (fixture), using the existing server:
+iPhone 17 Pro simulator with the local development client, running JavaScript
+from this branch's Metro (the bundle was confirmed to contain
+`reader-header-actions`). Data came from the live St. John Divine Liturgy
+session on production, read-only.
 
-```sh
-QA_COMPACT=1 node apps/mobile/qa/expo74/browser-qa.cjs.txt
-```
+- Manually scrolling the list shows "Return to live" at the top right. It stays
+  in place after scrolling about 23 parts away. Tapping it hides the control and
+  returns the list to the highlighted current part. [Capture](ios-manual.png).
+- **Bug found and fixed:** every `AppButton` rendered without its background,
+  radius, padding or minimum size on native. Primary buttons, including "Return
+  to live" and "Open service", were white text on a white screen. NativeWind's
+  native runtime (`react-native-css-interop` 0.2.6) replaces a function-valued
+  `Pressable` `style` with `{}`. `AppButton` now tracks its pressed state with
+  `onPressIn`/`onPressOut` and passes a style object, and an ESLint
+  `no-restricted-syntax` rule rejects function-valued `style` props. Web and
+  Jest were unaffected, which is why earlier checks passed.
+  [Capture after the fix](ios-discovery.png).
+- At the largest text size (`accessibility-extra-extra-extra-large`, cold
+  start), the top row wraps without breaking words and "Return to live" still
+  works. [Capture](ios-large-text-manual.png). The remaining large-text problems
+  — headings breaking mid-word, following landing short of the live part, little
+  room for the readings, and clipping after a live size change — are tracked in
+  #91.
 
-Local native command (from this worktree's apps/mobile):
-`LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios --device 36FE0459-CDCB-44E9-9230-8B1D0E0704E2 --no-bundler`
-exited 0: **Build Succeeded, 0 errors / 2 warnings**, installed on iPhone 17 Pro /
-iOS 26.5 and opened `app.tarkman` / the development client. Warnings were duplicate
-`-lc++` and the dev-launcher script's ambiguous dependencies. Generated native
-files remain ignored; prebuild's automatic npm-script edits were reverted.
-This is build/install evidence only: `--no-bundler` did not start this worktree's
-Metro, and the opened development URL's JavaScript/runtime was not verified.
-No native manual-scroll, physical-device safe-area, Dynamic Type, VoiceOver or
-real Rails acceptance is claimed. No Expo Go or EAS was used.
+Mobile Jest (**8 suites / 73 tests**), lint (zero warnings), typecheck and the
+UI guard passed. A new primitive test covers the style object and pressed
+state; it fails against the previous `AppButton`.
 
-Final `git diff --check` passed. PartList, package manifests/lockfile, app/EAS
-configuration and backend are unchanged. No commit, push, PR or deployment.
-The requested single completion notice is sent separately.
+Not covered here: live part changes while following (the production service was
+not driven), a physical iPhone, and VoiceOver (low priority for in-church use).
 
 ---
 
