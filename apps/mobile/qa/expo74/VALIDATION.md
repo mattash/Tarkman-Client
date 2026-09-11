@@ -1,3 +1,67 @@
+# Return-to-live follow-up — 2026-09-11
+
+Work stayed in `Tarkman-Client-ReturnLive`, branch `expo/06-return-to-live-fix`.
+Before edits, the worktree was clean and HEAD matched the prepared `origin/main`
+base `b7edc761b77c33717cb33b8efe9bb1e449777b94`. Read root AGENTS.md,
+CLAUDE.md, README.md, mobile README.md, reader components and existing UI tests.
+
+Moved the conditional AppButton from the capped header ScrollView into normal
+flex flow immediately after PartList. The footer is full width, capped at 800,
+with 16pt token padding inside the root SafeAreaView (no duplicated safe-area
+insets). It reserves space without covering readings. PartList is unchanged.
+The hint describes automatic following; pressing dispatches `follow` and retries.
+
+Fresh mobile Jest: **8 suites / 71 tests passed**, including absence while
+following and manual-state visibility, accessibility hint, dispatch and retry.
+Lint (zero warnings), typecheck, UI guard and both clean Expo web exports passed.
+The export processes used `EXPO_NO_DOTENV=1`; only the fixture export received
+process-local `https://reader.invalid` / `wss://reader.invalid/cable` endpoints.
+No backend or real service was used. No .env, EAS or dependency values changed.
+
+The updated [browser harness](browser-qa.cjs.txt) passed all four viewports.
+It deliberately overfills the independent header, targets part 52, then wheels
+6,000px backward in the separate list. Before any click can scroll a control into
+view, it asserts full viewport bounds, hit-test visibility, a >=44px target,
+normal-flow positioning, no list overlap, a full-width/max-800 footer and no
+horizontal overflow. Part 53 arrives without moving the manual offset. Clicking
+Return to live hides it, triggers fresh reads and places part 53 in the list
+viewport. Existing language, modal, empty, offline and recovery checks also pass.
+Normal runs have zero console errors/warnings; injected 503 errors are separate.
+
+| Viewport | Return-to-live target | Footer width | Evidence |
+| --- | --- | --- | --- |
+| Phone 390×844 | 358×44px | 390px | [manual](phone-manual.png) |
+| Tablet 820×1180 | 768×44px | 800px | [manual](tablet-manual.png) |
+| Desktop 1440×1000 | 768×44px | 800px | [manual](desktop-manual.png) |
+| Dark phone 390×844 | 358×44px | 390px | [manual](dark-manual.png) |
+
+All four captures were visually inspected. [Results](results.json) contain fresh
+measurements. `QA_COMPACT=1` retains earlier captures and writes only these four
+new PNGs plus results; the earlier screenshots below remain historical evidence.
+Replay from repository root with the two exports served on 8094 (unconfigured)
+and 8093 (fixture), using the existing server:
+
+```sh
+QA_COMPACT=1 node apps/mobile/qa/expo74/browser-qa.cjs.txt
+```
+
+Local native command (from this worktree's apps/mobile):
+`LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios --device 36FE0459-CDCB-44E9-9230-8B1D0E0704E2 --no-bundler`
+exited 0: **Build Succeeded, 0 errors / 2 warnings**, installed on iPhone 17 Pro /
+iOS 26.5 and opened `app.tarkman` / the development client. Warnings were duplicate
+`-lc++` and the dev-launcher script's ambiguous dependencies. Generated native
+files remain ignored; prebuild's automatic npm-script edits were reverted.
+This is build/install evidence only: `--no-bundler` did not start this worktree's
+Metro, and the opened development URL's JavaScript/runtime was not verified.
+No native manual-scroll, physical-device safe-area, Dynamic Type, VoiceOver or
+real Rails acceptance is claimed. No Expo Go or EAS was used.
+
+Final `git diff --check` passed. PartList, package manifests/lockfile, app/EAS
+configuration and backend are unchanged. No commit, push, PR or deployment.
+The requested single completion notice is sent separately.
+
+---
+
 # Expo 06 / issue #74 — review evidence
 
 Implemented in the isolated `Tarkman-Client-Live` worktree on

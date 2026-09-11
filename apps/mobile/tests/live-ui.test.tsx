@@ -37,13 +37,26 @@ it('shows recoverable errors without presenting failed discovery as empty', asyn
   expect(screen.queryByText('No live service right now')).toBeNull()
   await fireEvent.press(screen.getByRole('button', { name: 'Retry connection' })); expect(retry).toHaveBeenCalled()
 })
-it('renders current occurrence, switches language, returns to live and dismisses explanation sheet', async () => {
+it('hides Return to live while automatically following', async () => {
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.queryByRole('button', { name: 'Return to live' })).toBeNull()
+})
+it('offers Return to live in manual state and resumes following with a refresh', async () => {
+  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, following: false }, retry, dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  const button = screen.getByRole('button', { name: 'Return to live' })
+  expect(button).toBeOnTheScreen()
+  expect(button).toHaveProp('accessibilityHint', 'Resumes automatically following the current part.')
+  await fireEvent.press(button)
+  expect(dispatch).toHaveBeenCalledWith({ type: 'follow' })
+  expect(retry).toHaveBeenCalledTimes(1)
+})
+it('renders current occurrence, switches language and dismisses explanation sheet', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'English prayer', ru: 'Молитва', grabar: 'Հայր մեր', role: 'Choir' } }] })
   jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   expect(screen.getByText('1 / Choir · Current part')).toBeOnTheScreen()
-  await fireEvent.press(screen.getByRole('button', { name: 'Return to live' })); expect(dispatch).toHaveBeenCalledWith({ type: 'follow' })
   await fireEvent.press(screen.getByRole('button', { name: 'Choose reading language' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Русский' }))
   expect(screen.getByText('Молитва')).toBeOnTheScreen()
