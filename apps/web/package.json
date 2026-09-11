@@ -36,7 +36,8 @@
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.1",
     "tailwind-merge": "^2.5.5",
-    "vaul": "^1.1.1"
+    "vaul": "^1.1.1",
+    "@tarkman/core": "file:../../packages/tarkman-core"
   },
   "devDependencies": {
     "@sentry/vite-plugin": "^5.3.0",

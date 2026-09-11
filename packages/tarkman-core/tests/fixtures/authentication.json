@@ -1,0 +1,11 @@
+{
+  "token": "fixture-only-token",
+  "user": {
+    "id": 1,
+    "email": "fixture@example.com",
+    "name": "Fixture User",
+    "roles": [
+      "admin"
+    ]
+  }
+}

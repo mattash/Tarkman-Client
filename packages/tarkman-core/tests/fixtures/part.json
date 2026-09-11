@@ -1,0 +1,22 @@
+{
+  "part": {
+    "id": 1,
+    "role": "priest",
+    "grabar": "Գրաբար տեքստ",
+    "translit": "Grabar text",
+    "hy_east": "Արևելահայերեն տեքստ",
+    "hy_west": "Արևմտահայերեն տեքստ",
+    "ru": "Русский текст",
+    "en": "English text",
+    "explanation_ids": [
+      1,
+      2,
+      3
+    ],
+    "effective_duration_ms": 60000,
+    "position": 1,
+    "duration_type": "fixed",
+    "page": 1,
+    "posture": "standing"
+  }
+}
