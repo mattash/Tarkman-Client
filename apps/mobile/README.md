@@ -1,120 +1,158 @@
 # Tarkman mobile
 
-Minimal managed Expo SDK 57 + TypeScript + Expo Router foundation. The only route
-is a placeholder home screen. App name: `Tarkman`; slug/scheme: `tarkman`; iOS
-bundle identifier and Android package: `app.tarkman`. No owner, EAS project ID,
-credentials, or update URL is configured.
+Managed Expo SDK 57, React Native and Expo Router. The home route is a native-first
+design-system gallery with static liturgy examples (`en`, `ru`, `grabar`,
+`translit`). It makes no API/auth requests. The production website remains the
+separate Vite app in `../web`.
 
-## Local development
+## Develop and verify
 
-Use Node >=22.13 and npm. Install dependencies in the mobile app root:
+Use Node >=22.13; install each app independently. No workspaces or root install.
 
 ```sh
 cd apps/mobile
 npm ci
-npm start
-# Alternatively: npm run ios / npm run android
+npm start                  # Expo Go or an existing development client
+npm run ios                # requires local simulator tooling
+npm run web
 npm run lint
 npm run typecheck
-npm run web
-npm run export:web
+npm test
+npm run check:ui
+npm run check:fonts
 npm run config
-npx expo install --check
+CI=1 npm run export:web
 npm ls --all
-npx expo-doctor
 ```
 
-Expo Go can open this placeholder without EAS initialization. Simulator/emulator
-launches require the appropriate local platform tooling. The development build
-profile uses `expo-dev-client`; after a development client has been built and
-installed in a later task, use `npm start -- --dev-client`. No custom Metro or
-Babel configuration is needed. The apps are independently installed, each with
-its own lockfile and `node_modules`; there is no root npm workspace tree. Install
-web separately with `npm ci --prefix apps/web` from the repository root. Remove
-old root `node_modules` when migrating from the combined install so Expo cannot
-resolve the web app's React 18. React Native Web
-serves the same placeholder in the browser and exports to `apps/mobile/dist`.
-The deployed website remains the Vite app in `../web`.
+Core is a source-linked `file:` dependency. After installing both apps, run
+`npm run core:test` and `npm run core:check-consumers` at repository root. The
+static gallery uses core types only; its samples and labels are local, so Metro
+needs no custom core resolver. Runtime core integration remains separate work.
 
-Mobile lint uses ESLint 10 with the recommended [TypeScript](https://typescript-eslint.io/getting-started/)
-and [React Hooks](https://react.dev/reference/eslint-plugin-react-hooks) flat
-configs. Expo's preset currently depends on React/import plugins whose peer
-ranges exclude ESLint 10, so those plugins are not installed. Run `npm run lint`
-from `apps/mobile`; CI runs the same command before typecheck and fails on
-warnings as well as errors.
-Generated Expo files and web exports are ignored. No formatting or Tailwind
-class rules are added, leaving the NativeWind v4 direction unconstrained.
-This implements only the lint gate portion of [#78](https://github.com/mattash/Tarkman-Client/issues/78).
+NativeWind **4** with Tailwind **3** is configured through `global.css`, the
+NativeWind preset, Babel and `withNativeWind` in Metro. Scanning is limited to
+mobile `app`, `components` and `design`. Restart Metro after configuration edits.
+NativeWind supplies layout utilities; native style objects use semantic tokens
+for theme colors, typography and platform-specific elevation.
 
-SDK 57 requires Node >=22.13 according to the
-[Expo compatibility table](https://docs.expo.dev/versions/latest/). Its engine
-constraint and CI job apply only to mobile. The existing web CI matrix is
-preserved, and Vercel runs `npm ci --prefix apps/web`; its Node 24 runtime upgrade
-remains separate in [#68](https://github.com/mattash/Tarkman-Client/issues/68).
+## Design primitives
 
-## Public environment configuration
+`design/tokens.ts` owns light/dark roles, Tarkman purple (`#6B46C1`), point-based
+spacing, radii, typography/line heights, elevation and the 44pt minimum target.
+These preserve the web's role vocabulary and brand accent without importing or
+changing web styles. `ThemeProvider` follows system appearance; its optional
+`scheme` isolates the gallery's light/dark samples. The root owns safe areas,
+status bar appearance and local font loading, without gating the router. A loading/failure notice explains system-font fallback and possible Armenian mark differences; failure offers an accessible retry without remounting the gallery.
 
-The placeholder makes no network requests and needs no environment variables.
-`.env.example` reserves `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ACTIONCABLE_URL`, and
-`EXPO_PUBLIC_DEFAULT_CHURCH_ID` for later integration; it contains no live values.
-Copy it to ignored `.env.local` for development. For future preview/production
-exports, supply that environment's public values through the invoking process;
-after owner selection, configure the matching EAS environments for native builds.
-All `EXPO_PUBLIC_*` values are readable in the client bundle and must not contain
-secrets. Future code reads them via `process.env.EXPO_PUBLIC_API_URL` (and the
-corresponding other keys), never Vite's `import.meta.env`.
+- `AppText`: title, heading, body, liturgy, label and caption; semantic tone,
+  language tag and Armenian static-font selection only after both fonts load. English, Russian
+  and transliteration use the platform system font. Dynamic Type stays enabled.
+- `AppButton`: native Pressable; primary, secondary, quiet and destructive.
+  Loading/disabled suppress actions and expose disabled/busy accessibility states.
+  Labels wrap; controls have minimum dimensions, never fixed text heights.
+- `Surface` / `Card`: themed native containers; card spacing/radius/elevation.
+- `TextField`: visible and accessible label, focus/error styling, native keyboard
+  props, text scaling and disabled state. Return/submit behavior belongs to the
+  caller; the gallery dismisses single-line keyboards on Done.
+- `AppModal`: native Modal presented as a bottom sheet, scrollable content,
+  safe-area padding and keyboard avoidance. Close button, backdrop, Android back,
+  web Escape and accessibility escape dismiss it. Initial focus targets Close; callers
+  pass an `openerRef` for return focus. Web uses host focus and RN Web’s focus trap;
+  native requests accessibility focus through AccessibilityInfo. Android restores
+  on the frame after removal; iOS/web use onDismiss. No exit animation or
+  drag-to-dismiss gesture. Native assistive-tech behavior still needs device QA.
+- `LiturgyText`: selectable by default; preserves the complete plain string,
+  paragraphs and line breaks. Null/empty/whitespace shows an explicit English
+  fallback with an English language tag. Uses the limited native Markdown strategy below.
 
-Use absolute HTTPS API and WSS ActionCable URLs reachable from the device. A
-browser-relative `/cable` URL has no native origin, and `localhost` on an iPhone
-refers to the phone. Environment-specific endpoints and device reachability
-remain to be verified when live API integration is authorized.
+## Limited native Markdown
 
-## Future EAS initialization — owner action
+`LiturgyText` renders nested React Native Text runs, with no HTML parser, DOM
+renderer, sanitization dependency, remote images, or heavyweight Markdown library.
+Paragraphs and line breaks remain intact. Supported inline forms are `**bold**`,
+`*emphasis*`, single-backtick code (a subtle background, preserving the reading
+font), and `[label](https://example.org/path)`. Formatting does not nest or cross
+newlines. Link labels are plain text; URLs cannot contain parentheses. Only
+absolute HTTPS URLs with a hostname, no credentials, whitespace, control
+characters or backslashes are actionable. Native uses Linking.openURL with a
+visible failure message; web uses keyboard-accessible anchors with noopener and
+noreferrer. Accessible labels include the destination and native links include
+an opening hint. There is no URL autolinking.
 
-First choose the Expo account/team that should own Tarkman. Only after that
-choice, start from the repository root and run:
+Backslash-escaped punctuation displays literally (the escape backslash is
+removed). HTML tags, images, fenced code, headings/list markers, underscore
+formatting and strikethrough remain plain text; they do not create HTML, images,
+or block layouts. Invalid links retain their source text and stay inert. This is
+a small inline grammar, not CommonMark compatibility; unsupported block markers
+can coexist with supported inline text. Examples:
 
-```sh
-cd apps/mobile
-npx eas-cli@latest login
-npx eas-cli@latest init
-npx eas-cli@latest project:info
+```text
+First line
+Second line
+
+**Bold reading**, *gentle emphasis*, and `inline code`.
+[Noto Armenian](https://notofonts.github.io/armenian/)
+\*literal stars\*  <No HTML is rendered.>
+[Unsafe link](javascript:alert)  ![No image](https://example.org/image.png)
 ```
 
-Confirm the selected account/team during initialization and review the generated
-`owner` / `extra.eas.projectId` before accepting those configuration changes.
-Always run EAS commands from `apps/mobile`, never the repository root or
-`apps/web`: the latter contains a legacy Vinxi `app.config.ts`, not an Expo config.
-Before initialization, `project:info` may report no linked project or require
-login. Do not initialize just to make that validation pass.
+Card shadows use React Native/RN Web `boxShadow` (SDK 57's New Architecture),
+not deprecated RN Web shadow properties. The mobile export serves a local copy
+of the existing Tarkman favicon to avoid the browser's implicit favicon 404.
 
-`eas.json` is ready for later setup:
+The mobile lint gate uses ESLint 10, TypeScript and React Hooks flat configs.
+Jest/Expo and React Native Testing Library cover actions, fallback text, language,
+selection, text scaling, input behavior and modal dismissal. Watchman is disabled
+for deterministic one-shot tests. `check:ui` is a bounded source/dependency guard,
+not a general security scanner or proof of runtime compatibility.
 
-- `development`: internal distribution, development client, iOS simulator (no
-  Apple signing needed for that simulator target).
-- `preview`: internal distribution for iOS device testing; signing/provisioning
-  must be arranged later.
-- `production`: store distribution; versions are managed locally in app config.
+## Font provenance and license
 
-These profiles do not create builds by themselves. Initialization, account/team
-selection, Apple credentials, builds, submissions, updates, and deployment are
-separate future actions. No credentials belong in this repository. The placeholder
-requires no `.env` file; web environment examples remain in `../web`.
+Bundled **static Regular and Bold Noto Serif Armenian v2.008** come exclusively
+from the [official Noto Armenian project release](https://github.com/notofonts/armenian/releases/tag/NotoSerifArmenian-v2.008),
+under SIL OFL 1.1. Copyright 2022 The Noto Project Authors.
+The gallery’s “Font license & attribution” sheet embeds the full license in the
+app/export via `license.json`; the font guard verifies it matches OFL exactly.
+Keep [OFL.txt](assets/fonts/OFL.txt), [AUTHORS.txt](assets/fonts/AUTHORS.txt) and
+[source paths, license review and hashes](assets/fonts/SOURCE.md) with the fonts.
+The full static `googlefonts/ttf` files in that official archive include combining
+marks omitted by its smaller Armenian-only builds. No variable fonts or remote
+font requests are used. `check:fonts` checks hashes, static tables and glyph maps.
 
-## Scope and follow-up
+The real Grabar sample is the public-domain Lord's Prayer excerpt beginning
+“Հայր մեր, որ յերկինս ես”. A separately labeled stress sample includes Armenian
+`։`, `՛`, `՜`, `՞` and decomposed U+0301/U+0304. It is a shaping test, not an
+editorial claim about liturgical accent placement.
 
-Consulted issues: [#69](https://github.com/mattash/Tarkman-Client/issues/69),
-[#70](https://github.com/mattash/Tarkman-Client/issues/70),
-[#71](https://github.com/mattash/Tarkman-Client/issues/71), and the
-[#81 roadmap](https://github.com/mattash/Tarkman-Client/issues/81).
-This foundation does not close those issues: styling, route parity, shared-core
-architecture, and OS/device support decisions remain open. The small built-in
-StyleSheet only positions the placeholder; it does not select a styling system.
-iOS is the initial native publication target. Android compatibility is retained
-without Android store/release work. Simulator/device launch and the iOS
-development build required by #71 remain later validation; this task does not
-initialize EAS, provision credentials, or create builds.
+## Visual QA checklist
 
-References: [Expo Router installation](https://docs.expo.dev/router/installation/),
-[Expo monorepo guidance](https://docs.expo.dev/guides/monorepos/), and
-[EAS monorepo setup](https://docs.expo.dev/build-reference/build-with-monorepos/).
+- Phone (390px), tablet (820px), desktop preview (1440px): inspect each section,
+  long text, all four languages, null/empty fallbacks and theme samples. No
+  horizontal overflow, clipped ascenders/marks or unreadable text contrast.
+- Confirm both bundled fonts loaded; inspect Grabar punctuation and decomposed
+  accents. Select/copy a multiline paragraph without losing line breaks.
+- Change OS appearance; check background, surface, muted text, fields and sheets.
+- At large and maximum accessibility text sizes, read and scroll all content;
+  ensure labels grow and every control remains at least 44×44pt.
+- Use keyboard Tab/Enter on web; verify focus, disabled/loading buttons, input
+  values, Done behavior and email keyboard on native. Try input near screen bottom.
+- Open the sheet, type a multiline note, dismiss the keyboard, scroll the reading,
+  and close by button/backdrop/back/Escape. Reopen and check focus containment and
+  return to the opener. Check portrait, landscape and home-indicator/notch insets.
+- VoiceOver/TalkBack: headings, language pronunciation, labels, errors, disabled/
+  busy states, modal isolation and accessibility escape. Native assistive-tech
+  behavior needs device verification; browser checks alone cannot establish it.
+
+## Configuration boundaries
+
+`app.json` retains the existing owner, EAS project link, identifiers and scheme.
+This gallery adds only automatic appearance and the Expo font plugin. No EAS
+commands, credentials, build profiles or deployment settings change. Run any
+future EAS operations only from `apps/mobile` under separate release authorization.
+
+The gallery needs no environment file. `.env.example` reserves public values for
+future networking work; do not put secrets in `EXPO_PUBLIC_*`. Authentication,
+networking, web-screen migration and native publication remain separate tasks.
+
+See [review validation and screenshots](qa/expo73/VALIDATION.md) for the latest browser evidence and remaining native QA.

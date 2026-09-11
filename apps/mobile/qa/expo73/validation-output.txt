@@ -1,0 +1,154 @@
+
+mobile-ci
+
+added 1002 packages, and audited 1004 packages in 13s
+
+108 packages are looking for funding
+  run `npm fund` for details
+
+13 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+
+web-ci
+158 packages are looking for funding
+  run `npm fund` for details
+
+19 vulnerabilities (2 low, 5 moderate, 10 high, 2 critical)
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+npm warn install-scripts 4 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   @sentry/cli@2.58.5 (postinstall: node ./scripts/install.js)
+npm warn install-scripts   esbuild@0.23.1 (postinstall: node install.js)
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts   esbuild@0.21.5 (postinstall: node install.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+
+jest
+
+> @tarkman/mobile@0.1.0 test
+> jest --runInBand
+
+PASS tests/review-blockers.test.tsx
+PASS tests/primitives.test.tsx
+
+Test Suites: 2 passed, 2 total
+Tests:       31 passed, 31 total
+Snapshots:   0 total
+Time:        1.422 s, estimated 2 s
+Ran all test suites.
+
+core
+✔ rejects the original TypeScript devDependency failure and other linked dependencies (0.941292ms)
+✔ clean npm ci links core without installing its devDependencies, then npm ls checks them (2931.409375ms)
+✔ public inbound DTOs accept observed and future strings; commands stay closed (2886.577083ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3445.696
+
+> tarkman@1.6.1 core:check
+> node packages/tarkman-core/scripts/check-boundary.mjs
+
+Core boundary passed: local imports only, no platform globals or runtime dependencies
+
+consumers
+
+> tarkman@1.6.1 core:check-consumers
+> node packages/tarkman-core/scripts/check-consumers.mjs
+
+web: public package resolution and live/fixed/future compile probes passed
+mobile: public package resolution and live/fixed/future compile probes passed
+
+web-typecheck
+
+> @tarkman/web@1.6.1 typecheck
+> tsc --noEmit
+
+
+web-test
+ ✓ app/components/__tests__/SessionParts.test.tsx (1 test) 89ms
+ ✓ app/__tests__/routes/sessions.$id.display.test.tsx (2 tests) 64ms
+ ✓ app/contexts/__tests__/LanguageContext.test.tsx (7 tests) 47ms
+ ✓ app/queries/__tests__/partQueries.test.ts (3 tests) 3ms
+ ✓ app/components/__tests__/LogoutButton.test.tsx (3 tests) 233ms
+ ✓ app/hooks/__tests__/useUserSessionPolling.test.tsx (4 tests) 420ms
+ ✓ app/__tests__/routes/sessions.$id.explanations.test.tsx (3 tests) 70ms
+ ✓ app/config/__tests__/environment.test.ts (5 tests) 2ms
+ ✓ app/components/__tests__/PartDetails.test.tsx (1 test) 55ms
+ ✓ app/utils/__tests__/authRedirect.test.ts (6 tests) 2ms
+
+ Test Files  38 passed (38)
+      Tests  341 passed (341)
+   Start at  07:42:33
+   Duration  12.81s (transform 1.11s, setup 5.35s, collect 19.79s, tests 15.53s, environment 29.24s, prepare 5.33s)
+
+
+web-build
+vite v5.4.11 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 22 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 2349 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                            0.65 kB │ gzip:   0.33 kB
+dist/assets/index-C5ekzEfP.css            58.78 kB │ gzip:   9.46 kB
+dist/assets/index-B0llhS0f.js             16.72 kB │ gzip:   6.25 kB
+dist/assets/vendor-tanstack-DDZUp7U7.js   99.03 kB │ gzip:  30.91 kB
+dist/assets/vendor-react-B20bf5Xv.js     141.47 kB │ gzip:  45.49 kB
+dist/assets/vendor-sentry-DnvXVWIk.js    276.71 kB │ gzip:  90.73 kB
+dist/assets/index-C-eXJG2Q.js            344.73 kB │ gzip: 109.29 kB
+✓ built in 5.71s
+
+export-web
+node_modules/expo-router/assets/react-navigation/elements/back-icon.35ba0eaec5a4f5ed12ca16fabeae451d.png (207B)
+node_modules/expo-router/assets/react-navigation/elements/clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55.png (4 variations | 425B)
+node_modules/expo-router/assets/react-navigation/elements/close-icon.808e1b1b9b53114ec2838071a7e6daa7.png (4 variations | 235B)
+node_modules/expo-router/assets/react-navigation/elements/search-icon.286d67d3f74808a60a78d3ebf1a5fb57.png (928B)
+node_modules/expo-router/assets/sitemap.412dd9275b6b48ad28f5e3d81bb1f626.png (465B)
+node_modules/expo-router/assets/unmatched.20e71bdf79e3a97bf55fd9e164041578.png (4.8KB)
+
+› web bundles (2):
+_expo/static/css/web-453ac284a5696e814dd2307e77f77d7f.css (6.7KB)
+_expo/static/js/web/entry-f623eb74e8121f66f1a88dc15f501945.js (1.2MB)
+
+› Files (2):
+index.html (1.4KB)
+metadata.json (49B)
+
+Exported: dist
+
+export-native
+node_modules/expo-router/assets/react-navigation/elements/clear-icon.png (4 variations | 425B)
+node_modules/expo-router/assets/react-navigation/elements/close-icon.png (4 variations | 235B)
+node_modules/expo-router/assets/react-navigation/elements/search-icon.png (7 variations | 592B)
+node_modules/expo-router/assets/sitemap.png (465B)
+node_modules/expo-router/assets/unmatched.png (4.8KB)
+
+› android bundles (1):
+_expo/static/js/android/entry-851f2e6d6a17c091662b7b6b5d9b8811.hbc (3.7MB)
+
+› ios bundles (1):
+_expo/static/js/ios/entry-dfc3a5b8155db9400c652919e949da8f.hbc (3.5MB)
+
+› Files (1):
+metadata.json (3.6KB)
+
+Exported: /private/tmp/expo73-dist-native

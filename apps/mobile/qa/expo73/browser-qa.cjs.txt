@@ -1,0 +1,25 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const fs=require('fs'); const assert=require('assert/strict');
+const out=process.cwd()+'/apps/mobile/qa/expo73';
+(async()=>{const browser=await chromium.launch({headless:true,channel:'chrome'});const results=[];
+try { for(const [name,width,height,colorScheme] of [['phone',390,844,'light'],['tablet',820,1180,'light'],['desktop',1440,1000,'light'],['dark',390,844,'dark']]) {
+const page=await browser.newPage({viewport:{width,height},colorScheme}); const errors=[],warnings=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());if(m.type()==='warning')warnings.push(m.text())});
+await page.goto('http://localhost:8087'); await page.getByText('A space for prayer.',{exact:true}).waitFor();await page.evaluate(()=>document.fonts.ready);
+await page.getByText('Loading reading font.',{exact:false}).waitFor({state:'hidden'});
+for(const [section,label] of [['top','A space for prayer.'],['type','Punctuation & combining marks'],['markdown','Long reading & limited Markdown'],['themes','03 / Light & dark'],['controls','04 / Actions & input']]) {
+await page.getByText(label,{exact:true}).scrollIntoViewIfNeeded(); await page.screenshot({path:`${out}/${name}-${section}.png`}); }
+const link=page.getByRole('link',{name:'Noto Armenian (https://notofonts.github.io/armenian/)'});assert.equal(await link.getAttribute('href'),'https://notofonts.github.io/armenian/');await link.scrollIntoViewIfNeeded();await page.screenshot({path:`${out}/${name}-markdown.png`});await link.focus();assert(await link.evaluate(e=>e===document.activeElement));assert.equal(await page.locator('a[href^="javascript:"]').count(),0);
+await page.getByRole('textbox',{name:'Reading note',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:`${out}/${name}-controls.png`});
+const opener=page.getByRole('button',{name:'Open reading sheet',exact:true}); const close=page.getByRole('button',{name:'Close The Lord’s Prayer',exact:true});
+for(const mode of ['escape','close','backdrop']) {await opener.click();await close.waitFor();await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='Close The Lord’s Prayer');
+for(let i=0;i<4;i++){await page.keyboard.press('Tab');assert(await page.getByRole('dialog').evaluate(e=>e.contains(document.activeElement)));}
+await page.getByRole('textbox',{name:'Sheet note',exact:true}).fill('A quiet moment.');await page.screenshot({path:`${out}/${name}-modal.png`});
+if(mode==='escape')await page.keyboard.press('Escape');if(mode==='close')await close.click();if(mode==='backdrop')await page.getByTestId('modal-backdrop').click({position:{x:8,y:8}});
+await close.waitFor({state:'hidden'});await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='Open reading sheet');}
+const license=page.getByRole('button',{name:'Font license & attribution',exact:true});await license.click();const lc=page.getByRole('button',{name:'Close Font license'});await lc.waitFor();await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='Close Font license');await lc.click();await page.waitForFunction(()=>document.activeElement?.getAttribute('aria-label')==='Font license & attribution');
+await page.getByRole('textbox',{name:'Reading note',exact:true}).fill('Preview note');await page.getByRole('button',{name:'Clear note',exact:true}).click();assert.equal(await page.getByRole('textbox',{name:'Reading note',exact:true}).inputValue(),'');await page.getByRole('button',{name:'Save reading',exact:true}).click();await page.getByText('Reading saved for this preview.',{exact:true}).waitFor();await page.getByRole('button',{name:'Reset preview',exact:true}).click();await page.getByText('Preview reset.',{exact:true}).waitFor();
+assert(await page.getByRole('button',{name:'Unavailable',exact:true}).isDisabled());assert(await page.getByRole('button',{name:'Preparing reading',exact:true}).isDisabled());
+const layout=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,fonts:[...document.fonts].map(f=>({family:f.family,status:f.status})),targets:[...document.querySelectorAll('[role="button"]')].map(e=>({label:e.getAttribute('aria-label'),width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height}))}));
+assert(!layout.overflow);assert(layout.fonts.filter(f=>f.family.includes('Noto')).every(f=>f.status==='loaded'));assert(layout.targets.every(t=>t.width>=44&&t.height>=44));assert.deepEqual(errors,[]);assert.deepEqual(warnings,[]);results.push({name,errors,warnings,layout,focus:'initial close, tab containment, return after Escape/close/backdrop and license passed',interactions:'links, notes, save/reset/clear, disabled/loading passed'});await page.close();}
+fs.writeFileSync(`${out}/results.json`,JSON.stringify(results,null,2));console.log('All four viewport checks passed');} finally {await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});

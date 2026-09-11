@@ -21,13 +21,15 @@
       "output": "single"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ],
     "extra": {
       "router": {},
       "eas": {
         "projectId": "c76aa8c8-fb02-40b5-b4ae-8469b1bbeb47"
       }
-    }
+    },
+    "userInterfaceStyle": "automatic"
   }
 }

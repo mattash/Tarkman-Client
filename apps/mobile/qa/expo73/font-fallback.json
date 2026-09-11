@@ -1,0 +1,10 @@
+{
+  "result": "passed",
+  "injectedFailure": "Aborted both local TTF requests; expected network console errors only",
+  "assertions": [
+    "Gallery remains mounted and interactive",
+    "System font selected with Armenian caveat and accessible retry",
+    "Retry loads Noto without losing typed note"
+  ],
+  "uncaughtErrors": []
+}
