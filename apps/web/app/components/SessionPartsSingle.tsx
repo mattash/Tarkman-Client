@@ -52,8 +52,8 @@ export function SessionPartsSingle({
             <div
               className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
             >
-              <div className="font-bold uppercase text-slate-300 text-7xl">{part.role}</div>
-              <ReactMarkdown className="text-9xl prose prose-invert max-w-none">
+              <div className="font-bold uppercase text-slate-300 text-3xl">{part.role}</div>
+              <ReactMarkdown className="text-6xl prose prose-invert max-w-none">
                 {text.split('\n').map(line => line.trimStart()).join('\n\n')}
               </ReactMarkdown>
             </div>
