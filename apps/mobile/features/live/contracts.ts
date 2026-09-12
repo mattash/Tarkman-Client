@@ -6,6 +6,8 @@ export interface LiveSession {
   id: number; title: string; church: string; currentPartId: number | null
   currentLiturgyId: number | null; currentPosition: number | null
   status: string; message: string | null
+  /** Published by the API for churches that have been geocoded; absent otherwise. */
+  latitude: number | null; longitude: number | null
 }
 export interface LivePart {
   id: number; key: string; liturgyId: number | null; liturgyPartId: number | null
@@ -29,8 +31,15 @@ export function normalizeSession(value: unknown): LiveSession {
   const s = record(record(value).session)
   return { id: requiredId(s.id), title: text(s.liturgy) || 'Service', church: text(s.church_name) || 'Church service',
     currentPartId: positiveId(s.current_part_id), currentLiturgyId: positiveId(s.current_liturgy_id),
-    currentPosition: positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message) }
+    currentPosition: positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
+    latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180) }
 }
+/** Only a real, in-range number counts; anything else means the church has no published position. */
+function coordinate(value: unknown, limit: number): number | null {
+  const number = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+  return Number.isFinite(number) && Math.abs(number) <= limit ? number : null
+}
+
 export function normalizeServices(value: unknown): LiveSession[] {
   if (Array.isArray(value)) return uniqueSessions(value.map(normalizeSession))
   const data = record(value)
