@@ -20,7 +20,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        # Node 24 is what Vercel runs; 22 is the previous LTS still supported locally.
+        node-version: [22.x, 24.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -47,7 +48,7 @@ jobs:
         working-directory: apps/mobile
     steps:
     - uses: actions/checkout@v4
-    # SDK 57 requires Node >=22.13; the web matrix/runtime stays under #68.
+    # SDK 57 requires Node >=22.13.
     - uses: actions/setup-node@v4
       with:
         node-version: 22.x
