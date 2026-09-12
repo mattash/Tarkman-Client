@@ -231,3 +231,30 @@ existing Rails endpoint and verify subscription confirmation, part/status and
 explanation updates, lock/background/foreground, airplane-mode/Wi-Fi restoration,
 long multi-liturgy targeting, Dynamic Type, VoiceOver and modal/keyboard focus.
 Simulator build success and mocked web tests do not prove that handshake.
+
+## Offline reading and local preferences / Expo 08
+
+Offline downloads are **deferred**. Expo 01 (issue #69) decided that offline
+reading waits beyond the first vertical slice and that only safe local
+preferences are kept on the device, so there is no downloaded liturgy content,
+no content versioning, and no download progress in this app. Reading requires a
+connection; a service that has not loaded fails with a visible message rather
+than showing stale text as if it were live.
+
+What the device does keep:
+
+- The reading language, saved as one small record and restored on launch. An
+  unreadable or unknown record is discarded and reading continues in English.
+- Nothing else. The sign-in token is separate and lives in the keychain.
+- "Forget my reading choices" in the reading-language sheet clears the record.
+
+Storage differs by platform, because the native key-value store does not run in
+a browser: native builds use `expo-sqlite`'s key-value store, and web uses
+`localStorage` through `features/preferences/storage.web.ts`. Both satisfy the
+same `KeyValueAdapter` contract and tolerate a failed write, so a rejected save
+never interrupts reading.
+
+Connection recovery is unchanged and still required: the reader labels stale and
+disconnected states, falls back to polling when the live socket is unavailable,
+and refetches authoritative state on reconnect. Live-control commands are never
+queued or replayed after a reconnect; see `features/services/useControls.ts`.

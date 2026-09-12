@@ -28,7 +28,8 @@
         {
           "faceIDPermission": false
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "extra": {
       "router": {},

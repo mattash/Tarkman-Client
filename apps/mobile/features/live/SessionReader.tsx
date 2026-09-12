@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
 import { AppModal } from '../../components/AppModal'
 import { AppText } from '../../components/AppText'
+import { usePreferences } from '../preferences/PreferencesProvider'
 import { LiturgyText } from '../../components/LiturgyText'
 import { spacing } from '../../design/tokens'
 import { sampleLanguages } from '../../design/samples'
@@ -14,7 +14,9 @@ import { PartList } from './PartList'
 import { ReaderStatus } from './ReaderStatus'
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
   const { state, retry, dispatch } = useReader(endpoints, id)
-  const [language, setLanguage] = useState<Language>('en'), [sheet, setSheet] = useState<'language' | 'explanation' | null>(null)
+  const { preferences, setLanguage, clear: clearPreferences } = usePreferences()
+  const language = preferences.language
+  const [sheet, setSheet] = useState<'language' | 'explanation' | null>(null)
   const languageOpener = useRef<View>(null), explanationOpener = useRef<View>(null), activeOpener = useRef<View>(null)
   const part = state.session ? currentPart(state.session, state.parts) : undefined
   return <View style={{ flex: 1 }}>
@@ -38,7 +40,8 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     </ScrollView>
     {!state.loading && <PartList parts={state.parts} currentKey={part?.key} following={state.following} language={language} manual={() => dispatch({ type: 'manual' })} />}
     <AppModal visible={sheet !== null} title={sheet === 'language' ? 'Reading language' : 'Current part explanation'} openerRef={activeOpener} onDismiss={() => setSheet(null)}>
-      {sheet === 'language' ? sampleLanguages.map(item => <AppButton key={item.value} variant={item.value === language ? 'primary' : 'secondary'} accessibilityState={{ selected: item.value === language }} onPress={() => { setLanguage(item.value); setSheet(null) }}>{item.label}</AppButton>) : <>
+      {sheet === 'language' ? <>{sampleLanguages.map(item => <AppButton key={item.value} variant={item.value === language ? 'primary' : 'secondary'} accessibilityState={{ selected: item.value === language }} onPress={() => { setLanguage(item.value); setSheet(null) }}>{item.label}</AppButton>)}
+      <AppButton variant="quiet" onPress={() => { clearPreferences(); setSheet(null) }}>Forget my reading choices</AppButton></> : <>
         <AppText variant="caption" tone="muted">Explanations follow the service’s current part, even while you read elsewhere.</AppText>
         <AppText variant="label">{part ? `${part.position} / ${part.role}` : 'Current part unavailable'}</AppText>
         {state.stale ? <AppText>Reconnecting. Explanations will refresh with the current part.</AppText> : state.explanationError ? <><AppText accessibilityRole="alert">Could not load explanations.</AppText><AppButton loading={state.refreshing} onPress={retry}>Retry explanations</AppButton></> : state.explanations.length === 0 ? <AppText>No explanation is available for this part.</AppText> : state.explanations.map(explanation => <View key={explanation.id} style={{ gap: spacing.sm }}><AppText variant="heading">{explanation.title}</AppText><LiturgyText text={explanation.description} /></View>)}
