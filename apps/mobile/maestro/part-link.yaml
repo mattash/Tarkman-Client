@@ -1,0 +1,16 @@
+# A link to one part opens that part directly, which is what a shared or scanned
+# link must do. Uses the app's own scheme; universal links need a device (#101).
+appId: app.tarkman
+name: Open a part from a link
+---
+- runFlow: launch.yaml
+- openLink:
+    link: tarkman://sessions/4006/part/2066
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: "Back to the service"
+    timeout: 30000
+- assertVisible: "Classical Armenian"
+- assertVisible: "English"

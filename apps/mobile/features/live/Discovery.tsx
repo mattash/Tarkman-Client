@@ -27,7 +27,7 @@ export function Discovery({ endpoints, open }: { endpoints: Endpoints; open(id: 
         <AppButton onPress={() => open(session.id)} accessibilityLabel={`Open ${session.title} at ${session.church}`}>Open service</AppButton></Card>)}
       <AppButton variant="secondary" loading={state.refreshing} onPress={retry}>Refresh services</AppButton>
       <Card><AppText variant="heading">Have a session ID?</AppText>
-        <TextField label="Session ID" value={input} onChangeText={value => { setInput(value); setError(undefined) }} keyboardType="number-pad" inputMode="numeric" returnKeyType="go" onSubmitEditing={submit} error={error} />
+        <TextField testID="session-id" label="Session ID" value={input} onChangeText={value => { setInput(value); setError(undefined) }} keyboardType="number-pad" inputMode="numeric" returnKeyType="go" onSubmitEditing={submit} error={error} />
         <AppButton onPress={submit}>Open session</AppButton>
       </Card>
     </View>

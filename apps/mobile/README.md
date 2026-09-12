@@ -373,11 +373,33 @@ team, or build through EAS with the `development-simulator` profile. An existing
 `ios/` directory hides this: `expo run:ios` reuses it without re-applying config
 plugins, so the entitlement only appears after `expo prebuild --clean`.
 
+### Device flows
+
+`maestro/` holds Maestro flows that drive the app on a simulator. Install the CLI
+with `curl -fsSL "https://get.maestro.mobile.dev" | bash` — note that Homebrew's
+plain `maestro` cask is an unrelated product — then run them all:
+
+```sh
+maestro test maestro/
+```
+
+`launch.yaml` loads the app and is reused by the others through `runFlow`. In
+development it points the development client at Metro on port 8081; a standalone
+build ignores that link and simply launches, so the same flows run against both.
+`read-a-service.yaml` opens a service by ID, changes language, opens a part and
+comes back. `part-link.yaml` opens a part straight from a link. Both are signed
+out and read-only, so no flow can change a live service and none needs
+credentials.
+
+The flows read session 4006 on the production API, so they depend on that
+service existing. They are not wired into CI: that needs a macOS runner, which
+bills at ten times the Linux rate on a private repository, and a build to
+install. Run them locally before distributing a build.
+
 ### Known gaps
 
 Recorded rather than implied: source maps are not uploaded, so release stack
-traces are minified; there are no automated device flows, so the hardware checks
-above are manual; universal links are unverified on a device
+traces are minified; device flows run locally and are not enforced by CI; universal links are unverified on a device
 (#101); large text sizes still break reader layout (#91); block-level Markdown in
 explanations renders literally (#99); the services list shows only the first ten
 (#92). Jest covers behaviour, not rendering on a device, so it is not evidence

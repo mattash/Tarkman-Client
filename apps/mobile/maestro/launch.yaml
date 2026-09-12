@@ -1,0 +1,14 @@
+# Loads the app. Development builds must be pointed at Metro; a standalone build
+# ignores the link and simply launches, so the same flows run against both.
+appId: app.tarkman
+---
+- launchApp:
+    clearState: false
+- openLink:
+    link: exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: "Follow the service."
+    timeout: 60000
