@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { router } from 'expo-router'
+import * as Sentry from '@sentry/react-native'
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { AppText } from '../components/AppText'
 import { AppButton } from '../components/AppButton'
@@ -10,6 +11,7 @@ import { LiturgyText } from '../components/LiturgyText'
 import { ThemeProvider, useTheme } from '../design/ThemeProvider'
 import { prayer, marksSample, sampleLanguages } from '../design/samples'
 import fontLicense from '../assets/fonts/license.json'
+import { observabilityConfig } from '../features/observability/sentry'
 import { spacing, type ThemeName } from '../design/tokens'
 
 export default function HomeScreen() {
@@ -69,6 +71,7 @@ export default function HomeScreen() {
             <TextField label="Field with feedback" value="" editable={false} error="This sample is read-only." />
           </Card>
         </View>
+        <ErrorReportingSample />
         <AppButton ref={licenseOpener} variant="quiet" onPress={() => { activeOpener.current = licenseOpener.current; setModal('license') }}>Font license & attribution</AppButton>
         <AppText variant="caption" tone="muted">Made for unhurried reading. Text follows your device’s size and appearance settings.</AppText>
       </View>
@@ -81,6 +84,21 @@ export default function HomeScreen() {
       </>}
     </AppModal>
   </KeyboardAvoidingView>
+}
+function ErrorReportingSample() {
+  const config = observabilityConfig()
+  const [sent, setSent] = useState<string>()
+  // Development builds only: a deliberate error, so error reporting can be proved end to end.
+  if (!__DEV__) return null
+  return <Card>
+    <AppText variant="label" tone="accent">Error reporting</AppText>
+    <AppText tone="muted">{config.enabled ? `Reporting to Sentry as "${config.environment}".` : 'No Sentry DSN is configured, so nothing is reported.'}</AppText>
+    <AppButton variant="secondary" disabled={!config.enabled} onPress={() => {
+      const id = Sentry.captureException(new Error('Tarkman controlled test error'))
+      setSent(id)
+    }}>Send a test error</AppButton>
+    {sent && <AppText variant="caption" accessibilityLiveRegion="polite">{`Sent. Event ${sent}.`}</AppText>}
+  </Card>
 }
 function ThemeSample({ scheme }: { scheme: ThemeName }) {
   return <Card><AppText variant="label" tone="accent">{scheme === 'light' ? 'Light / Daytime reading' : 'Dark / Evening reading'}</AppText>

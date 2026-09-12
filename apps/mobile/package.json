@@ -20,6 +20,7 @@
     "check:fonts": "node scripts/check-fonts.mjs"
   },
   "dependencies": {
+    "@sentry/react-native": "~7.11.0",
     "@tarkman/core": "file:../../packages/tarkman-core",
     "expo": "~57.0.22",
     "expo-constants": "~57.0.18",

@@ -293,3 +293,114 @@ Activating them needs three steps outside this repository:
    `web.tarkman.app/sessions/…/parts` link from Messages or Notes and confirm the
    app opens on that service, then confirm the same link opens the website with
    the app uninstalled.
+
+## Release checks and observability / Expo 10
+
+### What CI runs
+
+The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
+the Jest suite, the UI and font guards, `expo config`, the Expo web export, and
+an iOS config smoke check that prebuilds the native project and asserts the
+associated-domains entitlement and bundle identifier survive. The `build` matrix
+runs the web client's typecheck, build and tests on Node 18, 20 and 22.
+
+The smoke check runs last because `expo prebuild` rewrites `package.json`
+scripts; it catches a broken app config or config plugin in CI rather than
+during a release build. It does not compile Swift, so it is not a substitute for
+an EAS build.
+
+### Configuration by environment
+
+Only `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_ACTIONCABLE_URL` are set, per
+environment, in the local shell or an untracked `.env`. They are bundled and
+public by design; both must be HTTPS/WSS outside development, which
+`features/live/config.ts` enforces. Nothing private belongs in the bundle: the
+sign-in token is entered by the reader at runtime and kept in the keychain, and
+any future build-time secret (a Sentry auth token, an App Store Connect API key)
+belongs in EAS secrets, never in `app.json`, `eas.json` or source control.
+
+### Beta exit criteria
+
+A build may go to testers when, on real hardware:
+
+1. A live service reads correctly end to end: joining, following the current
+   part, switching language, and opening explanations and part details.
+2. Returning from background and recovering from lost connectivity restore the
+   correct current part without a reload, and stale state is labelled.
+3. Signed-out readers can do everything above; only service controls require
+   signing in, and an expired sign-in returns to the sign-in screen.
+4. Service controls move the service exactly once per press, refuse to send
+   while offline, and report a refused, missing or stale command.
+5. CI is green on the commit being distributed.
+
+Blocker severity: **blocking** means wrong or duplicated live-service commands,
+a reader stuck on stale text presented as live, a crash in any of the flows
+above, or credentials leaving the device improperly. **Not blocking** means
+layout and formatting problems, missing translations from the API, and anything
+only reachable outside these flows.
+
+### Error reporting
+
+`@sentry/react-native` reports to the `tarkman-mobile` project in the
+`st-john-armenian-church` Sentry organisation. Reporting starts before the first
+screen, so a crash during startup is still captured, and it only starts when
+`EXPO_PUBLIC_SENTRY_DSN` holds a complete HTTPS DSN; a missing or malformed value
+disables it rather than half-enabling it. `EXPO_PUBLIC_SENTRY_ENVIRONMENT` names
+the environment and defaults to `development`. Traces sample only in production,
+so a service is never slowed for telemetry.
+
+What is deliberately not sent: no user identity or IP (`sendDefaultPii: false`,
+and `user` and `request` are stripped from every event), no screenshots or view
+hierarchies, no failed-request capture, no console breadcrumbs (they can contain
+anything a developer logged, including a reader's text), and no `Authorization`
+header in breadcrumb data.
+
+Verified on 2026-09-11: the development-only "Send a test error" control in the
+design gallery produced `TARKMAN-MOBILE-1` in the `development` environment,
+with no user attached. That control never renders outside `__DEV__`.
+
+Source maps are not uploaded yet. The Sentry Expo plugin is configured with the
+organisation and project; uploading also needs `SENTRY_AUTH_TOKEN` as an EAS
+secret, after which release builds get readable stack traces. Until then, native
+frames in release builds stay minified.
+
+### Building locally after the associated-domains entitlement
+
+`npx expo run:ios` now fails with "No code signing certificates are available"
+once the entitlement is generated, because Xcode signs entitlements even for a
+simulator build. Either open `ios/Tarkman.xcworkspace` once and set a development
+team, or build through EAS with the `development-simulator` profile. An existing
+`ios/` directory hides this: `expo run:ios` reuses it without re-applying config
+plugins, so the entitlement only appears after `expo prebuild --clean`.
+
+### Device flows
+
+`maestro/` holds Maestro flows that drive the app on a simulator. Install the CLI
+with `curl -fsSL "https://get.maestro.mobile.dev" | bash` — note that Homebrew's
+plain `maestro` cask is an unrelated product — then run them all:
+
+```sh
+maestro test maestro/
+```
+
+`launch.yaml` loads the app and is reused by the others through `runFlow`. In
+development it points the development client at Metro on port 8081; a standalone
+build ignores that link and simply launches, so the same flows run against both.
+`read-a-service.yaml` opens a service by ID, changes language, opens a part and
+comes back. `part-link.yaml` opens a part straight from a link. Both are signed
+out and read-only, so no flow can change a live service and none needs
+credentials.
+
+The flows read session 4006 on the production API, so they depend on that
+service existing. They are not wired into CI: that needs a macOS runner, which
+bills at ten times the Linux rate on a private repository, and a build to
+install. Run them locally before distributing a build.
+
+### Known gaps
+
+Recorded rather than implied: source maps are not uploaded, so release stack
+traces are minified; device flows run locally and are not enforced by CI; universal links are unverified on a device
+(#101); large text sizes still break reader layout (#91); block-level Markdown in
+explanations renders literally (#99); the services list shows only the first ten
+(#92). Jest covers behaviour, not rendering on a device, so it is not evidence
+for any item in this section.

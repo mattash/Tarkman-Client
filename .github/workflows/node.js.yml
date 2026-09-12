@@ -58,5 +58,16 @@ jobs:
     - run: npx expo-doctor
     - run: npm run lint
     - run: npm run typecheck
+    - run: npm test
+    - run: npm run check:ui
+    - run: npm run check:fonts
     - run: npm run config
     - run: npm run export:web
+    # Generates the native iOS project so a broken app config or config plugin fails here
+    # rather than during a release build. Runs last: prebuild rewrites package.json scripts.
+    - name: iOS config smoke check
+      run: |
+        npx expo prebuild --platform ios --clean --no-install
+        grep -q 'com.apple.developer.associated-domains' ios/Tarkman/Tarkman.entitlements
+        grep -q 'applinks:web.tarkman.app' ios/Tarkman/Tarkman.entitlements
+        grep -q 'app.tarkman' ios/Tarkman/Info.plist

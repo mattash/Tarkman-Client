@@ -32,7 +32,15 @@
           "faceIDPermission": false
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "st-john-armenian-church",
+          "project": "tarkman-mobile",
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "extra": {
       "router": {},

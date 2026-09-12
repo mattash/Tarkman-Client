@@ -34,8 +34,8 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       <ReaderStatus state={state} retry={retry} />
       {state.session && state.session.status !== 'active' && <AppText accessibilityLiveRegion="polite">{state.session.status === 'paused' ? 'Service paused' : `Service status: ${state.session.status.replaceAll('_', ' ')}`}{state.session.message ? ` · ${state.session.message}` : ''}</AppText>}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        <AppButton ref={languageOpener} variant="secondary" onPress={() => { activeOpener.current = languageOpener.current; setSheet('language') }} accessibilityLabel="Choose reading language">{sampleLanguages.find(l => l.value === language)!.label}</AppButton>
-        <AppButton ref={explanationOpener} variant="secondary" disabled={!part} onPress={() => { activeOpener.current = explanationOpener.current; setSheet('explanation') }}>Explain current part</AppButton>
+        <AppButton testID="reader-language" ref={languageOpener} variant="secondary" onPress={() => { activeOpener.current = languageOpener.current; setSheet('language') }} accessibilityLabel="Choose reading language">{sampleLanguages.find(l => l.value === language)!.label}</AppButton>
+        <AppButton testID="reader-explain" ref={explanationOpener} variant="secondary" disabled={!part} onPress={() => { activeOpener.current = explanationOpener.current; setSheet('explanation') }}>Explain current part</AppButton>
       </View>
       {state.session && !part && !state.loading && <AppText variant="caption">The current part is not available. You can browse the readings.</AppText>}
     </ScrollView>
