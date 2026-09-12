@@ -11,7 +11,10 @@
       "web"
     ],
     "ios": {
-      "bundleIdentifier": "app.tarkman"
+      "bundleIdentifier": "app.tarkman",
+      "associatedDomains": [
+        "applinks:web.tarkman.app"
+      ]
     },
     "android": {
       "package": "app.tarkman"

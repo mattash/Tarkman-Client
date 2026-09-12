@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["FHF872BAQR.app.tarkman"],
+        "components": [
+          { "/": "/sessions/*/parts", "comment": "Reading along with one service" },
+          { "/": "/sessions/*/part/*", "comment": "One part in every language, with its explanations" }
+        ]
+      }
+    ]
+  }
+}

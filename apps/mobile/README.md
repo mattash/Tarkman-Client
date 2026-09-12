@@ -261,3 +261,35 @@ Connection recovery is unchanged and still required: the reader labels stale and
 disconnected states, falls back to polling when the live socket is unavailable,
 and refetches authoritative state on reconnect. Live-control commands are never
 queued or replayed after a reconnect; see `features/services/useControls.ts`.
+
+## Universal links / Expo 09
+
+Links to the reading routes on `web.tarkman.app` open this app when it is
+installed, and stay in the browser when it is not. Two things make that work,
+and both must agree:
+
+- `apps/web/public/.well-known/apple-app-site-association` claims
+  `/sessions/*/parts` and `/sessions/*/part/*` for `FHF872BAQR.app.tarkman`, and
+  `vercel.json` serves it as `application/json`. The church display routes are
+  deliberately **not** claimed: a kiosk link must keep opening in the browser.
+- `app.json` declares `applinks:web.tarkman.app`, and the Expo Router paths
+  mirror the website's, so an opened link lands on the matching screen.
+
+`apps/web/app/__tests__/universal-links.test.ts` keeps the two in step: it fails
+if the bundle identifier drifts, if the claimed paths stop matching the app's
+routes, if a display route is ever claimed, or if the JSON content type is
+dropped.
+
+Activating them needs three steps outside this repository:
+
+1. Deploy the web app, then confirm
+   `https://web.tarkman.app/.well-known/apple-app-site-association` returns the
+   JSON over HTTPS with no redirect. Apple fetches it directly, not through a
+   redirect, and caches it.
+2. Add the Associated Domains capability to the app identifier and refresh the
+   provisioning profile (`eas credentials`), then build.
+3. Verify on a **physical iPhone**: simulators do not enforce the domain
+   association, so a passing Simulator check proves nothing here. Tap a
+   `web.tarkman.app/sessions/…/parts` link from Messages or Notes and confirm the
+   app opens on that service, then confirm the same link opens the website with
+   the app uninstalled.
