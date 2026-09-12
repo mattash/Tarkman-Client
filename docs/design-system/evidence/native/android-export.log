@@ -1,0 +1,24 @@
+
+> tarkman-design-specimen@0.0.1 export:android
+> expo export --platform android
+
+Starting Metro Bundler
+
+| (node:60482) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Android Bundled 2096ms index.js (618 modules)
+
+› Assets (5):
+assets/NotoSerifArmenian-Bold.ttf (77KB)
+assets/NotoSerifArmenian-Regular.ttf (77KB)
+assets/SourceSerif4-Regular.ttf (262KB)
+assets/SourceSerif4-Semibold.ttf (272KB)
+node_modules/@react-native-vector-icons/ionicons/fonts/Ionicons.ttf (390KB)
+
+› android bundles (1):
+_expo/static/js/android/index-7d80d3f0e12efebab7c8f6aa47c171bc.hbc (1.5MB)
+
+› Files (1):
+metadata.json (464B)
+
+Exported: dist

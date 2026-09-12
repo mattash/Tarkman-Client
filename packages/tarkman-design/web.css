@@ -1,0 +1,55 @@
+/* Generated from tokens.json. Run npm run check --prefix packages/tarkman-design to verify. */
+
+.tarkman-design,
+html[data-tarkman-reading-theme='light'] {
+  --reading-surface-canvas: #FAF8F7;
+  --reading-surface-default: #FFFFFF;
+  --reading-surface-raised: #FFFFFF;
+  --reading-surface-overlay: #FFFFFF;
+  --reading-text-primary: #272127;
+  --reading-text-secondary: #6B5C65;
+  --reading-action-primary: #6E3852;
+  --reading-action-on-primary: #FFFFFF;
+  --reading-action-hover: #5F3047;
+  --reading-action-pressed: #4C2739;
+  --reading-selection: #F2E4EB;
+  --reading-on-selection: #6E3852;
+  --reading-border-divider: #DFD5DB;
+  --reading-border-control: #87737F;
+  --reading-focus: #6E3852;
+  --reading-disabled: #EEE7EB;
+  --reading-on-disabled: #72636D;
+  --reading-danger: #B42335;
+  --reading-danger-surface: #FCE8EC;
+  --reading-shadow-raised: 0 2px 8px rgba(39, 33, 39, 0.08);
+  --reading-shadow-overlay: 0 12px 32px rgba(39, 33, 39, 0.16);
+  color-scheme: light;
+}
+
+.tarkman-design[data-theme='dark'],
+html[data-tarkman-reading-theme='dark'],
+html[data-tarkman-reading-theme='dark'] .tarkman-design {
+  --reading-surface-canvas: #171417;
+  --reading-surface-default: #231E23;
+  --reading-surface-raised: #302730;
+  --reading-surface-overlay: #392F39;
+  --reading-text-primary: #F7F1F4;
+  --reading-text-secondary: #C4B6BF;
+  --reading-action-primary: #E3A7C3;
+  --reading-action-on-primary: #351C29;
+  --reading-action-hover: #EDB9D1;
+  --reading-action-pressed: #CF8AA9;
+  --reading-selection: #432C39;
+  --reading-on-selection: #F2C8DD;
+  --reading-border-divider: #493C45;
+  --reading-border-control: #99838F;
+  --reading-focus: #E3A7C3;
+  --reading-disabled: #302730;
+  --reading-on-disabled: #B8A8B2;
+  --reading-danger: #FFAFB7;
+  --reading-danger-surface: #401F29;
+  --reading-shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.20);
+  --reading-shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.36);
+  color-scheme: dark;
+}
+

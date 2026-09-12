@@ -1,0 +1,84 @@
+<div id="tarkman-foundation" aria-label="Tarkman proposed reading appearance">
+  <style>
+    #tarkman-foundation { --tk-bg:light-dark(#FAF8F7,#171417); --tk-surface:light-dark(#FFFFFF,#231E23); --tk-text:light-dark(#272127,#F7F1F4); --tk-muted:light-dark(#6B5C65,#C4B6BF); --tk-brand:light-dark(#6E3852,#E3A7C3); --tk-on:light-dark(#FFFFFF,#351C29); --tk-soft:light-dark(#F2E4EB,#432C39); --tk-line:light-dark(#DFD5DB,#493C45); --tk-control:light-dark(#87737F,#99838F); --tk-radius:8px; --tk-reading:22px; font-family:system-ui,sans-serif; color:var(--tk-text); }
+    #tarkman-foundation * { box-sizing:border-box; }
+    #tarkman-foundation .tk-screen { background:var(--tk-bg); border:1px solid var(--tk-line); border-radius:16px; overflow:hidden; max-width:730px; margin:auto; }
+    #tarkman-foundation .tk-chrome { padding:18px 24px; display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; align-items:center; border-bottom:1px solid var(--tk-line); background:var(--tk-surface); }
+    #tarkman-foundation .tk-wordmark { font-size:21px; letter-spacing:0.03em; font-weight:650; color:var(--tk-brand); }
+    #tarkman-foundation .tk-meta { font-size:13px; line-height:20px; color:var(--tk-muted); }
+    #tarkman-foundation .tk-switch { display:flex; gap:4px; flex-wrap:wrap; }
+    #tarkman-foundation button { font:500 14px/20px system-ui,sans-serif; min-height:48px; padding:10px 14px; cursor:pointer; border:1px solid transparent; border-radius:var(--tk-radius); background:transparent; color:var(--tk-muted); }
+    #tarkman-foundation button[aria-pressed="true"] { background:var(--tk-soft); color:var(--tk-brand); }
+    #tarkman-foundation button:focus-visible, #tarkman-foundation select:focus-visible { outline:3px solid var(--tk-brand); outline-offset:3px; }
+    #tarkman-foundation button:hover { text-decoration:underline; text-underline-offset:4px; }
+    #tarkman-foundation .tk-content { padding:30px 32px; }
+    #tarkman-foundation .tk-eyebrow { color:var(--tk-brand); font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
+    #tarkman-foundation h2 { color:var(--tk-text); font:650 30px/1.25 system-ui,sans-serif; margin:12px 0 8px; }
+    #tarkman-foundation .tk-subtitle { margin:0; color:var(--tk-muted); font:400 16px/26px system-ui,sans-serif; }
+    #tarkman-foundation .tk-toolbar { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; align-items:center; margin:24px 0 0; padding:16px 0; border-top:1px solid var(--tk-line); border-bottom:1px solid var(--tk-line); }
+    #tarkman-foundation label { display:flex; align-items:center; flex-wrap:wrap; gap:8px; color:var(--tk-muted); font:400 14px/22px system-ui,sans-serif; }
+    #tarkman-foundation select { min-height:48px; border:1px solid var(--tk-control); border-radius:var(--tk-radius); padding:10px; background:var(--tk-surface); color:var(--tk-text); font:400 16px/24px system-ui,sans-serif; max-width:100%; }
+    #tarkman-foundation .tk-prayer { white-space:pre-line; color:var(--tk-text); font-size:var(--tk-reading); line-height:1.72; margin:28px 0; max-width:60ch; overflow-wrap:break-word; }
+    #tarkman-foundation .tk-action { background:var(--tk-brand); color:var(--tk-on); font-size:15px; padding:12px 20px; }
+    #tarkman-foundation .tk-foot { padding:18px 24px; border-top:1px solid var(--tk-line); background:var(--tk-surface); display:flex; gap:16px; flex-wrap:wrap; justify-content:space-between; align-items:center; }
+    #tarkman-foundation .tk-colors { display:flex; gap:7px; align-items:center; }
+    #tarkman-foundation .tk-swatch { width:22px; height:22px; border-radius:50%; border:1px solid var(--tk-control); }
+    #tarkman-foundation .tk-details { border-top:1px solid var(--tk-line); padding-top:20px; margin-top:20px; color:var(--tk-muted); font-size:16px; line-height:1.65; }
+    #tarkman-foundation .tk-details[hidden] { display:none; }
+    @media(max-width:480px) { #tarkman-foundation .tk-content { padding:24px 20px; } #tarkman-foundation .tk-chrome, #tarkman-foundation .tk-foot { padding:16px 20px; } #tarkman-foundation h2 { font-size:27px; } }
+  </style>
+  <section class="tk-screen">
+    <header class="tk-chrome">
+      <div><div class="tk-wordmark">Tarkman</div><div class="tk-meta">Proposed reading appearance</div></div>
+      <div class="tk-switch" role="group" aria-label="Preview appearance">
+        <button type="button" data-mode="system" aria-pressed="true">System</button>
+        <button type="button" data-mode="light" aria-pressed="false">Light</button>
+        <button type="button" data-mode="dark" aria-pressed="false">Dark</button>
+      </div>
+    </header>
+    <div class="tk-content">
+      <div class="tk-eyebrow">Divine Liturgy · Sample reading</div>
+      <h2>The Lord’s Prayer</h2>
+      <p class="tk-subtitle">One shared foundation for web and mobile.</p>
+      <div class="tk-toolbar">
+        <label>Language <select aria-label="Reading language"><option value="en">English</option><option value="grabar">Գրաբար</option><option value="ru">Русский</option><option value="translit">Translit</option></select></label>
+        <div class="tk-switch" role="group" aria-label="Reading size"><button type="button" data-size="22" aria-pressed="true">Standard</button><button type="button" data-size="28" aria-pressed="false">Larger</button></div>
+      </div>
+      <p class="tk-prayer" lang="en">Our Father, who art in heaven,
+hallowed be thy name.
+
+Thy kingdom come. Thy will be done,
+on earth as it is in heaven.</p>
+      <button type="button" class="tk-action" aria-expanded="false" aria-controls="tk-reading-details">Reading details</button>
+      <div id="tk-reading-details" class="tk-details" hidden>Sample prayer excerpt from Tarkman’s mobile design gallery. This preview uses available system fonts; the apps’ bundled Armenian font needs separate verification.</div>
+    </div>
+    <footer class="tk-foot">
+      <div class="tk-colors" aria-label="Proposed canvas, surface, selection, and primary colors"><span class="tk-swatch" style="background:var(--tk-bg)"></span><span class="tk-swatch" style="background:var(--tk-surface)"></span><span class="tk-swatch" style="background:var(--tk-soft)"></span><span class="tk-swatch" style="background:var(--tk-brand)"></span><span class="tk-meta">Burgundy & warm neutrals</span></div>
+      <span class="tk-meta">Design specimen · No live service</span>
+    </footer>
+  </section>
+  <script>
+    (() => {
+      const root = document.getElementById('tarkman-foundation');
+      const state = { appearance:'system', radius:8 };
+      const excerpts = {
+        en:['en','Our Father, who art in heaven,\nhallowed be thy name.\n\nThy kingdom come. Thy will be done,\non earth as it is in heaven.'],
+        grabar:['hy','Հայր մեր, որ յերկինս ես,\nսուրբ եղիցի անուն քո։\n\nԵկեսցէ արքայութիւն քո,\nեղիցին կամք քո որպէս յերկինս եւ յերկրի։'],
+        ru:['ru','Отче наш, сущий на небесах!\nДа святится имя Твоё.\n\nДа приидет Царствие Твоё;\nда будет воля Твоя и на земле, как на небе.'],
+        translit:['hy-Latn','Hayr mer, vor hergins yes,\nsurp yeghitsi anun ko.\n\nYegestse arkayutyun ko,\nyeghitsin gamk ko vorbes hergins yev hergri.']
+      };
+      const render = () => {
+        root.style.colorScheme = state.appearance === 'system' ? 'inherit' : state.appearance;
+        root.style.setProperty('--tk-radius',state.radius+'px');
+        root.querySelectorAll('[data-mode]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.mode===state.appearance)));
+      };
+      root.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click',() => { state.appearance=button.dataset.mode; render(); }));
+      root.querySelectorAll('[data-size]').forEach(button => button.addEventListener('click',() => { root.style.setProperty('--tk-reading',button.dataset.size+'px'); root.querySelectorAll('[data-size]').forEach(item=>item.setAttribute('aria-pressed',String(item===button))); }));
+      root.querySelector('select').addEventListener('change',event => { const [lang,text]=excerpts[event.target.value]; const prayer=root.querySelector('.tk-prayer'); prayer.lang=lang; prayer.textContent=text; });
+      const action=root.querySelector('.tk-action');
+      action.addEventListener('click',() => { const detail=root.querySelector('.tk-details'); detail.hidden=!detail.hidden; action.setAttribute('aria-expanded',String(!detail.hidden)); });
+      render();
+      if(globalThis.Tweak) { const tweak=new Tweak({container:root,onChange:render}); tweak.addSelect(state,'appearance',{label:'Appearance',options:['system','light','dark']}); tweak.addSlider(state,'radius',{label:'Control corners',min:4,max:16,step:2,unit:'px'}); }
+    })();
+  </script>
+</div>
