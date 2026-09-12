@@ -21,6 +21,7 @@ describe('LanguageContext', () => {
       })
 
       expect(result.current.selectedLang).toBe('en')
+      expect(result.current.readingLanguagesBySession).toEqual({})
     })
   })
 
@@ -90,6 +91,20 @@ describe('LanguageContext', () => {
       rerender()
 
       expect(result.current.selectedLang).toBe('ru')
+    })
+
+    it('preserves a session reading selection without changing other sessions', () => {
+      const { result, rerender } = renderHook(() => useLanguage(), {
+        wrapper: LanguageProvider,
+      })
+
+      act(() => {
+        result.current.setReadingLanguagesForSession('service-1', ['ru', 'en'])
+      })
+      rerender()
+
+      expect(result.current.readingLanguagesBySession).toEqual({ 'service-1': ['ru', 'en'] })
+      expect(result.current.readingLanguagesBySession['service-2']).toBeUndefined()
     })
   })
 })

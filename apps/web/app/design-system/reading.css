@@ -1,0 +1,531 @@
+@import '@tarkman/design/web.css';
+
+@font-face {
+  font-family: 'Source Serif 4 Tarkman';
+  src: url('/fonts/SourceSerif4-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Source Serif 4 Tarkman';
+  src: url('/fonts/SourceSerif4-Semibold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Serif Armenian Tarkman';
+  src: url('/fonts/NotoSerifArmenian-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Serif Armenian Tarkman';
+  src: url('/fonts/NotoSerifArmenian-Bold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+html[data-tarkman-reading-theme='light'] .tarkman-reader-viewport,
+html[data-tarkman-reading-theme='light'] .tarkman-reader-main {
+  background: var(--reading-surface-canvas);
+}
+
+html[data-tarkman-reading-theme='dark'] .tarkman-reader-viewport,
+html[data-tarkman-reading-theme='dark'] .tarkman-reader-main {
+  background: var(--reading-surface-canvas);
+}
+
+.tarkman-reader-main {
+  min-height: calc(100vh - 4rem);
+  padding: 0;
+  color: var(--reading-text-primary);
+  transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tarkman-reader,
+.tarkman-reader-status {
+  min-height: calc(100vh - 4rem);
+  background: var(--reading-surface-canvas);
+  color: var(--reading-text-primary);
+}
+
+.tarkman-reader {
+  padding-bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4rem));
+}
+
+.tarkman-reader-status {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.625;
+}
+
+.reading-page-heading {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 4vw, 3rem) clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.reading-page-heading h1 {
+  max-width: 24ch;
+  margin: 0;
+  color: var(--reading-text-primary);
+  font-family: 'Source Serif 4 Tarkman', Georgia, serif;
+  font-size: clamp(2rem, 1.6rem + 1.8vw, 2.5rem);
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.reading-page-heading p {
+  margin: 0.625rem 0 0;
+  color: var(--reading-text-secondary);
+  font-family: system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+
+.reading-toolbar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem max(1rem, calc((100vw - 78rem) / 2));
+  border-bottom: 1px solid var(--reading-border-divider);
+  background: color-mix(in srgb, var(--reading-surface-default) 96%, transparent);
+}
+
+.reading-toolbar-button,
+.reading-appearance-control select,
+.reading-icon-button,
+.reading-button {
+  min-height: 3rem;
+  border: 1px solid var(--reading-border-control);
+  border-radius: 0.5rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  transition:
+    color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reading-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6875rem 0.875rem;
+  background: var(--reading-surface-default);
+  color: var(--reading-text-primary);
+}
+
+.reading-toolbar-button svg,
+.reading-icon-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke-width: 1.75;
+}
+
+.reading-toolbar-button__meta {
+  color: var(--reading-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.reading-appearance-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--reading-text-secondary);
+  font-family: system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+
+.reading-appearance-control select {
+  min-width: 7rem;
+  appearance: auto;
+  padding: 0.625rem 2rem 0.625rem 0.75rem;
+  background: var(--reading-surface-default);
+  color: var(--reading-text-primary);
+}
+
+.reading-toolbar-button:hover,
+.reading-appearance-control select:hover,
+.reading-icon-button:hover,
+.reading-button--secondary:hover {
+  background: var(--reading-selection);
+  color: var(--reading-on-selection);
+}
+
+.reading-toolbar-button:focus-visible,
+.reading-appearance-control select:focus-visible,
+.reading-icon-button:focus-visible,
+.reading-button:focus-visible,
+.reading-language-option:has(input:focus-visible),
+.reading-part__link:focus-visible {
+  outline: 3px solid var(--reading-focus);
+  outline-offset: 3px;
+}
+
+.reading-parts {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1rem clamp(1rem, 4vw, 3rem) 4rem;
+}
+
+.reading-part {
+  border-bottom: 1px solid var(--reading-border-divider);
+}
+
+.reading-part:last-child {
+  border-bottom: 0;
+}
+
+.reading-part__link {
+  display: block;
+  margin: 0 -1rem;
+  padding: clamp(1.5rem, 4vw, 3rem) 1rem;
+  border-radius: 1rem;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reading-part__link:hover {
+  background: var(--reading-surface-default);
+}
+
+.reading-part__role {
+  margin: 0 0 1rem;
+  color: var(--reading-text-secondary);
+  font-family: system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.4375rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.reading-part__languages {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.reading-part__languages--1 {
+  display: block;
+  max-width: 60ch;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.reading-language {
+  min-width: 0;
+}
+
+.reading-language > h3 {
+  margin: 0 0 0.75rem;
+  color: var(--reading-text-secondary);
+  font-family: system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+
+.reading-language__content {
+  color: var(--reading-text-primary);
+  font-family: 'Source Serif 4 Tarkman', Georgia, serif;
+  font-size: clamp(1.25rem, 1.1rem + 0.45vw, 1.5rem);
+  line-height: 1.58;
+  font-synthesis: none;
+  overflow-wrap: anywhere;
+}
+
+.reading-language--grabar .reading-language__content {
+  font-family: 'Noto Serif Armenian Tarkman', 'Noto Serif Armenian', serif;
+}
+
+.reading-language__content :where(p) {
+  margin: 0 0 0.875em;
+}
+
+.reading-language__content :where(p:last-child) {
+  margin-bottom: 0;
+}
+
+.reading-language__content :where(strong) {
+  font-weight: 600;
+}
+
+.reading-language--grabar .reading-language__content :where(strong) {
+  font-weight: 700;
+}
+
+.reading-language__content :where(em) {
+  font-style: normal;
+  color: var(--reading-text-secondary);
+}
+
+.reading-language__missing {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--reading-danger-surface);
+  color: var(--reading-danger);
+  font-family: system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+
+.tarkman-reader .focus {
+  background: var(--reading-selection);
+}
+
+@keyframes reading-flash {
+  0% { background-color: var(--reading-selection); }
+  100% { background-color: transparent; }
+}
+
+.tarkman-reader .animate-flash {
+  animation-name: reading-flash;
+}
+
+.reading-dialog-overlay {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  background: rgb(23 20 23 / 55%);
+  animation: reading-overlay-in 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reading-dialog-content {
+  position: fixed;
+  z-index: 51;
+  top: 50%;
+  left: 50%;
+  width: min(calc(100vw - 2rem), 34rem);
+  max-height: min(calc(100vh - 2rem), 42rem);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 1.5rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  background: var(--reading-surface-overlay);
+  color: var(--reading-text-primary);
+  box-shadow: var(--reading-shadow-overlay);
+  font-family: system-ui, sans-serif;
+  animation: reading-dialog-in 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reading-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.reading-dialog-heading h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.reading-dialog-heading p {
+  margin: 0.5rem 0 0;
+  color: var(--reading-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+
+.reading-icon-button {
+  display: inline-grid;
+  flex: 0 0 3rem;
+  width: 3rem;
+  padding: 0;
+  place-items: center;
+  background: var(--reading-surface-overlay);
+  color: var(--reading-text-primary);
+}
+
+.reading-language-options {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.5rem 0 0;
+}
+
+.reading-language-option {
+  position: relative;
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--reading-border-divider);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1.625rem;
+}
+
+.reading-language-option:has(input:checked) {
+  border: 2px solid var(--reading-on-selection);
+  padding: calc(0.625rem - 1px) calc(0.75rem - 1px);
+  background: var(--reading-selection);
+  color: var(--reading-on-selection);
+}
+
+.reading-language-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.reading-language-option__check {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  place-items: center;
+  border: 1px solid var(--reading-border-control);
+  border-radius: 0.25rem;
+}
+
+.reading-language-option__check svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+.reading-language-error {
+  margin: 0.75rem 0 0;
+  color: var(--reading-danger);
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+
+.reading-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.reading-button {
+  padding: 0.6875rem 1rem;
+}
+
+.reading-button--primary {
+  border-color: var(--reading-action-primary);
+  background: var(--reading-action-primary);
+  color: var(--reading-action-on-primary);
+}
+
+.reading-button--primary:hover {
+  border-color: var(--reading-action-hover);
+  background: var(--reading-action-hover);
+}
+
+.reading-button--primary:active {
+  border-color: var(--reading-action-pressed);
+  background: var(--reading-action-pressed);
+}
+
+.reading-button--secondary {
+  background: var(--reading-surface-overlay);
+  color: var(--reading-text-primary);
+}
+
+.reading-button:disabled {
+  border-color: var(--reading-disabled);
+  background: var(--reading-disabled);
+  color: var(--reading-on-disabled);
+  cursor: not-allowed;
+}
+
+@keyframes reading-overlay-in {
+  from { opacity: 0; }
+}
+
+@keyframes reading-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 0.75rem));
+  }
+}
+
+@media (min-width: 48rem) {
+  .reading-part__languages--2,
+  .reading-part__languages--3,
+  .reading-part__languages--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 75rem) {
+  .reading-part__languages--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 32rem) {
+  .reading-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reading-toolbar-button,
+  .reading-appearance-control,
+  .reading-appearance-control select {
+    width: 100%;
+  }
+
+  .reading-appearance-control select {
+    flex: 1;
+  }
+
+  .reading-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .reading-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarkman-reader-main,
+  .reading-toolbar-button,
+  .reading-appearance-control select,
+  .reading-icon-button,
+  .reading-button,
+  .reading-part__link {
+    transition-duration: 0ms;
+  }
+
+  .reading-dialog-overlay,
+  .reading-dialog-content,
+  .tarkman-reader .animate-flash {
+    animation-duration: 0ms;
+  }
+}

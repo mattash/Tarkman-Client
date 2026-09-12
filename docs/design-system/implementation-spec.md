@@ -1,6 +1,6 @@
 # Design system implementation specification
 
-Status: working specification for application trials, 2026-09-12. This foundation contains the selected design direction, an isolated native specimen, and a framework-free token package. Application adoption is reviewed separately; specimens and component APIs remain provisional.
+Status: working specification for application trials, 2026-09-12. This foundation contains the selected design direction, an isolated native specimen, and a framework-free token package. Application adoption is reviewed separately; specimens and component APIs remain provisional. The first adoption is the [web reading trial](web-application-trial.md); mobile and app-wide rollouts remain later work.
 
 ## How to use this specification
 

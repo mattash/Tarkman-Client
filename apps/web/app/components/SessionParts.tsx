@@ -4,16 +4,26 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useActionCable } from '../hooks/useActionCable'
 import { usePartScroll } from '../hooks/usePartScroll'
 import { LanguageSelector } from './LanguageSelector'
+import { ReadingAppearanceControl } from './ReadingAppearanceControl'
 import PartCard from './PartCard'
 import { fetchSession, fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
+import type { Language } from '../contexts/LanguageContext'
+import { useReadingAppearance } from '../hooks/useReadingAppearance'
 
 interface SessionPartsProps {
   sessionId: string
 }
 
 export function SessionParts({ sessionId }: SessionPartsProps) {
-  const { selectedLang, setSelectedLang } = useLanguage()
+  const {
+    selectedLang,
+    setSelectedLang,
+    readingLanguagesBySession,
+    setReadingLanguagesForSession,
+  } = useLanguage()
+  const selectedLanguages = readingLanguagesBySession[sessionId] ?? [selectedLang]
+  const { appearance, resolvedAppearance, setAppearance } = useReadingAppearance()
   const { partsRef, handlePartUpdated } = usePartScroll()
   const queryClient = useQueryClient()
   
@@ -49,17 +59,40 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
     }
   }, [subscriptionData, handlePartUpdated])
 
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error loading parts</div>
-  if (!data?.parts?.length) return <div>No parts available for this session.</div>
+  const handleLanguagesApply = React.useCallback((languages: Language[]) => {
+    setReadingLanguagesForSession(sessionId, languages)
+    setSelectedLang(languages[0])
+  }, [sessionId, setReadingLanguagesForSession, setSelectedLang])
+
+  if (isLoading) {
+    return <div className="tarkman-reader-status tarkman-design" data-theme={resolvedAppearance}>Loading service…</div>
+  }
+  if (error) {
+    return (
+      <div className="tarkman-reader-status tarkman-design" data-theme={resolvedAppearance} role="alert">
+        The service could not be loaded. Refresh to try again.
+      </div>
+    )
+  }
+  if (!data?.parts?.length) {
+    return <div className="tarkman-reader-status tarkman-design" data-theme={resolvedAppearance}>No readings are available for this service.</div>
+  }
+
+  const session = data.sessionData.session
+  const serviceTitle = session.liturgy.trim() || 'Service reading'
+  const churchName = session.church_name?.trim()
 
   return (
-    <div className="bg-gray-800 text-white p-4 rounded-lg shadow-md">
-      <LanguageSelector 
-        selectedLang={selectedLang} 
-        onLanguageChange={setSelectedLang} 
-      />
-      <ul className="space-y-4">
+    <section className="tarkman-reader tarkman-design" data-theme={resolvedAppearance} aria-label="Service reading">
+      <header className="reading-page-heading">
+        <h1>{serviceTitle}</h1>
+        {churchName ? <p>{churchName}</p> : null}
+      </header>
+      <div className="reading-toolbar sticky">
+        <LanguageSelector value={selectedLanguages} onApply={handleLanguagesApply} />
+        <ReadingAppearanceControl value={appearance} onChange={setAppearance} />
+      </div>
+      <ul className="reading-parts">
         {(data?.parts ?? []).map(({ part }) => (
           <PartCard
             key={part.liturgy_part_id ?? part.id}
@@ -70,9 +103,10 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
             }}
             part={part}
             sessionId={sessionId}
+            selectedLanguages={selectedLanguages}
           />
         ))}
       </ul>
-    </div>
+    </section>
   )
-} 
+}

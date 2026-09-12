@@ -1,56 +1,70 @@
 import * as React from 'react'
 import { Part } from '../types/part'
-import { useLanguage } from '../contexts/LanguageContext'
+import type { Language } from '../contexts/LanguageContext'
 import { Link } from '@tanstack/react-router'
 import ReactMarkdown from 'react-markdown'
 
 export interface PartCardProps {
   part: Part
   sessionId: string
+  selectedLanguages: Language[]
 }
 
-const styles = {
-  card: 'bg-gray-700 p-4 rounded shadow hover:bg-gray-600 transition cursor-pointer',
-  title: 'font-semibold capitalize mb-2',
-  content: 'text-gray-200 prose prose-invert prose-sm max-w-none'
+const languageDetails: Record<Language, { label: string; lang: string }> = {
+  en: { label: 'English', lang: 'en' },
+  ru: { label: 'Russian', lang: 'ru' },
+  grabar: { label: 'Classical Armenian', lang: 'hy' },
+  translit: { label: 'Transliteration', lang: 'hy-Latn' },
 }
 
-export function PartCard({ part, sessionId }: PartCardProps, ref: React.Ref<HTMLLIElement>) {
-  const { selectedLang } = useLanguage()
+const contentForLanguage = (part: Part, language: Language) => ({
+  grabar: part.grabar,
+  translit: part.translit,
+  en: part.en,
+  ru: part.ru,
+})[language]
 
-  const renderPartContent = () => {
-    const content = {
-      grabar: part.grabar,
-      translit: part.translit,
-      en: part.en,
-      ru: part.ru
-    }[selectedLang] || part.en
+const prepareMarkdown = (content: string) => content
+  .split('\n')
+  .map((line) => line.trimStart())
+  .join('\n\n')
 
-    // Process content to prevent unwanted code blocks
-    // Remove any leading whitespace that might cause Markdown to interpret as code blocks
-    const processedContent = content.split('\n').map(line => line.trimStart()).join('\n\n')
-
-    return (
-      <ReactMarkdown 
-        className={styles.content}
-      >
-        {processedContent}
-      </ReactMarkdown>
-    )
-  }
+export function PartCard(
+  { part, sessionId, selectedLanguages }: PartCardProps,
+  ref: React.Ref<HTMLLIElement>,
+) {
 
   return (
-    <li ref={ref} className={styles.card}>
+    <li ref={ref} className="reading-part">
       <Link
         to="/sessions/$id/part/$partId"
         params={{
           id: sessionId,
           partId: part.id.toString()
         }}
-        className="block"
+        className="reading-part__link"
       >
-        <h2 className={styles.title}>{part.role}</h2>
-        {renderPartContent()}
+        <h2 className="reading-part__role">{part.role}</h2>
+        <div className={`reading-part__languages reading-part__languages--${selectedLanguages.length}`}>
+          {selectedLanguages.map((language) => {
+            const details = languageDetails[language]
+            const content = contentForLanguage(part, language)
+            return (
+              <section key={language} className={`reading-language reading-language--${language}`} lang={details.lang}>
+                <h3 lang="en">{details.label}</h3>
+                {content?.trim() ? (
+                  <ReactMarkdown className="reading-language__content">
+                    {prepareMarkdown(content)}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="reading-language__missing" lang="en">
+                    {details.label} is unavailable for this passage.
+                  </p>
+                )}
+              </section>
+            )
+          })}
+        </div>
       </Link>
     </li>
   )

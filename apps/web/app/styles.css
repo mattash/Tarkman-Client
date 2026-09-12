@@ -1,3 +1,5 @@
+@import './design-system/reading.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -59,7 +61,7 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
-} 
+}
 
 .bg-tarkman-purple {
   background-color: #6e3852;
@@ -139,4 +141,4 @@
   body {
     @apply bg-background text-foreground;
   }
-} 
+}

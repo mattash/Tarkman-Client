@@ -2,7 +2,7 @@
 
 This directory preserves the selected design direction, provisional foundations and isolated review experiments. The design system is committed separately from application redesigns. Specimen approval does not make its layout prescriptive or authorize an app-wide rollout.
 
-The [saved HTML specimens](specimens/README.md) preserve the visual proposal for future review. The [shared token package](../../packages/tarkman-design/README.md) contains candidate semantic values and generated web CSS; this foundation commit does not import them into either app. Application adoption belongs in a separate PR.
+The [saved HTML specimens](specimens/README.md) preserve the visual proposal for future review. The [shared token package](../../packages/tarkman-design/README.md) contains candidate semantic values and generated web CSS; this foundation commit does not import them into either app. Application adoption belongs in a separate PR. The [first web reading trial](web-application-trial.md) now adopts this package on the participant reader; mobile adaptation remains separate.
 
 ## Start here
 
@@ -15,6 +15,7 @@ The [saved HTML specimens](specimens/README.md) preserve the visual proposal for
 7. [Complete reading journey](reading-journey.md): service discovery through language selection, reading, explanation and recovery, assembled from the selected components.
 8. [Working implementation specification](implementation-spec.md): semantic roles, component contracts and platform decisions for a first application trial.
 9. [Native validation](native-validation.md): isolated Expo specimen, actual runtime evidence and remaining checks.
+10. [Web application trial](web-application-trial.md): first app adoption, review evidence and remaining limits.
 
 These files record the user's selected direction and working proposals. On 2026-09-12 the user clarified that specimens should remain provisional until the system has been applied in real screens. Use them as review evidence, not definitive or prescriptive layouts. No screenshot enforcement or mandatory specimen reproduction is authorized. Missing tool-specific `PRODUCT.md` or `DESIGN.md` files does not make Tarkman a new product or erase its direction. No tool-specific root context files have been created as part of skill installation.
 

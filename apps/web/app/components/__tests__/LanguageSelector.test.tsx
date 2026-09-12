@@ -1,85 +1,50 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LanguageSelector } from '../LanguageSelector'
 
 describe('LanguageSelector', () => {
-  it('should render all language buttons', () => {
-    const mockOnChange = vi.fn()
-    render(<LanguageSelector selectedLang="en" onLanguageChange={mockOnChange} />)
-
-    expect(screen.getByText('English')).toBeInTheDocument()
-    expect(screen.getByText('Русский')).toBeInTheDocument()
-    expect(screen.getByText('Գրաբար')).toBeInTheDocument()
-    expect(screen.getByText('Translit')).toBeInTheDocument()
-  })
-
-  it('should highlight the selected language', () => {
-    const mockOnChange = vi.fn()
-    render(<LanguageSelector selectedLang="ru" onLanguageChange={mockOnChange} />)
-
-    const russianButton = screen.getByText('Русский')
-    const englishButton = screen.getByText('English')
-
-    // Selected button should have bg-gray-700
-    expect(russianButton).toHaveClass('bg-gray-700')
-
-    // Non-selected buttons should have bg-gray-600
-    expect(englishButton).toHaveClass('bg-gray-600')
-  })
-
-  it('should call onLanguageChange when a language button is clicked', async () => {
+  it('applies selected languages in stable product order', async () => {
     const user = userEvent.setup()
-    const mockOnChange = vi.fn()
-    render(<LanguageSelector selectedLang="en" onLanguageChange={mockOnChange} />)
+    const onApply = vi.fn()
+    render(<LanguageSelector value={['en']} onApply={onApply} />)
 
-    const russianButton = screen.getByText('Русский')
-    await user.click(russianButton)
+    await user.click(screen.getByRole('button', { name: /languages/i }))
+    await user.click(screen.getByRole('checkbox', { name: 'Русский' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Translit' }))
+    await user.click(screen.getByRole('button', { name: 'Apply languages' }))
 
-    expect(mockOnChange).toHaveBeenCalledWith('ru')
+    expect(onApply).toHaveBeenCalledWith(['en', 'ru', 'translit'])
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('should handle clicking different language buttons', async () => {
+  it('discards draft changes when cancelled', async () => {
     const user = userEvent.setup()
-    const mockOnChange = vi.fn()
-    render(<LanguageSelector selectedLang="en" onLanguageChange={mockOnChange} />)
+    const onApply = vi.fn()
+    render(<LanguageSelector value={['en']} onApply={onApply} />)
 
-    const grabarButton = screen.getByText('Գրաբար')
-    await user.click(grabarButton)
+    await user.click(screen.getByRole('button', { name: /languages/i }))
+    await user.click(screen.getByRole('checkbox', { name: 'English' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Գրաբար' }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(mockOnChange).toHaveBeenCalledWith('grabar')
+    expect(onApply).not.toHaveBeenCalled()
 
-    const translitButton = screen.getByText('Translit')
-    await user.click(translitButton)
-
-    expect(mockOnChange).toHaveBeenCalledWith('translit')
+    await user.click(screen.getByRole('button', { name: /languages/i }))
+    expect(screen.getByRole('checkbox', { name: 'English' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Գրաբար' })).not.toBeChecked()
   })
 
-  it('should render with grabar as selected language', () => {
-    const mockOnChange = vi.fn()
-    render(<LanguageSelector selectedLang="grabar" onLanguageChange={mockOnChange} />)
-
-    const grabarButton = screen.getByText('Գրաբար')
-    expect(grabarButton).toHaveClass('bg-gray-700')
-  })
-
-  it('should render with translit as selected language', () => {
-    const mockOnChange = vi.fn()
-    render(<LanguageSelector selectedLang="translit" onLanguageChange={mockOnChange} />)
-
-    const translitButton = screen.getByText('Translit')
-    expect(translitButton).toHaveClass('bg-gray-700')
-  })
-
-  it('should not call onLanguageChange when clicking already selected language', async () => {
+  it('requires at least one language', async () => {
     const user = userEvent.setup()
-    const mockOnChange = vi.fn()
-    render(<LanguageSelector selectedLang="en" onLanguageChange={mockOnChange} />)
+    const onApply = vi.fn()
+    render(<LanguageSelector value={['en']} onApply={onApply} />)
 
-    const englishButton = screen.getByText('English')
-    await user.click(englishButton)
+    await user.click(screen.getByRole('button', { name: /languages/i }))
+    await user.click(screen.getByRole('checkbox', { name: 'English' }))
 
-    // It will still call the handler, which is fine
-    expect(mockOnChange).toHaveBeenCalledWith('en')
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose at least one language.')
+    expect(screen.getByRole('button', { name: 'Apply languages' })).toBeDisabled()
+    expect(onApply).not.toHaveBeenCalled()
   })
 })
