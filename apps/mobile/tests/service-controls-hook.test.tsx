@@ -32,6 +32,16 @@ it('refuses to send commands while offline', async () => {
   expect(result.current.error).toMatch(/offline/i)
 })
 
+it('pulls current state when the server refuses a stale move', async () => {
+  setOnline(true)
+  const refresh = jest.fn()
+  const stale = Object.assign(new Error('The service already moved on'), { name: 'StalePartError' })
+  const { result } = await renderHook(() => useControls(refresh))
+  await act(async () => { await result.current.run('next', async () => { throw stale }) })
+  expect(refresh).toHaveBeenCalledTimes(1)
+  expect(result.current.error).toMatch(/already moved on/)
+})
+
 it('surfaces a failed command without retrying it', async () => {
   setOnline(true)
   const refresh = jest.fn()

@@ -54,8 +54,8 @@ export default function ServiceControlScreen() {
       <AppText variant="heading">{part ? `${part.position} / ${part.role}` : 'No current part'}</AppText>
       {part && <AppText tone="muted" numberOfLines={3}>{part.text.en ?? ''}</AppText>}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        <AppButton loading={controls.running === 'previous'} disabled={busy} onPress={() => controls.run('previous', () => commands.previous(sessionId))}>Previous part</AppButton>
-        <AppButton loading={controls.running === 'next'} disabled={busy} onPress={() => controls.run('next', () => commands.next(sessionId))}>Next part</AppButton>
+        <AppButton loading={controls.running === 'previous'} disabled={busy} onPress={() => controls.run('previous', () => commands.previous(sessionId, part?.id ?? null))}>Previous part</AppButton>
+        <AppButton loading={controls.running === 'next'} disabled={busy} onPress={() => controls.run('next', () => commands.next(sessionId, part?.id ?? null))}>Next part</AppButton>
       </View>
     </Card>
 
@@ -85,6 +85,6 @@ export default function ServiceControlScreen() {
       <AppText variant="label" tone={item.key === part?.key ? 'accent' : 'muted'}>{`${item.position} / ${item.role}${item.key === part?.key ? ' · Current part' : ''}`}</AppText>
       <AppText numberOfLines={2}>{item.text.en ?? ''}</AppText>
       <AppButton variant="secondary" accessibilityLabel={`Go to part ${item.position}`} loading={controls.running === item.key}
-        disabled={busy || item.key === part?.key} onPress={() => controls.run(item.key, () => commands.goToPart(sessionId, item.id))}>Go here</AppButton>
+        disabled={busy || item.key === part?.key} onPress={() => controls.run(item.key, () => commands.goToPart(sessionId, item.id, part?.id ?? null))}>Go here</AppButton>
     </Card>} />
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isUnauthorized } from '../auth/AuthProvider'
 import { lifecycle } from '../live/lifecycle'
+import { isStalePart } from './controls'
 
 export interface ControlsState { running: string | null; error: string | null; online: boolean }
 
@@ -35,6 +36,8 @@ export function useControls(refresh: () => void) {
       if (mounted.current) setState(current => ({ ...current, running: null }))
     } catch (failure) {
       // An ended sign-in is handled by the signed-in layout, which returns to the sign-in screen.
+      // A refused stale move means this screen is behind, so pull the current state before the next command.
+      if (isStalePart(failure)) refresh()
       const message = isUnauthorized(failure) ? null : failure instanceof Error ? failure.message : 'Could not update the service. Please try again.'
       if (mounted.current) setState(current => ({ ...current, running: null, error: message }))
     } finally {

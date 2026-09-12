@@ -39,7 +39,8 @@ it('moves the service forward and back, and jumps to a chosen part', async () =>
   await fireEvent.press(screen.getByRole('button', { name: 'Previous part' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Go to part 2' }))
   expect(sent()).toEqual(['POST /s/9/next.json', 'POST /s/9/prev.json', 'POST /s/9/set_part.json'])
-  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[2][1]?.body))).toMatchObject({ part_id: 2 })
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ expected_part_id: 1 })
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[2][1]?.body))).toMatchObject({ part_id: 2, expected_part_id: 1 })
   expect(screen.getByRole('button', { name: 'Go to part 1' })).toBeDisabled()
 })
 
