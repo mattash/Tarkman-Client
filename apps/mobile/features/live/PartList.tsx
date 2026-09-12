@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { FlatList, Platform, View } from 'react-native'
+import { FlatList, Platform, Pressable, View } from 'react-native'
 import type { Language } from '@tarkman/core'
 import { AppText } from '../../components/AppText'
 import { LiturgyText } from '../../components/LiturgyText'
@@ -7,7 +7,7 @@ import { Card } from '../../components/Surface'
 import { useTheme } from '../../design/ThemeProvider'
 import { spacing } from '../../design/tokens'
 import type { LivePart } from './contracts'
-export function PartList({ parts, currentKey, following, language, manual }: { parts: LivePart[]; currentKey?: string; following: boolean; language: Language; manual(): void }) {
+export function PartList({ parts, currentKey, following, language, manual, open }: { parts: LivePart[]; currentKey?: string; following: boolean; language: Language; manual(): void; open(part: LivePart): void }) {
   const { colors } = useTheme()
   const list = useRef<FlatList<LivePart>>(null)
   const retry = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -37,9 +37,12 @@ export function PartList({ parts, currentKey, following, language, manual }: { p
         retry.current = setTimeout(target, 150)
       }}
       ListEmptyComponent={<AppText>No reading parts are available for this service.</AppText>}
-      renderItem={({ item }) => <Card testID={`reading-${item.key}`} style={{ borderWidth: 2, borderColor: item.key === currentKey ? colors.primary : 'transparent' }}>
-        <AppText variant="label" tone={item.key === currentKey ? 'accent' : 'muted'}>{`${item.position} / ${item.role}${item.key === currentKey ? ' · Current part' : ''}`}</AppText>
-        <LiturgyText language={language} text={item.text[language]} />
-      </Card>} />
+      renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityHint="Opens this part in every language, with its explanations."
+        accessibilityLabel={`${item.position} ${item.role}${item.key === currentKey ? ', current part' : ''}`} onPress={() => open(item)}>
+        <Card testID={`reading-${item.key}`} style={{ borderWidth: 2, borderColor: item.key === currentKey ? colors.primary : 'transparent' }}>
+          <AppText variant="label" tone={item.key === currentKey ? 'accent' : 'muted'}>{`${item.position} / ${item.role}${item.key === currentKey ? ' · Current part' : ''}`}</AppText>
+          <LiturgyText language={language} text={item.text[language]} />
+        </Card>
+      </Pressable>} />
   </View>
 }

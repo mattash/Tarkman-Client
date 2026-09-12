@@ -19,7 +19,7 @@ export function record(value: unknown): Record<string, unknown> {
 export function positiveId(value: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null
 }
-function requiredId(value: unknown): number {
+export function requiredId(value: unknown): number {
   const id = positiveId(value)
   if (id === null) throw new Error('Missing response identifier.')
   return id
