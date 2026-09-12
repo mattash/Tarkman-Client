@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
+import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
 import { Discovery } from '../features/live/Discovery'
 import { SessionReader } from '../features/live/SessionReader'
 import { useReader } from '../features/live/useReader'
@@ -10,7 +11,8 @@ import LiveScreen from '../app/index'
 jest.mock('../features/live/useReader')
 jest.mock('../features/auth/AuthProvider', () => ({ useAuth: () => ({ state: { status: 'signedOut' } }) }))
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
-const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider>{children}</ThemeProvider>
+const preferencesStore = { get: async () => null, set: async () => {}, remove: async () => {} }
+const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={preferencesStore}>{children}</PreferencesProvider></ThemeProvider>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const retry = jest.fn(), dispatch = jest.fn()
 beforeEach(() => { jest.clearAllMocks(); jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false }, retry, dispatch }) })
