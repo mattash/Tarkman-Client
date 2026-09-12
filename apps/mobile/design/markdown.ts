@@ -8,7 +8,9 @@ export function safeHttpsUrl(value: string): boolean {
   } catch { return false }
 }
 // Bounded inline grammar: no nesting, block syntax, HTML interpretation or URL autolinking.
-export function parseMarkdown(text: string): TextRun[] {
+export function parseMarkdown(source: string): TextRun[] {
+  // Authored text arrives with Windows line endings; normalise so paragraphs break once, not twice.
+  const text = source.replace(/\r\n?/g, '\n')
   const runs: TextRun[] = []
   const plain = (value: string) => {
     const previous = runs[runs.length - 1]
@@ -29,7 +31,9 @@ export function parseMarkdown(text: string): TextRun[] {
       else plain(link[0])
       i += link[0].length; continue
     }
-    const formatted = /^(\*\*([^*\n\\]+)\*\*|\*([^*\n\\]+)\*|`([^`\n]+)`)/.exec(rest)
+    // Emphasis only pairs when it opens before non-space and closes after non-space, so an unpaired
+    // asterisk stays literal instead of italicising the text up to the next one.
+    const formatted = /^(\*\*([^*\n\\\s](?:[^*\n\\]*[^*\n\\\s])?)\*\*|\*([^*\n\\\s](?:[^*\n\\]*[^*\n\\\s])?)\*|`([^`\n]+)`)/.exec(rest)
     if (formatted && text[i - 1] !== '*' && text[i + formatted[0].length] !== '*') {
       runs.push({ kind: formatted[2] ? 'bold' : formatted[3] ? 'italic' : 'code', text: formatted[2] ?? formatted[3] ?? formatted[4] })
       i += formatted[0].length; continue

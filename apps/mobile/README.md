@@ -73,7 +73,10 @@ renderer, sanitization dependency, remote images, or heavyweight Markdown librar
 Paragraphs and line breaks remain intact. Supported inline forms are `**bold**`,
 `*emphasis*`, single-backtick code (a subtle background, preserving the reading
 font), and `[label](https://example.org/path)`. Formatting does not nest or cross
-newlines. Link labels are plain text; URLs cannot contain parentheses. Only
+newlines, and emphasis pairs only when it opens before a non-space character and
+closes after one, so an unpaired asterisk stays literal instead of emphasising
+text up to the next one. Windows line endings are normalised, so an authored
+paragraph break renders as one break. Link labels are plain text; URLs cannot contain parentheses. Only
 absolute HTTPS URLs with a hostname, no credentials, whitespace, control
 characters or backslashes are actionable. Native uses Linking.openURL with a
 visible failure message; web uses keyboard-accessible anchors with noopener and

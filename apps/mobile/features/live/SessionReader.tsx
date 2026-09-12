@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
+import { router } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppModal } from '../../components/AppModal'
 import { AppText } from '../../components/AppText'
@@ -38,7 +39,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       </View>
       {state.session && !part && !state.loading && <AppText variant="caption">The current part is not available. You can browse the readings.</AppText>}
     </ScrollView>
-    {!state.loading && <PartList parts={state.parts} currentKey={part?.key} following={state.following} language={language} manual={() => dispatch({ type: 'manual' })} />}
+    {!state.loading && <PartList parts={state.parts} currentKey={part?.key} following={state.following} language={language} manual={() => dispatch({ type: 'manual' })} open={item => router.push(`/sessions/${id}/part/${item.id}`)} />}
     <AppModal visible={sheet !== null} title={sheet === 'language' ? 'Reading language' : 'Current part explanation'} openerRef={activeOpener} onDismiss={() => setSheet(null)}>
       {sheet === 'language' ? <>{sampleLanguages.map(item => <AppButton key={item.value} variant={item.value === language ? 'primary' : 'secondary'} accessibilityState={{ selected: item.value === language }} onPress={() => { setLanguage(item.value); setSheet(null) }}>{item.label}</AppButton>)}
       <AppButton variant="quiet" onPress={() => { clearPreferences(); setSheet(null) }}>Forget my reading choices</AppButton></> : <>

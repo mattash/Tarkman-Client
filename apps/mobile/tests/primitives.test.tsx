@@ -7,6 +7,7 @@ import { TextField } from '../components/TextField'
 import { AppModal } from '../components/AppModal'
 import { ReadingFontContext } from '../design/readingFont'
 import { colors } from '../design/tokens'
+import { parseMarkdown } from '../design/markdown'
 import { prayer, marksSample } from '../design/samples'
 
 const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider scheme="light"><ReadingFontContext.Provider value={true}>{children}</ReadingFontContext.Provider></ThemeProvider>
@@ -32,6 +33,17 @@ describe('native primitives', () => {
     await fireEvent(button, 'pressOut')
     expect(button).toHaveStyle({ opacity: 1 })
     expect(onPressOut).toHaveBeenCalledTimes(1)
+  })
+  it('leaves an unpaired asterisk alone and emphasises the pair that follows', async () => {
+    // Real explanation text: the first asterisk never closes, so only "Nersessi erg" is emphasised.
+    const text = 'each stanza of *Nayatz seerov" form an acrostic, which spells *Nersessi erg* which means "Song".'
+    expect(parseMarkdown(text).filter(run => run.kind === 'italic')).toEqual([{ kind: 'italic', text: 'Nersessi erg' }])
+    expect(parseMarkdown(text).map(run => run.text).join('')).toBe(text.replace('*Nersessi erg*', 'Nersessi erg'))
+    expect(parseMarkdown('The hymn *Shnorya Mez* is attributed to St. Nerses.').filter(run => run.kind === 'italic')).toEqual([{ kind: 'italic', text: 'Shnorya Mez' }])
+    expect(parseMarkdown('2 * 3 * 4 stars stay literal').every(run => run.kind === 'plain')).toBe(true)
+  })
+  it('breaks paragraphs once when the source uses Windows line endings', async () => {
+    expect(parseMarkdown('First.\r\n\r\nSecond.').map(run => run.text).join('')).toBe('First.\n\nSecond.')
   })
   it('preserves paragraphs, marks, selection, language and text scaling', async () => {
     const text = prayer.grabar + '\n\n' + marksSample
