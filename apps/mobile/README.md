@@ -293,3 +293,58 @@ Activating them needs three steps outside this repository:
    `web.tarkman.app/sessions/…/parts` link from Messages or Notes and confirm the
    app opens on that service, then confirm the same link opens the website with
    the app uninstalled.
+
+## Release checks and observability / Expo 10
+
+### What CI runs
+
+The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
+the Jest suite, the UI and font guards, `expo config`, the Expo web export, and
+an iOS config smoke check that prebuilds the native project and asserts the
+associated-domains entitlement and bundle identifier survive. The `build` matrix
+runs the web client's typecheck, build and tests on Node 18, 20 and 22.
+
+The smoke check runs last because `expo prebuild` rewrites `package.json`
+scripts; it catches a broken app config or config plugin in CI rather than
+during a release build. It does not compile Swift, so it is not a substitute for
+an EAS build.
+
+### Configuration by environment
+
+Only `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_ACTIONCABLE_URL` are set, per
+environment, in the local shell or an untracked `.env`. They are bundled and
+public by design; both must be HTTPS/WSS outside development, which
+`features/live/config.ts` enforces. Nothing private belongs in the bundle: the
+sign-in token is entered by the reader at runtime and kept in the keychain, and
+any future build-time secret (a Sentry auth token, an App Store Connect API key)
+belongs in EAS secrets, never in `app.json`, `eas.json` or source control.
+
+### Beta exit criteria
+
+A build may go to testers when, on real hardware:
+
+1. A live service reads correctly end to end: joining, following the current
+   part, switching language, and opening explanations and part details.
+2. Returning from background and recovering from lost connectivity restore the
+   correct current part without a reload, and stale state is labelled.
+3. Signed-out readers can do everything above; only service controls require
+   signing in, and an expired sign-in returns to the sign-in screen.
+4. Service controls move the service exactly once per press, refuse to send
+   while offline, and report a refused, missing or stale command.
+5. CI is green on the commit being distributed.
+
+Blocker severity: **blocking** means wrong or duplicated live-service commands,
+a reader stuck on stale text presented as live, a crash in any of the flows
+above, or credentials leaving the device improperly. **Not blocking** means
+layout and formatting problems, missing translations from the API, and anything
+only reachable outside these flows.
+
+### Known gaps
+
+Recorded rather than implied: native crash and error reporting is not yet
+configured (no Sentry in the app); there are no automated device flows, so the
+hardware checks above are manual; universal links are unverified on a device
+(#101); large text sizes still break reader layout (#91); block-level Markdown in
+explanations renders literally (#99); the services list shows only the first ten
+(#92). Jest covers behaviour, not rendering on a device, so it is not evidence
+for any item in this section.
