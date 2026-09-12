@@ -1,4 +1,5 @@
 import '../global.css'
+import * as Sentry from '@sentry/react-native'
 import { Stack } from 'expo-router'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
@@ -7,8 +8,12 @@ import { ReadingFontProvider } from '../design/ReadingFontProvider'
 import { AuthProvider } from '../features/auth/AuthProvider'
 import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
 import { readerConfig } from '../features/live/config'
+import { startObservability } from '../features/observability/sentry'
 
-export default function RootLayout() {
+// Starts before the first screen so a crash during startup is still reported.
+startObservability()
+
+function RootLayout() {
   return <SafeAreaProvider><ThemeProvider><RootContent /></ThemeProvider></SafeAreaProvider>
 }
 function RootContent() {
@@ -20,3 +25,5 @@ function RootContent() {
     </AuthProvider></PreferencesProvider></ReadingFontProvider>
   </SafeAreaView>
 }
+
+export default Sentry.wrap(RootLayout)

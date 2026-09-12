@@ -339,11 +339,45 @@ above, or credentials leaving the device improperly. **Not blocking** means
 layout and formatting problems, missing translations from the API, and anything
 only reachable outside these flows.
 
+### Error reporting
+
+`@sentry/react-native` reports to the `tarkman-mobile` project in the
+`st-john-armenian-church` Sentry organisation. Reporting starts before the first
+screen, so a crash during startup is still captured, and it only starts when
+`EXPO_PUBLIC_SENTRY_DSN` holds a complete HTTPS DSN; a missing or malformed value
+disables it rather than half-enabling it. `EXPO_PUBLIC_SENTRY_ENVIRONMENT` names
+the environment and defaults to `development`. Traces sample only in production,
+so a service is never slowed for telemetry.
+
+What is deliberately not sent: no user identity or IP (`sendDefaultPii: false`,
+and `user` and `request` are stripped from every event), no screenshots or view
+hierarchies, no failed-request capture, no console breadcrumbs (they can contain
+anything a developer logged, including a reader's text), and no `Authorization`
+header in breadcrumb data.
+
+Verified on 2026-09-11: the development-only "Send a test error" control in the
+design gallery produced `TARKMAN-MOBILE-1` in the `development` environment,
+with no user attached. That control never renders outside `__DEV__`.
+
+Source maps are not uploaded yet. The Sentry Expo plugin is configured with the
+organisation and project; uploading also needs `SENTRY_AUTH_TOKEN` as an EAS
+secret, after which release builds get readable stack traces. Until then, native
+frames in release builds stay minified.
+
+### Building locally after the associated-domains entitlement
+
+`npx expo run:ios` now fails with "No code signing certificates are available"
+once the entitlement is generated, because Xcode signs entitlements even for a
+simulator build. Either open `ios/Tarkman.xcworkspace` once and set a development
+team, or build through EAS with the `development-simulator` profile. An existing
+`ios/` directory hides this: `expo run:ios` reuses it without re-applying config
+plugins, so the entitlement only appears after `expo prebuild --clean`.
+
 ### Known gaps
 
-Recorded rather than implied: native crash and error reporting is not yet
-configured (no Sentry in the app); there are no automated device flows, so the
-hardware checks above are manual; universal links are unverified on a device
+Recorded rather than implied: source maps are not uploaded, so release stack
+traces are minified; there are no automated device flows, so the hardware checks
+above are manual; universal links are unverified on a device
 (#101); large text sizes still break reader layout (#91); block-level Markdown in
 explanations renders literally (#99); the services list shows only the first ten
 (#92). Jest covers behaviour, not rendering on a device, so it is not evidence
