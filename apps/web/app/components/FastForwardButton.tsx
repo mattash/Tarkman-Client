@@ -1,7 +1,15 @@
 import * as React from 'react'
-import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
-import { sessionsKeys, sessionMutationKeys, setPart } from '@/queries/sessions'
+import {
+  sessionsKeys,
+  sessionMutationKeys,
+  setPart,
+  fetchSession,
+  classifyControlFailure,
+  controlFailureMessage,
+} from '@/queries/sessions'
+import { SessionWrapper } from '@/types/session'
 
 interface FastForwardButtonProps {
   sessionId: string
@@ -15,17 +23,30 @@ export function FastForwardButton({ sessionId, partId }: FastForwardButtonProps)
   const pendingCommandCount = useIsMutating({ mutationKey, exact: true })
   const [commandError, setCommandError] = React.useState<string | null>(null)
 
+  // Shares the cache entry the controls already keep warm, so this adds no extra request.
+  const { data: sessionData } = useQuery<SessionWrapper>({
+    queryKey: sessionsKeys.session(sessionId),
+    queryFn: () => fetchSession(sessionId),
+    staleTime: 1000,
+  })
+
+  const refreshFromServer = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) }),
+    queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionId) }),
+  ])
+
   const setPartMutation = useMutation({
     mutationKey,
-    mutationFn: () => setPart(sessionId, partId, new Date().toISOString()),
+    mutationFn: () => setPart(sessionId, partId, new Date().toISOString(), sessionData?.session?.current_part_id ?? null),
     onMutate: () => setCommandError(null),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) }),
-        queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionId) }),
-      ])
+      await refreshFromServer()
     },
-    onError: () => setCommandError('The service position could not be updated. Please try again.'),
+    onError: async (error) => {
+      const failure = classifyControlFailure(error)
+      setCommandError(controlFailureMessage(failure, 'position'))
+      if (failure.kind === 'stale') await refreshFromServer()
+    },
   })
 
   const isCommandPending = pendingCommandCount > 0

@@ -6,6 +6,8 @@ import {
   prevPart,
   nextPart,
   fetchSession,
+  classifyControlFailure,
+  controlFailureMessage,
 } from '@/queries/sessions'
 import { SessionWrapper } from '@/types/session'
 import { SessionStatusControl } from './SessionStatusControl'
@@ -27,22 +29,31 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
     staleTime: 1000
   })
 
+  const currentPartId = sessionData?.session?.current_part_id ?? null
+
+  const refreshFromServer = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
+    queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionIdString) }),
+  ])
+
   const partMutation = useMutation({
     mutationKey,
     mutationFn: (direction: 'previous' | 'next') => {
       const transitionedAt = new Date().toISOString()
       return direction === 'previous'
-        ? prevPart(sessionIdString, transitionedAt)
-        : nextPart(sessionIdString, transitionedAt)
+        ? prevPart(sessionIdString, transitionedAt, currentPartId)
+        : nextPart(sessionIdString, transitionedAt, currentPartId)
     },
     onMutate: () => setCommandError(null),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
-        queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionIdString) }),
-      ])
+      await refreshFromServer()
     },
-    onError: () => setCommandError('The service position could not be updated. Please try again.'),
+    onError: async (error) => {
+      const failure = classifyControlFailure(error)
+      setCommandError(controlFailureMessage(failure, 'position'))
+      // A refused stale move means this screen is behind; show where the service actually is.
+      if (failure.kind === 'stale') await refreshFromServer()
+    },
   })
 
   const runPartCommand = (direction: 'previous' | 'next') => {

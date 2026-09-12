@@ -6,7 +6,8 @@ import { SessionControls } from '../SessionControls'
 import { SessionWrapper } from '@/types/session'
 
 // Mock the session queries
-vi.mock('@/queries/sessions', () => ({
+vi.mock('@/queries/sessions', async () => ({
+  ...(await vi.importActual<typeof import('@/queries/sessions')>('@/queries/sessions')),
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
     sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
@@ -92,7 +93,7 @@ describe('SessionControls', () => {
     await user.click(prevButton)
 
     await waitFor(() => {
-      expect(prevPart).toHaveBeenCalledWith('123', expect.any(String))
+      expect(prevPart).toHaveBeenCalledWith('123', expect.any(String), 1)
     })
   })
 
@@ -111,7 +112,7 @@ describe('SessionControls', () => {
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(nextPart).toHaveBeenCalledWith('123', expect.any(String))
+      expect(nextPart).toHaveBeenCalledWith('123', expect.any(String), 1)
     })
   })
 
@@ -232,7 +233,39 @@ describe('SessionControls', () => {
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(nextPart).toHaveBeenCalledWith('456', expect.any(String))
+      expect(nextPart).toHaveBeenCalledWith('456', expect.any(String), expect.anything())
     })
+  })
+
+  it('refreshes instead of moving the service when the server refuses a stale command', async () => {
+    const refused = Object.assign(new Error('request failed'), {
+      isAxiosError: true,
+      response: { status: 409, data: { error: 'The current part changed', current_part_id: 130 } },
+    })
+    vi.mocked(fetchSession).mockResolvedValue(mockSession)
+    vi.mocked(nextPart).mockRejectedValue(refused)
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+    await waitFor(() => expect(fetchSession).toHaveBeenCalledTimes(1))
+    await userEvent.click(screen.getByLabelText('Next part'))
+
+    expect(await screen.findByText(/moved on somewhere else/)).toBeInTheDocument()
+    // The refused move must not be retried, and the screen must pull the true position.
+    expect(nextPart).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(fetchSession).toHaveBeenCalledTimes(2))
+  })
+
+  it('says plainly when this account may not control the service', async () => {
+    const refused = Object.assign(new Error('request failed'), {
+      isAxiosError: true,
+      response: { status: 403, data: { error: 'You do not have permission' } },
+    })
+    vi.mocked(fetchSession).mockResolvedValue(mockSession)
+    vi.mocked(nextPart).mockRejectedValue(refused)
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+    await userEvent.click(screen.getByLabelText('Next part'))
+
+    expect(await screen.findByText(/do not have permission/)).toBeInTheDocument()
   })
 })

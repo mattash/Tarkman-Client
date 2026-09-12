@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionStatusControl } from '../SessionStatusControl'
 
-vi.mock('@/queries/sessions', () => ({
+vi.mock('@/queries/sessions', async () => ({
+  ...(await vi.importActual<typeof import('@/queries/sessions')>('@/queries/sessions')),
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
     sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
