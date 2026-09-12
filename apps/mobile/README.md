@@ -366,12 +366,42 @@ frames in release builds stay minified.
 
 ### Building locally after the associated-domains entitlement
 
-`npx expo run:ios` now fails with "No code signing certificates are available"
-once the entitlement is generated, because Xcode signs entitlements even for a
-simulator build. Either open `ios/Tarkman.xcworkspace` once and set a development
-team, or build through EAS with the `development-simulator` profile. An existing
-`ios/` directory hides this: `expo run:ios` reuses it without re-applying config
-plugins, so the entitlement only appears after `expo prebuild --clean`.
+`npx expo run:ios` fails with "No code signing certificates are available" once
+the entitlement is generated, because Xcode signs entitlements even for a
+simulator build. A simulator build does not need signing at all, so build it
+directly (CocoaPods requires a UTF-8 locale, hence `LANG`):
+
+```sh
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo prebuild --platform ios --clean
+cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install && cd ..
+xcodebuild -workspace ios/Tarkman.xcworkspace -scheme Tarkman -configuration Debug \
+  -sdk iphonesimulator -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build
+xcrun simctl install booted ios/build/Build/Products/Debug-iphonesimulator/Tarkman.app
+```
+
+For a device build, set a development team in Xcode or build through EAS with the
+`development-simulator` or `development` profile. An existing `ios/` directory
+hides entitlement changes: `expo run:ios` reuses it without re-applying config
+plugins, so a new entitlement only appears after `expo prebuild --clean`.
+
+### Scanning a service code
+
+`app/scan.tsx` reads a QR code with `expo-camera` and opens the service or part
+it names. The codes printed for the congregation point at
+`https://www.tarkman.app/s/:id/explain`; reading links on `web.tarkman.app` work
+too.
+
+A scanned code is untrusted input, because a sticker in a public place can be
+replaced by anyone. `features/scan/links.ts` accepts only HTTPS URLs on a Tarkman
+host whose path is one of those reading routes, and rejects everything else,
+including look-alike hosts such as `tarkman.app.evil.example`, credentials in the
+URL, and the church display routes. A refused code is shown as plain text and
+never opened, followed, or loaded in a web view.
+
+The camera is requested when someone opens the scanner, not at launch, and the
+service-ID entry stays available when permission is refused. The camera is only
+used to read a code: nothing is recorded or sent anywhere. A simulator has no
+camera, so scanning can only be confirmed on a physical iPhone.
 
 ### Device flows
 

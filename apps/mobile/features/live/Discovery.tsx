@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Keyboard, ScrollView, View } from 'react-native'
+import { router } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
 import { Card } from '../../components/Surface'
@@ -29,6 +30,7 @@ export function Discovery({ endpoints, open }: { endpoints: Endpoints; open(id: 
       <Card><AppText variant="heading">Have a session ID?</AppText>
         <TextField testID="session-id" label="Session ID" value={input} onChangeText={value => { setInput(value); setError(undefined) }} keyboardType="number-pad" inputMode="numeric" returnKeyType="go" onSubmitEditing={submit} error={error} />
         <AppButton onPress={submit}>Open session</AppButton>
+        <AppButton variant="secondary" onPress={() => router.push('/scan')}>Scan a service code</AppButton>
       </Card>
     </View>
   </ScrollView>
