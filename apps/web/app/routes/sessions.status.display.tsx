@@ -40,7 +40,7 @@ function RouteComponent() {
       </div>
       <div className="col-span-2">
         <p className="
-          text-[45vw] 
+          text-[15vw] 
           font-bold 
           text-center 
           w-full 

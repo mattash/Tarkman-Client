@@ -14,7 +14,7 @@ export function MinimalStatusView({ statusView, page, posture }: MinimalStatusVi
         <div className="absolute top-8 left-8">
           <BookOpen className="w-24 h-24 stroke-gray-300" />
         </div>
-        <p className="text-[45vw] font-bold text-center w-full flex items-center justify-center"
+        <p className="text-[15vw] font-bold text-center w-full flex items-center justify-center"
            style={{ lineHeight: '1' }}>
           {page && page > 0 ? page : '—'}
         </p>
