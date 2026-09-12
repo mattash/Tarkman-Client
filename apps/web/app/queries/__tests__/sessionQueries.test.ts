@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchSessions, fetchSession, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus } from '../sessions'
+import { fetchSessions, fetchSession, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus, classifyControlFailure, controlFailureMessage } from '../sessions'
 import { api } from '@/api'
 
 // Mock api
@@ -297,3 +297,50 @@ describe('sessionQueries', () => {
     })
   })
 }) 
+
+describe('stale-part guard', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('sends the part this client believes the service is on', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { status: 'ok', current_part_id: 124 } })
+    await nextPart('1', '2026-09-12T00:00:00.000Z', 123)
+    await prevPart('1', '2026-09-12T00:00:00.000Z', 123)
+    await setPart('1', 52, '2026-09-12T00:00:00.000Z', 123)
+    for (const call of vi.mocked(api.post).mock.calls) {
+      expect(call[1]).toMatchObject({ expected_part_id: 123 })
+    }
+    expect(vi.mocked(api.post).mock.calls[2][1]).toMatchObject({ part_id: 52 })
+  })
+
+  it('omits the guard when this client does not know the current part', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { status: 'ok', current_part_id: 124 } })
+    await nextPart('1', '2026-09-12T00:00:00.000Z', null)
+    await prevPart('1')
+    for (const call of vi.mocked(api.post).mock.calls) {
+      expect(call[1]).not.toHaveProperty('expected_part_id')
+    }
+  })
+})
+
+describe('control failures', () => {
+  const axiosError = (status: number, data: unknown) =>
+    Object.assign(new Error('request failed'), { isAxiosError: true, response: { status, data } })
+
+  it('tells a stale move apart from a refusal, an ended sign-in and anything else', () => {
+    expect(classifyControlFailure(axiosError(409, { error: 'The current part changed', current_part_id: 77 })))
+      .toEqual({ kind: 'stale', currentPartId: 77 })
+    expect(classifyControlFailure(axiosError(409, {}))).toEqual({ kind: 'stale', currentPartId: null })
+    expect(classifyControlFailure(axiosError(403, {}))).toEqual({ kind: 'forbidden' })
+    expect(classifyControlFailure(axiosError(401, {}))).toEqual({ kind: 'unauthenticated' })
+    expect(classifyControlFailure(axiosError(500, {}))).toEqual({ kind: 'other' })
+    expect(classifyControlFailure(new Error('network down'))).toEqual({ kind: 'other' })
+  })
+
+  it('explains each failure in words an operator can act on', () => {
+    expect(controlFailureMessage({ kind: 'stale', currentPartId: 77 }, 'position')).toMatch(/moved on somewhere else/)
+    expect(controlFailureMessage({ kind: 'forbidden' }, 'position')).toMatch(/do not have permission/)
+    expect(controlFailureMessage({ kind: 'unauthenticated' }, 'position')).toMatch(/sign-in has ended/)
+    expect(controlFailureMessage({ kind: 'other' }, 'position')).toMatch(/position could not be updated/)
+    expect(controlFailureMessage({ kind: 'other' }, 'status')).toMatch(/status could not be updated/)
+  })
+})

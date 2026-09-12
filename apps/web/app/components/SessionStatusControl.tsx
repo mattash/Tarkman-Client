@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateSessionStatus, sessionsKeys, sessionMutationKeys } from '@/queries/sessions'
+import { updateSessionStatus, sessionsKeys, sessionMutationKeys, classifyControlFailure, controlFailureMessage } from '@/queries/sessions'
 import { SessionStatus, STATUS_LABELS } from '@/types/status'
 import { CustomMessageModal } from './CustomMessageModal'
 
@@ -33,7 +33,7 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
       setIsOpen(false)
       setCustomMessageModalOpen(false)
     },
-    onError: () => setCommandError('The service status could not be updated. Please try again.'),
+    onError: (error) => setCommandError(controlFailureMessage(classifyControlFailure(error), 'status')),
   })
 
   React.useEffect(() => {

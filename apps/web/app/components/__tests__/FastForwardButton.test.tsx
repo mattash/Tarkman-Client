@@ -8,7 +8,9 @@ import { createMockUser } from '../../__tests__/factories'
 
 // Mock dependencies
 const mockSetPart = vi.fn()
-vi.mock('@/queries/sessions', () => ({
+vi.mock('@/queries/sessions', async () => ({
+  ...(await vi.importActual<typeof import('@/queries/sessions')>('@/queries/sessions')),
+  fetchSession: vi.fn().mockResolvedValue({ session: { id: 123, current_part_id: 123 } }),
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
     sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
@@ -76,7 +78,7 @@ describe('FastForwardButton', () => {
     await user.click(button)
 
     await waitFor(() => {
-      expect(mockSetPart).toHaveBeenCalledWith('123', 456, expect.any(String))
+      expect(mockSetPart).toHaveBeenCalledWith('123', 456, expect.any(String), expect.anything())
     })
   })
 
