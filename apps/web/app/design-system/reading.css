@@ -110,6 +110,7 @@ html[data-tarkman-reading-theme='dark'] .tarkman-reader-main {
 }
 
 .reading-toolbar-button,
+.reading-active-language-control select,
 .reading-appearance-control select,
 .reading-icon-button,
 .reading-button {
@@ -148,6 +149,32 @@ html[data-tarkman-reading-theme='dark'] .tarkman-reader-main {
   font-weight: 400;
 }
 
+.reading-language-controls {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.reading-active-language-control {
+  display: none;
+  min-width: 0;
+  color: var(--reading-text-secondary);
+  font-family: system-ui, sans-serif;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+}
+
+.reading-active-language-control select {
+  width: 100%;
+  min-width: 0;
+  appearance: auto;
+  padding: 0.625rem 2rem 0.625rem 0.75rem;
+  background: var(--reading-surface-default);
+  color: var(--reading-text-primary);
+}
+
 .reading-appearance-control {
   display: flex;
   align-items: center;
@@ -167,6 +194,7 @@ html[data-tarkman-reading-theme='dark'] .tarkman-reader-main {
 }
 
 .reading-toolbar-button:hover,
+.reading-active-language-control select:hover,
 .reading-appearance-control select:hover,
 .reading-icon-button:hover,
 .reading-button--secondary:hover {
@@ -175,6 +203,7 @@ html[data-tarkman-reading-theme='dark'] .tarkman-reader-main {
 }
 
 .reading-toolbar-button:focus-visible,
+.reading-active-language-control select:focus-visible,
 .reading-appearance-control select:focus-visible,
 .reading-icon-button:focus-visible,
 .reading-button:focus-visible,
@@ -482,19 +511,42 @@ html[data-tarkman-reading-theme='dark'] .tarkman-reader-main {
   }
 }
 
+@media (max-width: 47.999rem) {
+  .reading-active-language-control {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .reading-language:not(.reading-language--active) {
+    display: none;
+  }
+}
+
 @media (min-width: 75rem) {
   .reading-part__languages--3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 32rem) {
+@media (max-width: 40rem) {
   .reading-toolbar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .reading-toolbar-button,
+  .reading-language-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .reading-language-controls .reading-toolbar-button {
+    align-self: end;
+  }
+
+  .reading-toolbar-button__meta {
+    display: none;
+  }
+
   .reading-appearance-control,
   .reading-appearance-control select {
     width: 100%;
@@ -516,6 +568,7 @@ html[data-tarkman-reading-theme='dark'] .tarkman-reader-main {
 @media (prefers-reduced-motion: reduce) {
   .tarkman-reader-main,
   .reading-toolbar-button,
+  .reading-active-language-control select,
   .reading-appearance-control select,
   .reading-icon-button,
   .reading-button,

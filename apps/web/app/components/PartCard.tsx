@@ -8,6 +8,7 @@ export interface PartCardProps {
   part: Part
   sessionId: string
   selectedLanguages: Language[]
+  activeLanguage: Language
 }
 
 const languageDetails: Record<Language, { label: string; lang: string }> = {
@@ -30,7 +31,7 @@ const prepareMarkdown = (content: string) => content
   .join('\n\n')
 
 export function PartCard(
-  { part, sessionId, selectedLanguages }: PartCardProps,
+  { part, sessionId, selectedLanguages, activeLanguage }: PartCardProps,
   ref: React.Ref<HTMLLIElement>,
 ) {
 
@@ -50,7 +51,11 @@ export function PartCard(
             const details = languageDetails[language]
             const content = contentForLanguage(part, language)
             return (
-              <section key={language} className={`reading-language reading-language--${language}`} lang={details.lang}>
+              <section
+                key={language}
+                className={`reading-language reading-language--${language}${language === activeLanguage ? ' reading-language--active' : ''}`}
+                lang={details.lang}
+              >
                 <h3 lang="en">{details.label}</h3>
                 {content?.trim() ? (
                   <ReactMarkdown className="reading-language__content">

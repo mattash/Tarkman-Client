@@ -26,9 +26,13 @@ vi.mock('../../hooks/useActionCable', () => ({
 vi.mock('../PartCard', async () => {
   const ReactModule = await import('react')
   return {
-    default: ReactModule.forwardRef<HTMLLIElement, { part: { en: string }, selectedLanguages: string[] }>(
-      ({ part, selectedLanguages }, ref) => (
-        <li ref={ref}>{part.en}<span data-testid="rendered-languages">{selectedLanguages.join(',')}</span></li>
+    default: ReactModule.forwardRef<HTMLLIElement, { part: { en: string }, selectedLanguages: string[], activeLanguage: string }>(
+      ({ part, selectedLanguages, activeLanguage }, ref) => (
+        <li ref={ref}>
+          {part.en}
+          <span data-testid="rendered-languages">{selectedLanguages.join(',')}</span>
+          <span data-testid="active-language">{activeLanguage}</span>
+        </li>
       ),
     ),
   }
@@ -120,19 +124,49 @@ describe('SessionParts', () => {
     expect(handlePartUpdated).toHaveBeenCalledTimes(1)
 
     await user.click(screen.getByRole('button', { name: /languages/i }))
-    await user.click(screen.getByRole('checkbox', { name: 'English' }))
     await user.click(screen.getByRole('checkbox', { name: 'Русский' }))
     await user.click(screen.getByRole('button', { name: 'Apply languages' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Reading language' }), 'ru')
     await user.selectOptions(screen.getByRole('combobox', { name: 'Reading appearance' }), 'dark')
 
     expect(screen.getByLabelText('Legacy language')).toHaveTextContent('ru')
-    expect(screen.getByTestId('rendered-languages')).toHaveTextContent('ru')
+    expect(screen.getByTestId('rendered-languages')).toHaveTextContent('en,ru')
+    expect(screen.getByTestId('active-language')).toHaveTextContent('ru')
     expect(handlePartUpdated).toHaveBeenCalledTimes(1)
+    expect(fetchSessionParts).toHaveBeenCalledTimes(1)
 
     await user.click(screen.getByRole('button', { name: 'Toggle reader' }))
     await user.click(screen.getByRole('button', { name: 'Toggle reader' }))
     await screen.findByText('Peace to all')
-    expect(screen.getByTestId('rendered-languages')).toHaveTextContent('ru')
+    expect(screen.getByTestId('rendered-languages')).toHaveTextContent('en,ru')
+    expect(screen.getByTestId('active-language')).toHaveTextContent('ru')
+  })
+
+  it('falls back to the first remaining language when the active language is removed', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetchSession).mockResolvedValue(sessionData.sessionData as never)
+    vi.mocked(fetchSessionParts).mockResolvedValue({
+      ...sessionData,
+      parts: [createMockPart({ id: 1, en: 'Peace to all' })],
+    } as never)
+
+    render(<SessionParts sessionId="1" />, { wrapper: makeWrapper() })
+    await screen.findByText('Peace to all')
+
+    await user.click(screen.getByRole('button', { name: /languages/i }))
+    await user.click(screen.getByRole('checkbox', { name: 'Русский' }))
+    await user.click(screen.getByRole('button', { name: 'Apply languages' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Reading language' }), 'ru')
+
+    await user.click(screen.getByRole('button', { name: /languages/i }))
+    await user.click(screen.getByRole('checkbox', { name: 'Русский' }))
+    await user.click(screen.getByRole('button', { name: 'Apply languages' }))
+
+    expect(screen.getByTestId('rendered-languages')).toHaveTextContent('en')
+    expect(screen.getByTestId('active-language')).toHaveTextContent('en')
+    expect(screen.getByRole('combobox', { name: 'Reading language' })).toHaveValue('en')
+    expect(handlePartUpdated).toHaveBeenCalledTimes(0)
+    expect(fetchSessionParts).toHaveBeenCalledTimes(1)
   })
 
   it('renders a liturgy that repeats the same part without duplicate React keys', async () => {

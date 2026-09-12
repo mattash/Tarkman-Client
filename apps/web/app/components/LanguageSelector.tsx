@@ -6,10 +6,12 @@ import { LANGUAGES } from '../constants/languages'
 
 interface LanguageSelectorProps {
   value: Language[]
+  activeValue: Language
+  onActiveChange: (language: Language) => void
   onApply: (languages: Language[]) => void
 }
 
-export function LanguageSelector({ value, onApply }: LanguageSelectorProps) {
+export function LanguageSelector({ value, activeValue, onActiveChange, onApply }: LanguageSelectorProps) {
   const [open, setOpen] = React.useState(false)
   const [draft, setDraft] = React.useState<Language[]>(value)
 
@@ -34,74 +36,89 @@ export function LanguageSelector({ value, onApply }: LanguageSelectorProps) {
   const selectedLabel = value.length === 1 ? '1 language' : `${value.length} languages`
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
-      <Dialog.Trigger asChild>
-        <button type="button" className="reading-toolbar-button">
-          <Languages aria-hidden="true" />
-          <span>Languages</span>
-          <span className="reading-toolbar-button__meta">{selectedLabel}</span>
-        </button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="reading-dialog-overlay" />
-        <Dialog.Content className="reading-dialog-content tarkman-design">
-          <div className="reading-dialog-heading">
-            <div>
-              <Dialog.Title>Choose reading languages</Dialog.Title>
-              <Dialog.Description>
-                Show one language or compare several in the service.
-              </Dialog.Description>
+    <div className="reading-language-controls">
+      <label className="reading-active-language-control">
+        <span>Reading language</span>
+        <select
+          aria-label="Reading language"
+          value={activeValue}
+          onChange={(event) => onActiveChange(event.target.value as Language)}
+        >
+          {LANGUAGES.filter(({ value: language }) => value.includes(language)).map(({ value: language, label }) => (
+            <option key={language} value={language}>{label}</option>
+          ))}
+        </select>
+      </label>
+
+      <Dialog.Root open={open} onOpenChange={handleOpenChange}>
+        <Dialog.Trigger asChild>
+          <button type="button" className="reading-toolbar-button">
+            <Languages aria-hidden="true" />
+            <span>Languages</span>
+            <span className="reading-toolbar-button__meta">{selectedLabel}</span>
+          </button>
+        </Dialog.Trigger>
+        <Dialog.Portal>
+          <Dialog.Overlay className="reading-dialog-overlay" />
+          <Dialog.Content className="reading-dialog-content tarkman-design">
+            <div className="reading-dialog-heading">
+              <div>
+                <Dialog.Title>Choose reading languages</Dialog.Title>
+                <Dialog.Description>
+                  Read one at a time on smaller screens, or compare them when there is room.
+                </Dialog.Description>
+              </div>
+              <Dialog.Close asChild>
+                <button type="button" className="reading-icon-button" aria-label="Close language settings">
+                  <X aria-hidden="true" />
+                </button>
+              </Dialog.Close>
             </div>
-            <Dialog.Close asChild>
-              <button type="button" className="reading-icon-button" aria-label="Close language settings">
-                <X aria-hidden="true" />
+
+            <fieldset className="reading-language-options">
+              <legend className="sr-only">Languages to show</legend>
+              {LANGUAGES.map(({ value: language, label }) => {
+                const checked = draft.includes(language)
+                return (
+                  <label key={language} className="reading-language-option">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleLanguage(language)}
+                    />
+                    <span className="reading-language-option__check" aria-hidden="true">
+                      {checked ? <Check /> : null}
+                    </span>
+                    <span lang={language === 'grabar' ? 'hy' : language === 'translit' ? 'hy-Latn' : language}>
+                      {label}
+                    </span>
+                  </label>
+                )
+              })}
+            </fieldset>
+
+            {draft.length === 0 ? (
+              <p className="reading-language-error" role="alert">Choose at least one language.</p>
+            ) : null}
+
+            <div className="reading-dialog-actions">
+              <Dialog.Close asChild>
+                <button type="button" className="reading-button reading-button--secondary" onClick={resetDraft}>
+                  Cancel
+                </button>
+              </Dialog.Close>
+              <button
+                type="button"
+                className="reading-button reading-button--primary"
+                disabled={draft.length === 0}
+                onClick={handleApply}
+              >
+                Apply languages
               </button>
-            </Dialog.Close>
-          </div>
-
-          <fieldset className="reading-language-options">
-            <legend className="sr-only">Languages to show</legend>
-            {LANGUAGES.map(({ value: language, label }) => {
-              const checked = draft.includes(language)
-              return (
-                <label key={language} className="reading-language-option">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleLanguage(language)}
-                  />
-                  <span className="reading-language-option__check" aria-hidden="true">
-                    {checked ? <Check /> : null}
-                  </span>
-                  <span lang={language === 'grabar' ? 'hy' : language === 'translit' ? 'hy-Latn' : language}>
-                    {label}
-                  </span>
-                </label>
-              )
-            })}
-          </fieldset>
-
-          {draft.length === 0 ? (
-            <p className="reading-language-error" role="alert">Choose at least one language.</p>
-          ) : null}
-
-          <div className="reading-dialog-actions">
-            <Dialog.Close asChild>
-              <button type="button" className="reading-button reading-button--secondary" onClick={resetDraft}>
-                Cancel
-              </button>
-            </Dialog.Close>
-            <button
-              type="button"
-              className="reading-button reading-button--primary"
-              disabled={draft.length === 0}
-              onClick={handleApply}
-            >
-              Apply languages
-            </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </div>
   )
 }

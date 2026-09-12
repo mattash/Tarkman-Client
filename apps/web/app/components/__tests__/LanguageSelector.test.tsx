@@ -4,10 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { LanguageSelector } from '../LanguageSelector'
 
 describe('LanguageSelector', () => {
+  const defaultActiveProps = {
+    activeValue: 'en' as const,
+    onActiveChange: vi.fn(),
+  }
+
   it('applies selected languages in stable product order', async () => {
     const user = userEvent.setup()
     const onApply = vi.fn()
-    render(<LanguageSelector value={['en']} onApply={onApply} />)
+    render(<LanguageSelector value={['en']} onApply={onApply} {...defaultActiveProps} />)
 
     await user.click(screen.getByRole('button', { name: /languages/i }))
     await user.click(screen.getByRole('checkbox', { name: 'Русский' }))
@@ -21,7 +26,7 @@ describe('LanguageSelector', () => {
   it('discards draft changes when cancelled', async () => {
     const user = userEvent.setup()
     const onApply = vi.fn()
-    render(<LanguageSelector value={['en']} onApply={onApply} />)
+    render(<LanguageSelector value={['en']} onApply={onApply} {...defaultActiveProps} />)
 
     await user.click(screen.getByRole('button', { name: /languages/i }))
     await user.click(screen.getByRole('checkbox', { name: 'English' }))
@@ -38,7 +43,7 @@ describe('LanguageSelector', () => {
   it('requires at least one language', async () => {
     const user = userEvent.setup()
     const onApply = vi.fn()
-    render(<LanguageSelector value={['en']} onApply={onApply} />)
+    render(<LanguageSelector value={['en']} onApply={onApply} {...defaultActiveProps} />)
 
     await user.click(screen.getByRole('button', { name: /languages/i }))
     await user.click(screen.getByRole('checkbox', { name: 'English' }))
@@ -46,5 +51,30 @@ describe('LanguageSelector', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Choose at least one language.')
     expect(screen.getByRole('button', { name: 'Apply languages' })).toBeDisabled()
     expect(onApply).not.toHaveBeenCalled()
+  })
+
+  it('switches the active reading language among the selected languages', async () => {
+    const user = userEvent.setup()
+    const onActiveChange = vi.fn()
+
+    render(
+      <LanguageSelector
+        value={['en', 'ru', 'grabar']}
+        activeValue="en"
+        onActiveChange={onActiveChange}
+        onApply={vi.fn()}
+      />,
+    )
+
+    const select = screen.getByRole('combobox', { name: 'Reading language' })
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'English',
+      'Русский',
+      'Գրաբար',
+    ])
+
+    await user.selectOptions(select, 'grabar')
+
+    expect(onActiveChange).toHaveBeenCalledWith('grabar')
   })
 })

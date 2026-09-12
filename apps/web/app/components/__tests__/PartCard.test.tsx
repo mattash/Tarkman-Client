@@ -18,7 +18,12 @@ describe('PartCard', () => {
 
     render(
       <ul>
-        <PartCard part={part} sessionId="trial" selectedLanguages={['en', 'ru', 'grabar']} />
+        <PartCard
+          part={part}
+          sessionId="trial"
+          selectedLanguages={['en', 'ru', 'grabar']}
+          activeLanguage="grabar"
+        />
       </ul>,
     )
 
@@ -27,5 +32,7 @@ describe('PartCard', () => {
     expect(screen.getByText('Russian')).toHaveAttribute('lang', 'en')
     expect(screen.getByText('Russian is unavailable for this passage.')).toHaveAttribute('lang', 'en')
     expect(screen.getAllByText('Peace to all.')).toHaveLength(1)
+    expect(screen.getByText('Խաղաղութիւն ամենեցուն։').closest('section')).toHaveClass('reading-language--active')
+    expect(screen.getByText('Peace to all.').closest('section')).not.toHaveClass('reading-language--active')
   })
 })

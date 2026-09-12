@@ -21,8 +21,14 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
     setSelectedLang,
     readingLanguagesBySession,
     setReadingLanguagesForSession,
+    activeReadingLanguageBySession,
+    setActiveReadingLanguageForSession,
   } = useLanguage()
   const selectedLanguages = readingLanguagesBySession[sessionId] ?? [selectedLang]
+  const storedActiveLanguage = activeReadingLanguageBySession[sessionId]
+  const activeLanguage = storedActiveLanguage && selectedLanguages.includes(storedActiveLanguage)
+    ? storedActiveLanguage
+    : selectedLanguages[0]
   const { appearance, resolvedAppearance, setAppearance } = useReadingAppearance()
   const { partsRef, handlePartUpdated } = usePartScroll()
   const queryClient = useQueryClient()
@@ -60,9 +66,16 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
   }, [subscriptionData, handlePartUpdated])
 
   const handleLanguagesApply = React.useCallback((languages: Language[]) => {
+    const nextActiveLanguage = languages.includes(activeLanguage) ? activeLanguage : languages[0]
     setReadingLanguagesForSession(sessionId, languages)
-    setSelectedLang(languages[0])
-  }, [sessionId, setReadingLanguagesForSession, setSelectedLang])
+    setActiveReadingLanguageForSession(sessionId, nextActiveLanguage)
+    setSelectedLang(nextActiveLanguage)
+  }, [activeLanguage, sessionId, setActiveReadingLanguageForSession, setReadingLanguagesForSession, setSelectedLang])
+
+  const handleActiveLanguageChange = React.useCallback((language: Language) => {
+    setActiveReadingLanguageForSession(sessionId, language)
+    setSelectedLang(language)
+  }, [sessionId, setActiveReadingLanguageForSession, setSelectedLang])
 
   if (isLoading) {
     return <div className="tarkman-reader-status tarkman-design" data-theme={resolvedAppearance}>Loading service…</div>
@@ -89,7 +102,12 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
         {churchName ? <p>{churchName}</p> : null}
       </header>
       <div className="reading-toolbar sticky">
-        <LanguageSelector value={selectedLanguages} onApply={handleLanguagesApply} />
+        <LanguageSelector
+          value={selectedLanguages}
+          activeValue={activeLanguage}
+          onActiveChange={handleActiveLanguageChange}
+          onApply={handleLanguagesApply}
+        />
         <ReadingAppearanceControl value={appearance} onChange={setAppearance} />
       </div>
       <ul className="reading-parts">
@@ -104,6 +122,7 @@ export function SessionParts({ sessionId }: SessionPartsProps) {
             part={part}
             sessionId={sessionId}
             selectedLanguages={selectedLanguages}
+            activeLanguage={activeLanguage}
           />
         ))}
       </ul>

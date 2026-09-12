@@ -22,6 +22,7 @@ describe('LanguageContext', () => {
 
       expect(result.current.selectedLang).toBe('en')
       expect(result.current.readingLanguagesBySession).toEqual({})
+      expect(result.current.activeReadingLanguageBySession).toEqual({})
     })
   })
 
@@ -105,6 +106,22 @@ describe('LanguageContext', () => {
 
       expect(result.current.readingLanguagesBySession).toEqual({ 'service-1': ['ru', 'en'] })
       expect(result.current.readingLanguagesBySession['service-2']).toBeUndefined()
+    })
+
+    it('preserves the active reading language independently for each session', () => {
+      const { result } = renderHook(() => useLanguage(), {
+        wrapper: LanguageProvider,
+      })
+
+      act(() => {
+        result.current.setActiveReadingLanguageForSession('service-1', 'grabar')
+        result.current.setActiveReadingLanguageForSession('service-2', 'ru')
+      })
+
+      expect(result.current.activeReadingLanguageBySession).toEqual({
+        'service-1': 'grabar',
+        'service-2': 'ru',
+      })
     })
   })
 })
