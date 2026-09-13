@@ -51,8 +51,8 @@ export function SessionPartsParallel({
                 key={`${lang1}-${part.id}`}
                 className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
               >
-                <div className="font-bold uppercase text-slate-300 text-3xl">{part.role}</div>
-                <ReactMarkdown className="text-6xl prose prose-invert max-w-none">
+                <div className="font-bold uppercase text-slate-300 text-4xl">{part.role}</div>
+                <ReactMarkdown className="text-7xl prose prose-invert max-w-none">
                   {text1.split('\n').map(line => line.trimStart()).join('\n\n')}
                 </ReactMarkdown>
               </div>
@@ -62,8 +62,8 @@ export function SessionPartsParallel({
                 key={`${lang2}-${part.id}`}
                 className={`p-5 bg-gray-700 rounded-lg ${!isCurrentPart ? 'text-slate-500' : ''}`}
               >
-                <div className="font-bold uppercase text-slate-300 text-3xl">{part.role}</div>
-                <ReactMarkdown className="text-6xl prose prose-invert max-w-none">
+                <div className="font-bold uppercase text-slate-300 text-4xl">{part.role}</div>
+                <ReactMarkdown className="text-7xl prose prose-invert max-w-none">
                   {text2.split('\n').map(line => line.trimStart()).join('\n\n')}
                 </ReactMarkdown>
               </div>
