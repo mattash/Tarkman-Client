@@ -33,6 +33,13 @@
       "expo-router",
       "expo-font",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Tarkman uses the camera only to scan a service's QR code.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-secure-store",
         {
           "faceIDPermission": false
@@ -45,6 +52,14 @@
           "organization": "st-john-armenian-church",
           "project": "tarkman-mobile",
           "url": "https://sentry.io/"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationWhenInUsePermission": "Tarkman checks your location on this device to offer the service at the church you are in. Your location is never sent anywhere.",
+          "isAndroidBackgroundLocationEnabled": false
         }
       ]
     ],

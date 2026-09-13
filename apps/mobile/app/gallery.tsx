@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { router } from 'expo-router'
+import { Redirect, router } from 'expo-router'
 import * as Sentry from '@sentry/react-native'
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { AppText } from '../components/AppText'
@@ -14,7 +14,13 @@ import fontLicense from '../assets/fonts/license.json'
 import { observabilityConfig } from '../features/observability/sentry'
 import { spacing, type ThemeName } from '../design/tokens'
 
-export default function HomeScreen() {
+/** A developer specimen of the design system. It is not part of the shipped app. */
+export default function GalleryScreen() {
+  if (!__DEV__) return <Redirect href="/" />
+  return <HomeScreen />
+}
+
+function HomeScreen() {
   const { colors } = useTheme()
   const readingOpener = useRef<View>(null)
   const licenseOpener = useRef<View>(null)

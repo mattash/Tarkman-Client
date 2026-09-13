@@ -1,6 +1,6 @@
 # Tarkman mobile
 
-Managed Expo SDK 57, React Native and Expo Router. The home route is a public, read-only live-session reader. The `/gallery` route
+Managed Expo SDK 57, React Native and Expo Router. The home route is a public, read-only live-session reader behind three tabs (Today, Services, Settings). The development-only `/gallery` route
 retains the Expo 05 static liturgy examples (`en`, `ru`, `grabar`, `translit`) and
 works without network configuration. The production website remains the
 separate Vite app in `../web`.
@@ -38,16 +38,21 @@ for theme colors, typography and platform-specific elevation.
 
 ## Design primitives
 
-`design/tokens.ts` owns light/dark roles, Tarkman purple (`#6B46C1`), point-based
-spacing, radii, typography/line heights, elevation and the 44pt minimum target.
-These preserve the web's role vocabulary and brand accent without importing or
-changing web styles. `ThemeProvider` follows system appearance; its optional
-`scheme` isolates the gallery's light/dark samples. The root owns safe areas,
+`design/tokens.ts` adapts the light/dark burgundy roles exported by
+`@tarkman/design/tokens` and owns native point-based spacing, radii,
+typography/line heights and the 48pt minimum target. `ThemeProvider` follows
+system appearance unless the reader persisted an explicit light/dark choice;
+its optional `scheme` still isolates test/gallery samples. The root owns safe areas,
 status bar appearance and local font loading, without gating the router. A loading/failure notice explains system-font fallback and possible Armenian mark differences; failure offers an accessible retry without remounting the gallery.
 
-- `AppText`: title, heading, body, liturgy, label and caption; semantic tone,
-  language tag and Armenian static-font selection only after both fonts load. English, Russian
-  and transliteration use the platform system font. Dynamic Type stays enabled.
+- `AppText`: title, heading, body, liturgy, label and caption; semantic tone
+  and language metadata. English, Russian and transliteration reading use Source
+  Serif 4; Armenian uses Noto Serif Armenian. UI body and controls stay platform
+  sans. Dynamic Type stays enabled. On iOS, a live content-size change remounts
+  only the native Text leaf to clear stale frames observed after dismissing a
+  page sheet; parent controls, inputs, lists and application state stay mounted.
+  This may reset active text selection or screen-reader focus on that leaf and
+  therefore still needs physical-device accessibility review.
 - `AppButton`: native Pressable; primary, secondary, quiet and destructive.
   Loading/disabled suppress actions and expose disabled/busy accessibility states.
   Labels wrap; controls have minimum dimensions, never fixed text heights.
@@ -55,13 +60,14 @@ status bar appearance and local font loading, without gating the router. A loadi
 - `TextField`: visible and accessible label, focus/error styling, native keyboard
   props, text scaling and disabled state. Return/submit behavior belongs to the
   caller; the gallery dismisses single-line keyboards on Done.
-- `AppModal`: native Modal presented as a bottom sheet, scrollable content,
+- `AppModal`: native Modal presented as an iOS page sheet or Android bottom surface, with scrollable content,
   safe-area padding and keyboard avoidance. Close button, backdrop, Android back,
   web Escape and accessibility escape dismiss it. Initial focus targets Close; callers
   pass an `openerRef` for return focus. Web uses host focus and RN Web’s focus trap;
   native requests accessibility focus through AccessibilityInfo. Android restores
-  on the frame after removal; iOS/web use onDismiss. No exit animation or
-  drag-to-dismiss gesture. Native assistive-tech behavior still needs device QA.
+  on the frame after removal and therefore keeps its no-exit-animation contract;
+  iOS/web use onDismiss. iOS supports native swipe dismissal. Native
+  assistive-tech behavior still needs device QA.
 - `LiturgyText`: selectable by default; preserves the complete plain string,
   paragraphs and line breaks. Null/empty/whitespace shows an explicit English
   fallback with an English language tag. Uses the limited native Markdown strategy below.
@@ -83,6 +89,11 @@ visible failure message; web uses keyboard-accessible anchors with noopener and
 noreferrer. Accessible labels include the destination and native links include
 an opening hint. There is no URL autolinking.
 
+The selected Source Serif assets include regular and semibold, but no italic.
+Emphasis therefore uses the platform's real italic face instead of synthesizing
+an italic Source Serif file. This preserves emphasis semantics while the eventual
+web/native optical-font comparison and a pinned literary italic remain pending.
+
 Backslash-escaped punctuation displays literally (the escape backslash is
 removed). HTML tags, images, fenced code, headings/list markers, underscore
 formatting and strikethrough remain plain text; they do not create HTML, images,
@@ -100,8 +111,8 @@ Second line
 [Unsafe link](javascript:alert)  ![No image](https://example.org/image.png)
 ```
 
-Card shadows use React Native/RN Web `boxShadow` (SDK 57's New Architecture),
-not deprecated RN Web shadow properties. The mobile export serves a local copy
+Cards use the shared raised surface and divider roles rather than passing CSS
+shadow strings into React Native. The mobile export serves a local copy
 of the existing Tarkman favicon to avoid the browser's implicit favicon 404.
 
 The mobile lint gate uses ESLint 10, TypeScript and React Hooks flat configs.
@@ -123,6 +134,12 @@ The full static `googlefonts/ttf` files in that official archive include combini
 marks omitted by its smaller Armenian-only builds. No variable fonts or remote
 font requests are used. `check:fonts` checks hashes, static tables and glyph maps.
 
+Bundled **static Regular and Semibold Source Serif 4.005** come unchanged from
+Adobe's official desktop release under SIL OFL 1.1. Keep
+[the Source Serif provenance and hashes](assets/fonts/SOURCE-SERIF.md) and
+[license](assets/fonts/SourceSerif-LICENSE.md) with both TTFs. The font guard
+checks the exact hashes and rejects variable files.
+
 The real Grabar sample is the public-domain Lord's Prayer excerpt beginning
 “Հայր մեր, որ յերկինս ես”. A separately labeled stress sample includes Armenian
 `։`, `՛`, `՜`, `՞` and decomposed U+0301/U+0304. It is a shaping test, not an
@@ -137,7 +154,7 @@ editorial claim about liturgical accent placement.
   accents. Select/copy a multiline paragraph without losing line breaks.
 - Change OS appearance; check background, surface, muted text, fields and sheets.
 - At large and maximum accessibility text sizes, read and scroll all content;
-  ensure labels grow and every control remains at least 44×44pt.
+  ensure labels grow and every control remains at least 48×48pt.
 - Use keyboard Tab/Enter on web; verify focus, disabled/loading buttons, input
   values, Done behavior and email keyboard on native. Try input near screen bottom.
 - Open the sheet, type a multiline note, dismiss the keyboard, scroll the reading,
@@ -186,7 +203,12 @@ Rails itself may record analytics on public GETs; the client does not send write
 Variable English fields that Rails emits as HTML remain inert literal text under
 the existing limited Markdown renderer; this slice does not add an HTML engine.
 
-The `/` screen discovers public services or opens a numeric session ID. Parts
+Today (`/`) leads with the service at the church the reader is in when location
+knows it, and otherwise with the services live today, a Scan row and Continue
+reading (stored on the device). Services (`/live`) lists every public service for
+today. Settings (`/settings`) holds reading choices and, last, sign-in or My
+services; no other screen shows an account affordance. A numeric session ID is
+entered from the scanner's fallback. Parts
 retain Rails ordering and occurrence identity (`liturgy_part_id`), including
 multi-liturgy repetitions. Current-part resolution uses part and liturgy together;
 position is a secondary discriminator. Scrolling by touch, wheel or keyboard
@@ -246,16 +268,37 @@ than showing stale text as if it were live.
 
 What the device does keep:
 
-- The reading language, saved as one small record and restored on launch. An
-  unreadable or unknown record is discarded and reading continues in English.
-- Nothing else. The sign-in token is separate and lives in the keychain.
-- "Forget my reading choices" in the reading-language sheet clears the record.
+- The active reading language, selected-language set and System/Light/Dark
+  appearance choice, saved as one small record and restored on launch.
+- Existing `{ language }` records migrate in place, preserving the active
+  language and keeping the four formerly available languages selected. Invalid
+  records fall back safely, and a late startup read cannot overwrite a choice
+  made while hydration is still running.
+- The sign-in token is separate and lives in the keychain.
+- "Forget my reading choices" resets the active/selected languages and preserves
+  an explicit appearance choice; with System appearance it can remove the record.
 
 Storage differs by platform, because the native key-value store does not run in
 a browser: native builds use `expo-sqlite`'s key-value store, and web uses
 `localStorage` through `features/preferences/storage.web.ts`. Both satisfy the
 same `KeyValueAdapter` contract and tolerate a failed write, so a rejected save
 never interrupts reading.
+
+On compact widths the live reader renders one active language. The Reading
+language sheet switches immediately among the selected set without dispatching
+controller/follow actions. Choose languages uses a separate draft with
+Apply/Cancel and enforces at least one selection; removing the active language
+falls back to the first selected language in stable product order. Wider windows
+compare selected languages only when the card's actual content width, padding,
+borders, inter-column gaps and current OS font scale leave at least 300 points
+per language.
+
+Native validation still needs compact and wide devices in both orientations,
+explicit and system appearance across background/resume, maximum text traversal,
+iOS swipe dismissal, Android system/predictive Back, keyboard behavior, and
+VoiceOver/TalkBack focus, pronunciation and selected-state listening. The
+Source Serif web/native optical comparison and authoritative long multilingual
+service content also remain pending.
 
 Connection recovery is unchanged and still required: the reader labels stale and
 disconnected states, falls back to polling when the live socket is unavailable,
@@ -366,12 +409,47 @@ frames in release builds stay minified.
 
 ### Building locally after the associated-domains entitlement
 
-`npx expo run:ios` now fails with "No code signing certificates are available"
-once the entitlement is generated, because Xcode signs entitlements even for a
-simulator build. Either open `ios/Tarkman.xcworkspace` once and set a development
-team, or build through EAS with the `development-simulator` profile. An existing
-`ios/` directory hides this: `expo run:ios` reuses it without re-applying config
-plugins, so the entitlement only appears after `expo prebuild --clean`.
+`npx expo run:ios` fails with "No code signing certificates are available" once
+the entitlement is generated, because Xcode signs entitlements even for a
+simulator build. A simulator build does not need signing at all, so build it
+directly (CocoaPods requires a UTF-8 locale, hence `LANG`):
+
+```sh
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo prebuild --platform ios --clean
+cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install && cd ..
+xcodebuild -workspace ios/Tarkman.xcworkspace -scheme Tarkman -configuration Debug \
+  -sdk iphonesimulator -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build
+xcrun simctl install booted ios/build/Build/Products/Debug-iphonesimulator/Tarkman.app
+```
+
+For a device build, set a development team in Xcode or build through EAS with the
+`development-simulator` or `development` profile. An existing `ios/` directory
+hides entitlement changes: `expo run:ios` reuses it without re-applying config
+plugins, so a new entitlement only appears after `expo prebuild --clean`.
+
+### Scanning a service code
+
+`app/scan.tsx` is a full-screen, always-dark modal that reads a QR code with
+`expo-camera`. The codes printed for the congregation point at
+`https://www.tarkman.app/s/:id/explain`, the web projector display shows
+`https://web.tarkman.app/sessions/:id/explanations`, and reading links on
+`web.tarkman.app` work too. A found code is never entered silently: the scanner
+loads the service and waits for **Read along**, because a camera can pick up a
+code from across the room or from last week's slide.
+
+A scanned code is untrusted input, because a sticker in a public place can be
+replaced by anyone. `features/scan/links.ts` accepts only HTTPS URLs on a Tarkman
+host whose path is one of those reading routes, and rejects everything else,
+including look-alike hosts such as `tarkman.app.evil.example`, credentials in the
+URL, and the church display routes. A refused code is shown as plain text and
+never opened, followed, or loaded in a web view.
+
+The camera is requested when someone opens the scanner, not at launch. When it
+is refused, the scanner names the routes that still work — the services list and
+session ID entry — and links to Settings. Repeated unreadable codes raise one
+alert, not one per frame. The camera is only
+used to read a code: nothing is recorded or sent anywhere. A simulator has no
+camera, so scanning can only be confirmed on a physical iPhone.
 
 ### Device flows
 
@@ -404,3 +482,38 @@ traces are minified; device flows run locally and are not enforced by CI; univer
 explanations renders literally (#99); the services list shows only the first ten
 (#92). Jest covers behaviour, not rendering on a device, so it is not evidence
 for any item in this section.
+
+## The church you are standing in / Expo #106
+
+When a live service's church has been geocoded, the API publishes
+`church_latitude` / `church_longitude` alongside it, and the services list
+offers to work out which of those churches the reader is in.
+
+Nothing is asked until someone taps **Find the church you’re at** on Today. The location permission
+is requested then — when in use only, never "always" — so a reader who never
+taps it is never asked. `app.json` carries the reason string, and
+`locationAlwaysAndWhenInUsePermission` is explicitly `false`.
+
+**A reader's position never leaves the phone.** `features/nearby/distance.ts`
+compares the device position with the coordinates already in the services list
+and picks the nearest church within `NEARBY_RADIUS_METRES` (250m — a building
+plus its car park, with room for poor GPS indoors). No request carries a
+location, nothing is persisted, and the position is discarded once the match is
+made. The permission string and the card both say so.
+
+A match is offered, never applied: Today says "You’re at …" above that service's
+card, and the other live services stay listed below it as the correction, so a
+wrong guess costs one tap. Once permission has been given, Today checks again
+whenever it is shown, without prompting.
+Refused permission, an unavailable position, and no church in range each say so
+in place and leave the list exactly as it was; when permission has been denied
+for good, the button is withdrawn rather than repeatedly failing.
+
+Churches without coordinates simply cannot match, and the location line is hidden
+when no listed service has any — which is the state of production today.
+Geocoding runs on the backend only when a profile's address changes, so existing
+churches need a backfill or a re-save before this can light up. Verifying the
+found path end to end therefore needs a geocoded church with a live service;
+a simulator can supply the position
+(`xcrun simctl location booted set <lat>,<lon>`), but the permission prompt
+itself is worth seeing once on a physical iPhone.

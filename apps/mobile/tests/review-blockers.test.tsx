@@ -67,3 +67,15 @@ it('restores the supplied web opener after the dismissal callback', async () => 
     expect(focus).toHaveBeenCalledTimes(1)
   } finally { Platform.OS = previous }
 })
+
+it('keeps stanza boundaries without inventing missing translations at blank edges', async () => {
+  await render(<LiturgyText text={'\n\nFirst line\r\nSecond line\n\nThird line\n\n'} compactStanzas />, { wrapper })
+  expect(screen.getByText(/First line\s+Second line/)).toBeOnTheScreen()
+  expect(screen.getByText('Third line')).toBeOnTheScreen()
+  expect(screen.queryByText('Translation not available.')).toBeNull()
+})
+it('keeps fenced markup inert when using compact stanzas', async () => {
+  await render(<LiturgyText text={'```\n[Read](https://example.org)\n\n**literal**\n```'} compactStanzas />, { wrapper })
+  expect(screen.queryByRole('link')).toBeNull()
+  expect(screen.getByText(/\*\*literal\*\*/)).toBeOnTheScreen()
+})

@@ -2,7 +2,7 @@ import { expect, it } from '@jest/globals'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { PREFERENCES_KEY, PreferencesProvider, usePreferences } from '../features/preferences/PreferencesProvider'
-import { memoryStore } from './auth-helpers'
+import { deferred, memoryStore } from './auth-helpers'
 
 function setup(store: ReturnType<typeof memoryStore>['store']) {
   const wrapper = ({ children }: { children: ReactNode }) => <PreferencesProvider store={store}>{children}</PreferencesProvider>
@@ -10,11 +10,17 @@ function setup(store: ReturnType<typeof memoryStore>['store']) {
 }
 const saved = (store: ReturnType<typeof memoryStore>['store']) => store.set.mock.calls.at(-1)?.[1] ?? null
 
-it('reads a stored reading language, as it would after a restart', async () => {
+it('migrates a stored reading language without losing the active choice', async () => {
   const { store } = memoryStore({ [PREFERENCES_KEY]: JSON.stringify({ language: 'grabar' }) })
   const { result } = await setup(store)
   await waitFor(() => expect(result.current.ready).toBe(true))
-  expect(result.current.preferences.language).toBe('grabar')
+  expect(result.current.preferences).toEqual({
+    language: 'grabar',
+    selectedLanguages: ['en', 'ru', 'grabar', 'translit'],
+    appearance: 'system',
+    readingSize: 'standard',
+  })
+  await waitFor(() => expect(JSON.parse(String(saved(store)))).toEqual(result.current.preferences))
 })
 
 it('falls back to English and forgets records it cannot use', async () => {
@@ -33,10 +39,23 @@ it('keeps a chosen language and forgets it on request', async () => {
   await waitFor(() => expect(result.current.ready).toBe(true))
   await act(async () => result.current.setLanguage('ru'))
   expect(result.current.preferences.language).toBe('ru')
-  await waitFor(() => expect(JSON.parse(String(saved(store)))).toEqual({ language: 'ru' }))
+  await act(async () => result.current.setSelectedLanguages(['translit', 'ru']))
+  expect(result.current.preferences).toMatchObject({ language: 'ru', selectedLanguages: ['ru', 'translit'] })
+  await act(async () => result.current.setAppearance('dark'))
+  await waitFor(() => expect(JSON.parse(String(saved(store)))).toEqual({
+    language: 'ru',
+    selectedLanguages: ['ru', 'translit'],
+    appearance: 'dark',
+    readingSize: 'standard',
+  }))
   await act(async () => result.current.clear())
-  expect(result.current.preferences.language).toBe('en')
-  await waitFor(() => expect(store.remove).toHaveBeenCalledWith(PREFERENCES_KEY))
+  expect(result.current.preferences).toEqual({
+    language: 'en',
+    selectedLanguages: ['en', 'ru', 'grabar', 'translit'],
+    appearance: 'dark',
+    readingSize: 'standard',
+  })
+  await waitFor(() => expect(JSON.parse(String(saved(store)))).toEqual(result.current.preferences))
 })
 
 it('still applies a choice for this run when storage rejects the write', async () => {
@@ -54,4 +73,39 @@ it('reads with defaults when storage is unavailable', async () => {
   const { result } = await setup(store)
   await waitFor(() => expect(result.current.ready).toBe(true))
   expect(result.current.preferences.language).toBe('en')
+})
+
+it('falls back to the first selected language in stable product order', async () => {
+  const { store } = memoryStore()
+  const { result } = await setup(store)
+  await waitFor(() => expect(result.current.ready).toBe(true))
+  await act(async () => result.current.setLanguage('grabar'))
+  await act(async () => result.current.setSelectedLanguages(['translit', 'ru']))
+  expect(result.current.preferences).toMatchObject({ language: 'ru', selectedLanguages: ['ru', 'translit'] })
+})
+
+it('does not let late startup hydration replace an in-app choice', async () => {
+  const hydration = deferred<string | null>()
+  const { store } = memoryStore()
+  store.get.mockImplementation(() => hydration.promise)
+  const { result } = await setup(store)
+  await act(async () => result.current.setLanguage('ru'))
+  hydration.resolve(JSON.stringify({ language: 'grabar' }))
+  await waitFor(() => expect(result.current.ready).toBe(true))
+  expect(result.current.preferences.language).toBe('ru')
+})
+
+it('persists reading size, tolerates older records and resets size with reading choices', async () => {
+  const { store } = memoryStore({ [PREFERENCES_KEY]: JSON.stringify({ language: 'ru', selectedLanguages: ['ru'], appearance: 'dark', readingSize: 'unknown' }) })
+  const { result, unmount } = await setup(store)
+  await waitFor(() => expect(result.current.ready).toBe(true))
+  expect(result.current.preferences.readingSize).toBe('standard')
+  await act(async () => result.current.setReadingSize('extraLarge'))
+  await waitFor(() => expect(JSON.parse(String(saved(store))).readingSize).toBe('extraLarge'))
+  await unmount()
+  const restored = await setup(store)
+  await waitFor(() => expect(restored.result.current.ready).toBe(true))
+  expect(restored.result.current.preferences).toMatchObject({ readingSize: 'extraLarge', language: 'ru', appearance: 'dark' })
+  await act(async () => restored.result.current.clear())
+  expect(restored.result.current.preferences).toMatchObject({ readingSize: 'standard', language: 'en', appearance: 'dark' })
 })

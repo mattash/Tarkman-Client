@@ -1,12 +1,14 @@
 import '../global.css'
 import * as Sentry from '@sentry/react-native'
 import { Stack } from 'expo-router'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { View } from 'react-native'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { ThemeProvider, useTheme } from '../design/ThemeProvider'
+import { scanner } from '../design/tokens'
 import { ReadingFontProvider } from '../design/ReadingFontProvider'
 import { AuthProvider } from '../features/auth/AuthProvider'
-import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
+import { PreferencesProvider, usePreferences } from '../features/preferences/PreferencesProvider'
 import { readerConfig } from '../features/live/config'
 import { startObservability } from '../features/observability/sentry'
 
@@ -14,16 +16,26 @@ import { startObservability } from '../features/observability/sentry'
 startObservability()
 
 function RootLayout() {
-  return <SafeAreaProvider><ThemeProvider><RootContent /></ThemeProvider></SafeAreaProvider>
+  return <SafeAreaProvider><PreferencesProvider><PreferenceTheme /></PreferencesProvider></SafeAreaProvider>
+}
+function PreferenceTheme() {
+  const { preferences } = usePreferences()
+  return <ThemeProvider appearance={preferences.appearance}><RootContent /></ThemeProvider>
 }
 function RootContent() {
   const { colors, scheme } = useTheme()
-  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+  const insets = useSafeAreaInsets()
+  // Each screen owns its safe area, so the tab bar can reach the home indicator and the scanner can fill the display.
+  const safe = { paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }
+  return <View style={{ flex: 1, backgroundColor: colors.background }}>
     <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-    <ReadingFontProvider><PreferencesProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} />
-    </AuthProvider></PreferencesProvider></ReadingFontProvider>
-  </SafeAreaView>
+    <ReadingFontProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background, ...safe } }}>
+        <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: colors.background, ...safe, paddingBottom: 0 } }} />
+        <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: scanner.canvas } }} />
+      </Stack>
+    </AuthProvider></ReadingFontProvider>
+  </View>
 }
 
 export default Sentry.wrap(RootLayout)

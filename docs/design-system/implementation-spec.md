@@ -1,6 +1,6 @@
 # Design system implementation specification
 
-Status: working specification for application trials, 2026-09-12. This foundation contains the selected design direction, an isolated native specimen, and a framework-free token package. Application adoption is reviewed separately; specimens and component APIs remain provisional.
+Status: working specification for application trials, 2026-09-12. This foundation contains the selected design direction, an isolated native specimen, and a framework-free token package. Application adoption is reviewed separately; specimens and component APIs remain provisional. The first adoption is the [web reading trial](web-application-trial.md); mobile and app-wide rollouts remain later work.
 
 ## How to use this specification
 
@@ -57,7 +57,15 @@ Preserve the full Noto Serif Armenian regular/bold files already pinned in the m
 
 Keep `en`, `ru`, `grabar`, `translit` as existing product language identifiers. Map text metadata to `en`, `ru`, `hy`, and `hy-Latn`; pronunciation support depends on available platform voices and needs listening checks. Tag fallback messages by their actual language. Keep text selectable, preserve line/paragraph breaks, and allow wrapping. Missing translation has its own state and must not relabel another translation as the missing one.
 
-Reading size composes with OS text scaling; do not disable `allowFontScaling`, shrink text to fit, or impose an arbitrary maximum. At accessibility sizes, stack actions/languages and keep sheets scrollable. Preserve Armenian punctuation and decomposed combining marks. English/Russian/Armenian together is a useful comparison fixture, not a mandatory production language selection or screen layout. Authoritative long passages and fluent-reader review remain needed.
+Reading size composes with OS text scaling; do not disable `allowFontScaling`, shrink text to fit, or impose an arbitrary maximum. At accessibility sizes, stack actions, use the live-service language rule below and keep sheets scrollable. Preserve Armenian punctuation and decomposed combining marks. English/Russian/Armenian together is a useful comparison fixture, not a mandatory production language selection or screen layout. Authoritative long passages and fluent-reader review remain needed.
+
+### Live-service language layout
+
+User-selected rule, clarified 2026-09-12: mobile portrait shows only one active reading language at a time, with a control to switch among the user's selected languages. Do not stack all translations down the page on narrow screens. Selecting languages and choosing the active language are separate operations; switching the active language retains the selected set and the service being followed.
+
+Show selected languages side by side only when the available reading area gives each enough readable width at the chosen text size. When that width is unavailable, return to one active language with switching. Do not squeeze multiple columns into a phone viewport or reduce text size to make them fit. Preserve the active language across width changes and passage-detail navigation; if the user removes it from the selected set, choose the first remaining language in the product's stable order. Missing content remains an explicit missing-translation state for the active language.
+
+Apply this principle to both web and native live readers. Exact width thresholds remain provisional and must be reviewed with English, Russian and Armenian content and enlarged text. This is a product behavior decision; the earlier specimens remain review examples and do not prescribe implementation geometry. The native app and projector presentation require separate adoption work.
 
 ## Component and behavior contracts
 

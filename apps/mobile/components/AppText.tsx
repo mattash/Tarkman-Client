@@ -1,4 +1,4 @@
-import { Platform, Text, type TextProps } from 'react-native'
+import { Platform, Text, useWindowDimensions, type TextProps } from 'react-native'
 import type { Language } from '@tarkman/core'
 import { useTheme } from '../design/ThemeProvider'
 import { useReadingFont } from '../design/readingFont'
@@ -14,15 +14,22 @@ export function AppText({ variant = 'body', language = 'en', tone = 'default', s
   const { colors } = useTheme()
   const type = typography[variant]
   const fontReady = useReadingFont()
+  const { fontScale } = useWindowDimensions()
   const armenian = language === 'grabar' && fontReady
-  return <Text {...props} allowFontScaling accessibilityLanguage={languageTags[language]}
+  const semibold = variant === 'title' || variant === 'heading' || variant === 'screenTitle' || variant === 'feature' || variant === 'rowTitle'
+  const literary = (semibold || variant === 'liturgy' || variant === 'explanation') && fontReady
+  // This React Native/iOS runtime keeps old text frames when the content-size
+  // category changes behind a presented sheet. Refresh only the native Text
+  // leaf; parent controls, inputs, lists, scroll position and reader state stay mounted.
+  return <Text key={Platform.OS === 'ios' ? fontScale : 'native'} {...props} allowFontScaling accessibilityLanguage={languageTags[language]}
     {...(Platform.OS === 'web' ? { lang: languageTags[language] } : {})}
-    accessibilityRole={props.accessibilityRole ?? (variant === 'title' || variant === 'heading' ? 'header' : undefined)}
+    accessibilityRole={props.accessibilityRole ?? (variant === 'title' || variant === 'heading' || variant === 'screenTitle' || variant === 'feature' ? 'header' : undefined)}
     style={[type, {
       color: tone === 'default' ? colors.foreground : tone === 'accent' ? colors.primary : colors[tone],
-      fontFamily: armenian ? (type.fontWeight === '700' || type.fontWeight === '600' ? 'NotoSerifArmenian-Bold' : 'NotoSerifArmenian-Regular') : undefined,
-      // Static font files carry their own weight. Never synthesize an Armenian weight.
-      fontWeight: armenian ? '400' : type.fontWeight,
+      fontFamily: armenian ? (semibold ? 'NotoSerifArmenian-Bold' : 'NotoSerifArmenian-Regular')
+        : literary ? (semibold ? 'SourceSerif4-Semibold' : 'SourceSerif4-Regular') : undefined,
+      // Static reading files carry their own weight. Controls remain platform sans.
+      fontWeight: armenian || literary ? '400' : type.fontWeight,
       flexShrink: 1,
     }, style]} />
 }

@@ -13,6 +13,11 @@ describe('public Rails boundaries', () => {
     expect(() => normalizeServices({ sessions: 'bad' })).toThrow()
     expect(() => normalizeServices([{ session: { id: '7' } }])).toThrow()
   })
+  it('reads the current role and date when published, and treats a blank role as absent', () => {
+    expect(normalizeSession({ session: { ...session.session, current_part_role: 'priest', date: '2026-09-13' } })).toMatchObject({ currentRole: 'priest', date: '2026-09-13' })
+    expect(normalizeSession({ session: { ...session.session, current_part_role: '  ' } }).currentRole).toBeNull()
+    expect(normalizeSession(session)).toMatchObject({ currentRole: null, date: null })
+  })
   it('orders occurrences without deduplicating shared part IDs and resolves by liturgy first', () => {
     const parts = normalizeParts({ parts: [
       { part: { id: 2, liturgy_id: 20, liturgy_part_id: 22, position: 2, en: 'second', ru: null } },

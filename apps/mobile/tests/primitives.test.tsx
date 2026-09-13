@@ -1,7 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen } from '@testing-library/react-native'
+import { Platform } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { AppButton } from '../components/AppButton'
+import { AppText } from '../components/AppText'
 import { LiturgyText } from '../components/LiturgyText'
 import { TextField } from '../components/TextField'
 import { AppModal } from '../components/AppModal'
@@ -22,17 +24,27 @@ describe('native primitives', () => {
     expect(action).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: 'Loading' }).props.accessibilityState).toEqual({ busy: true, disabled: true })
   })
-  it('styles buttons with a plain object and dims them only while pressed', async () => {
+  it('uses explicit pressed colors while preserving button geometry', async () => {
     const onPressIn = jest.fn(), onPressOut = jest.fn()
     await render(<AppButton onPressIn={onPressIn} onPressOut={onPressOut}>Return to live</AppButton>, { wrapper })
     const button = screen.getByRole('button', { name: 'Return to live' })
-    expect(button).toHaveStyle({ backgroundColor: colors.light.primary, minHeight: 44, minWidth: 44, opacity: 1 })
+    expect(button).toHaveStyle({ backgroundColor: colors.light.primary, minHeight: 48, minWidth: 48 })
     await fireEvent(button, 'pressIn')
-    expect(button).toHaveStyle({ opacity: 0.8 })
+    expect(button).toHaveStyle({ backgroundColor: colors.light.pressed })
     expect(onPressIn).toHaveBeenCalledTimes(1)
     await fireEvent(button, 'pressOut')
-    expect(button).toHaveStyle({ opacity: 1 })
+    expect(button).toHaveStyle({ backgroundColor: colors.light.primary })
     expect(onPressOut).toHaveBeenCalledTimes(1)
+  })
+  it('gives quiet and secondary controls neutral press feedback without inverting their text', async () => {
+    await render(<><AppButton variant="quiet">Choose languages</AppButton><AppButton variant="secondary">Forget my reading choices</AppButton></>, { wrapper })
+    for (const name of ['Choose languages', 'Forget my reading choices']) {
+      const button = screen.getByRole('button', { name })
+      await fireEvent(button, 'pressIn')
+      expect(button).toHaveStyle({ backgroundColor: colors.light.pressedSubtle })
+      expect(screen.getByText(name)).toHaveStyle({ color: colors.light.foreground })
+      await fireEvent(button, 'pressOut')
+    }
   })
   it('leaves an unpaired asterisk alone and emphasises the pair that follows', async () => {
     // Real explanation text: the first asterisk never closes, so only "Nersessi erg" is emphasised.
@@ -55,6 +67,11 @@ describe('native primitives', () => {
     expect(reading.props.accessibilityLanguage).toBe('hy')
     expect(reading).toHaveStyle({ fontFamily: 'NotoSerifArmenian-Regular' })
   })
+  it('uses the pinned literary faces for non-Armenian reading and titles', async () => {
+    await render(<><LiturgyText text={prayer.en} /><AppText variant="title">Divine Liturgy</AppText></>, { wrapper })
+    expect(screen.getByText(prayer.en)).toHaveStyle({ fontFamily: 'SourceSerif4-Regular', fontWeight: '400' })
+    expect(screen.getByText('Divine Liturgy')).toHaveStyle({ fontFamily: 'SourceSerif4-Semibold', fontWeight: '400' })
+  })
   it.each([null, '', '   '])('makes missing translation explicit: %s', async text => {
     await render(<LiturgyText text={text} language="grabar" />, { wrapper })
     expect(screen.getByText('Translation not available.').props.accessibilityLanguage).toBe('en')
@@ -73,16 +90,47 @@ describe('native primitives', () => {
     expect(change).toHaveBeenCalledWith('reader@example.org')
     expect(submit).toHaveBeenCalledTimes(1)
     expect(input.props.keyboardType).toBe('email-address')
+    expect(input.props.keyboardAppearance).toBe('light')
     expect(input.props.allowFontScaling).toBe(true)
     expect(screen.getByRole('alert')).toHaveTextContent('Enter an address')
   })
+  it('lets a caller override the keyboard appearance', async () => {
+    await render(<TextField label="Note" keyboardAppearance="dark" />, { wrapper })
+    expect(screen.getByLabelText('Note').props.keyboardAppearance).toBe('dark')
+  })
   it('dismisses through close, backdrop, and the native back request', async () => {
     const dismiss = jest.fn()
-    await render(<AppModal visible title="Reading" onDismiss={dismiss}><LiturgyText text={prayer.en} /></AppModal>, { wrapper })
-    await fireEvent.press(screen.getByRole('button', { name: 'Close Reading' }))
-    await fireEvent.press(screen.getByTestId('modal-backdrop', { includeHiddenElements: true }))
-    await fireEvent(screen.getByTestId('app-modal'), 'requestClose')
-    expect(dismiss).toHaveBeenCalledTimes(3)
+    const previous = Platform.OS
+    Platform.OS = 'android'
+    try {
+      await render(<AppModal visible title="Reading" onDismiss={dismiss}><LiturgyText text={prayer.en} /></AppModal>, { wrapper })
+      await fireEvent.press(screen.getByRole('button', { name: 'Close Reading' }))
+      await fireEvent.press(screen.getByTestId('modal-backdrop', { includeHiddenElements: true }))
+      await fireEvent(screen.getByTestId('app-modal'), 'requestClose')
+      expect(dismiss).toHaveBeenCalledTimes(3)
+    } finally { Platform.OS = previous }
+  })
+  it('uses the native iOS page sheet contract', async () => {
+    const previous = Platform.OS
+    Platform.OS = 'ios'
+    try {
+      await render(<AppModal visible title="Reading" onDismiss={() => {}} />, { wrapper })
+      expect(screen.getByTestId('app-modal')).toHaveProp('presentationStyle', 'pageSheet')
+      expect(screen.getByTestId('app-modal')).toHaveProp('allowSwipeDismissal', true)
+      expect(screen.getByTestId('modal-shell')).toHaveStyle({ flex: 1, maxHeight: '100%' })
+      expect(screen.getByTestId('modal-content')).toHaveStyle({ flex: 1 })
+    } finally { Platform.OS = previous }
+  })
+  it('leads with Cancel and trails the commit action when a sheet has one', async () => {
+    await render(<AppModal visible title="Choose languages" dismissLabel="Cancel" onDismiss={() => {}}
+      headerAction={<AppButton variant="quiet">Apply languages</AppButton>} />, { wrapper })
+    // Queries return matches in tree order, which is the visual leading-to-trailing order.
+    expect(screen.getAllByText(/^(Cancel|Choose languages|Apply languages)$/).map(node => node.props.children))
+      .toEqual(['Cancel', 'Choose languages', 'Apply languages'])
+  })
+  it('keeps a lone Done trailing the title', async () => {
+    await render(<AppModal visible title="Reading preferences" onDismiss={() => {}} />, { wrapper })
+    expect(screen.getAllByText(/^(Done|Reading preferences)$/).map(node => node.props.children)).toEqual(['Reading preferences', 'Done'])
   })
   it('hides the dismissed sheet', async () => {
     await render(<AppModal visible={false} title="Hidden reading" onDismiss={() => {}} />, { wrapper })
@@ -104,7 +152,7 @@ it('keeps every semantic text/background pairing at WCAG AA contrast', () => {
       [palette.muted, palette.background], [palette.muted, palette.surface],
       [palette.primary, palette.surface], [palette.destructive, palette.surface],
       [palette.onPrimary, palette.primary], [palette.onSecondary, palette.secondary],
-      [palette.onDestructive, palette.destructive],
+      [palette.onDestructive, palette.destructive], [palette.foreground, palette.pressedSubtle],
     ]) {
       const values = [luminance(text), luminance(background)].sort((a, b) => b - a)
       expect((values[0] + 0.05) / (values[1] + 0.05)).toBeGreaterThanOrEqual(4.5)
