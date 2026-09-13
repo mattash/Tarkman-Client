@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Tarkman Design Lab",
+    "slug": "tarkman-design-lab",
+    "version": "0.0.1",
+    "scheme": "tarkman-design-lab",
+    "platforms": ["ios", "android"],
+    "userInterfaceStyle": "automatic",
+    "ios": {"bundleIdentifier": "app.tarkman.designlab", "supportsTablet": false},
+    "android": {"package": "app.tarkman.designlab"},
+    "plugins": ["expo-font"]
+  }
+}

@@ -1,0 +1,163 @@
+<div id="tarkman-board" aria-label="Tarkman visual foundations proposal">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Armenian:wght@400;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&amp;display=swap">
+  <style>
+    #tarkman-board { font:400 15px/1.55 system-ui,sans-serif; color:light-dark(#272127,#F7F1F4); --b-controlRadius:8px; --b-target:48px; }
+    #tarkman-board * { box-sizing:border-box; }
+    #tarkman-board [hidden] { display:none!important; }
+    #tarkman-board .board-header { display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap; padding:0 0 18px; }
+    #tarkman-board h2 { font:600 32px/1.2 'Source Serif 4',Georgia,serif; letter-spacing:-.02em; margin:0; color:inherit; }
+    #tarkman-board .board-status { font:400 13px/1.5 system-ui,sans-serif; }
+    #tarkman-board .board-nav { display:flex; gap:6px; flex-wrap:wrap; padding-bottom:20px; }
+    #tarkman-board button { min-height:var(--b-target); padding:12px 16px; border:1px solid transparent; border-radius:var(--b-controlRadius); cursor:pointer; font:600 15px/23px system-ui,sans-serif; }
+    #tarkman-board .board-nav button { color:light-dark(#6B5C65,#C4B6BF); background:transparent; }
+    #tarkman-board .board-nav button[aria-pressed="true"] { background:light-dark(#F2E4EB,#432C39); color:light-dark(#6E3852,#F2C8DD); }
+    #tarkman-board button:focus-visible, #tarkman-board input:focus-visible { outline:3px solid var(--b-focus,light-dark(#6E3852,#E3A7C3)); outline-offset:3px; }
+    #tarkman-board .board-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+    #tarkman-board .board-theme { min-width:0; color:var(--b-text); background:var(--b-canvas); border-radius:16px; padding:24px; }
+    #tarkman-board .theme-title { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding-bottom:22px; }
+    #tarkman-board .theme-title h3 { font:600 26px/1.25 'Source Serif 4',Georgia,serif; margin:0; color:var(--b-text); }
+    #tarkman-board .theme-title span { color:var(--b-muted); font-size:13px; }
+    #tarkman-board h4 { color:var(--b-text); font:600 16px/1.5 system-ui,sans-serif; margin:24px 0 14px; }
+    #tarkman-board .board-topic > h4:first-child { margin-top:0; }
+    #tarkman-board .b-label { color:var(--b-muted); font:400 13px/1.6 system-ui,sans-serif; }
+    #tarkman-board .b-row { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+    #tarkman-board .b-list { display:grid; gap:14px; }
+    #tarkman-board .b-shapes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    #tarkman-board .b-shape { border:1px solid var(--b-control); background:var(--b-surface); min-height:82px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:12px; }
+    #tarkman-board .b-shape strong { color:var(--b-text); font-size:14px; font-weight:500; }
+    #tarkman-board .b-borderrow { display:grid; grid-template-columns:minmax(70px,1fr) minmax(0,1.5fr); gap:16px; align-items:center; }
+    #tarkman-board .b-divider { border-top:1px solid var(--b-divider); }
+    #tarkman-board .b-outline { border:1px solid var(--b-control); padding:10px 12px; border-radius:var(--b-controlRadius); background:var(--b-surface); color:var(--b-text); min-height:48px; }
+    #tarkman-board .b-selected { border:2px solid var(--b-primary); background:var(--b-selection); color:var(--b-onSelection); }
+    #tarkman-board .b-focus { outline:3px solid var(--b-focus); outline-offset:3px; }
+    #tarkman-board .b-spacing { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+    #tarkman-board .b-space { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    #tarkman-board .b-bar { height:16px; background:var(--b-primary); }
+    #tarkman-board .b-swatch { display:grid; grid-template-columns:40px minmax(0,1fr) auto; gap:12px; align-items:center; padding:9px 0; }
+    #tarkman-board .b-chip { width:40px; height:40px; border-radius:8px; }
+    #tarkman-board .b-hex { color:var(--b-muted); font:400 12px/1.4 ui-monospace,monospace; }
+    #tarkman-board .b-reading { color:var(--b-text); font:400 24px/38px 'Source Serif 4',Georgia,serif; font-synthesis:none; font-optical-sizing:auto; margin:12px 0 20px; overflow-wrap:break-word; }
+    #tarkman-board .b-hy { font-family:'Noto Serif Armenian',serif; }
+    #tarkman-board .b-type-title { font:600 34px/44px 'Source Serif 4',Georgia,serif; margin:12px 0 20px; }
+    #tarkman-board .b-layer { border-radius:16px; padding:20px; margin:14px 0 26px; min-height:86px; }
+    #tarkman-board .b-layer h5 { font:600 21px/1.4 'Source Serif 4',Georgia,serif; margin:0 0 5px; }
+    #tarkman-board .b-flat { background:var(--b-surface); }
+    #tarkman-board .b-raised { background:var(--b-raised); box-shadow:var(--b-shadowRaised); }
+    #tarkman-board .b-overlay { background:var(--b-overlay); box-shadow:var(--b-shadowOverlay); }
+    #tarkman-board .b-stategrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    #tarkman-board .b-stategrid button { width:100%; background:var(--b-primary); color:var(--b-onPrimary); }
+    #tarkman-board .b-stategrid .b-hover { background:var(--b-hover); }
+    #tarkman-board .b-stategrid .b-pressed { background:var(--b-pressed); }
+    #tarkman-board .b-stategrid button:disabled { cursor:default; background:var(--b-disabled); color:var(--b-onDisabled); }
+    #tarkman-board .b-stategrid button.b-loading { background:var(--b-primary); color:var(--b-onPrimary); }
+    #tarkman-board .b-state-label { display:block; margin-bottom:6px; color:var(--b-muted); font-size:13px; }
+    #tarkman-board .b-notice { font:500 14px/1.5 system-ui,sans-serif; padding:10px 12px; border-radius:8px; }
+    #tarkman-board .b-field { display:block; color:var(--b-text); font-size:14px; margin-top:18px; }
+    #tarkman-board input { width:100%; margin:8px 0 4px; border:1px solid var(--b-danger); border-radius:var(--b-controlRadius); background:var(--b-surface); color:var(--b-text); padding:12px; font:400 16px/1.5 system-ui,sans-serif; min-height:48px; caret-color:var(--b-primary); }
+    #tarkman-board .b-error { color:var(--b-danger); font-size:13px; }
+    #tarkman-board .b-disclosure { border-top:1px solid var(--b-divider); margin-top:24px; padding-top:10px; }
+    #tarkman-board .b-disclosure button { color:var(--b-primary); background:transparent; padding-left:0; }
+    #tarkman-board .b-reveal { display:grid; grid-template-rows:0fr; transition:grid-template-rows 200ms cubic-bezier(0.16,1,0.3,1); }
+    #tarkman-board .b-reveal.open { grid-template-rows:1fr; }
+    #tarkman-board .b-reveal > div { overflow:hidden; }
+    #tarkman-board .b-reveal p { margin:8px 0; }
+    #tarkman-board .b-iconrow { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+    #tarkman-board .b-iconrow i, #tarkman-board .b-iconrow svg { width:20px!important; height:20px!important; color:var(--b-primary); stroke-width:1.75; }
+    #tarkman-board .b-target { width:48px; height:48px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--b-control); border-radius:8px; }
+    #tarkman-board .board-theme ::selection { background:var(--b-selection); color:var(--b-onSelection); }
+    #tarkman-board .board-foot { margin-top:16px; font-size:13px; }
+    @media(max-width:680px){ #tarkman-board .board-pair{grid-template-columns:minmax(0,1fr);} #tarkman-board .board-theme{padding:20px;} }
+    @media(prefers-reduced-motion:reduce){ #tarkman-board .b-reveal{transition:none;} }
+  </style>
+  <header class="board-header"><h2>Tarkman foundations</h2><span class="board-status">Literary direction selected · Values proposed</span></header>
+  <nav class="board-nav" aria-label="Foundation section">
+    <button type="button" data-topic="geometry" aria-pressed="true">Shape & spacing</button>
+    <button type="button" data-topic="color" aria-pressed="false">Color & type</button>
+    <button type="button" data-topic="depth" aria-pressed="false">Depth & icons</button>
+    <button type="button" data-topic="states" aria-pressed="false">States & motion</button>
+  </nav>
+  <div class="board-pair"><section class="board-theme" data-scheme="light" aria-label="Light theme foundation specimens"></section><section class="board-theme" data-scheme="dark" aria-label="Dark theme foundation specimens"></section></div>
+  <div class="board-foot" role="status" data-feedback>Proposal specimens · No application changes</div>
+  <div class="board-foot" role="status" data-font-status>Loading reading fonts…</div>
+  <template id="tarkman-board-content">
+    <div class="theme-title"><h3 data-theme-name></h3><span>Candidate v1</span></div>
+    <div class="board-topic" data-panel="geometry">
+      <h4>Corner roles</h4><div class="b-shapes">
+        <div class="b-shape" style="border-radius:var(--b-controlRadius)"><strong>Control</strong><span class="b-label" data-radius-label>8 px · Proposed</span></div>
+        <div class="b-shape" style="border-radius:16px"><strong>Card</strong><span class="b-label">16 px · Proposed</span></div>
+        <div class="b-shape" style="border-radius:24px 24px 0 0"><strong>Sheet top</strong><span class="b-label">24 px · Proposed</span></div>
+        <div class="b-shape" style="border-radius:9999px;min-height:48px;align-self:center"><strong>Status pill</strong><span class="b-label">Fully rounded</span></div>
+      </div>
+      <h4>Edges with different jobs</h4><div class="b-list">
+        <div class="b-borderrow"><span class="b-label">Divider · 1 px</span><div class="b-divider"></div></div>
+        <div class="b-borderrow"><span class="b-label">Control · 1 px</span><div class="b-outline">Reading language</div></div>
+        <div class="b-borderrow"><span class="b-label">Selected · 2 px</span><div class="b-outline b-selected">English · Selected</div></div>
+        <div class="b-borderrow"><span class="b-label">Focus · 3 px<br>Offset · 3 px</span><div class="b-outline b-focus">Keyboard focus</div></div>
+      </div>
+      <h4>Spacing scale</h4><div class="b-spacing" data-spaces></div>
+      <h4>Layout roles</h4><div class="b-list"><span class="b-label">Control padding · 12 vertical / 16 horizontal</span><span class="b-label">Page gutter · 24 native / 32 roomy web</span><span class="b-label">Section gap · 32 / 48</span><span class="b-label">Reading measure · Up to 60 ch, then reflow</span></div>
+    </div>
+    <div class="board-topic" data-panel="color" hidden>
+      <h4>Semantic color roles</h4><div data-swatches></div>
+      <h4>Title · Literary serif</h4><p class="b-type-title">The Lord’s Prayer</p>
+      <span class="b-label">English · Reading 24 / 38</span><p class="b-reading" lang="en">Our Father, who art in heaven,<br>hallowed be thy name.</p>
+      <span class="b-label">Русский · Reading 24 / 38</span><p class="b-reading" lang="ru">Отче наш, сущий на небесах!<br>Да святится имя Твоё.</p>
+      <span class="b-label">Գրաբար · Reading 24 / 38</span><p class="b-reading b-hy" lang="hy">Հայր մեր, որ յերկինս ես,<br>սուրբ եղիցի անուն քո։</p>
+      <div class="b-label">Source Serif 4 + Noto Serif Armenian<br>Quiet system-sans controls · 15 / 23</div>
+    </div>
+    <div class="board-topic" data-panel="depth" hidden>
+      <h4>Surface hierarchy</h4>
+      <div class="b-layer b-flat"><h5>Flat</h5><span class="b-label">Reading surface · No shadow</span></div>
+      <div class="b-layer b-raised"><h5>Raised</h5><span class="b-label">2 px offset / 8 px blur</span></div>
+      <div class="b-layer b-overlay"><h5>Overlay</h5><span class="b-label">12 px offset / 32 px blur</span></div>
+      <span class="b-label">Dark elevation adds surface tone.<br>Shadows describe depth; borders describe boundaries.</span>
+      <h4>Gradients</h4><div class="b-label">None for reading surfaces or core controls.<br>Any future exception needs its own purpose.</div>
+      <h4>One icon family</h4><div class="b-iconrow"><i data-lucide="book-open" aria-hidden="true"></i><i data-lucide="languages" aria-hidden="true"></i><i data-lucide="sliders-horizontal" aria-hidden="true"></i><i data-lucide="chevron-left" aria-hidden="true"></i></div><p class="b-label">Lucide outline · 20 / 24 px · 1.75 stroke</p>
+      <div class="b-iconrow"><div class="b-target"><i data-lucide="x" aria-hidden="true"></i></div><span class="b-label">20 px icon inside a 48 px target<br>Logical native units need platform QA</span></div>
+    </div>
+    <div class="board-topic" data-panel="states" hidden>
+      <h4>Action states</h4><div class="b-stategrid">
+        <div><span class="b-state-label">Default</span><button type="button" data-sample="Default">Read</button></div>
+        <div><span class="b-state-label">Hover specimen</span><button type="button" class="b-hover" data-sample="Hover">Read</button></div>
+        <div><span class="b-state-label">Pressed specimen</span><button type="button" class="b-pressed" data-sample="Pressed">Read</button></div>
+        <div><span class="b-state-label">Focus specimen</span><button type="button" class="b-focus" data-sample="Focus">Read</button></div>
+        <div><span class="b-state-label">Disabled</span><button type="button" disabled>Unavailable</button></div>
+        <div><span class="b-state-label">Loading</span><button type="button" class="b-loading" disabled aria-busy="true">Preparing…</button></div>
+      </div>
+      <h4>Status roles</h4><div class="b-list" data-notices></div>
+      <label class="b-field">Email · Error specimen<input type="email" value="reader" readonly aria-invalid="true"><span class="b-error">Enter a complete email address.</span></label>
+      <div class="b-disclosure"><button type="button" data-disclosure aria-expanded="false">Show motion specimen</button><div class="b-reveal" aria-hidden="true"><div><p class="b-reading">Room to read.</p></div></div></div>
+      <div class="b-label">Feedback 150 ms · Disclosure 200 ms · Overlay 250 ms<br>Reduced motion: immediate · No reading animation</div>
+    </div>
+  </template>
+  <script type="application/json" id="tarkman-foundation-data">{"status": "proposed", "scope": "Visual proposal only; not consumed by either app. This is a review manifest, not a DTCG export.", "themes": {"light": {"canvas": "#FAF8F7", "surface": "#FFFFFF", "raised": "#FFFFFF", "overlay": "#FFFFFF", "text": "#272127", "muted": "#6B5C65", "primary": "#6E3852", "onPrimary": "#FFFFFF", "hover": "#5F3047", "pressed": "#4C2739", "selection": "#F2E4EB", "onSelection": "#6E3852", "divider": "#DFD5DB", "control": "#87737F", "focus": "#6E3852", "disabled": "#EEE7EB", "onDisabled": "#72636D", "success": "#286346", "successSurface": "#EAF3ED", "warning": "#77500B", "warningSurface": "#FFF1CC", "danger": "#B42335", "dangerSurface": "#FCE8EC", "info": "#245983", "infoSurface": "#E8F0F9", "shadowRaised": "0px 2px 8px rgba(39, 33, 39, 0.08)", "shadowOverlay": "0px 12px 32px rgba(39, 33, 39, 0.16)"}, "dark": {"canvas": "#171417", "surface": "#231E23", "raised": "#302730", "overlay": "#392F39", "text": "#F7F1F4", "muted": "#C4B6BF", "primary": "#E3A7C3", "onPrimary": "#351C29", "hover": "#EDB9D1", "pressed": "#CF8AA9", "selection": "#432C39", "onSelection": "#F2C8DD", "divider": "#493C45", "control": "#99838F", "focus": "#E3A7C3", "disabled": "#302730", "onDisabled": "#B8A8B2", "success": "#9ED5B7", "successSurface": "#20372B", "warning": "#F0CE89", "warningSurface": "#3C3020", "danger": "#FFAFB7", "dangerSurface": "#401F29", "info": "#A6CAE9", "infoSurface": "#203344", "shadowRaised": "0px 2px 8px rgba(0, 0, 0, 0.20)", "shadowOverlay": "0px 12px 32px rgba(0, 0, 0, 0.36)"}}, "spacing": [4, 8, 12, 16, 24, 32, 48, 64], "radius": {"control": 8, "card": 16, "sheet": 24, "pill": 9999}, "border": {"divider": 1, "control": 1, "selected": 2, "focusRing": 3, "focusOffset": 3}, "interaction": {"touchTarget": 48, "icon": 20, "iconLarge": 24, "iconStroke": 1.75}, "motion": {"feedbackMs": 150, "disclosureMs": 200, "overlayMs": 250, "reducedMs": 0, "easing": "cubic-bezier(0.16, 1, 0.3, 1)"}, "typography": {"directionStatus": "selected", "metricsStatus": "proposed", "readingFamily": "Source Serif 4", "armenianFamily": "Noto Serif Armenian", "interfaceFamily": "system-ui", "reading": {"size": 24, "lineHeight": 38, "weight": 400}, "readingTitleWeb": {"size": 40, "lineHeight": 48, "weight": 600}, "readingTitleNative": {"size": 34, "lineHeight": 44, "weight": 600}, "bodyWeb": {"size": 16, "lineHeight": 26}, "bodyNative": {"size": 17, "lineHeight": 27}, "label": {"size": 15, "lineHeight": 23, "weight": 600}, "caption": {"size": 14, "lineHeight": 22}, "singleReadingMeasureCh": 60}, "gradientPolicy": "No gradients in reading surfaces or core controls. A future exception needs a specific use case and review.", "units": "Board samples use CSS px. Eventual web exports use appropriate rem values; native adapter uses logical units. Do not treat pixel equivalence as native validation."}</script>
+  <script>
+    (()=>{
+      const root=document.getElementById('tarkman-board');
+      const tokens=JSON.parse(root.querySelector('#tarkman-foundation-data').textContent);
+      const template=root.querySelector('#tarkman-board-content');
+      const state={controlRadius:tokens.radius.control};
+      const roleLabels={canvas:'Canvas',surface:'Surface',text:'Reading text',muted:'Secondary text',primary:'Primary action',control:'Control boundary'};
+      const statusLabels={success:'Connected',warning:'Service paused',danger:'Connection failed',info:'Explanation available'};
+      root.querySelectorAll('[data-scheme]').forEach(panel=>{
+        const scheme=panel.dataset.scheme;panel.style.colorScheme=scheme;
+        Object.entries(tokens.themes[scheme]).forEach(([key,value])=>panel.style.setProperty('--b-'+key,value));
+        panel.append(template.content.cloneNode(true));panel.querySelector('[data-theme-name]').textContent=scheme==='light'?'Light':'Dark';
+        for(const value of tokens.spacing){const item=document.createElement('div');item.className='b-space';const bar=document.createElement('div');bar.className='b-bar';bar.style.width=value+'px';const label=document.createElement('span');label.className='b-label';label.textContent=value;item.append(bar,label);panel.querySelector('[data-spaces]').append(item);}
+        for(const [key,name] of Object.entries(roleLabels)){const row=document.createElement('div');row.className='b-swatch';const swatch=document.createElement('span');swatch.className='b-chip';swatch.style.background=tokens.themes[scheme][key];const label=document.createElement('span');label.textContent=name;const hex=document.createElement('span');hex.className='b-hex';hex.textContent=tokens.themes[scheme][key];row.append(swatch,label,hex);panel.querySelector('[data-swatches]').append(row);}
+        for(const [key,name] of Object.entries(statusLabels)){const item=document.createElement('div');item.className='b-notice';item.style.color=tokens.themes[scheme][key];item.style.background=tokens.themes[scheme][key+'Surface'];item.textContent=name;panel.querySelector('[data-notices]').append(item);}
+        const disclosure=panel.querySelector('[data-disclosure]');const reveal=panel.querySelector('.b-reveal');reveal.id='tarkman-motion-'+scheme;disclosure.setAttribute('aria-controls',reveal.id);
+        disclosure.addEventListener('click',()=>{const open=disclosure.getAttribute('aria-expanded')!=='true';disclosure.setAttribute('aria-expanded',String(open));disclosure.textContent=open?'Hide motion specimen':'Show motion specimen';reveal.classList.toggle('open',open);reveal.setAttribute('aria-hidden',String(!open));});
+        const field=panel.querySelector('input');const error=panel.querySelector('.b-error');error.id='tarkman-error-'+scheme;field.setAttribute('aria-describedby',error.id);
+      });
+      root.querySelectorAll('[data-topic]').forEach(button=>button.addEventListener('click',()=>{root.querySelectorAll('[data-topic]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));root.querySelectorAll('[data-panel]').forEach(panel=>panel.hidden=panel.dataset.panel!==button.dataset.topic);}));
+      root.querySelectorAll('[data-sample]').forEach(button=>button.addEventListener('click',()=>{root.querySelector('[data-feedback]').textContent=button.dataset.sample+' action specimen · Preview only';}));
+      function render(){root.style.setProperty('--b-controlRadius',state.controlRadius+'px');root.querySelectorAll('[data-radius-label]').forEach(label=>label.textContent=state.controlRadius+' px · '+(state.controlRadius===tokens.radius.control?'Proposed':'Preview variation'));}
+      render();if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSlider(state,'controlRadius',{label:'Compare control corners',min:4,max:12,step:2,unit:'px'});}
+      if(globalThis.lucide)lucide.createIcons({attrs:{width:20,height:20,'stroke-width':1.75}});
+      const link=root.querySelector('link');let finished=false;
+      async function fonts(){try{const list=await Promise.all([document.fonts.load('400 24px "Source Serif 4"','Our Father Отче наш'),document.fonts.load('600 34px "Source Serif 4"','The Lord’s Prayer'),document.fonts.load('400 24px "Noto Serif Armenian"','Հայր մեր')]);finished=true;root.querySelector('[data-font-status]').textContent=list.every(faces=>faces.length&&faces.every(face=>face.status==='loaded'))?'Web fonts loaded · Native glyph shaping still requires review':'Fallback fonts visible · Typography approval pending';}catch{finished=true;root.querySelector('[data-font-status]').textContent='Web font loading failed · Fallback preview';}}
+      link.addEventListener('load',fonts);link.addEventListener('error',()=>{finished=true;root.querySelector('[data-font-status]').textContent='Font stylesheet unavailable · Fallback preview';});if(link.sheet)fonts();setTimeout(()=>{if(!finished)root.querySelector('[data-font-status]').textContent='Fonts still loading · Typography approval pending';},8000);
+    })();
+  </script>
+</div>

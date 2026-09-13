@@ -1,0 +1,63 @@
+{
+  "scope": "Additional opaque foreground pairs used by component specimens; foundation pairs checked separately.",
+  "passed": 8,
+  "total": 8,
+  "pairs": [
+    {
+      "theme": "light",
+      "foreground": "primary",
+      "background": "canvas",
+      "ratio": 8.439,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "primary",
+      "background": "surface",
+      "ratio": 8.934,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "primary",
+      "background": "overlay",
+      "ratio": 8.934,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "danger",
+      "background": "surface",
+      "ratio": 6.497,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "primary",
+      "background": "canvas",
+      "ratio": 9.211,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "primary",
+      "background": "surface",
+      "ratio": 8.258,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "primary",
+      "background": "overlay",
+      "ratio": 6.454,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "danger",
+      "background": "surface",
+      "ratio": 9.417,
+      "minimum": 4.5
+    }
+  ]
+}

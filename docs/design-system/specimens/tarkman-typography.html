@@ -1,0 +1,106 @@
+<div id="tarkman-type" aria-label="Tarkman multilingual typography study">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Armenian:wght@400;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&amp;display=swap">
+  <style>
+    #tarkman-type { --tt-bg:light-dark(#FAF8F7,#171417); --tt-surface:light-dark(#FFFFFF,#231E23); --tt-text:light-dark(#272127,#F7F1F4); --tt-muted:light-dark(#6B5C65,#C4B6BF); --tt-brand:light-dark(#6E3852,#E3A7C3); --tt-soft:light-dark(#F2E4EB,#432C39); --tt-line:light-dark(#DFD5DB,#493C45); --tt-edge:light-dark(#87737F,#99838F); --tt-face:'Source Serif 4',Georgia,serif; --tt-size:24px; --tt-leading:1.6; font-family:system-ui,sans-serif; color:var(--tt-text); }
+    #tarkman-type * { box-sizing:border-box; }
+    #tarkman-type .tt-sheet { background:var(--tt-bg); border:1px solid var(--tt-line); border-radius:12px; overflow:hidden; }
+    #tarkman-type .tt-top { padding:20px 26px; background:var(--tt-surface); border-bottom:1px solid var(--tt-line); display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    #tarkman-type .tt-brand { font:600 26px/1.2 'Source Serif 4',Georgia,serif; letter-spacing:-0.025em; color:var(--tt-brand); }
+    #tarkman-type .tt-small { color:var(--tt-muted); font:400 13px/1.5 system-ui,sans-serif; }
+    #tarkman-type .tt-controls { display:flex; flex-wrap:wrap; gap:12px; padding:16px 26px; background:var(--tt-surface); border-bottom:1px solid var(--tt-line); }
+    #tarkman-type label { display:flex; flex-wrap:wrap; align-items:center; gap:8px; color:var(--tt-muted); font:500 13px/1.5 system-ui,sans-serif; }
+    #tarkman-type select { min-height:48px; max-width:100%; border:1px solid var(--tt-edge); border-radius:8px; padding:9px 12px; background:var(--tt-bg); color:var(--tt-text); font:400 16px/1.4 system-ui,sans-serif; }
+    #tarkman-type select:focus-visible, #tarkman-type summary:focus-visible { outline:3px solid var(--tt-brand); outline-offset:3px; }
+    #tarkman-type .tt-content { padding:30px 30px 12px; }
+    #tarkman-type .tt-overline { color:var(--tt-brand); font:600 12px/1.6 system-ui,sans-serif; letter-spacing:.09em; text-transform:uppercase; }
+    #tarkman-type h2 { margin:9px 0 10px; color:var(--tt-text); font:600 40px/1.15 var(--tt-face); letter-spacing:-.025em; }
+    #tarkman-type .tt-intro { color:var(--tt-muted); font:400 15px/1.6 system-ui,sans-serif; margin:0 0 26px; }
+    #tarkman-type .tt-language { display:grid; grid-template-columns:112px minmax(0,1fr); gap:16px; padding:26px 0; border-top:1px solid var(--tt-line); }
+    #tarkman-type h3 { color:var(--tt-brand); font:600 14px/1.6 system-ui,sans-serif; margin:5px 0 8px; }
+    #tarkman-type .tt-reading { font-family:var(--tt-face); font-size:var(--tt-size); line-height:var(--tt-leading); font-weight:400; font-optical-sizing:auto; font-synthesis:none; color:var(--tt-text); margin:0; white-space:pre-line; overflow-wrap:break-word; }
+    #tarkman-type .tt-armenian { font-family:'Noto Serif Armenian',serif; }
+    #tarkman-type .tt-reading strong { font-weight:700; }
+    #tarkman-type .tt-bottom { padding:16px 26px; border-top:1px solid var(--tt-line); background:var(--tt-surface); }
+    #tarkman-type details { margin:0 30px 24px; border-top:1px solid var(--tt-line); padding-top:14px; }
+    #tarkman-type summary { cursor:pointer; min-height:48px; display:list-item; padding:12px 0; color:var(--tt-brand); font:500 15px/1.5 system-ui,sans-serif; }
+    #tarkman-type .tt-stress { font-size:var(--tt-size); line-height:1.8; margin:14px 0; overflow-wrap:break-word; }
+    @media(max-width:540px) { #tarkman-type .tt-language { grid-template-columns:minmax(0,1fr); gap:8px; } #tarkman-type .tt-content { padding:24px 20px 4px; } #tarkman-type .tt-top, #tarkman-type .tt-controls, #tarkman-type .tt-bottom { padding:16px 20px; } #tarkman-type h2 { font-size:34px; } #tarkman-type details { margin:0 20px 20px; } }
+  </style>
+  <section class="tt-sheet">
+    <header class="tt-top"><div class="tt-brand">Tarkman</div><span class="tt-small">Typography study · Sample text</span></header>
+    <div class="tt-controls">
+      <label>Reading style <select data-style><option value="literary">Literary serif</option><option value="original">Original sans</option></select></label>
+      <label>Appearance <select data-mode><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <label>Text size <select data-size><option value="24">Standard</option><option value="30">Large</option><option value="38">Extra large</option></select></label>
+    </div>
+    <main class="tt-content">
+      <div class="tt-overline">Divine Liturgy / Reading</div>
+      <h2>A prayer, in every voice.</h2>
+      <p class="tt-intro">The Lord’s Prayer · Հայր մեր · Отче наш</p>
+      <section class="tt-language" aria-labelledby="tt-en"><div><h3 id="tt-en">English</h3><div class="tt-small" data-face-label>Source Serif 4</div></div><p class="tt-reading" lang="en">Our Father, who art in heaven,
+hallowed be thy name.
+
+Thy kingdom come. Thy will be done,
+on earth as it is in heaven.</p></section>
+      <section class="tt-language" aria-labelledby="tt-ru"><div><h3 id="tt-ru" lang="ru">Русский</h3><div class="tt-small" data-face-label>Source Serif 4</div></div><p class="tt-reading" lang="ru">Отче наш, сущий на небесах!
+Да святится имя Твоё.
+
+Да приидет Царствие Твоё;
+да будет воля Твоя и на земле, как на небе.</p></section>
+      <section class="tt-language" aria-labelledby="tt-hy"><div><h3 id="tt-hy" lang="hy">Գրաբար</h3><div class="tt-small">Noto Serif Armenian</div></div><p class="tt-reading tt-armenian" lang="hy">Հայր մեր, որ յերկինս ես,
+սուրբ եղիցի անուն քո։
+
+Եկեսցէ արքայութիւն քո,
+եղիցին կամք քո որպէս յերկինս եւ յերկրի։</p></section>
+      <section class="tt-language" aria-labelledby="tt-translit"><div><h3 id="tt-translit">Translit</h3><div class="tt-small" data-face-label>Source Serif 4</div></div><p class="tt-reading" lang="hy-Latn">Hayr mer, vor hergins yes,
+surp yeghitsi anun ko.
+
+Yegestse arkayutyun ko,
+yeghitsin gamk ko vorbes hergins yev hergri.</p></section>
+    </main>
+    <details open><summary>Visual QA · punctuation & emphasis</summary><div class="tt-small">Deliberate glyph stress samples</div>
+      <p class="tt-reading tt-stress" lang="ru">Ёё Йй Ъъ Ыы Ьь — «мир»; мо́ре
+<strong>Отче наш, сущий на небесах!</strong></p>
+      <p class="tt-reading tt-armenian tt-stress" lang="hy">Տէ՛ր, ողորմեա՜։ Ինչո՞ւ։ Ա̄ ա́
+<strong>Հայր մեր, որ յերկինս ես։</strong></p>
+    </details>
+    <footer class="tt-bottom"><div class="tt-small" data-font-status role="status">Loading candidate web fonts…</div><div class="tt-small">Web font specimen · Exact native assets and shaping still require QA</div></footer>
+  </section>
+  <script>
+    (() => {
+      const root=document.getElementById('tarkman-type');
+      const state={style:'literary',appearance:'system',size:24,leading:1.6};
+      function render(){
+        root.style.setProperty('--tt-face',state.style==='literary'?"'Source Serif 4',Georgia,serif":"system-ui,sans-serif");
+        root.style.setProperty('--tt-size',state.size+'px');
+        root.style.setProperty('--tt-leading',String(state.leading));
+        root.style.colorScheme=state.appearance==='system'?'inherit':state.appearance;
+        root.querySelector('[data-style]').value=state.style;
+        root.querySelector('[data-mode]').value=state.appearance;
+        root.querySelector('[data-size]').value=String(state.size);
+        root.querySelectorAll('[data-face-label]').forEach(label=>label.textContent=state.style==='literary'?'Source Serif 4':'System sans-serif');
+      }
+      root.querySelector('[data-style]').addEventListener('change',event=>{state.style=event.target.value;render();});
+      root.querySelector('[data-mode]').addEventListener('change',event=>{state.appearance=event.target.value;render();});
+      root.querySelector('[data-size]').addEventListener('change',event=>{state.size=Number(event.target.value);render();});
+      render();
+      if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSelect(state,'style',{label:'Reading style',options:[{label:'Literary serif',value:'literary'},{label:'Original sans',value:'original'}]});tweak.addSlider(state,'leading',{label:'Line spacing',min:1.4,max:1.9,step:.05});}
+      const status=root.querySelector('[data-font-status]');
+      const sheet=root.querySelector('link');
+      let resolved=false;
+      async function checkFonts(){
+        try {
+          const samples=[['400 24px "Source Serif 4"','Our Father'],['400 24px "Source Serif 4"','Отче наш'],['400 24px "Noto Serif Armenian"','Հայր մեր'],['700 24px "Source Serif 4"','Отче наш'],['700 24px "Noto Serif Armenian"','Հայր մեր']];
+          const faces=await Promise.all(samples.map(([font,text])=>document.fonts.load(font,text)));
+          const loaded=faces.every(list=>list.length>0&&list.every(face=>face.status==='loaded'));
+          resolved=true;
+          status.textContent=loaded?'Candidate web font faces loaded · Glyph fallback still needs inspection':'Candidate fonts unavailable · Fallback preview; do not use for font approval';
+        } catch {resolved=true;status.textContent='Font loading failed · Fallback preview; do not use for font approval';}
+      }
+      sheet.addEventListener('load',checkFonts);
+      sheet.addEventListener('error',()=>{resolved=true;status.textContent='Font stylesheet unavailable · Fallback preview; do not use for font approval';});
+      if(sheet.sheet)checkFonts();
+      setTimeout(()=>{if(!resolved)status.textContent='Fonts are still loading · Font approval pending';},8000);
+    })();
+  </script>
+</div>

@@ -1,0 +1,30 @@
+[
+  {
+    "font": "SourceSerif4-Semibold.ttf",
+    "sha256": "36db62940cb5728b12b1802476dc7fcf4c6c519a7bdd476ba23a4e555fc4655f",
+    "weight": 600,
+    "version": "Version 4.005;hotconv 1.1.0;makeotfexe 2.6.0",
+    "missingGlyphs": []
+  },
+  {
+    "font": "NotoSerifArmenian-Bold.ttf",
+    "sha256": "e7e59b075ee1cb526fe570491325c60574878b18756e83bff784bccc653de043",
+    "weight": 700,
+    "version": "Version 2.008; ttfautohint (v1.8.4.7-5d5b)",
+    "missingGlyphs": []
+  },
+  {
+    "font": "NotoSerifArmenian-Regular.ttf",
+    "sha256": "2c489e2ed0cd0fe7a302e5e04cab452633afe77a51e96a4592eb2ef533300cf3",
+    "weight": 400,
+    "version": "Version 2.008; ttfautohint (v1.8.4.7-5d5b)",
+    "missingGlyphs": []
+  },
+  {
+    "font": "SourceSerif4-Regular.ttf",
+    "sha256": "e5a4ee6a3d87bb9024796be390c6771e2a0eb1883dae25effaf57ca01668e24b",
+    "weight": 400,
+    "version": "Version 4.005;hotconv 1.1.0;makeotfexe 2.6.0",
+    "missingGlyphs": []
+  }
+]

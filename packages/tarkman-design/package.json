@@ -1,0 +1,15 @@
+{
+  "name": "@tarkman/design",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tokens": "./tokens.json",
+    "./web.css": "./web.css"
+  },
+  "files": ["tokens.json", "web.css"],
+  "scripts": {
+    "build": "node scripts/build-web-css.mjs",
+    "check": "node scripts/build-web-css.mjs --check && node scripts/check-contrast.mjs"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "scope": "Additional opaque pairs for field feedback and hovered service metadata. Existing foundation/component pairs cover other specimen roles.",
+  "passed": 6,
+  "total": 6,
+  "pairs": [
+    {
+      "theme": "light",
+      "foreground": "success",
+      "background": "canvas",
+      "ratio": 6.693,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "danger",
+      "background": "canvas",
+      "ratio": 6.136,
+      "minimum": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "muted",
+      "background": "selection",
+      "ratio": 5.105,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "success",
+      "background": "canvas",
+      "ratio": 11.015,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "danger",
+      "background": "canvas",
+      "ratio": 10.504,
+      "minimum": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "muted",
+      "background": "selection",
+      "ratio": 6.508,
+      "minimum": 4.5
+    }
+  ]
+}

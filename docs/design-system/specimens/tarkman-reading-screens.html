@@ -1,0 +1,170 @@
+<div id="tarkman-screens" aria-label="Tarkman proposed web and native reading screens">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Armenian:wght@400;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&amp;display=swap">
+  <style>
+    #tarkman-screens { --ts-canvas:light-dark(#FAF8F7,#171417); --ts-surface:light-dark(#FFFFFF,#231E23); --ts-text:light-dark(#272127,#F7F1F4); --ts-muted:light-dark(#6B5C65,#C4B6BF); --ts-primary:light-dark(#6E3852,#E3A7C3); --ts-on:light-dark(#FFFFFF,#351C29); --ts-soft:light-dark(#F2E4EB,#432C39); --ts-line:light-dark(#DFD5DB,#493C45); --ts-control:light-dark(#87737F,#99838F); --ts-green:light-dark(#286346,#9ED5B7); --ts-greenbg:light-dark(#EAF3ED,#20372B); --ts-size:24px; --ts-leading:1.62; --ts-radius:8px; font-family:system-ui,sans-serif; color:var(--ts-text); }
+    #tarkman-screens * { box-sizing:border-box; }
+    #tarkman-screens [hidden] { display:none!important; }
+    #tarkman-screens button, #tarkman-screens select { font:500 14px/1.45 system-ui,sans-serif; color:var(--ts-text); min-height:48px; border:1px solid transparent; border-radius:var(--ts-radius); background:transparent; padding:10px 14px; cursor:pointer; }
+    #tarkman-screens button { display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+    #tarkman-screens button:hover { background:var(--ts-soft); color:var(--ts-primary); }
+    #tarkman-screens button:focus-visible, #tarkman-screens select:focus-visible, #tarkman-screens input:focus-visible, #tarkman-screens summary:focus-visible { outline:3px solid var(--ts-primary); outline-offset:3px; }
+    #tarkman-screens select { background:var(--ts-surface); border-color:var(--ts-control); font-size:16px; max-width:100%; }
+    #tarkman-screens button[aria-pressed="true"] { background:var(--ts-soft); color:var(--ts-primary); }
+    #tarkman-screens .ts-review { display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:0 0 12px; color:var(--ts-muted); font-size:13px; }
+    #tarkman-screens .ts-switch { display:flex; gap:4px; flex-wrap:wrap; }
+    #tarkman-screens .ts-device { background:var(--ts-canvas); color:var(--ts-text); width:100%; margin:0 auto; border:1px solid var(--ts-line); border-radius:12px; overflow:hidden; }
+    #tarkman-screens .ts-device.native { max-width:390px; border-radius:20px; }
+    #tarkman-screens .ts-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 30px; border-bottom:1px solid var(--ts-line); background:var(--ts-surface); }
+    #tarkman-screens .ts-wordmark { color:var(--ts-primary); font:600 27px/1.2 'Source Serif 4',Georgia,serif; letter-spacing:-.03em; }
+    #tarkman-screens .ts-navleft { display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+    #tarkman-screens .ts-nav .ts-current { color:var(--ts-primary); text-decoration:underline; text-underline-offset:7px; }
+    #tarkman-screens .ts-quiet { color:var(--ts-primary); }
+    #tarkman-screens .ts-icon { width:20px; height:20px; flex-shrink:0; }
+    #tarkman-screens .ts-main { padding:32px; }
+    #tarkman-screens .ts-eyebrow { font:600 12px/1.6 system-ui,sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--ts-primary); }
+    #tarkman-screens h1 { color:var(--ts-text); font:600 42px/1.15 'Source Serif 4',Georgia,serif; letter-spacing:-.025em; margin:10px 0; }
+    #tarkman-screens h2 { color:var(--ts-text); font:600 30px/1.25 'Source Serif 4',Georgia,serif; margin:8px 0 16px; }
+    #tarkman-screens .ts-subtitle { color:var(--ts-muted); font:400 15px/1.6 system-ui,sans-serif; margin:0; }
+    #tarkman-screens .ts-titleline { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:18px; }
+    #tarkman-screens .ts-status { display:inline-flex; align-items:center; gap:7px; color:var(--ts-green); background:var(--ts-greenbg); border-radius:100px; padding:6px 10px; font:500 12px/1.5 system-ui,sans-serif; white-space:nowrap; }
+    #tarkman-screens .ts-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; border-top:1px solid var(--ts-line); border-bottom:1px solid var(--ts-line); margin:26px 0 0; padding:9px 0; }
+    #tarkman-screens .ts-muted { color:var(--ts-muted); font:400 13px/1.6 system-ui,sans-serif; }
+    #tarkman-screens .ts-readings { display:grid; grid-template-columns:var(--ts-columns,repeat(3,minmax(0,1fr))); gap:28px; padding:28px 0 8px; }
+    #tarkman-screens .ts-langhead { color:var(--ts-primary); font:600 14px/1.6 system-ui,sans-serif; margin:0 0 16px; }
+    #tarkman-screens .ts-reading { font-family:'Source Serif 4',Georgia,serif; font-size:var(--ts-size); line-height:var(--ts-leading); font-weight:400; font-optical-sizing:auto; font-synthesis:none; color:var(--ts-text); white-space:pre-line; margin:0; overflow-wrap:break-word; }
+    #tarkman-screens .ts-hy { font-family:'Noto Serif Armenian',serif; }
+    #tarkman-screens .ts-language { min-width:0; }
+    #tarkman-screens .ts-lower { display:flex; flex-wrap:wrap; align-items:center; gap:18px; justify-content:space-between; border-top:1px solid var(--ts-line); margin-top:28px; padding-top:20px; }
+    #tarkman-screens .ts-primary { background:var(--ts-primary); color:var(--ts-on); padding:12px 20px; }
+    #tarkman-screens .ts-primary:hover { background:var(--ts-primary); color:var(--ts-on); text-decoration:underline; text-underline-offset:4px; }
+    #tarkman-screens .ts-outline { border-color:var(--ts-control); }
+    #tarkman-screens .ts-footer { padding:14px 30px; background:var(--ts-surface); border-top:1px solid var(--ts-line); font:400 12px/1.6 system-ui,sans-serif; color:var(--ts-muted); display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+    #tarkman-screens .ts-panel { background:var(--ts-surface); border:1px solid var(--ts-line); border-radius:16px; margin:24px 0; padding:26px; max-width:680px; }
+    #tarkman-screens .ts-panelhead { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+    #tarkman-screens .ts-field { padding:22px 0; border-top:1px solid var(--ts-line); }
+    #tarkman-screens .ts-field > label, #tarkman-screens legend { color:var(--ts-text); font:600 15px/1.5 system-ui,sans-serif; margin:0 0 10px; display:block; }
+    #tarkman-screens fieldset { border:0; padding:0; margin:0; min-width:0; }
+    #tarkman-screens .ts-options { display:flex; gap:8px; flex-wrap:wrap; }
+    #tarkman-screens .ts-check { display:flex; align-items:center; gap:10px; padding:10px 12px; min-height:48px; border:1px solid var(--ts-line); border-radius:var(--ts-radius); font:400 16px/1.5 system-ui,sans-serif; }
+    #tarkman-screens input { accent-color:var(--ts-primary); width:20px; height:20px; margin:0; }
+    #tarkman-screens .ts-explanation { font:400 19px/1.75 'Source Serif 4',Georgia,serif; color:var(--ts-text); }
+    #tarkman-screens .ts-excerpt { margin:22px 0; padding-left:18px; border-left:3px solid var(--ts-primary); }
+    #tarkman-screens .ts-fontstatus { font:400 12px/1.5 system-ui,sans-serif; color:var(--ts-muted); padding:10px 0 0; }
+    #tarkman-screens .ts-nativeonly { display:none; }
+    #tarkman-screens .native .ts-webonly { display:none; }
+    #tarkman-screens .native .ts-nativeonly { display:inline-flex; }
+    #tarkman-screens .native .ts-nav { padding:10px 14px; }
+    #tarkman-screens .native .ts-navleft { gap:0; }
+    #tarkman-screens .native .ts-wordmark { font-size:23px; }
+    #tarkman-screens .native .ts-main { padding:26px 22px; }
+    #tarkman-screens .native h1 { font-size:34px; }
+    #tarkman-screens .native .ts-readings { grid-template-columns:minmax(0,1fr); gap:28px; }
+    #tarkman-screens .native .ts-language + .ts-language { border-top:1px solid var(--ts-line); padding-top:24px; }
+    #tarkman-screens .native .ts-panel { border:0; border-radius:24px 24px 0 0; padding:24px 22px; margin:20px -22px -26px; }
+    #tarkman-screens .native .ts-footer { padding:16px 22px 24px; }
+    #tarkman-screens .native .ts-primary { flex:1; }
+    @media(max-width:760px) { #tarkman-screens .ts-readings { grid-template-columns:minmax(0,1fr); } #tarkman-screens .ts-language + .ts-language { border-top:1px solid var(--ts-line); padding-top:24px; } #tarkman-screens .ts-main { padding:24px 20px; } #tarkman-screens .ts-nav { padding:12px 16px; } #tarkman-screens h1 { font-size:34px; } #tarkman-screens .ts-panel { padding:20px; } }
+  </style>
+  <div class="ts-review">
+    <div class="ts-switch" role="group" aria-label="Preview platform"><button type="button" data-platform="web" aria-pressed="true">Web</button><button type="button" data-platform="native" aria-pressed="false">Native mobile</button></div>
+    <span>Design proposal · Sample service</span>
+  </div>
+  <div class="ts-device">
+    <header class="ts-nav">
+      <div class="ts-navleft"><span class="ts-wordmark">Tarkman</span><span class="ts-webonly ts-muted">Divine Liturgy</span></div>
+      <button type="button" data-open="preferences" class="ts-quiet" aria-label="Reading preferences"><i data-lucide="sliders-horizontal" class="ts-icon" aria-hidden="true"></i><span>Reading settings</span></button>
+    </header>
+    <main class="ts-main">
+      <div class="ts-titleline"><div><div class="ts-eyebrow">Divine Liturgy</div><h1>The Lord’s Prayer</h1><p class="ts-subtitle">A prayer we share, in the language we know.</p></div><span class="ts-status"><i data-lucide="radio" aria-hidden="true" class="ts-icon"></i>Following live</span></div>
+      <div data-view="reading">
+        <div class="ts-toolbar"><button type="button" data-open="languages" class="ts-quiet"><i data-lucide="languages" class="ts-icon" aria-hidden="true"></i><span data-count>3 languages</span></button><span class="ts-muted">Prayer · Sample excerpt</span></div>
+        <div class="ts-readings">
+          <section class="ts-language" data-language="en" aria-labelledby="ts-en"><h3 class="ts-langhead" id="ts-en">English</h3><p class="ts-reading" lang="en">Our Father, who art in heaven,
+hallowed be thy name.
+
+Thy kingdom come. Thy will be done,
+on earth as it is in heaven.</p></section>
+          <section class="ts-language" data-language="ru" aria-labelledby="ts-ru"><h3 class="ts-langhead" id="ts-ru" lang="ru">Русский</h3><p class="ts-reading" lang="ru">Отче наш, сущий на небесах!
+Да святится имя Твоё.
+
+Да приидет Царствие Твоё;
+да будет воля Твоя и на земле, как на небе.</p></section>
+          <section class="ts-language" data-language="grabar" aria-labelledby="ts-hy"><h3 class="ts-langhead" id="ts-hy" lang="hy">Գրաբար</h3><p class="ts-reading ts-hy" lang="hy">Հայր մեր, որ յերկինս ես,
+սուրբ եղիցի անուն քո։
+
+Եկեսցէ արքայութիւն քո,
+եղիցին կամք քո որպէս յերկինս եւ յերկրի։</p></section>
+          <section class="ts-language" data-language="translit" aria-labelledby="ts-translit" hidden><h3 class="ts-langhead" id="ts-translit">Translit</h3><p class="ts-reading" lang="hy-Latn">Hayr mer, vor hergins yes,
+surp yeghitsi anun ko.
+
+Yegestse arkayutyun ko,
+yeghitsin gamk ko vorbes hergins yev hergri.</p></section>
+        </div>
+        <div class="ts-lower"><button type="button" data-open="explanation" class="ts-primary"><i data-lucide="book-open" class="ts-icon" aria-hidden="true"></i>About this prayer</button><span class="ts-muted">The service keeps your place.</span></div>
+      </div>
+      <section class="ts-panel" data-view="explanation" aria-labelledby="ts-explanation-title" hidden>
+        <div class="ts-panelhead"><div><div class="ts-eyebrow">About this prayer</div><h2 id="ts-explanation-title">Praying together</h2></div><button type="button" data-back aria-label="Close explanation"><i data-lucide="x" class="ts-icon" aria-hidden="true"></i></button></div>
+        <p class="ts-muted">Sample explanation for design review</p>
+        <p class="ts-explanation">The words begin with “Our Father”—a prayer spoken together. Here, each language has room to be read at its own pace.</p>
+        <div class="ts-excerpt"><p class="ts-reading" lang="en">Our Father, who art in heaven.</p><p class="ts-reading" lang="ru">Отче наш, сущий на небесах!</p><p class="ts-reading ts-hy" lang="hy">Հայր մեր, որ յերկինս ես։</p></div>
+        <button type="button" class="ts-primary" data-back>Return to reading</button>
+      </section>
+      <section class="ts-panel" data-view="preferences" aria-labelledby="ts-preferences-title" hidden>
+        <div class="ts-panelhead"><div><div class="ts-eyebrow">Make room to read</div><h2 id="ts-preferences-title">Reading preferences</h2></div><button type="button" data-back aria-label="Close preferences"><i data-lucide="x" class="ts-icon" aria-hidden="true"></i></button></div>
+        <div class="ts-field"><fieldset><legend>Appearance</legend><div class="ts-options" role="group" aria-label="Appearance"><button type="button" class="ts-outline" data-theme="system" aria-pressed="true">System</button><button type="button" class="ts-outline" data-theme="light" aria-pressed="false">Light</button><button type="button" class="ts-outline" data-theme="dark" aria-pressed="false">Dark</button></div></fieldset></div>
+        <div class="ts-field"><label for="ts-reading-size">Reading size</label><select id="ts-reading-size"><option value="24">Standard</option><option value="28">Larger</option><option value="34">Extra large</option></select></div>
+        <div class="ts-field"><span class="ts-muted">Text preview</span><p class="ts-reading" lang="en">Our Father, who art in heaven.</p><p class="ts-reading" lang="ru">Отче наш, сущий на небесах!</p><p class="ts-reading ts-hy" lang="hy">Հայր մեր, որ յերկինս ես։</p></div>
+        <button type="button" class="ts-primary" data-back>Done</button>
+      </section>
+      <section class="ts-panel" data-view="languages" aria-labelledby="ts-languages-title" hidden>
+        <div class="ts-panelhead"><div><div class="ts-eyebrow">Follow in your language</div><h2 id="ts-languages-title">Reading languages</h2></div><button type="button" data-back aria-label="Close languages"><i data-lucide="x" class="ts-icon" aria-hidden="true"></i></button></div>
+        <fieldset><legend>Show translations</legend><div class="ts-options"><label class="ts-check"><input type="checkbox" value="en" checked>English</label><label class="ts-check" lang="ru"><input type="checkbox" value="ru" checked>Русский</label><label class="ts-check" lang="hy"><input type="checkbox" value="grabar" checked>Գրաբար</label><label class="ts-check"><input type="checkbox" value="translit">Translit</label></div></fieldset>
+        <p class="ts-muted" data-language-feedback role="status">Choose at least one language.</p>
+        <button type="button" class="ts-primary" data-back>Done</button>
+      </section>
+    </main>
+    <footer class="ts-footer"><span>Sample service · No live connection</span><span data-mode-label>System appearance</span></footer>
+  </div>
+  <div class="ts-fontstatus" role="status" data-font-status>Loading proposed reading fonts…</div>
+  <script>
+    (()=>{
+      const root=document.getElementById('tarkman-screens');
+      const state={platform:'web',appearance:'system',readingSize:24,leading:1.62,radius:8};
+      let currentView='reading'; let opener=null;
+      const device=root.querySelector('.ts-device');
+      const languages=new Set(['en','ru','grabar']);
+      function render(){
+        device.classList.toggle('native',state.platform==='native');
+        device.style.colorScheme=state.appearance==='system'?'inherit':state.appearance;
+        root.style.setProperty('--ts-size',state.readingSize+'px');
+        root.style.setProperty('--ts-leading',state.leading);
+        root.style.setProperty('--ts-radius',state.radius+'px');
+        root.querySelectorAll('[data-platform]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.platform===state.platform)));
+        root.querySelectorAll('[data-theme]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.theme===state.appearance)));
+        root.querySelector('[data-mode-label]').textContent=state.appearance.charAt(0).toUpperCase()+state.appearance.slice(1)+' appearance';
+        root.querySelectorAll('[data-language]').forEach(section=>section.hidden=!languages.has(section.dataset.language));
+        root.querySelector('[data-count]').textContent=languages.size+' language'+(languages.size===1?'':'s');
+        root.querySelectorAll('[data-view]').forEach(section=>section.hidden=section.dataset.view!==currentView);
+        const readingGrid=root.querySelector('.ts-readings');
+        readingGrid.style.setProperty('--ts-columns',languages.size===1?'minmax(0, 60ch)':languages.size===2?'repeat(2,minmax(0,1fr))':'repeat(3,minmax(0,1fr))');
+      }
+      root.querySelectorAll('[data-platform]').forEach(button=>button.addEventListener('click',()=>{state.platform=button.dataset.platform;render();}));
+      root.querySelectorAll('[data-theme]').forEach(button=>button.addEventListener('click',()=>{state.appearance=button.dataset.theme;render();}));
+      root.querySelectorAll('[data-open]').forEach(button=>button.addEventListener('click',()=>{opener=button;currentView=button.dataset.open;render();root.querySelector('[data-view="'+currentView+'"] [data-back]').focus();}));
+      function back(){currentView='reading';render();if(opener)opener.focus();}
+      root.querySelectorAll('[data-back]').forEach(button=>button.addEventListener('click',back));
+      root.addEventListener('keydown',event=>{if(event.key==='Escape'&&currentView!=='reading'){event.preventDefault();back();}});
+      root.querySelector('#ts-reading-size').addEventListener('change',event=>{state.readingSize=Number(event.target.value);render();});
+      root.querySelectorAll('input[type="checkbox"]').forEach(input=>input.addEventListener('change',()=>{
+        if(!input.checked&&languages.size===1){input.checked=true;root.querySelector('[data-language-feedback]').textContent='Keep at least one reading language selected.';return;}
+        if(input.checked)languages.add(input.value);else languages.delete(input.value);
+        root.querySelector('[data-language-feedback]').textContent='Choose at least one language.';render();
+      }));
+      render();
+      if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSlider(state,'leading',{label:'Reading line spacing',min:1.45,max:1.85,step:.05});tweak.addSlider(state,'radius',{label:'Control corners',min:4,max:12,step:2,unit:'px'});}
+      const fontLink=root.querySelector('link');let finished=false;
+      async function fontCheck(){try{const requests=[['400 24px "Source Serif 4"','Our Father Отче наш'],['600 42px "Source Serif 4"','The Lord’s Prayer'],['400 24px "Noto Serif Armenian"','Հայր մեր']];const loaded=await Promise.all(requests.map(([face,text])=>document.fonts.load(face,text)));finished=true;root.querySelector('[data-font-status]').textContent=loaded.every(faces=>faces.length&&faces.every(face=>face.status==='loaded'))?'Proposed web fonts loaded · Native font rendering remains a separate review':'Fallback fonts visible · Do not use this rendering for typography approval';}catch{finished=true;root.querySelector('[data-font-status]').textContent='Font loading failed · Fallback preview only';}}
+      fontLink.addEventListener('load',fontCheck);fontLink.addEventListener('error',()=>{finished=true;root.querySelector('[data-font-status]').textContent='Font stylesheet unavailable · Fallback preview only';});if(fontLink.sheet)fontCheck();setTimeout(()=>{if(!finished)root.querySelector('[data-font-status]').textContent='Fonts still loading · Typography approval pending';},8000);
+    })();
+  </script>
+</div>
