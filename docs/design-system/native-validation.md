@@ -27,24 +27,7 @@ This is JavaScript running on native Expo Go views, not a browser mockup and not
 | iOS software keyboard | A six-line note’s final line/caret was visible above the software keyboard. Dragging the sheet dismissed the keyboard and exposed the entire field and Done. A subsequent Done action returned to passage 2 with all three languages and manual-reading state | Done with the keyboard still visible, landscape and maximum-size editing remain unverified |
 | Android review | Native reading rendered in the earlier pass; the user subsequently inspected the Android simulator and reported that it looked fine | User visual review is recorded separately from interaction/accessibility testing. The computer-use tool could not attach; sheet, Back, keyboard and TalkBack checks remain unverified |
 
-Primary captures at repository root:
-
-- [Android light reading](evidence/native/android-reading-light.png)
-- [Android dark with enlarged OS text](evidence/native/android-dark-large.png)
-- [iOS light language sheet](evidence/native/ios-languages-light.png)
-- [iOS dark explanation, passage 2](evidence/native/ios-explanation-dark.png)
-- [iOS dark software keyboard](evidence/native/ios-keyboard-dark.png)
-- [Font hash and coverage results](evidence/native/font-check.json)
-
-`ios-sheet-max-text-before.png` and `ios-sheet-max-text.png` record an intermediate title-layout investigation, before the final scroll-container correction. `ios-reading-light-scrolled.png` and `android-initial.png` are early development captures; the Android initial capture contains a development-server warning. They are not final layout references. No capture is a golden-image baseline.
-
-Follow-up captures in `docs/design-system/evidence/native-followup`:
-
-- [Six-line field and Done after keyboard dismissal](evidence/native-followup/ios-multiline-done.png)
-- [Maximum text after remeasurement correction](evidence/native-followup/ios-live-max-fixed.png) — partial scrolled viewport, showing Close/System; not a full-sheet pass.
-- [Normal text and retained note after the return transition](evidence/native-followup/ios-live-normal-fixed.png) — no reload between the up/down transitions.
-
-`ios-live-size-change.png` is the pre-fix clipping reproduction. `ios-keyboard-initial.png` is an intermediate field-position capture. Neither is a final layout reference.
+Simulator screenshots were taken during these runs (Android light reading, Android dark with enlarged OS text, iOS light language sheet, iOS dark explanation, iOS dark keyboard, and the follow-up keyboard and live text-size captures). They are not committed: they were observational, not golden-image baselines, and rerunning the [native specimen](native-specimen/README.md) reproduces them. [Font hash and coverage results](evidence/native/font-check.json) and the typecheck/export logs remain under `evidence/`.
 
 ## Findings and changes
 
@@ -69,6 +52,6 @@ No screenshot enforcement or definitive specimen rules were introduced. The next
 
 Original test settings were iOS light / `large` content size and Android night `no` / font scale `1.0`. They were restored after testing. Only the isolated lab dependencies, Expo Go host on test devices, and local development tooling were used. No live service was contacted by the specimen, no EAS/release operation ran, and neither app's source, installed dependencies, fonts or preferences were changed.
 
-Metro, the task-started iOS simulator and Android emulator were stopped, and the Android port forwarding was removed. Typecheck and export logs are retained beside the captures. An independent finish review accepted the corrected evidence wording for experimental handoff; a separate documentation review found no material source/documentation mismatch or broken local links. Neither review grants production or full accessibility readiness.
+Metro, the task-started iOS simulator and Android emulator were stopped, and the Android port forwarding was removed. Typecheck and export logs are retained under `evidence/`. An independent finish review accepted the corrected evidence wording for experimental handoff; a separate documentation review found no material source/documentation mismatch or broken local links. Neither review grants production or full accessibility readiness.
 
 Follow-up: only iOS was restarted for the additional checks. Android appearance was accepted through the user’s own simulator inspection; no alternate Android UI-control method was used. The text-size workaround is lab-only and does not change the working specification’s component contract. Follow-up TypeScript and both native exports passed; logs are in `docs/design-system/evidence/native-followup`. Independent review found no material blocker for this scoped provisional handoff and retained the selection/focus and maximum-traversal limits above. Metro was stopped and the task-started iOS simulator was restored to light / `large` and shut down.

@@ -44,4 +44,4 @@ npm run export:ios
 npm run export:android
 ```
 
-The two export commands each replace the ignored `dist/` directory. They verify native JavaScript/asset bundling, not a compiled standalone binary. Native screenshots and font-coverage results live under `docs/design-system/evidence/native` and `docs/design-system/evidence/native-followup` at repository root. Captures are observational evidence and intentionally have no golden-image tests.
+The two export commands each replace the ignored `dist/` directory. They verify native JavaScript/asset bundling, not a compiled standalone binary. Font-coverage results and typecheck/export logs live under `docs/design-system/evidence/native` and `docs/design-system/evidence/native-followup` at repository root. Simulator screenshots are not committed; rerun the specimen to reproduce them. There are intentionally no golden-image tests.

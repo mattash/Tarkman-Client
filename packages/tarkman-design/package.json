@@ -10,6 +10,6 @@
   "files": ["tokens.json", "web.css"],
   "scripts": {
     "build": "node scripts/build-web-css.mjs",
-    "check": "node scripts/build-web-css.mjs --check"
+    "check": "node scripts/build-web-css.mjs --check && node scripts/check-contrast.mjs"
   }
 }
