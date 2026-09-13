@@ -21,8 +21,16 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
         onPress={run.kind === 'link' && Platform.OS !== 'web' ? () => {
           if (run.url && safeHttpsUrl(run.url)) Linking.openURL(run.url).catch(() => setLinkFailed(true))
         } : undefined}
-        style={run.kind === 'bold' ? (language === 'grabar' && fontReady ? { fontFamily: 'NotoSerifArmenian-Bold', fontWeight: '400' } : { fontWeight: '700' })
-          : run.kind === 'italic' ? { fontStyle: 'italic' } : run.kind === 'code' ? { backgroundColor: colors.subtle }
+        style={run.kind === 'bold'
+          ? language === 'grabar' && fontReady ? { fontFamily: 'NotoSerifArmenian-Bold', fontWeight: '400' }
+            : fontReady ? { fontFamily: 'SourceSerif4-Semibold', fontWeight: '400' } : { fontWeight: '600' }
+          : run.kind === 'italic' ? {
+            // No pinned literary italic ships yet. Use the platform's real
+            // italic face rather than synthesizing one from Source Serif.
+            fontFamily: Platform.OS === 'ios' ? 'System' : Platform.OS === 'android' ? 'sans-serif' : 'system-ui',
+            fontStyle: 'italic',
+          }
+          : run.kind === 'code' ? { backgroundColor: colors.subtle }
           : { color: colors.primary, textDecorationLine: 'underline' }}>{run.text}</Text>)}
   </AppText>{linkFailed && <AppText variant="caption" accessibilityRole="alert">Could not open the link. Try the link again.</AppText>}</>
 }

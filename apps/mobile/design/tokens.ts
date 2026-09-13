@@ -1,30 +1,47 @@
-// Preserve the web's semantic roles and Tarkman purple; native values are points.
+import foundation from '@tarkman/design/tokens'
+
+type FoundationTheme = typeof foundation.themes.light
+
+function nativePalette(theme: FoundationTheme, dark: boolean) {
+  return {
+    background: theme.surfaceCanvas,
+    surface: theme.surfaceDefault,
+    raised: theme.surfaceRaised,
+    overlay: theme.surfaceOverlay,
+    foreground: theme.textPrimary,
+    muted: theme.textSecondary,
+    primary: theme.actionPrimary,
+    onPrimary: theme.actionOnPrimary,
+    secondary: theme.selection,
+    onSecondary: theme.onSelection,
+    border: theme.borderControl,
+    divider: theme.borderDivider,
+    destructive: theme.danger,
+    dangerSurface: theme.dangerSurface,
+    onDestructive: theme.actionOnPrimary,
+    subtle: theme.selection,
+    focus: theme.focus,
+    disabled: theme.disabled,
+    onDisabled: theme.onDisabled,
+    // Backdrop is an explicit native adapter role, not a CSS shadow/token reuse.
+    backdrop: dark ? 'rgba(0, 0, 0, 0.70)' : 'rgba(39, 33, 39, 0.48)',
+  } as const
+}
+
+// Shared burgundy roles come from @tarkman/design; metric choices remain native.
 export const colors = {
-  light: {
-    background: '#FAF9F7', surface: '#FFFFFF', foreground: '#201D29', muted: '#625C6D',
-    primary: '#6B46C1', onPrimary: '#FFFFFF', secondary: '#EEE8F8', onSecondary: '#45267E',
-    border: '#82798E', destructive: '#B42335', onDestructive: '#FFFFFF',
-    subtle: '#F1EEF4', focus: '#6B46C1', backdrop: 'rgba(18, 13, 28, 0.6)',
-  },
-  dark: {
-    background: '#141119', surface: '#211C29', foreground: '#F5F0FA', muted: '#C0B6CC',
-    primary: '#C8ACFF', onPrimary: '#24113F', secondary: '#392B4C', onSecondary: '#E7D8FF',
-    border: '#8E809D', destructive: '#FFAFB7', onDestructive: '#420A14',
-    subtle: '#2B2435', focus: '#C8ACFF', backdrop: 'rgba(0, 0, 0, 0.7)',
-  },
+  light: nativePalette(foundation.themes.light, false),
+  dark: nativePalette(foundation.themes.dark, true),
 } as const
 export type ThemeName = keyof typeof colors
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const
 export const radii = { control: 8, card: 16, sheet: 24 } as const
-export const touchTarget = 44
+export const touchTarget = 48
 export const typography = {
-  title: { fontSize: 34, lineHeight: 44, fontWeight: '700' },
-  heading: { fontSize: 23, lineHeight: 32, fontWeight: '700' },
+  title: { fontSize: 34, lineHeight: 44, fontWeight: '600' },
+  heading: { fontSize: 23, lineHeight: 32, fontWeight: '600' },
   body: { fontSize: 17, lineHeight: 27, fontWeight: '400' },
-  liturgy: { fontSize: 22, lineHeight: 38, fontWeight: '400' },
+  liturgy: { fontSize: 24, lineHeight: 38, fontWeight: '400' },
   label: { fontSize: 15, lineHeight: 23, fontWeight: '600' },
   caption: { fontSize: 14, lineHeight: 22, fontWeight: '400' },
-} as const
-export const elevation = {
-  card: { boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.06)' },
 } as const

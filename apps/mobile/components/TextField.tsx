@@ -5,13 +5,13 @@ import { radii, spacing, touchTarget, typography } from '../design/tokens'
 import { AppText } from './AppText'
 
 export interface TextFieldProps extends TextInputProps { ref?: Ref<TextInput>; label: string; error?: string }
-export function TextField({ label, error, style, onFocus, onBlur, editable = true, ...props }: TextFieldProps) {
-  const { colors } = useTheme()
+export function TextField({ label, error, style, onFocus, onBlur, editable = true, keyboardAppearance, ...props }: TextFieldProps) {
+  const { colors, scheme } = useTheme()
   const [focused, setFocused] = useState(false)
   const id = useId()
   return <View style={{ gap: spacing.sm }}>
     <AppText nativeID={id} variant="label">{label}</AppText>
-    <TextInput {...props} editable={editable} allowFontScaling accessibilityLabel={props.accessibilityLabel ?? label}
+    <TextInput {...props} editable={editable} allowFontScaling keyboardAppearance={keyboardAppearance ?? scheme} accessibilityLabel={props.accessibilityLabel ?? label}
       accessibilityHint={error ?? props.accessibilityHint} accessibilityState={{ ...props.accessibilityState, disabled: !editable }}
       onFocus={event => { setFocused(true); onFocus?.(event) }} onBlur={event => { setFocused(false); onBlur?.(event) }}
       placeholderTextColor={colors.muted} selectionColor={colors.primary}

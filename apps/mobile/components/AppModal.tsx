@@ -22,14 +22,19 @@ export function AppModal({ visible, onDismiss, title, children, openerRef }: Pro
   }, [visible, openerRef])
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  return <Modal testID="app-modal" visible={visible} transparent animationType="none" onShow={() => focusControl(closeRef.current)} onDismiss={restore} onRequestClose={onDismiss} statusBarTranslucent>
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop }}>
-      <Pressable accessible={false} focusable={false} importantForAccessibility="no" testID="modal-backdrop" onPress={onDismiss} style={{ position: 'absolute', inset: 0 }} />
-      <View accessibilityViewIsModal onAccessibilityEscape={onDismiss} style={{ backgroundColor: colors.surface, maxHeight: '90%', width: '100%', maxWidth: 680,
+  const ios = Platform.OS === 'ios'
+  return <Modal testID="app-modal" visible={visible} transparent={!ios} animationType={ios ? 'slide' : 'none'}
+    presentationStyle={ios ? 'pageSheet' : 'overFullScreen'} allowSwipeDismissal onShow={() => focusControl(closeRef.current)}
+    onDismiss={restore} onRequestClose={onDismiss} statusBarTranslucent={!ios}>
+    <KeyboardAvoidingView behavior={ios ? 'padding' : 'height'} style={{ flex: 1, justifyContent: ios ? 'flex-start' : 'flex-end', backgroundColor: ios ? colors.overlay : colors.backdrop }}>
+      {!ios && <Pressable accessible={false} focusable={false} importantForAccessibility="no" testID="modal-backdrop" onPress={onDismiss} style={{ position: 'absolute', inset: 0 }} />}
+      <View testID="modal-shell" accessibilityViewIsModal onAccessibilityEscape={onDismiss} style={{ backgroundColor: colors.overlay, flex: ios ? 1 : undefined, maxHeight: ios ? '100%' : '90%', width: '100%', maxWidth: 680,
         alignSelf: 'center', borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
         paddingTop: spacing.lg, paddingBottom: Math.max(insets.bottom, spacing.lg), paddingLeft: Math.max(insets.left, spacing.lg), paddingRight: Math.max(insets.right, spacing.lg), gap: spacing.md }}>
-        <AppText variant="heading">{title}</AppText>
-        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: spacing.md }}>{children}</ScrollView>
+        <ScrollView testID="modal-content" style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: spacing.md }}>
+          <AppText variant="heading">{title}</AppText>
+          {children}
+        </ScrollView>
         <AppButton ref={closeRef} variant="secondary" onPress={onDismiss} accessibilityLabel={`Close ${title}`}>Close</AppButton>
       </View>
     </KeyboardAvoidingView>

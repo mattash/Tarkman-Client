@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar'
 import { ThemeProvider, useTheme } from '../design/ThemeProvider'
 import { ReadingFontProvider } from '../design/ReadingFontProvider'
 import { AuthProvider } from '../features/auth/AuthProvider'
-import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
+import { PreferencesProvider, usePreferences } from '../features/preferences/PreferencesProvider'
 import { readerConfig } from '../features/live/config'
 import { startObservability } from '../features/observability/sentry'
 
@@ -14,15 +14,19 @@ import { startObservability } from '../features/observability/sentry'
 startObservability()
 
 function RootLayout() {
-  return <SafeAreaProvider><ThemeProvider><RootContent /></ThemeProvider></SafeAreaProvider>
+  return <SafeAreaProvider><PreferencesProvider><PreferenceTheme /></PreferencesProvider></SafeAreaProvider>
+}
+function PreferenceTheme() {
+  const { preferences } = usePreferences()
+  return <ThemeProvider appearance={preferences.appearance}><RootContent /></ThemeProvider>
 }
 function RootContent() {
   const { colors, scheme } = useTheme()
   return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
     <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-    <ReadingFontProvider><PreferencesProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
+    <ReadingFontProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} />
-    </AuthProvider></PreferencesProvider></ReadingFontProvider>
+    </AuthProvider></ReadingFontProvider>
   </SafeAreaView>
 }
 

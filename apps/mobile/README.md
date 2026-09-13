@@ -38,16 +38,21 @@ for theme colors, typography and platform-specific elevation.
 
 ## Design primitives
 
-`design/tokens.ts` owns light/dark roles, Tarkman purple (`#6B46C1`), point-based
-spacing, radii, typography/line heights, elevation and the 44pt minimum target.
-These preserve the web's role vocabulary and brand accent without importing or
-changing web styles. `ThemeProvider` follows system appearance; its optional
-`scheme` isolates the gallery's light/dark samples. The root owns safe areas,
+`design/tokens.ts` adapts the light/dark burgundy roles exported by
+`@tarkman/design/tokens` and owns native point-based spacing, radii,
+typography/line heights and the 48pt minimum target. `ThemeProvider` follows
+system appearance unless the reader persisted an explicit light/dark choice;
+its optional `scheme` still isolates test/gallery samples. The root owns safe areas,
 status bar appearance and local font loading, without gating the router. A loading/failure notice explains system-font fallback and possible Armenian mark differences; failure offers an accessible retry without remounting the gallery.
 
-- `AppText`: title, heading, body, liturgy, label and caption; semantic tone,
-  language tag and Armenian static-font selection only after both fonts load. English, Russian
-  and transliteration use the platform system font. Dynamic Type stays enabled.
+- `AppText`: title, heading, body, liturgy, label and caption; semantic tone
+  and language metadata. English, Russian and transliteration reading use Source
+  Serif 4; Armenian uses Noto Serif Armenian. UI body and controls stay platform
+  sans. Dynamic Type stays enabled. On iOS, a live content-size change remounts
+  only the native Text leaf to clear stale frames observed after dismissing a
+  page sheet; parent controls, inputs, lists and application state stay mounted.
+  This may reset active text selection or screen-reader focus on that leaf and
+  therefore still needs physical-device accessibility review.
 - `AppButton`: native Pressable; primary, secondary, quiet and destructive.
   Loading/disabled suppress actions and expose disabled/busy accessibility states.
   Labels wrap; controls have minimum dimensions, never fixed text heights.
@@ -55,13 +60,14 @@ status bar appearance and local font loading, without gating the router. A loadi
 - `TextField`: visible and accessible label, focus/error styling, native keyboard
   props, text scaling and disabled state. Return/submit behavior belongs to the
   caller; the gallery dismisses single-line keyboards on Done.
-- `AppModal`: native Modal presented as a bottom sheet, scrollable content,
+- `AppModal`: native Modal presented as an iOS page sheet or Android bottom surface, with scrollable content,
   safe-area padding and keyboard avoidance. Close button, backdrop, Android back,
   web Escape and accessibility escape dismiss it. Initial focus targets Close; callers
   pass an `openerRef` for return focus. Web uses host focus and RN Web’s focus trap;
   native requests accessibility focus through AccessibilityInfo. Android restores
-  on the frame after removal; iOS/web use onDismiss. No exit animation or
-  drag-to-dismiss gesture. Native assistive-tech behavior still needs device QA.
+  on the frame after removal and therefore keeps its no-exit-animation contract;
+  iOS/web use onDismiss. iOS supports native swipe dismissal. Native
+  assistive-tech behavior still needs device QA.
 - `LiturgyText`: selectable by default; preserves the complete plain string,
   paragraphs and line breaks. Null/empty/whitespace shows an explicit English
   fallback with an English language tag. Uses the limited native Markdown strategy below.
@@ -83,6 +89,11 @@ visible failure message; web uses keyboard-accessible anchors with noopener and
 noreferrer. Accessible labels include the destination and native links include
 an opening hint. There is no URL autolinking.
 
+The selected Source Serif assets include regular and semibold, but no italic.
+Emphasis therefore uses the platform's real italic face instead of synthesizing
+an italic Source Serif file. This preserves emphasis semantics while the eventual
+web/native optical-font comparison and a pinned literary italic remain pending.
+
 Backslash-escaped punctuation displays literally (the escape backslash is
 removed). HTML tags, images, fenced code, headings/list markers, underscore
 formatting and strikethrough remain plain text; they do not create HTML, images,
@@ -100,8 +111,8 @@ Second line
 [Unsafe link](javascript:alert)  ![No image](https://example.org/image.png)
 ```
 
-Card shadows use React Native/RN Web `boxShadow` (SDK 57's New Architecture),
-not deprecated RN Web shadow properties. The mobile export serves a local copy
+Cards use the shared raised surface and divider roles rather than passing CSS
+shadow strings into React Native. The mobile export serves a local copy
 of the existing Tarkman favicon to avoid the browser's implicit favicon 404.
 
 The mobile lint gate uses ESLint 10, TypeScript and React Hooks flat configs.
@@ -123,6 +134,12 @@ The full static `googlefonts/ttf` files in that official archive include combini
 marks omitted by its smaller Armenian-only builds. No variable fonts or remote
 font requests are used. `check:fonts` checks hashes, static tables and glyph maps.
 
+Bundled **static Regular and Semibold Source Serif 4.005** come unchanged from
+Adobe's official desktop release under SIL OFL 1.1. Keep
+[the Source Serif provenance and hashes](assets/fonts/SOURCE-SERIF.md) and
+[license](assets/fonts/SourceSerif-LICENSE.md) with both TTFs. The font guard
+checks the exact hashes and rejects variable files.
+
 The real Grabar sample is the public-domain Lord's Prayer excerpt beginning
 “Հայր մեր, որ յերկինս ես”. A separately labeled stress sample includes Armenian
 `։`, `՛`, `՜`, `՞` and decomposed U+0301/U+0304. It is a shaping test, not an
@@ -137,7 +154,7 @@ editorial claim about liturgical accent placement.
   accents. Select/copy a multiline paragraph without losing line breaks.
 - Change OS appearance; check background, surface, muted text, fields and sheets.
 - At large and maximum accessibility text sizes, read and scroll all content;
-  ensure labels grow and every control remains at least 44×44pt.
+  ensure labels grow and every control remains at least 48×48pt.
 - Use keyboard Tab/Enter on web; verify focus, disabled/loading buttons, input
   values, Done behavior and email keyboard on native. Try input near screen bottom.
 - Open the sheet, type a multiline note, dismiss the keyboard, scroll the reading,
@@ -246,16 +263,37 @@ than showing stale text as if it were live.
 
 What the device does keep:
 
-- The reading language, saved as one small record and restored on launch. An
-  unreadable or unknown record is discarded and reading continues in English.
-- Nothing else. The sign-in token is separate and lives in the keychain.
-- "Forget my reading choices" in the reading-language sheet clears the record.
+- The active reading language, selected-language set and System/Light/Dark
+  appearance choice, saved as one small record and restored on launch.
+- Existing `{ language }` records migrate in place, preserving the active
+  language and keeping the four formerly available languages selected. Invalid
+  records fall back safely, and a late startup read cannot overwrite a choice
+  made while hydration is still running.
+- The sign-in token is separate and lives in the keychain.
+- "Forget my reading choices" resets the active/selected languages and preserves
+  an explicit appearance choice; with System appearance it can remove the record.
 
 Storage differs by platform, because the native key-value store does not run in
 a browser: native builds use `expo-sqlite`'s key-value store, and web uses
 `localStorage` through `features/preferences/storage.web.ts`. Both satisfy the
 same `KeyValueAdapter` contract and tolerate a failed write, so a rejected save
 never interrupts reading.
+
+On compact widths the live reader renders one active language. The Reading
+language sheet switches immediately among the selected set without dispatching
+controller/follow actions. Choose languages uses a separate draft with
+Apply/Cancel and enforces at least one selection; removing the active language
+falls back to the first selected language in stable product order. Wider windows
+compare selected languages only when the card's actual content width, padding,
+borders, inter-column gaps and current OS font scale leave at least 300 points
+per language.
+
+Native validation still needs compact and wide devices in both orientations,
+explicit and system appearance across background/resume, maximum text traversal,
+iOS swipe dismissal, Android system/predictive Back, keyboard behavior, and
+VoiceOver/TalkBack focus, pronunciation and selected-state listening. The
+Source Serif web/native optical comparison and authoritative long multilingual
+service content also remain pending.
 
 Connection recovery is unchanged and still required: the reader labels stale and
 disconnected states, falls back to polling when the live socket is unavailable,

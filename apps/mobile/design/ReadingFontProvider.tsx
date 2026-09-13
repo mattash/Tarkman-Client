@@ -7,6 +7,10 @@ import { AppButton } from '../components/AppButton'
 import { ReadingFontContext } from './readingFont'
 const fonts = {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro static assets.
+  'SourceSerif4-Regular': require('../assets/fonts/SourceSerif4-Regular.ttf'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro static assets.
+  'SourceSerif4-Semibold': require('../assets/fonts/SourceSerif4-Semibold.ttf'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro static assets.
   'NotoSerifArmenian-Regular': require('../assets/fonts/NotoSerifArmenian-Regular.ttf'),
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro static assets.
   'NotoSerifArmenian-Bold': require('../assets/fonts/NotoSerifArmenian-Bold.ttf'),
