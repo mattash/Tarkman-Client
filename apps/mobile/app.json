@@ -14,10 +14,16 @@
       "bundleIdentifier": "app.tarkman",
       "associatedDomains": [
         "applinks:web.tarkman.app"
-      ]
+      ],
+      "icon": "./assets/icons/app-icon.png"
     },
     "android": {
-      "package": "app.tarkman"
+      "package": "app.tarkman",
+      "icon": "./assets/icons/app-icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/adaptive-foreground.png",
+        "backgroundColor": "#6E3852"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -48,6 +54,7 @@
         "projectId": "c76aa8c8-fb02-40b5-b4ae-8469b1bbeb47"
       }
     },
-    "userInterfaceStyle": "automatic"
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icons/app-icon.png"
   }
 }
