@@ -36,6 +36,16 @@ describe('native primitives', () => {
     expect(button).toHaveStyle({ backgroundColor: colors.light.primary })
     expect(onPressOut).toHaveBeenCalledTimes(1)
   })
+  it('gives quiet and secondary controls neutral press feedback without inverting their text', async () => {
+    await render(<><AppButton variant="quiet">Choose languages</AppButton><AppButton variant="secondary">Forget my reading choices</AppButton></>, { wrapper })
+    for (const name of ['Choose languages', 'Forget my reading choices']) {
+      const button = screen.getByRole('button', { name })
+      await fireEvent(button, 'pressIn')
+      expect(button).toHaveStyle({ backgroundColor: colors.light.pressedSubtle })
+      expect(screen.getByText(name)).toHaveStyle({ color: colors.light.foreground })
+      await fireEvent(button, 'pressOut')
+    }
+  })
   it('leaves an unpaired asterisk alone and emphasises the pair that follows', async () => {
     // Real explanation text: the first asterisk never closes, so only "Nersessi erg" is emphasised.
     const text = 'each stanza of *Nayatz seerov" form an acrostic, which spells *Nersessi erg* which means "Song".'
@@ -111,6 +121,17 @@ describe('native primitives', () => {
       expect(screen.getByTestId('modal-content')).toHaveStyle({ flex: 1 })
     } finally { Platform.OS = previous }
   })
+  it('leads with Cancel and trails the commit action when a sheet has one', async () => {
+    await render(<AppModal visible title="Choose languages" dismissLabel="Cancel" onDismiss={() => {}}
+      headerAction={<AppButton variant="quiet">Apply languages</AppButton>} />, { wrapper })
+    // Queries return matches in tree order, which is the visual leading-to-trailing order.
+    expect(screen.getAllByText(/^(Cancel|Choose languages|Apply languages)$/).map(node => node.props.children))
+      .toEqual(['Cancel', 'Choose languages', 'Apply languages'])
+  })
+  it('keeps a lone Done trailing the title', async () => {
+    await render(<AppModal visible title="Reading preferences" onDismiss={() => {}} />, { wrapper })
+    expect(screen.getAllByText(/^(Done|Reading preferences)$/).map(node => node.props.children)).toEqual(['Reading preferences', 'Done'])
+  })
   it('hides the dismissed sheet', async () => {
     await render(<AppModal visible={false} title="Hidden reading" onDismiss={() => {}} />, { wrapper })
     expect(screen.queryByText('Hidden reading')).toBeNull()
@@ -131,7 +152,7 @@ it('keeps every semantic text/background pairing at WCAG AA contrast', () => {
       [palette.muted, palette.background], [palette.muted, palette.surface],
       [palette.primary, palette.surface], [palette.destructive, palette.surface],
       [palette.onPrimary, palette.primary], [palette.onSecondary, palette.secondary],
-      [palette.onDestructive, palette.destructive],
+      [palette.onDestructive, palette.destructive], [palette.foreground, palette.pressedSubtle],
     ]) {
       const values = [luminance(text), luminance(background)].sort((a, b) => b - a)
       expect((values[0] + 0.05) / (values[1] + 0.05)).toBeGreaterThanOrEqual(4.5)

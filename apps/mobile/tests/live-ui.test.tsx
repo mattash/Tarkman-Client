@@ -78,7 +78,7 @@ it('renders current occurrence, switches language and dismisses explanation shee
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'English prayer', ru: 'Молитва', grabar: 'Հայր մեր', role: 'Choir' } }] })
   jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
-  expect(screen.getByRole('button', { name: '1 Choir, current part' })).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Choir, current part' })).toBeOnTheScreen()
   expect(screen.getByText('NOW')).toBeOnTheScreen()
   expect(screen.queryByText('Молитва')).toBeNull()
   await fireEvent.press(screen.getByRole('button', { name: 'Choose reading language' }))
@@ -134,6 +134,28 @@ it('offers only selected available translations and preserves manual mode when s
   expect(screen.getByText('Молитва')).toBeOnTheScreen()
   expect(screen.getByRole('button', { name: 'Return to live' })).toBeOnTheScreen()
   expect(dispatch).not.toHaveBeenCalled()
+})
+it('omits the switch prompt when no selected language has this part, and names languages as shown', async () => {
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
+  const parts = normalizeParts({ parts: [
+    { part: { id: 1, en: null, role: 'priest' } },
+    { part: { id: 2, en: null, grabar: 'Հայր մեր', role: 'deacon' } },
+  ] })
+  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, connected: true, session, parts }, retry, dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.getAllByText('Translation not available.')).toHaveLength(2)
+  // Only the deacon part has an alternative, so the prompt appears once.
+  expect(screen.getAllByText('Choose another reading language for this part.')).toHaveLength(1)
+  expect(screen.getByRole('button', { name: 'Read in Գրաբար' })).toHaveTextContent('Read in Գրաբար')
+})
+it('keeps the steady Live indicator out of live announcements and anchors reading content', async () => {
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Prayer', role: 'priest' } }] })
+  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, connected: true, listed: true, session, parts }, retry, dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.getByLabelText('Live')).toHaveProp('accessibilityLiveRegion', 'none')
+  expect(screen.getByRole('button', { name: 'priest, current part' })).toBeOnTheScreen()
+  expect(screen.getByTestId('reading-list')).toHaveProp('maintainVisibleContentPosition', { minIndexForVisible: 1 }) // header + first part
 })
 it('previews larger text and asks before resetting reading choices', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })

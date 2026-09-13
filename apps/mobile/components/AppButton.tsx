@@ -23,9 +23,11 @@ export function AppButton({ children, variant = 'primary', loading = false, icon
   const [pressed, setPressed] = useState(false)
   const fontReady = useReadingFont()
   const inactive = disabled || loading
-  const backgroundColor = inactive ? colors.disabled : pressed ? colors.pressed : selected ? colors.secondary
+  // Only filled actions invert on press; quiet/secondary controls get a neutral tint and keep their text color.
+  const strongPress = pressed && (variant === 'primary' || variant === 'destructive')
+  const backgroundColor = inactive ? colors.disabled : strongPress ? colors.pressed : pressed ? colors.pressedSubtle : selected ? colors.secondary
     : variant === 'quiet' ? 'transparent' : variant === 'secondary' ? colors.surface : colors[variant]
-  const color = inactive ? colors.onDisabled : pressed ? colors.onPrimary : selected ? colors.onSecondary
+  const color = inactive ? colors.onDisabled : strongPress ? colors.onPrimary : pressed ? colors.foreground : selected ? colors.onSecondary
     : variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.foreground
   return <Pressable {...props} accessibilityRole={props.accessibilityRole ?? 'button'} accessibilityLabel={props.accessibilityLabel ?? children}
     {...(Platform.OS === 'web' ? { 'aria-checked': accessibilityState?.checked,

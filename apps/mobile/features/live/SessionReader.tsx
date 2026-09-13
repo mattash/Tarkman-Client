@@ -68,7 +68,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }}>
         <AppButton variant="quiet" icon="back" iconOnly={width < 600 || accessibilitySize} onPress={back}>All services</AppButton>
-        {live && <StatusPill label="Live" tone="success" icon="connected" />}
+        {live && <StatusPill label="Live" tone="success" icon="connected" announce={false} />}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginLeft: 'auto', flexShrink: 1 }}>
         <AppButton testID="reader-language" ref={languageOpener} variant="quiet" selected icon="languages"
@@ -165,8 +165,8 @@ function LanguageSelectionRow({ label, language, selected, multiple = false, onP
     style={{ minHeight: touchTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md,
       paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radii.control,
       borderBottomWidth: 1, borderBottomColor: colors.divider,
-      backgroundColor: pressed ? colors.pressed : selected ? colors.secondary : colors.overlay }}>
-    <AppText language={language} style={{ flex: 1, color: pressed ? colors.onPrimary : selected ? colors.onSecondary : colors.foreground }}>{label}</AppText>
-    {(selected || multiple) && <AppIcon name={multiple ? selected ? 'checkbox' : 'unchecked' : 'selected'} color={pressed ? colors.onPrimary : selected ? colors.onSecondary : colors.muted} />}
+      backgroundColor: pressed ? colors.pressedSubtle : selected ? colors.secondary : colors.overlay }}>
+    <AppText language={language} style={{ flex: 1, color: pressed ? colors.foreground : selected ? colors.onSecondary : colors.foreground }}>{label}</AppText>
+    {(selected || multiple) && <AppIcon name={multiple ? selected ? 'checkbox' : 'unchecked' : 'selected'} color={pressed ? colors.foreground : selected ? colors.onSecondary : colors.muted} />}
   </Pressable>
 }

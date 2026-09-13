@@ -68,7 +68,7 @@ it('opens a part from the reading list', async () => {
   const parts = normalizeParts({ parts: [{ part: { id: 1, position: 1, role: 'Choir', en: 'Lord, have mercy.' } }, { part: { id: 52, position: 46, role: 'deacon', en: 'Alleluia. Stand up' } }] })
   jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts }, retry: jest.fn(), dispatch: jest.fn() })
   await render(<SessionReader endpoints={{ api: 'https://api.test', cable: 'wss://api.test/cable' }} id={9} back={jest.fn()} />, { wrapper })
-  await fireEvent.press(screen.getByLabelText('46 deacon'))
+  await fireEvent.press(screen.getByLabelText('deacon'))
   await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/sessions/9/part/52'))
 })
 
@@ -93,7 +93,7 @@ it.each([-80, -220])('opens the swiped part, not the live part, after a %s point
   })
   if (dx === -80) {
     expect(mockPush).not.toHaveBeenCalled()
-    await fireEvent.press(screen.getByRole('button', { name: 'View details for 46 deacon' }))
+    await fireEvent.press(screen.getByRole('button', { name: 'View details for deacon' }))
   }
   expect(mockPush).toHaveBeenCalledTimes(1)
   expect(mockPush).toHaveBeenCalledWith('/sessions/9/part/52')

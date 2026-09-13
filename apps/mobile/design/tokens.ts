@@ -22,6 +22,8 @@ function nativePalette(theme: FoundationTheme, dark: boolean) {
     subtle: theme.selection,
     focus: theme.focus,
     pressed: theme.actionPressed,
+    // Neutral press feedback for quiet/secondary controls: the proposal's surface.subtle.
+    pressedSubtle: dark ? theme.surfaceRaised : '#F1EBEE',
     currentRule: dark ? '#B07A93' : theme.actionPrimary,
     success: theme.success,
     successSurface: theme.successSurface,

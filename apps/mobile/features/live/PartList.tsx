@@ -41,10 +41,18 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
     return () => { active = false; subscription.remove() }
   }, [])
   const cancel = useCallback(() => { if (retry.current) clearTimeout(retry.current); retry.current = null }, [])
+  const revealedKey = useRef<string | undefined>(undefined)
   const target = useCallback((animated = false) => {
-    if (following && index >= 0) list.current?.scrollToIndex({ index, animated, viewPosition: 0,
+    if (!following || index < 0) return
+    list.current?.scrollToIndex({ index, animated, viewPosition: 0,
       viewOffset: index === 0 && !compact ? headerHeight.current : 0 })
-  }, [following, index, compact])
+    // Only count the header as revealed once it has a measured height to reveal.
+    if (index === 0 && (compact || headerHeight.current > 0)) revealedKey.current = currentKey
+  }, [following, index, compact, currentKey])
+  // Layout passes re-anchor the current part. Once the first part has been shown under the
+  // header, a header that grows (for example a new status) is absorbed by
+  // maintainVisibleContentPosition instead of scrolling the prayer text down.
+  const settle = useCallback(() => { if (!(index === 0 && revealedKey.current === currentKey)) target() }, [index, currentKey, target])
   useEffect(() => {
     attempts.current = 0
     const languageChanged = previousLanguage.current !== language
@@ -59,8 +67,11 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
   return <View style={{ flex: 1 }} onLayout={event => setWidth(Math.min(event.nativeEvent.layout.width, 1152))}
     {...(Platform.OS === 'web' ? { onWheel: stopFollowing, onTouchMove: stopFollowing,
       onKeyDown: (event: { key: string }) => { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) stopFollowing() } } : {})}>
-    <FlatList ref={list} data={parts} keyExtractor={p => p.key} onContentSizeChange={() => target()} onLayout={() => target()}
+    <FlatList testID="reading-list" ref={list} data={parts} keyExtractor={p => p.key} onContentSizeChange={settle} onLayout={settle}
       extraData={`${currentKey}:${language}:${visibleLanguages.join(',')}:${readingSize}`} onScrollBeginDrag={stopFollowing}
+      // Status pills live in the list header. Anchor on the first visible part (VirtualizedList
+      // skips the header itself) so a status change never moves prayer text.
+      maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
       onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y }} scrollEventThrottle={100}
       contentContainerStyle={{ paddingBottom: spacing.xxl, width: '100%', maxWidth: 1152, alignSelf: 'center' }}
       ListHeaderComponent={header ? <View onLayout={event => { headerHeight.current = event.nativeEvent.layout.height }}>
@@ -76,13 +87,15 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
       renderItem={({ item, index: itemIndex }) => {
         const current = item.key === currentKey
         const past = index >= 0 && itemIndex < index
-        return <SwipeablePart testID={`swipe-${item.key}`} partLabel={`${item.position} ${item.role}`}
+        const alternatives = selectedLanguages.filter(value => item.text[value]?.trim())
+        // Position is occurrence identity, not reader-facing content; keep it out of spoken labels.
+        return <SwipeablePart testID={`swipe-${item.key}`} partLabel={item.role}
           reduceMotion={reduceMotion} onSwipeStart={stopFollowing} onOpen={() => open(item)}>
           <View testID={`reading-${item.key}`} style={{ paddingHorizontal: page, paddingVertical: spacing.lg,
           gap: spacing.sm, backgroundColor: current ? colors.surface : colors.background, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
           {current && <View accessible={false} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, backgroundColor: colors.currentRule }} />}
           <Pressable accessibilityRole="button" accessibilityHint="Opens this part in every language, with its explanations."
-            accessibilityLabel={`${item.position} ${item.role}${current ? ', current part' : ''}`} onPress={() => open(item)}
+            accessibilityLabel={`${item.role}${current ? ', current part' : ''}`} onPress={() => open(item)}
             style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <AppText variant="label" tone={current && scheme === 'light' ? 'accent' : 'muted'} style={{ textTransform: 'capitalize' }}>{item.role}</AppText>
             {current && <AppText variant="caption" tone="muted">{paused ? 'PAUSED HERE' : 'NOW'}</AppText>}
@@ -95,10 +108,9 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
               {compare && <AppText variant="label">{sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage}
                 {visibleLanguage === language ? ' · reading' : ' · comparison'}</AppText>}
               <LiturgyText language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
-              {!item.text[visibleLanguage]?.trim() && switchLanguage && <View style={{ gap: spacing.sm }}>
+              {!item.text[visibleLanguage]?.trim() && switchLanguage && alternatives.length > 0 && <View style={{ gap: spacing.sm }}>
                 <AppText variant="caption" tone="muted">Choose another reading language for this part.</AppText>
-                {selectedLanguages.filter(value => value !== visibleLanguage && item.text[value]?.trim()).map(value => <AppButton
-                  key={value} variant="secondary" onPress={() => switchLanguage(value)} accessibilityLabel={`Read in ${value === 'grabar' ? 'Grabar' : sampleLanguages.find(candidate => candidate.value === value)!.label}`}>
+                {alternatives.map(value => <AppButton key={value} variant="secondary" onPress={() => switchLanguage(value)}>
                   {`Read in ${sampleLanguages.find(candidate => candidate.value === value)!.label}`}
                 </AppButton>)}
               </View>}

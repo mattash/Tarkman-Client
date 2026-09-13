@@ -9,7 +9,7 @@ export function ReaderStatus({ state, retry, compact = false, showLive = true }:
   const live = !!state.session && state.listed && state.connected && !state.stale && !state.error && state.session.status === 'active' && state.following
   return <View style={{ gap: spacing.sm }}>
     {state.loading ? <StatusPill label="Loading service…" tone="info" busy /> : <>
-      {showLive && live && <StatusPill label="Live" tone="success" icon="connected" message={compact ? undefined : 'Following the service'} />}
+      {showLive && live && <StatusPill label="Live" tone="success" icon="connected" announce={false} message={compact ? undefined : 'Following the service'} />}
       {state.session && state.session.status !== 'active' && <StatusPill tone="warning" icon="paused"
         label={state.session.status === 'paused' ? 'Service paused' : `Service status: ${state.session.status.replaceAll('_', ' ')}`}
         message={state.session.message ?? (state.session.status === 'paused' ? 'Text stays where it is.' : undefined)} />}
