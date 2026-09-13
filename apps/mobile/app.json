@@ -33,6 +33,13 @@
       "expo-router",
       "expo-font",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Tarkman uses the camera only to scan a service's QR code.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-secure-store",
         {
           "faceIDPermission": false
