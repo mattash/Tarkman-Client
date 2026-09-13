@@ -16,14 +16,14 @@ export function AppText({ variant = 'body', language = 'en', tone = 'default', s
   const fontReady = useReadingFont()
   const { fontScale } = useWindowDimensions()
   const armenian = language === 'grabar' && fontReady
-  const literary = (variant === 'title' || variant === 'heading' || variant === 'liturgy' || variant === 'explanation') && fontReady
-  const semibold = variant === 'title' || variant === 'heading'
+  const semibold = variant === 'title' || variant === 'heading' || variant === 'screenTitle' || variant === 'feature' || variant === 'rowTitle'
+  const literary = (semibold || variant === 'liturgy' || variant === 'explanation') && fontReady
   // This React Native/iOS runtime keeps old text frames when the content-size
   // category changes behind a presented sheet. Refresh only the native Text
   // leaf; parent controls, inputs, lists, scroll position and reader state stay mounted.
   return <Text key={Platform.OS === 'ios' ? fontScale : 'native'} {...props} allowFontScaling accessibilityLanguage={languageTags[language]}
     {...(Platform.OS === 'web' ? { lang: languageTags[language] } : {})}
-    accessibilityRole={props.accessibilityRole ?? (variant === 'title' || variant === 'heading' ? 'header' : undefined)}
+    accessibilityRole={props.accessibilityRole ?? (variant === 'title' || variant === 'heading' || variant === 'screenTitle' || variant === 'feature' ? 'header' : undefined)}
     style={[type, {
       color: tone === 'default' ? colors.foreground : tone === 'accent' ? colors.primary : colors[tone],
       fontFamily: armenian ? (semibold ? 'NotoSerifArmenian-Bold' : 'NotoSerifArmenian-Regular')

@@ -25,7 +25,8 @@ export function readScannedLink(value: string): ScannedLink {
   const explain = /^\/s\/(\d+)\/explain\/?$/.exec(url.pathname)
   if (explain) return service(Number(explain[1]))
 
-  const reading = /^\/sessions\/(\d+)\/parts\/?$/.exec(url.pathname)
+  // The projector QR on the web display points at the explanations page for the live service.
+  const reading = /^\/sessions\/(\d+)\/(?:parts|explanations)\/?$/.exec(url.pathname)
   if (reading) return service(Number(reading[1]))
 
   const part = /^\/sessions\/(\d+)\/part\/(\d+)\/?$/.exec(url.pathname)

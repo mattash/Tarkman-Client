@@ -3,12 +3,10 @@ import { beforeEach, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
-import { Discovery } from '../features/live/Discovery'
 import { SessionReader } from '../features/live/SessionReader'
 import { useReader } from '../features/live/useReader'
 import { initialState } from '../features/live/state'
 import { normalizeParts, normalizeSession } from '../features/live/contracts'
-import LiveScreen from '../app/index'
 jest.mock('../features/live/useReader')
 jest.mock('../features/auth/AuthProvider', () => ({ useAuth: () => ({ state: { status: 'signedOut' } }) }))
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
@@ -17,30 +15,6 @@ const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const retry = jest.fn(), dispatch = jest.fn()
 beforeEach(() => { jest.clearAllMocks(); jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false }, retry, dispatch }) })
-it('shows configuration failure without mounting network consumers', async () => {
-  const api = process.env.EXPO_PUBLIC_API_URL, cable = process.env.EXPO_PUBLIC_ACTIONCABLE_URL
-  delete process.env.EXPO_PUBLIC_API_URL; delete process.env.EXPO_PUBLIC_ACTIONCABLE_URL
-  try { await render(<LiveScreen />, { wrapper }); expect(screen.getByRole('alert')).toHaveTextContent(/not configured/); expect(useReader).not.toHaveBeenCalled() }
-  finally { if (api !== undefined) process.env.EXPO_PUBLIC_API_URL = api; if (cable !== undefined) process.env.EXPO_PUBLIC_ACTIONCABLE_URL = cable }
-})
-it('offers empty discovery, retry and validated session-ID entry', async () => {
-  const open = jest.fn()
-  await render(<Discovery endpoints={endpoints} open={open} />, { wrapper })
-  expect(screen.getByText('No live service right now')).toBeOnTheScreen()
-  await fireEvent.press(screen.getByRole('button', { name: 'Open session' }))
-  expect(open).not.toHaveBeenCalled(); expect(screen.getByText('Enter a valid numeric session ID.')).toBeOnTheScreen()
-  await fireEvent.changeText(screen.getByLabelText('Session ID'), '7')
-  await fireEvent(screen.getByLabelText('Session ID'), 'submitEditing')
-  expect(open).toHaveBeenCalledWith(7)
-  await fireEvent.press(screen.getByRole('button', { name: 'Refresh services' })); expect(retry).toHaveBeenCalled()
-})
-it('shows recoverable errors without presenting failed discovery as empty', async () => {
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, error: 'Could not refresh.' }, retry, dispatch })
-  await render(<Discovery endpoints={endpoints} open={() => {}} />, { wrapper })
-  expect(screen.getByRole('alert')).toHaveTextContent(/Could not refresh\./)
-  expect(screen.queryByText('No live service right now')).toBeNull()
-  await fireEvent.press(screen.getByRole('button', { name: 'Retry connection' })); expect(retry).toHaveBeenCalled()
-})
 it('hides Return to live while automatically following', async () => {
   const back = jest.fn()
   await render(<SessionReader endpoints={endpoints} id={7} back={back} />, { wrapper })

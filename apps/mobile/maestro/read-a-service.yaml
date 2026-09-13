@@ -4,6 +4,11 @@ appId: app.tarkman
 name: Read a service and open a part
 ---
 - runFlow: launch.yaml
+# Session ID entry is the scanner's fallback; a simulator has no camera to scan with.
+- tapOn:
+    id: "today-scan"
+- tapOn:
+    id: "scan-session-id"
 - tapOn:
     id: "session-id"
 - inputText: "4006"

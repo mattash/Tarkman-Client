@@ -8,6 +8,11 @@ const names = {
   selected: 'checkmark', checkbox: 'checkbox-outline', unchecked: 'square-outline',
   more: 'ellipsis-horizontal', live: 'sync-outline', alert: 'alert-circle-outline',
   paused: 'pause', offline: 'cloud-offline-outline', connected: 'radio-button-on',
+  scan: 'scan-outline', location: 'location-outline',
+  // Tab glyphs are separate entries from explanation/preferences: they draw at 26pt and fill when selected.
+  'tab-today': 'radio-outline', 'tab-today-selected': 'radio',
+  'tab-services': 'book-outline', 'tab-services-selected': 'book',
+  'tab-settings': 'options-outline', 'tab-settings-selected': 'options',
 } as const
 export type IconName = keyof typeof names
 

@@ -15,6 +15,11 @@ it('opens reading links from the website', () => {
     .toEqual({ kind: 'part', sessionId: 4006, partId: 2066, path: '/sessions/4006/part/2066' })
 })
 
+it('opens the code the web projector display shows', () => {
+  expect(readScannedLink('https://web.tarkman.app/sessions/4006/explanations'))
+    .toEqual({ kind: 'service', sessionId: 4006, path: '/sessions/4006/parts' })
+})
+
 it('refuses anything that is not a Tarkman reading link', () => {
   for (const hostile of [
     'https://tarkman.app.evil.example/s/4006/explain',

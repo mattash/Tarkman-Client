@@ -1,6 +1,6 @@
 # Tarkman mobile
 
-Managed Expo SDK 57, React Native and Expo Router. The home route is a public, read-only live-session reader. The `/gallery` route
+Managed Expo SDK 57, React Native and Expo Router. The home route is a public, read-only live-session reader behind three tabs (Today, Services, Settings). The development-only `/gallery` route
 retains the Expo 05 static liturgy examples (`en`, `ru`, `grabar`, `translit`) and
 works without network configuration. The production website remains the
 separate Vite app in `../web`.
@@ -203,7 +203,12 @@ Rails itself may record analytics on public GETs; the client does not send write
 Variable English fields that Rails emits as HTML remain inert literal text under
 the existing limited Markdown renderer; this slice does not add an HTML engine.
 
-The `/` screen discovers public services or opens a numeric session ID. Parts
+Today (`/`) leads with the service at the church the reader is in when location
+knows it, and otherwise with the services live today, a Scan row and Continue
+reading (stored on the device). Services (`/live`) lists every public service for
+today. Settings (`/settings`) holds reading choices and, last, sign-in or My
+services; no other screen shows an account affordance. A numeric session ID is
+entered from the scanner's fallback. Parts
 retain Rails ordering and occurrence identity (`liturgy_part_id`), including
 multi-liturgy repetitions. Current-part resolution uses part and liturgy together;
 position is a secondary discriminator. Scrolling by touch, wheel or keyboard
@@ -424,10 +429,13 @@ plugins, so a new entitlement only appears after `expo prebuild --clean`.
 
 ### Scanning a service code
 
-`app/scan.tsx` reads a QR code with `expo-camera` and opens the service or part
-it names. The codes printed for the congregation point at
-`https://www.tarkman.app/s/:id/explain`; reading links on `web.tarkman.app` work
-too.
+`app/scan.tsx` is a full-screen, always-dark modal that reads a QR code with
+`expo-camera`. The codes printed for the congregation point at
+`https://www.tarkman.app/s/:id/explain`, the web projector display shows
+`https://web.tarkman.app/sessions/:id/explanations`, and reading links on
+`web.tarkman.app` work too. A found code is never entered silently: the scanner
+loads the service and waits for **Read along**, because a camera can pick up a
+code from across the room or from last week's slide.
 
 A scanned code is untrusted input, because a sticker in a public place can be
 replaced by anyone. `features/scan/links.ts` accepts only HTTPS URLs on a Tarkman
@@ -436,8 +444,10 @@ including look-alike hosts such as `tarkman.app.evil.example`, credentials in th
 URL, and the church display routes. A refused code is shown as plain text and
 never opened, followed, or loaded in a web view.
 
-The camera is requested when someone opens the scanner, not at launch, and the
-service-ID entry stays available when permission is refused. The camera is only
+The camera is requested when someone opens the scanner, not at launch. When it
+is refused, the scanner names the routes that still work — the services list and
+session ID entry — and links to Settings. Repeated unreadable codes raise one
+alert, not one per frame. The camera is only
 used to read a code: nothing is recorded or sent anywhere. A simulator has no
 camera, so scanning can only be confirmed on a physical iPhone.
 
@@ -479,7 +489,7 @@ When a live service's church has been geocoded, the API publishes
 `church_latitude` / `church_longitude` alongside it, and the services list
 offers to work out which of those churches the reader is in.
 
-Nothing happens until someone taps **Find my church**. The location permission
+Nothing is asked until someone taps **Find the church you’re at** on Today. The location permission
 is requested then — when in use only, never "always" — so a reader who never
 taps it is never asked. `app.json` carries the reason string, and
 `locationAlwaysAndWhenInUsePermission` is explicitly `false`.
@@ -491,13 +501,15 @@ plus its car park, with room for poor GPS indoors). No request carries a
 location, nothing is persisted, and the position is discarded once the match is
 made. The permission string and the card both say so.
 
-A match is offered, never applied: the suggestion appears above the list with
-**Not where I am** beside it, so a wrong guess during a service costs one tap.
+A match is offered, never applied: Today says "You’re at …" above that service's
+card, and the other live services stay listed below it as the correction, so a
+wrong guess costs one tap. Once permission has been given, Today checks again
+whenever it is shown, without prompting.
 Refused permission, an unavailable position, and no church in range each say so
 in place and leave the list exactly as it was; when permission has been denied
 for good, the button is withdrawn rather than repeatedly failing.
 
-Churches without coordinates simply cannot match, and the whole card is hidden
+Churches without coordinates simply cannot match, and the location line is hidden
 when no listed service has any — which is the state of production today.
 Geocoding runs on the backend only when a profile's address changes, so existing
 churches need a backfill or a re-save before this can light up. Verifying the

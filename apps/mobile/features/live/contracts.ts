@@ -6,6 +6,10 @@ export interface LiveSession {
   id: number; title: string; church: string; currentPartId: number | null
   currentLiturgyId: number | null; currentPosition: number | null
   status: string; message: string | null
+  /** The service's calendar date (YYYY-MM-DD), when published. */
+  date: string | null
+  /** Role of the current part ("priest"), once the API publishes current_part_role; null until then. */
+  currentRole: string | null
   /** Published by the API for churches that have been geocoded; absent otherwise. */
   latitude: number | null; longitude: number | null
 }
@@ -32,6 +36,7 @@ export function normalizeSession(value: unknown): LiveSession {
   return { id: requiredId(s.id), title: text(s.liturgy) || 'Service', church: text(s.church_name) || 'Church service',
     currentPartId: positiveId(s.current_part_id), currentLiturgyId: positiveId(s.current_liturgy_id),
     currentPosition: positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
+    date: text(s.date), currentRole: text(s.current_part_role)?.trim() || null,
     latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180) }
 }
 /** Only a real, in-range number counts; anything else means the church has no published position. */

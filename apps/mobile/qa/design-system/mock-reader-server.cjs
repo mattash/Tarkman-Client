@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-/* global console, setInterval, clearInterval, Buffer */
+/* global console, setInterval, clearInterval, Buffer, process */
 
 // Read-only local fixture for native SessionReader design QA.
 // Run from the repository root with:
 //   node apps/mobile/qa/design-system/mock-reader-server.cjs
+// FIXTURE_SERVICES=single (default) | several | none chooses what /services.json lists,
+// so the home screen's live, several-live and nothing-live states can each be checked.
 
 const http = require('node:http')
 const { URL } = require('node:url')
@@ -11,6 +13,8 @@ const { URL } = require('node:url')
 const HOST = '127.0.0.1'
 const PORT = 8100
 const SESSION_ID = 9001
+const SECOND_SESSION_ID = 9002
+const SCENARIO = process.env.FIXTURE_SERVICES || 'single'
 const LITURGY_ID = 99001
 
 const prayer = {
@@ -58,7 +62,22 @@ const session = { session: {
   church_name: 'Sample parish · local design fixture',
   status: 'active',
   status_message: 'Sample data · local fixture only',
+  date: new Date().toISOString().slice(0, 10),
+  current_part_role: 'priest',
+  // Apple Park, the simulator's default location, so the nearby match can be seen without setting one.
+  church_latitude: 37.3349,
+  church_longitude: -122.009,
 } }
+const secondSession = { session: {
+  ...session.session,
+  id: SECOND_SESSION_ID,
+  liturgy: 'Second sample service · local fixture',
+  church_name: 'Second sample parish · local design fixture',
+  current_part_role: 'choir',
+  church_latitude: 42.3736,
+  church_longitude: -71.1097,
+} }
+const listed = { single: [session], several: [session, secondSession], none: [] }[SCENARIO] ?? [session]
 const explanationResponse = { explanations: [{ explanation }] }
 
 function json(res, status, value) {
@@ -87,9 +106,10 @@ function route(req, res) {
   if (req.method !== 'GET') return error(res, 405, 'Fixture is read-only; only GET and OPTIONS are supported.')
 
   const path = new URL(req.url, `http://${HOST}:${PORT}`).pathname
-  if (path === '/services.json') return json(res, 200, [session])
+  if (path === '/services.json') return json(res, 200, listed.length ? listed : { message: 'No sessions today' })
   if (path === `/s/${SESSION_ID}.json`) return json(res, 200, session)
-  if (path === `/s/${SESSION_ID}/parts.json`) return json(res, 200, { parts })
+  if (path === `/s/${SECOND_SESSION_ID}.json`) return json(res, 200, secondSession)
+  if (path === `/s/${SESSION_ID}/parts.json` || path === `/s/${SECOND_SESSION_ID}/parts.json`) return json(res, 200, { parts })
   const partMatch = path.match(new RegExp(`^/s/${SESSION_ID}/parts/(\\d+)\\.json$`))
   if (partMatch) {
     const found = parts.find(({ part }) => part.id === Number(partMatch[1]))
@@ -132,6 +152,6 @@ try {
 }
 
 server.listen(PORT, HOST, () => {
-  console.log(`Mobile reader fixture listening at http://${HOST}:${PORT}`)
+  console.log(`Mobile reader fixture listening at http://${HOST}:${PORT} (services: ${SCENARIO})`)
   console.log(`ActionCable ${cableServer ? 'enabled at ws://' + HOST + ':' + PORT + '/cable' : 'unavailable (ws package not found)'}`)
 })

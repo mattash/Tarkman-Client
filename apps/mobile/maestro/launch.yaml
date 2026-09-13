@@ -10,5 +10,5 @@ appId: app.tarkman
     text: "Open"
     optional: true
 - extendedWaitUntil:
-    visible: "Follow the service."
+    visible: "Today"
     timeout: 60000

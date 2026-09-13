@@ -25,6 +25,8 @@ function nativePalette(theme: FoundationTheme, dark: boolean) {
     // Neutral press feedback for quiet/secondary controls: the proposal's surface.subtle.
     pressedSubtle: dark ? theme.surfaceRaised : '#F1EBEE',
     currentRule: dark ? '#B07A93' : theme.actionPrimary,
+    // Quiet dashed outline for the secondary Scan row on Today. The row's label identifies it; the dash is decoration.
+    dashed: dark ? '#5A4B55' : '#C9BCC4',
     success: theme.success,
     successSurface: theme.successSurface,
     warning: theme.warning,
@@ -45,10 +47,25 @@ export const colors = {
 } as const
 export type ThemeName = keyof typeof colors
 export const spacing = { xs: 4, sm: 8, md: 16, page: 20, stanza: 19, lg: 24, xl: 32, xxl: 48 } as const
-export const radii = { control: 8, card: 16, sheet: 24 } as const
+export const radii = { control: 8, field: 10, action: 12, card: 16, feature: 20, sheet: 24 } as const
 export const touchTarget = 48
+// The scanner is a viewfinder, dark in both themes; it borrows only the status pairs for its result cards.
+export const scanner = {
+  canvas: '#191519',
+  foreground: foundation.themes.dark.textPrimary,
+  muted: '#D9CCD4',
+  scrim: 'rgba(23, 20, 23, 0.55)',
+  scrimStrong: 'rgba(23, 20, 23, 0.72)',
+  frame: 'rgba(250, 248, 247, 0.07)',
+} as const
 export const typography = {
   title: { fontSize: 34, lineHeight: 44, fontWeight: '600' },
+  screenTitle: { fontSize: 28, lineHeight: 36, fontWeight: '600' },
+  feature: { fontSize: 30, lineHeight: 38, fontWeight: '600' },
+  rowTitle: { fontSize: 17, lineHeight: 25, fontWeight: '600' },
+  action: { fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  eyebrow: { fontSize: 13, lineHeight: 20, fontWeight: '600' },
+  tab: { fontSize: 11, lineHeight: 15, fontWeight: '400' },
   heading: { fontSize: 23, lineHeight: 32, fontWeight: '600' },
   body: { fontSize: 17, lineHeight: 27, fontWeight: '400' },
   explanation: { fontSize: 17, lineHeight: 27, fontWeight: '400' },

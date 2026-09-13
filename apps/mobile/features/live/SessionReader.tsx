@@ -1,21 +1,22 @@
-import { useRef, useState } from 'react'
-import { Platform, Pressable, View, useWindowDimensions } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
-import { AppIcon } from '../../components/AppIcon'
 import { AppModal } from '../../components/AppModal'
 import { AppText } from '../../components/AppText'
 import { SegmentedControl } from '../../components/SegmentedControl'
 import { StatusPill } from '../../components/StatusPill'
 import { usePreferences } from '../preferences/PreferencesProvider'
 import { LiturgyText } from '../../components/LiturgyText'
-import { radii, spacing, touchTarget } from '../../design/tokens'
+import { LanguageSelectionRow } from '../../components/LanguageSelectionRow'
+import { radii, spacing } from '../../design/tokens'
 import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
 import type { Endpoints } from './config'
 import { currentPart } from './contracts'
 import { useReader } from './useReader'
+import { saveLastReading } from '../progress/lastReading'
 import { PartList } from './PartList'
 import { ReaderStatus } from './ReaderStatus'
 
@@ -36,6 +37,11 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const [manualPart, setManualPart] = useState<string | undefined>(undefined)
   const part = state.session ? currentPart(state.session, state.parts) : undefined
   const title = state.session?.title ?? `Session ${id}`
+  // Continue reading on Today: the service and the part it had reached, kept on this device only.
+  const session = state.session, role = part?.role ?? null
+  useEffect(() => {
+    if (session) void saveLastReading({ sessionId: id, title: session.title, church: session.church, date: session.date, role })
+  }, [id, session, role])
   const accessibilitySize = fontScale > 1.5
   const compactReading = accessibilitySize || width > height || !state.following
   const dismissSheet = () => {
@@ -152,21 +158,3 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   </View>
 }
 
-function LanguageSelectionRow({ label, language, selected, multiple = false, onPress }: {
-  label: string; language: Language; selected: boolean; multiple?: boolean; onPress(): void
-}) {
-  const { colors } = useTheme()
-  const [pressed, setPressed] = useState(false)
-  return <Pressable accessibilityRole={multiple ? 'checkbox' : 'button'} accessibilityLabel={label}
-    accessibilityHint={multiple ? selected ? 'Double tap to remove this language' : 'Double tap to add this language' : undefined}
-    {...(Platform.OS === 'web' ? multiple ? { 'aria-checked': selected } : { 'aria-selected': selected } : {})}
-    accessibilityState={multiple ? { checked: selected, selected } : { selected }} onPress={onPress}
-    onPressIn={() => setPressed(true)} onPressOut={() => setPressed(false)}
-    style={{ minHeight: touchTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-      paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radii.control,
-      borderBottomWidth: 1, borderBottomColor: colors.divider,
-      backgroundColor: pressed ? colors.pressedSubtle : selected ? colors.secondary : colors.overlay }}>
-    <AppText language={language} style={{ flex: 1, color: pressed ? colors.foreground : selected ? colors.onSecondary : colors.foreground }}>{label}</AppText>
-    {(selected || multiple) && <AppIcon name={multiple ? selected ? 'checkbox' : 'unchecked' : 'selected'} color={pressed ? colors.foreground : selected ? colors.onSecondary : colors.muted} />}
-  </Pressable>
-}

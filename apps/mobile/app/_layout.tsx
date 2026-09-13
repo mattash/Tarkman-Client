@@ -1,9 +1,11 @@
 import '../global.css'
 import * as Sentry from '@sentry/react-native'
 import { Stack } from 'expo-router'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { View } from 'react-native'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { ThemeProvider, useTheme } from '../design/ThemeProvider'
+import { scanner } from '../design/tokens'
 import { ReadingFontProvider } from '../design/ReadingFontProvider'
 import { AuthProvider } from '../features/auth/AuthProvider'
 import { PreferencesProvider, usePreferences } from '../features/preferences/PreferencesProvider'
@@ -22,12 +24,18 @@ function PreferenceTheme() {
 }
 function RootContent() {
   const { colors, scheme } = useTheme()
-  return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+  const insets = useSafeAreaInsets()
+  // Each screen owns its safe area, so the tab bar can reach the home indicator and the scanner can fill the display.
+  const safe = { paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }
+  return <View style={{ flex: 1, backgroundColor: colors.background }}>
     <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     <ReadingFontProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background, ...safe } }}>
+        <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: colors.background, ...safe, paddingBottom: 0 } }} />
+        <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: scanner.canvas } }} />
+      </Stack>
     </AuthProvider></ReadingFontProvider>
-  </SafeAreaView>
+  </View>
 }
 
 export default Sentry.wrap(RootLayout)

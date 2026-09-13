@@ -31,7 +31,7 @@ export default function MyServicesScreen() {
   return <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
     <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg }}>
       <View style={{ alignSelf: 'flex-start' }}>
-        <AppButton variant="quiet" onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/') } }}>Live services</AppButton>
+        <AppButton variant="quiet" icon="back" onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/settings') } }}>Settings</AppButton>
       </View>
       <AppText variant="label" tone="accent">TARKMAN / MY SERVICES</AppText>
       <AppText variant="title">Your services</AppText>
