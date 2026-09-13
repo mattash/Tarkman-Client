@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PropsWithChildren, type RefObject } from 'react'
+import { useEffect, useRef, type PropsWithChildren, type RefObject, type ReactNode } from 'react'
 import { AccessibilityInfo, findNodeHandle, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../design/ThemeProvider'
@@ -6,7 +6,7 @@ import { radii, spacing } from '../design/tokens'
 import { AppText } from './AppText'
 import { AppButton } from './AppButton'
 
-export function AppModal({ visible, onDismiss, title, children, openerRef }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<View | null> }>) {
+export function AppModal({ visible, onDismiss, title, children, openerRef, headerAction, dismissLabel = 'Done' }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<View | null>; headerAction?: ReactNode; dismissLabel?: string }>) {
   const closeRef = useRef<View>(null)
   const wasVisible = useRef(false)
   const restore = () => focusControl(openerRef?.current)
@@ -31,11 +31,14 @@ export function AppModal({ visible, onDismiss, title, children, openerRef }: Pro
       <View testID="modal-shell" accessibilityViewIsModal onAccessibilityEscape={onDismiss} style={{ backgroundColor: colors.overlay, flex: ios ? 1 : undefined, maxHeight: ios ? '100%' : '90%', width: '100%', maxWidth: 680,
         alignSelf: 'center', borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
         paddingTop: spacing.lg, paddingBottom: Math.max(insets.bottom, spacing.lg), paddingLeft: Math.max(insets.left, spacing.lg), paddingRight: Math.max(insets.right, spacing.lg), gap: spacing.md }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm }}>
+          <AppText variant="heading" style={{ flex: 1 }}>{title}</AppText>
+          <AppButton ref={closeRef} variant="quiet" onPress={onDismiss} accessibilityLabel={`Close ${title}`}>{dismissLabel}</AppButton>
+          {headerAction}
+        </View>
         <ScrollView testID="modal-content" style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: spacing.md }}>
-          <AppText variant="heading">{title}</AppText>
           {children}
         </ScrollView>
-        <AppButton ref={closeRef} variant="secondary" onPress={onDismiss} accessibilityLabel={`Close ${title}`}>Close</AppButton>
       </View>
     </KeyboardAvoidingView>
   </Modal>

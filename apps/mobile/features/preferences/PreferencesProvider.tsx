@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { KeyValueAdapter, Language } from '@tarkman/core'
+import { readingSizes, type ReadingSize } from '../../design/tokens'
 import { preferencesStore } from './storage'
 
 export const PREFERENCES_KEY = 'tarkman.preferences.v1'
@@ -14,12 +15,14 @@ export interface Preferences {
   /** Languages available to the reader, always kept in stable product order. */
   selectedLanguages: Language[]
   appearance: AppearancePreference
+  readingSize: ReadingSize
 }
 
 const DEFAULT_PREFERENCES: Preferences = {
   language: DEFAULT_LANGUAGE,
   selectedLanguages: [...LANGUAGES],
   appearance: 'system',
+  readingSize: 'standard',
 }
 
 export interface PreferencesContextValue {
@@ -29,6 +32,7 @@ export interface PreferencesContextValue {
   setLanguage(language: Language): void
   setSelectedLanguages(languages: readonly Language[]): void
   setAppearance(appearance: AppearancePreference): void
+  setReadingSize(size: ReadingSize): void
   /** Resets reading choices while preserving the reader's appearance. */
   clear(): void
 }
@@ -97,6 +101,16 @@ export function PreferencesProvider({ store = preferencesStore, children }: { st
     })
   }, [store, persist])
 
+  const setReadingSize = useCallback((readingSize: ReadingSize) => {
+    if (!Object.hasOwn(readingSizes, readingSize)) return
+    localRevision.current += 1
+    setPreferences(current => {
+      const next = { ...current, readingSize }
+      persist(() => store.set(PREFERENCES_KEY, JSON.stringify(next)))
+      return next
+    })
+  }, [store, persist])
+
   const clear = useCallback(() => {
     localRevision.current += 1
     setPreferences(current => {
@@ -108,8 +122,8 @@ export function PreferencesProvider({ store = preferencesStore, children }: { st
     })
   }, [store, persist])
 
-  const value = useMemo(() => ({ ready, preferences, setLanguage, setSelectedLanguages, setAppearance, clear }),
-    [ready, preferences, setLanguage, setSelectedLanguages, setAppearance, clear])
+  const value = useMemo(() => ({ ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear }),
+    [ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear])
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
 
@@ -124,7 +138,7 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
   try {
     const data: unknown = JSON.parse(raw)
     if (!data || typeof data !== 'object') return null
-    const record = data as { language?: unknown; selectedLanguages?: unknown; appearance?: unknown }
+    const record = data as { language?: unknown; selectedLanguages?: unknown; appearance?: unknown; readingSize?: unknown }
     if (typeof record.language !== 'string' || !LANGUAGES.includes(record.language as Language)) return null
     const language = record.language as Language
     const storedLanguages = Array.isArray(record.selectedLanguages) ? record.selectedLanguages : null
@@ -134,6 +148,8 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
     if (selectedLanguages.length === 0) return null
     const validAppearance = typeof record.appearance === 'string' && APPEARANCES.includes(record.appearance as AppearancePreference)
     const appearance = validAppearance ? record.appearance as AppearancePreference : 'system'
+    const validReadingSize = typeof record.readingSize === 'string' && Object.hasOwn(readingSizes, record.readingSize)
+    const readingSize = validReadingSize ? record.readingSize as ReadingSize : 'standard'
     const normalizedSelection = storedLanguages !== null && storedLanguages.length === selectedLanguages.length
       && storedLanguages.every((item, index) => item === selectedLanguages[index])
     return {
@@ -141,8 +157,9 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
         language: selectedLanguages.includes(language) ? language : selectedLanguages[0],
         selectedLanguages,
         appearance,
+        readingSize,
       },
-      migrated: !normalizedSelection || !validAppearance || !selectedLanguages.includes(language),
+      migrated: !validReadingSize || !normalizedSelection || !validAppearance || !selectedLanguages.includes(language),
     }
   } catch {
     return null

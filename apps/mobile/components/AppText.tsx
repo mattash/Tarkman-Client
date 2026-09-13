@@ -16,7 +16,7 @@ export function AppText({ variant = 'body', language = 'en', tone = 'default', s
   const fontReady = useReadingFont()
   const { fontScale } = useWindowDimensions()
   const armenian = language === 'grabar' && fontReady
-  const literary = (variant === 'title' || variant === 'heading' || variant === 'liturgy') && fontReady
+  const literary = (variant === 'title' || variant === 'heading' || variant === 'liturgy' || variant === 'explanation') && fontReady
   const semibold = variant === 'title' || variant === 'heading'
   // This React Native/iOS runtime keeps old text frames when the content-size
   // category changes behind a presented sheet. Refresh only the native Text

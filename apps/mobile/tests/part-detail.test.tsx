@@ -1,5 +1,6 @@
-import { beforeEach, expect, it, jest } from '@jest/globals'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native'
+import { afterEach, beforeEach, expect, it, jest } from '@jest/globals'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react-native'
+import { PanResponder, type GestureResponderEvent, type PanResponderGestureState } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
 import { createPartsApi, normalizePartDetail, normalizePartExplanation } from '../features/parts/api'
@@ -69,4 +70,31 @@ it('opens a part from the reading list', async () => {
   await render(<SessionReader endpoints={{ api: 'https://api.test', cable: 'wss://api.test/cable' }} id={9} back={jest.fn()} />, { wrapper })
   await fireEvent.press(screen.getByLabelText('46 deacon'))
   await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/sessions/9/part/52'))
+})
+
+
+afterEach(() => { jest.restoreAllMocks() })
+
+it.each([-80, -220])('opens the swiped part, not the live part, after a %s point swipe', async dx => {
+  const create = jest.spyOn(PanResponder, 'create')
+  const session = normalizeSession({ session: { id: 9, liturgy: 'Divine Liturgy', current_part_id: 1 } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, position: 1, role: 'Choir', en: 'Lord, have mercy.' } }, { part: { id: 52, position: 46, role: 'deacon', en: 'Alleluia. Stand up' } }] })
+  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts }, retry: jest.fn(), dispatch: jest.fn() })
+  await render(<SessionReader endpoints={{ api: 'https://api.test', cable: 'wss://api.test/cable' }} id={9} back={jest.fn()} />, { wrapper })
+  const handler = create.mock.calls.at(-1)![0]
+  const event = { nativeEvent: { timestamp: 1000 } } as GestureResponderEvent
+  const movement = { dx, dy: 0, numberActiveTouches: 1, y0: 100 } as PanResponderGestureState
+  handler.onStartShouldSetPanResponderCapture?.(event, movement)
+  expect(handler.onMoveShouldSetPanResponderCapture?.(event, movement)).toBe(true)
+  await act(async () => {
+    handler.onPanResponderGrant?.(event, movement)
+    handler.onPanResponderMove?.(event, movement)
+    handler.onPanResponderRelease?.(event, movement)
+  })
+  if (dx === -80) {
+    expect(mockPush).not.toHaveBeenCalled()
+    await fireEvent.press(screen.getByRole('button', { name: 'View details for 46 deacon' }))
+  }
+  expect(mockPush).toHaveBeenCalledTimes(1)
+  expect(mockPush).toHaveBeenCalledWith('/sessions/9/part/52')
 })

@@ -6,6 +6,8 @@ import { AppButton } from '../components/AppButton'
 
 import { ReadingFontContext } from './readingFont'
 const fonts = {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro static icon font.
+  TarkmanIcons: require('@react-native-vector-icons/ionicons/fonts/Ionicons.ttf'),
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro static assets.
   'SourceSerif4-Regular': require('../assets/fonts/SourceSerif4-Regular.ttf'),
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro static assets.

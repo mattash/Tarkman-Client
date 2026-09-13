@@ -18,6 +18,7 @@ it('migrates a stored reading language without losing the active choice', async 
     language: 'grabar',
     selectedLanguages: ['en', 'ru', 'grabar', 'translit'],
     appearance: 'system',
+    readingSize: 'standard',
   })
   await waitFor(() => expect(JSON.parse(String(saved(store)))).toEqual(result.current.preferences))
 })
@@ -45,12 +46,14 @@ it('keeps a chosen language and forgets it on request', async () => {
     language: 'ru',
     selectedLanguages: ['ru', 'translit'],
     appearance: 'dark',
+    readingSize: 'standard',
   }))
   await act(async () => result.current.clear())
   expect(result.current.preferences).toEqual({
     language: 'en',
     selectedLanguages: ['en', 'ru', 'grabar', 'translit'],
     appearance: 'dark',
+    readingSize: 'standard',
   })
   await waitFor(() => expect(JSON.parse(String(saved(store)))).toEqual(result.current.preferences))
 })
@@ -90,4 +93,19 @@ it('does not let late startup hydration replace an in-app choice', async () => {
   hydration.resolve(JSON.stringify({ language: 'grabar' }))
   await waitFor(() => expect(result.current.ready).toBe(true))
   expect(result.current.preferences.language).toBe('ru')
+})
+
+it('persists reading size, tolerates older records and resets size with reading choices', async () => {
+  const { store } = memoryStore({ [PREFERENCES_KEY]: JSON.stringify({ language: 'ru', selectedLanguages: ['ru'], appearance: 'dark', readingSize: 'unknown' }) })
+  const { result, unmount } = await setup(store)
+  await waitFor(() => expect(result.current.ready).toBe(true))
+  expect(result.current.preferences.readingSize).toBe('standard')
+  await act(async () => result.current.setReadingSize('extraLarge'))
+  await waitFor(() => expect(JSON.parse(String(saved(store))).readingSize).toBe('extraLarge'))
+  await unmount()
+  const restored = await setup(store)
+  await waitFor(() => expect(restored.result.current.ready).toBe(true))
+  expect(restored.result.current.preferences).toMatchObject({ readingSize: 'extraLarge', language: 'ru', appearance: 'dark' })
+  await act(async () => restored.result.current.clear())
+  expect(restored.result.current.preferences).toMatchObject({ readingSize: 'standard', language: 'en', appearance: 'dark' })
 })

@@ -1,31 +1,42 @@
 import { useState, type Ref } from 'react'
-import { ActivityIndicator, Pressable, type PressableProps, type View } from 'react-native'
+import { ActivityIndicator, Platform, Pressable, type PressableProps, type View } from 'react-native'
 import { useTheme } from '../design/ThemeProvider'
 import { radii, spacing, touchTarget } from '../design/tokens'
+import { AppIcon, type IconName } from './AppIcon'
+import { useReadingFont } from '../design/readingFont'
 import { AppText } from './AppText'
 
 export interface AppButtonProps extends Omit<PressableProps, 'children' | 'style'> {
   ref?: Ref<View>
   children: string
   variant?: 'primary' | 'secondary' | 'quiet' | 'destructive'
+  icon?: IconName
+  iconOnly?: boolean
+  selected?: boolean
+  rounded?: boolean
   loading?: boolean
 }
-export function AppButton({ children, variant = 'primary', loading = false, disabled = false, accessibilityState, onFocus, onBlur, onPressIn, onPressOut, ...props }: AppButtonProps) {
+export function AppButton({ children, variant = 'primary', loading = false, icon, iconOnly = false, selected = false, rounded = false, disabled = false, accessibilityState, onFocus, onBlur, onPressIn, onPressOut, ...props }: AppButtonProps) {
   const { colors } = useTheme()
   const [focused, setFocused] = useState(false)
   // NativeWind's native runtime replaces function-valued Pressable styles with {}, so pressed state is tracked here.
   const [pressed, setPressed] = useState(false)
+  const fontReady = useReadingFont()
   const inactive = disabled || loading
-  const backgroundColor = variant === 'quiet' ? 'transparent' : colors[variant]
-  const color = variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : variant === 'secondary' ? colors.onSecondary : colors.primary
-  return <Pressable {...props} accessibilityRole="button" accessibilityLabel={props.accessibilityLabel ?? children}
-    accessibilityState={{ ...accessibilityState, disabled: inactive, busy: loading }} disabled={inactive}
+  const backgroundColor = inactive ? colors.disabled : pressed ? colors.pressed : selected ? colors.secondary
+    : variant === 'quiet' ? 'transparent' : variant === 'secondary' ? colors.surface : colors[variant]
+  const color = inactive ? colors.onDisabled : pressed ? colors.onPrimary : selected ? colors.onSecondary
+    : variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.foreground
+  return <Pressable {...props} accessibilityRole={props.accessibilityRole ?? 'button'} accessibilityLabel={props.accessibilityLabel ?? children}
+    {...(Platform.OS === 'web' ? { 'aria-checked': accessibilityState?.checked,
+      'aria-selected': selected || accessibilityState?.selected, 'aria-disabled': inactive, 'aria-busy': loading } : {})}
+    accessibilityState={{ ...accessibilityState, selected: selected || accessibilityState?.selected, disabled: inactive, busy: loading }} disabled={inactive}
     onFocus={event => { setFocused(true); onFocus?.(event) }} onBlur={event => { setFocused(false); onBlur?.(event) }}
     onPressIn={event => { setPressed(true); onPressIn?.(event) }} onPressOut={event => { setPressed(false); onPressOut?.(event) }}
-    style={{ minHeight: touchTarget, minWidth: touchTarget, paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
-      borderRadius: radii.control, backgroundColor, borderWidth: 2, borderColor: focused ? (variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.focus) : 'transparent',
-      opacity: inactive ? 0.55 : pressed ? 0.8 : 1, flexDirection: 'row', gap: spacing.sm, alignItems: 'center', justifyContent: 'center' }}>
+    style={{ minHeight: touchTarget, minWidth: touchTarget, paddingVertical: spacing.sm, paddingHorizontal: iconOnly && fontReady ? spacing.sm : spacing.md,
+      borderRadius: rounded ? 999 : radii.control, backgroundColor, borderWidth: 2, borderColor: focused ? (variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.focus) : variant === 'secondary' && !selected ? colors.divider : 'transparent', flexDirection: 'row', gap: spacing.sm, alignItems: 'center', justifyContent: 'center' }}>
     {loading && <ActivityIndicator color={color} accessible={false} />}
-    <AppText variant="label" style={{ color, textAlign: 'center' }}>{children}</AppText>
+    {icon && !loading && <AppIcon name={icon} color={color} />}
+    {(!iconOnly || !fontReady) && <AppText variant="label" style={{ color, textAlign: 'center' }}>{children}</AppText>}
   </Pressable>
 }
