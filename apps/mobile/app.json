@@ -53,6 +53,14 @@
           "project": "tarkman-mobile",
           "url": "https://sentry.io/"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationWhenInUsePermission": "Tarkman checks your location on this device to offer the service at the church you are in. Your location is never sent anywhere.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
       ]
     ],
     "extra": {

@@ -472,3 +472,36 @@ traces are minified; device flows run locally and are not enforced by CI; univer
 explanations renders literally (#99); the services list shows only the first ten
 (#92). Jest covers behaviour, not rendering on a device, so it is not evidence
 for any item in this section.
+
+## The church you are standing in / Expo #106
+
+When a live service's church has been geocoded, the API publishes
+`church_latitude` / `church_longitude` alongside it, and the services list
+offers to work out which of those churches the reader is in.
+
+Nothing happens until someone taps **Find my church**. The location permission
+is requested then — when in use only, never "always" — so a reader who never
+taps it is never asked. `app.json` carries the reason string, and
+`locationAlwaysAndWhenInUsePermission` is explicitly `false`.
+
+**A reader's position never leaves the phone.** `features/nearby/distance.ts`
+compares the device position with the coordinates already in the services list
+and picks the nearest church within `NEARBY_RADIUS_METRES` (250m — a building
+plus its car park, with room for poor GPS indoors). No request carries a
+location, nothing is persisted, and the position is discarded once the match is
+made. The permission string and the card both say so.
+
+A match is offered, never applied: the suggestion appears above the list with
+**Not where I am** beside it, so a wrong guess during a service costs one tap.
+Refused permission, an unavailable position, and no church in range each say so
+in place and leave the list exactly as it was; when permission has been denied
+for good, the button is withdrawn rather than repeatedly failing.
+
+Churches without coordinates simply cannot match, and the whole card is hidden
+when no listed service has any — which is the state of production today.
+Geocoding runs on the backend only when a profile's address changes, so existing
+churches need a backfill or a re-save before this can light up. Verifying the
+found path end to end therefore needs a geocoded church with a live service;
+a simulator can supply the position
+(`xcrun simctl location booted set <lat>,<lon>`), but the permission prompt
+itself is worth seeing once on a physical iPhone.
