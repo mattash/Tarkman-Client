@@ -5,6 +5,18 @@ retains the Expo 05 static liturgy examples (`en`, `ru`, `grabar`, `translit`) a
 works without network configuration. The production website remains the
 separate Vite app in `../web`.
 
+## v1 platform scope
+
+Tarkman mobile v1 supports **iOS**; the mobile web export remains supported as
+part of the web experience. Android is intentionally **unsupported for v1**:
+there is no Android device/emulator verification, store setup, or release plan.
+Android remains configured as an intentional internal/future path, but that
+configuration does not make it a supported v1 target or block an explicit
+Android build. Existing Android-specific code and configuration remain in place
+for a future, separately scoped Android effort. Before Android is released or
+otherwise supported, complete an Android verification plan covering the reader,
+part detail, service control, sheets, and back gesture.
+
 ## Develop and verify
 
 Use Node >=22.13; install each app independently. No workspaces or root install.
@@ -166,7 +178,9 @@ editorial claim about liturgical accent placement.
 
 ## Configuration boundaries
 
-`app.json` retains the existing owner, EAS project link, identifiers and scheme.
+`app.json` retains the existing owner, EAS project link, identifiers and scheme,
+including the Android platform entry for future/internal work. That entry is not
+a v1 Android support or release commitment, and it does not add a build guard.
 This gallery adds only automatic appearance and the Expo font plugin. No EAS
 commands, credentials, build profiles or deployment settings change. Run any
 future EAS operations only from `apps/mobile` under separate release authorization.

@@ -120,7 +120,7 @@ package.json                  # Convenience scripts only; no root dependencies
 | `test:coverage` | Run web tests with coverage             |
 | `test:integration` | Run web integration tests            |
 | `mobile`      | Start Expo Metro / Expo Go               |
-| `mobile:ios` / `mobile:android` | Start Expo for a simulator/emulator |
+| `mobile:ios` / `mobile:android` | Start Expo for an iOS simulator or the internal/future Android emulator path |
 | `mobile:web` | Start the Expo placeholder in a browser |
 | `mobile:export` | Export the Expo placeholder to apps/mobile/dist |
 | `mobile:typecheck` | Typecheck the Expo app                |
@@ -141,9 +141,10 @@ app keeps React 19 isolated for native builds.
 
 `apps/mobile` is a separate TypeScript managed Expo app using Expo Router, with
 one placeholder home screen. No web screens have been migrated. Start it with
-`npm run mobile` from the root, or `cd apps/mobile && npm start`. Use a compatible
-Expo Go app or an iOS simulator / Android emulator. The `ios` and `android` scripts
-start Metro; they do not create native projects or cloud builds.
+`npm run mobile` from the root, or `cd apps/mobile && npm start`. v1 use is an iOS
+simulator or compatible Expo Go app. The `android` script remains an intentional
+internal/future emulator path, not a supported or released v1 target. The `ios`
+and `android` scripts start Metro; they do not create native projects or cloud builds.
 
 See [mobile setup and future EAS initialization](apps/mobile/README.md). The app
 is deliberately unlinked: the owner must choose an Expo account/team before
