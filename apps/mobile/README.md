@@ -479,7 +479,7 @@ install. Run them locally before distributing a build.
 Recorded rather than implied: source maps are not uploaded, so release stack
 traces are minified; device flows run locally and are not enforced by CI; universal links are unverified on a device
 (#101); large text sizes still break reader layout (#91); block-level Markdown in
-explanations renders literally (#99); the services list shows only the first ten
+explanations renders literally (#99); My services cursor pagination still needs device and backend rollout verification
 (#92). Jest covers behaviour, not rendering on a device, so it is not evidence
 for any item in this section.
 
@@ -517,3 +517,23 @@ found path end to end therefore needs a geocoded church with a live service;
 a simulator can supply the position
 (`xcrun simctl location booted set <lat>,<lon>`), but the permission prompt
 itself is worth seeing once on a physical iPhone.
+
+## My services pagination / #92
+
+The signed-in list opts in to `GET /s.json?pagination=cursor&limit=20`, adding
+an encoded `cursor` for subsequent pages. The backend must return newest-first
+`{ sessions: [{ session: ... }], page: { limit, has_more, next_cursor } }`.
+Legacy `{ sessions: [...] }` and `{ error: "No sessions found" }` responses
+remain supported as complete lists with no client-side cap.
+
+`features/services/useMyServices.ts` serializes page requests and keeps loaded
+cards visible during refresh and failures. Load-more Retry repeats the failed
+cursor; a 400 `{ error: "invalid_cursor" }` triggers one page-one recovery.
+Repeated cursors anywhere in the current chain are rejected before appending;
+history resets only after a successful first-page replacement or recovery.
+Failed recovery exposes ordinary Retry without automatically looping. FlashList
+renders the cards, pull-to-refresh, and accessible load-more/end controls.
+Native accessibility announces “All services loaded” once after a terminal
+load-more response, excluding initial complete lists and first-page recovery.
+Web retains its polite live region. Jest covers these transitions; native scrolling and assistive technology still
+need device verification against the paginated backend.
