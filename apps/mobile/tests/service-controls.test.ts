@@ -1,5 +1,7 @@
 import { expect, it, jest } from '@jest/globals'
-import { createServiceControls, isStalePart } from '../features/services/controls'
+import { STATUS_LABELS as CORE_STATUS_LABELS } from '../../../packages/tarkman-core/src/status'
+import { STATUS_LABELS } from '../features/services/api'
+import { createServiceControls, isControlForbidden, isStalePart } from '../features/services/controls'
 import { respond } from './auth-helpers'
 
 function controls(response: Response) {
@@ -41,4 +43,18 @@ it('marks a move the server refused as stale so the screen can resync', async ()
   expect(isStalePart(failure)).toBe(true)
   expect(String(failure.message)).toMatch(/already moved on/)
   expect(isStalePart(new Error('other'))).toBe(false)
+})
+
+it('marks refused permission apart from other failures, and does not ask the operator to look up the part', async () => {
+  const forbidden = await controls(respond(403, {})).commands.next(9, 1).catch((failure: Error) => failure)
+  expect(isControlForbidden(forbidden)).toBe(true)
+  expect(isStalePart(forbidden)).toBe(false)
+  const stale = await controls(respond(409, {})).commands.next(9, 1).catch((failure: Error) => failure)
+  expect(isStalePart(stale)).toBe(true)
+  expect(isControlForbidden(stale)).toBe(false)
+  expect((stale as Error).message).toBe('The service already moved on, so nothing was changed.')
+})
+
+it('uses the core status labels verbatim', () => {
+  expect(STATUS_LABELS).toEqual(CORE_STATUS_LABELS)
 })

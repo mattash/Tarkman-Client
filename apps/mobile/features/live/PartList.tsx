@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
-import { AccessibilityInfo, FlatList, Platform, Pressable, useWindowDimensions, View } from 'react-native'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import { AccessibilityInfo, Platform, Pressable, useWindowDimensions, View } from 'react-native'
+import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import type { Language } from '@tarkman/core'
 import { AppText } from '../../components/AppText'
 import { AppButton } from '../../components/AppButton'
@@ -10,29 +11,40 @@ import { sampleLanguages } from '../../design/samples'
 import { SwipeablePart } from './SwipeablePart'
 import type { LivePart } from './contracts'
 
+const READING_WIDTH = 1152
+
 export function PartList({ parts, currentKey, following, language, selectedLanguages, manual, open, switchLanguage,
   readingSize = 'standard', paused = false, header, compact = false }: {
   parts: LivePart[]; currentKey?: string; following: boolean; language: Language; selectedLanguages: readonly Language[]
   manual(): void; open(part: LivePart): void; switchLanguage?(language: Language): void; readingSize?: ReadingSize
   paused?: boolean; header?: ReactElement; compact?: boolean
 }) {
-  const { colors, scheme } = useTheme()
   const { fontScale } = useWindowDimensions()
-  const [width, setWidth] = useState(0)
+  const [frameWidth, setFrameWidth] = useState(0)
   const [reduceMotion, setReduceMotion] = useState(true)
-  const list = useRef<FlatList<LivePart>>(null)
-  const retry = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const attempts = useRef(0)
+  const list = useRef<FlashListRef<LivePart>>(null)
   const manualOffset = useRef(0)
   const previousLanguage = useRef(language)
   const previousKey = useRef(currentKey)
-  const headerHeight = useRef(0)
   const page = fontScale > 2 ? spacing.md : spacing.page
-  // Measure the actual safe-area-constrained list, including reading-size choice.
+  // Measure the actual safe-area-constrained list, including reading-size choice. The reading measure stops at
+  // READING_WIDTH; wider screens centre it with a gutter on each row, so the whole width still scrolls.
+  const width = Math.min(frameWidth, READING_WIDTH)
+  const gutter = Math.max(0, Math.floor((frameWidth - READING_WIDTH) / 2))
   const columnIndent = spacing.md
-  const readingWidth = width - page * 2 - spacing.lg * Math.max(selectedLanguages.length - 1, 0)
-  const compare = selectedLanguages.length > 1 && readingWidth / selectedLanguages.length - columnIndent >= 300 * fontScale * readingSizes[readingSize].fontSize / 24
-  const visibleLanguages = compare ? [language, ...selectedLanguages.filter(value => value !== language)] : [language]
+  const minimumColumn = 300 * fontScale * readingSizes[readingSize].fontSize / 24
+  const columnWidthFor = (count: number) => Math.floor((width - page * 2 - spacing.lg * (count - 1)) / count)
+  // As many columns as keep a readable measure, up to every chosen language: a set too wide for this screen
+  // shows its first languages side by side rather than collapsing to one.
+  let columns = Math.min(selectedLanguages.length, 3)
+  while (columns > 1 && columnWidthFor(columns) - columnIndent < minimumColumn) columns -= 1
+  const compare = columns > 1
+  // One fixed width for every column in every part, so the reading column never widens or narrows with its text.
+  const columnWidth = compare ? columnWidthFor(columns) : undefined
+  const visibleKey = (compare ? [language, ...selectedLanguages.filter(value => value !== language)].slice(0, columns) : [language]).join(',')
+  const visibleLanguages = useMemo(() => visibleKey.split(',') as Language[], [visibleKey])
+  const selectedKey = selectedLanguages.join(',')
+  const alternativesFrom = useMemo(() => selectedKey.split(',') as Language[], [selectedKey])
   const index = parts.findIndex(p => p.key === currentKey)
   useEffect(() => {
     let active = true
@@ -40,84 +52,93 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
     const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion)
     return () => { active = false; subscription.remove() }
   }, [])
-  const cancel = useCallback(() => { if (retry.current) clearTimeout(retry.current); retry.current = null }, [])
-  const revealedKey = useRef<string | undefined>(undefined)
+
+  // Rows are memoized and recycled; they reach the latest callbacks through this ref instead of new functions each render.
+  const actions = useRef({ manual, open, switchLanguage })
+  useEffect(() => { actions.current = { manual, open, switchLanguage } }, [manual, open, switchLanguage])
+  const stopFollowing = useCallback(() => actions.current.manual(), [])
+  const openPart = useCallback((part: LivePart) => actions.current.open(part), [])
+  const readIn = useMemo(() => switchLanguage ? (value: Language) => actions.current.switchLanguage?.(value) : undefined, [switchLanguage])
+
+  // FlashList measures rows as it goes and corrects its own scroll, so one request lands even on a part hundreds of rows
+  // down. The first part scrolls to the very top instead, so the service details above it are shown.
   const target = useCallback((animated = false) => {
     if (!following || index < 0) return
-    list.current?.scrollToIndex({ index, animated, viewPosition: 0,
-      viewOffset: index === 0 && !compact ? headerHeight.current : 0 })
-    // Only count the header as revealed once it has a measured height to reveal.
-    if (index === 0 && (compact || headerHeight.current > 0)) revealedKey.current = currentKey
-  }, [following, index, compact, currentKey])
-  // Layout passes re-anchor the current part. Once the first part has been shown under the
-  // header, a header that grows (for example a new status) is absorbed by
-  // maintainVisibleContentPosition instead of scrolling the prayer text down.
-  const settle = useCallback(() => { if (!(index === 0 && revealedKey.current === currentKey)) target() }, [index, currentKey, target])
+    if (index === 0 && !compact) list.current?.scrollToOffset({ offset: 0, animated })
+    else void list.current?.scrollToIndex({ index, animated, viewPosition: 0 })
+  }, [following, index, compact])
+  // A change of columns, size or language reflows every row, so a following reader is put back on the live part.
+  const layoutKey = `${visibleKey}:${readingSize}:${columnWidth}`
+  const previousLayout = useRef(layoutKey)
   useEffect(() => {
-    attempts.current = 0
     const languageChanged = previousLanguage.current !== language
     const advanced = previousKey.current !== undefined && previousKey.current !== currentKey
+    const reflowed = previousLayout.current !== layoutKey
     previousLanguage.current = language
     previousKey.current = currentKey
-    if (following) target(advanced && !reduceMotion)
+    previousLayout.current = layoutKey
+    if (following) target(advanced && !reduceMotion && !reflowed)
     else if (languageChanged) list.current?.scrollToOffset({ offset: manualOffset.current, animated: false })
-    return cancel
-  }, [target, language, cancel, following, currentKey, reduceMotion])
-  const stopFollowing = () => { cancel(); manual() }
-  return <View style={{ flex: 1 }} onLayout={event => setWidth(Math.min(event.nativeEvent.layout.width, 1152))}
+  }, [target, language, following, currentKey, reduceMotion, layoutKey])
+
+  return <View testID="reading-frame" style={{ flex: 1 }} onLayout={event => setFrameWidth(event.nativeEvent.layout.width)}
     {...(Platform.OS === 'web' ? { onWheel: stopFollowing, onTouchMove: stopFollowing,
       onKeyDown: (event: { key: string }) => { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) stopFollowing() } } : {})}>
-    <FlatList testID="reading-list" ref={list} data={parts} keyExtractor={p => p.key} onContentSizeChange={settle} onLayout={settle}
-      extraData={`${currentKey}:${language}:${visibleLanguages.join(',')}:${readingSize}`} onScrollBeginDrag={stopFollowing}
-      // Status pills live in the list header. Anchor on the first visible part (VirtualizedList
-      // skips the header itself) so a status change never moves prayer text.
-      maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+    <FlashList testID="reading-list" ref={list} data={parts} keyExtractor={p => p.key}
+      // Opening straight onto the live part avoids drawing and scrolling past everything before it.
+      initialScrollIndex={following && index > 0 ? index : undefined} onLoad={() => target()}
+      extraData={`${currentKey}:${index}:${layoutKey}:${paused}:${gutter}:${page}`} onScrollBeginDrag={stopFollowing}
+      // Status pills live in the list header. FlashList keeps the first visible part anchored by default,
+      // so a status change never moves prayer text.
       onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y }} scrollEventThrottle={100}
-      contentContainerStyle={{ paddingBottom: spacing.xxl, width: '100%', maxWidth: 1152, alignSelf: 'center' }}
-      ListHeaderComponent={header ? <View onLayout={event => { headerHeight.current = event.nativeEvent.layout.height }}>
-        {header}
-      </View> : null}
-      onScrollToIndexFailed={info => {
-        cancel()
-        if (!following || attempts.current++ >= 12) return
-        list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })
-        retry.current = setTimeout(() => target(), 150)
-      }}
-      ListEmptyComponent={<AppText style={{ padding: page }}>No reading parts are available for this service.</AppText>}
-      renderItem={({ item, index: itemIndex }) => {
-        const current = item.key === currentKey
-        const past = index >= 0 && itemIndex < index
-        const alternatives = selectedLanguages.filter(value => item.text[value]?.trim())
-        // Position is occurrence identity, not reader-facing content; keep it out of spoken labels.
-        return <SwipeablePart testID={`swipe-${item.key}`} partLabel={item.role}
-          reduceMotion={reduceMotion} onSwipeStart={stopFollowing} onOpen={() => open(item)}>
-          <View testID={`reading-${item.key}`} style={{ paddingHorizontal: page, paddingVertical: spacing.lg,
-          gap: spacing.sm, backgroundColor: current ? colors.surface : colors.background, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
-          {current && <View accessible={false} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, backgroundColor: colors.currentRule }} />}
-          <Pressable accessibilityRole="button" accessibilityHint="Opens this part in every language, with its explanations."
-            accessibilityLabel={`${item.role}${current ? ', current part' : ''}`} onPress={() => open(item)}
-            style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-            <AppText variant="label" tone={current && scheme === 'light' ? 'accent' : 'muted'} style={{ textTransform: 'capitalize' }}>{item.role}</AppText>
-            {current && <AppText variant="caption" tone="muted">{paused ? 'PAUSED HERE' : 'NOW'}</AppText>}
-          </Pressable>
-          <View testID={`reading-languages-${item.key}`} style={{ flexDirection: compare ? 'row' : 'column', gap: spacing.lg }}>
-            {visibleLanguages.map(visibleLanguage => <View key={visibleLanguage} style={{ flex: compare ? 1 : undefined, minWidth: 0,
-              gap: spacing.sm, paddingLeft: compare ? columnIndent - (visibleLanguage === language ? 3 : 1) : 0,
-              borderLeftWidth: compare ? visibleLanguage === language ? 3 : 1 : 0,
-              borderLeftColor: visibleLanguage === language ? colors.currentRule : colors.divider }}>
-              {compare && <AppText variant="label">{sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage}
-                {visibleLanguage === language ? ' · reading' : ' · comparison'}</AppText>}
-              <LiturgyText language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
-              {!item.text[visibleLanguage]?.trim() && switchLanguage && alternatives.length > 0 && <View style={{ gap: spacing.sm }}>
-                <AppText variant="caption" tone="muted">Choose another reading language for this part.</AppText>
-                {alternatives.map(value => <AppButton key={value} variant="secondary" onPress={() => switchLanguage(value)}>
-                  {`Read in ${sampleLanguages.find(candidate => candidate.value === value)!.label}`}
-                </AppButton>)}
-              </View>}
-            </View>)}
-          </View>
-          </View>
-        </SwipeablePart>
-      }} />
+      ListHeaderComponent={header ? <View style={{ paddingHorizontal: gutter }}>{header}</View> : null}
+      ListFooterComponent={<View style={{ height: spacing.xxl }} />}
+      ListEmptyComponent={<AppText style={{ padding: page, paddingHorizontal: page + gutter }}>No reading parts are available for this service.</AppText>}
+      renderItem={({ item, index: itemIndex }) => <ReadingRow item={item} current={item.key === currentKey} past={index >= 0 && itemIndex < index}
+        paused={paused} language={language} visibleLanguages={visibleLanguages} alternativesFrom={alternativesFrom} compare={compare}
+        columnWidth={columnWidth} columnIndent={columnIndent} page={page} gutter={gutter} readingSize={readingSize} reduceMotion={reduceMotion}
+        onSwipeStart={stopFollowing} open={openPart} readIn={readIn} />} />
   </View>
 }
+
+const ReadingRow = memo(function ReadingRow({ item, current, past, paused, language, visibleLanguages, alternativesFrom, compare, columnWidth, columnIndent,
+  page, gutter, readingSize, reduceMotion, onSwipeStart, open, readIn }: {
+  item: LivePart; current: boolean; past: boolean; paused: boolean; language: Language; visibleLanguages: readonly Language[]
+  alternativesFrom: readonly Language[]; compare: boolean; columnWidth: number | undefined; columnIndent: number; page: number; gutter: number
+  readingSize: ReadingSize; reduceMotion: boolean; onSwipeStart(): void; open(part: LivePart): void; readIn?(language: Language): void
+}) {
+  const { colors, scheme } = useTheme()
+  const alternatives = alternativesFrom.filter(value => item.text[value]?.trim())
+  const openThis = () => open(item)
+  // Position is occurrence identity, not reader-facing content; keep it out of spoken labels.
+  return <SwipeablePart testID={`swipe-${item.key}`} partLabel={item.role}
+    reduceMotion={reduceMotion} onSwipeStart={onSwipeStart} onOpen={openThis}>
+    <View testID={`reading-${item.key}`} style={{ paddingHorizontal: page + gutter, paddingVertical: spacing.lg,
+    gap: spacing.sm, backgroundColor: current ? colors.surface : colors.background, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
+    {current && <View accessible={false} style={{ position: 'absolute', top: 0, bottom: 0, left: gutter, width: 3, backgroundColor: colors.currentRule }} />}
+    <Pressable accessibilityRole="button" accessibilityHint="Opens this part in every language, with its explanations."
+      accessibilityLabel={`${item.role}${current ? ', current part' : ''}`} onPress={openThis}
+      style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+      <AppText variant="label" tone={current && scheme === 'light' ? 'accent' : 'muted'} style={{ textTransform: 'capitalize' }}>{item.role}</AppText>
+      {current && <AppText variant="caption" tone="muted">{paused ? 'PAUSED HERE' : 'NOW'}</AppText>}
+    </Pressable>
+    <View testID={`reading-languages-${item.key}`} style={{ flexDirection: compare ? 'row' : 'column', gap: spacing.lg }}>
+      {visibleLanguages.map(visibleLanguage => <View key={visibleLanguage} testID={`reading-column-${item.key}-${visibleLanguage}`}
+        style={{ width: columnWidth, flexGrow: 0, flexShrink: 0, minWidth: 0,
+        gap: spacing.sm, paddingLeft: compare ? columnIndent - (visibleLanguage === language ? 3 : 1) : 0,
+        borderLeftWidth: compare ? visibleLanguage === language ? 3 : 1 : 0,
+        borderLeftColor: visibleLanguage === language ? colors.currentRule : colors.divider }}>
+        {compare && <AppText variant="label">{sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage}
+          {visibleLanguage === language ? ' · reading' : ' · comparison'}</AppText>}
+        <LiturgyText language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
+        {!item.text[visibleLanguage]?.trim() && readIn && alternatives.length > 0 && <View style={{ gap: spacing.sm }}>
+          <AppText variant="caption" tone="muted">Choose another reading language for this part.</AppText>
+          {alternatives.map(value => <AppButton key={value} variant="secondary" onPress={() => readIn(value)}>
+            {`Read in ${sampleLanguages.find(candidate => candidate.value === value)!.label}`}
+          </AppButton>)}
+        </View>}
+      </View>)}
+    </View>
+    </View>
+  </SwipeablePart>
+})

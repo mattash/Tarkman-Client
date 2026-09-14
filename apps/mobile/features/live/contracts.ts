@@ -16,6 +16,8 @@ export interface LiveSession {
 export interface LivePart {
   id: number; key: string; liturgyId: number | null; liturgyPartId: number | null
   position: number; role: string; text: Record<Language, string | null>
+  /** What the congregation does during this part ("stand"), when the service publishes one. */
+  posture: string | null
 }
 export interface LiveExplanation { id: number; title: string; description: string | null; liturgyPartId: number | null }
 export function record(value: unknown): Record<string, unknown> {
@@ -66,7 +68,7 @@ export function normalizeParts(value: unknown): LivePart[] {
     if (keys.has(key)) throw new Error('Duplicate part occurrence.')
     keys.add(key)
     return { id, key, liturgyId, liturgyPartId, position, role: text(p.role) || 'Reading',
-      text: { en: text(p.en), ru: text(p.ru), grabar: text(p.grabar), translit: text(p.translit) } }
+      text: { en: text(p.en), ru: text(p.ru), grabar: text(p.grabar), translit: text(p.translit) }, posture: text(p.posture)?.trim() || null }
   }).sort((a, b) => a.position - b.position)
 }
 export function normalizeExplanations(value: unknown): LiveExplanation[] {

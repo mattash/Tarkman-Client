@@ -6,21 +6,33 @@ import { preferencesStore } from './storage'
 export const PREFERENCES_KEY = 'tarkman.preferences.v1'
 export const DEFAULT_LANGUAGE: Language = 'en'
 export const LANGUAGES: readonly Language[] = ['en', 'ru', 'grabar', 'translit']
+/** Spoken language names, pronounceable without an Armenian or Russian voice, for labels beside text in its own script. */
+export const SPOKEN_LANGUAGE: Record<Language, string> = { en: 'English', ru: 'Russian', grabar: 'Classical Armenian', translit: 'Transliteration' }
 export type AppearancePreference = 'system' | 'light' | 'dark'
+/** The most languages that fit side by side on a wide screen, for reading and for service control alike. */
+export const MAX_LANGUAGES = 3
+export const MAX_CONTROL_LANGUAGES = MAX_LANGUAGES
+/** When a set must shrink to MAX_LANGUAGES, the active language stays, then these in turn. */
+const KEEP_FIRST: readonly Language[] = ['grabar', 'en', 'translit', 'ru']
 const APPEARANCES: readonly AppearancePreference[] = ['system', 'light', 'dark']
 
 export interface Preferences {
   /** The language shown in compact reading layouts. */
   language: Language
-  /** Languages available to the reader, always kept in stable product order. */
+  /** Languages available to the reader (1 to MAX_LANGUAGES), always kept in stable product order. */
   selectedLanguages: Language[]
   appearance: AppearancePreference
   readingSize: ReadingSize
+  /**
+   * The operator's own languages for service control, in the order they read them (1 to 3). Absent until they choose,
+   * so control follows the reading language, with Grabar next. Kept apart so arranging control never changes the reading screen.
+   */
+  controlLanguages?: Language[]
 }
 
 const DEFAULT_PREFERENCES: Preferences = {
   language: DEFAULT_LANGUAGE,
-  selectedLanguages: [...LANGUAGES],
+  selectedLanguages: capLanguages(LANGUAGES, DEFAULT_LANGUAGE),
   appearance: 'system',
   readingSize: 'standard',
 }
@@ -33,6 +45,8 @@ export interface PreferencesContextValue {
   setSelectedLanguages(languages: readonly Language[]): void
   setAppearance(appearance: AppearancePreference): void
   setReadingSize(size: ReadingSize): void
+  /** Sets service control's languages in order; duplicates, unknown values and anything past the limit are dropped. */
+  setControlLanguages(languages: readonly Language[]): void
   /** Resets reading choices while preserving the reader's appearance. */
   clear(): void
 }
@@ -80,10 +94,11 @@ export function PreferencesProvider({ store = preferencesStore, children }: { st
   }, [store, persist])
 
   const setSelectedLanguages = useCallback((languages: readonly Language[]) => {
-    const selectedLanguages = LANGUAGES.filter(language => languages.includes(language))
-    if (selectedLanguages.length === 0) return
+    const chosen = LANGUAGES.filter(language => languages.includes(language))
+    if (chosen.length === 0) return
     localRevision.current += 1
     setPreferences(current => {
+      const selectedLanguages = capLanguages(chosen, current.language)
       const language = selectedLanguages.includes(current.language) ? current.language : selectedLanguages[0]
       const next = { ...current, language, selectedLanguages }
       persist(() => store.set(PREFERENCES_KEY, JSON.stringify(next)))
@@ -111,6 +126,17 @@ export function PreferencesProvider({ store = preferencesStore, children }: { st
     })
   }, [store, persist])
 
+  const setControlLanguages = useCallback((languages: readonly Language[]) => {
+    const controlLanguages = normalizeControlLanguages(languages)
+    if (!controlLanguages) return
+    localRevision.current += 1
+    setPreferences(current => {
+      const next = { ...current, controlLanguages }
+      persist(() => store.set(PREFERENCES_KEY, JSON.stringify(next)))
+      return next
+    })
+  }, [store, persist])
+
   const clear = useCallback(() => {
     localRevision.current += 1
     setPreferences(current => {
@@ -122,8 +148,8 @@ export function PreferencesProvider({ store = preferencesStore, children }: { st
     })
   }, [store, persist])
 
-  const value = useMemo(() => ({ ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear }),
-    [ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear])
+  const value = useMemo(() => ({ ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, setControlLanguages, clear }),
+    [ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, setControlLanguages, clear])
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
 
@@ -138,18 +164,23 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
   try {
     const data: unknown = JSON.parse(raw)
     if (!data || typeof data !== 'object') return null
-    const record = data as { language?: unknown; selectedLanguages?: unknown; appearance?: unknown; readingSize?: unknown }
+    const record = data as { language?: unknown; selectedLanguages?: unknown; appearance?: unknown; readingSize?: unknown; controlLanguages?: unknown }
     if (typeof record.language !== 'string' || !LANGUAGES.includes(record.language as Language)) return null
     const language = record.language as Language
     const storedLanguages = Array.isArray(record.selectedLanguages) ? record.selectedLanguages : null
-    const selectedLanguages = storedLanguages
+    // More than MAX_LANGUAGES could never be shown side by side; shrink the set, keeping the reading language.
+    const selectedLanguages = capLanguages(storedLanguages
       ? LANGUAGES.filter(item => storedLanguages.includes(item))
-      : [...LANGUAGES]
+      : [...LANGUAGES], language)
     if (selectedLanguages.length === 0) return null
     const validAppearance = typeof record.appearance === 'string' && APPEARANCES.includes(record.appearance as AppearancePreference)
     const appearance = validAppearance ? record.appearance as AppearancePreference : 'system'
     const validReadingSize = typeof record.readingSize === 'string' && Object.hasOwn(readingSizes, record.readingSize)
     const readingSize = validReadingSize ? record.readingSize as ReadingSize : 'standard'
+    // An unreadable control arrangement is dropped on its own; it never discards the reader's other choices.
+    const controlLanguages = Array.isArray(record.controlLanguages) ? normalizeControlLanguages(record.controlLanguages) : null
+    const controlChanged = record.controlLanguages !== undefined && (!controlLanguages
+      || JSON.stringify(controlLanguages) !== JSON.stringify(record.controlLanguages))
     const normalizedSelection = storedLanguages !== null && storedLanguages.length === selectedLanguages.length
       && storedLanguages.every((item, index) => item === selectedLanguages[index])
     return {
@@ -158,10 +189,33 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
         selectedLanguages,
         appearance,
         readingSize,
+        ...(controlLanguages ? { controlLanguages } : {}),
       },
-      migrated: !validReadingSize || !normalizedSelection || !validAppearance || !selectedLanguages.includes(language),
+      migrated: !validReadingSize || !normalizedSelection || !validAppearance || !selectedLanguages.includes(language) || controlChanged,
     }
   } catch {
     return null
   }
+}
+
+/** Known languages in the given order, each once, at most MAX_CONTROL_LANGUAGES; null when none remain. */
+function normalizeControlLanguages(languages: readonly unknown[]): Language[] | null {
+  const ordered = languages.filter((item, index): item is Language => LANGUAGES.includes(item as Language) && languages.indexOf(item) === index)
+    .slice(0, MAX_CONTROL_LANGUAGES)
+  return ordered.length > 0 ? ordered : null
+}
+
+/** Service control's languages in order: the operator's arrangement, or by default the reading language beside Grabar (or beside the next chosen language). */
+export function resolveControlLanguages(preferences: Preferences): Language[] {
+  if (preferences.controlLanguages?.length) return preferences.controlLanguages
+  const others = preferences.selectedLanguages.filter(item => item !== preferences.language)
+  const grabarNext = others.includes('grabar') ? ['grabar' as const, ...others.filter(item => item !== 'grabar')] : others
+  return [preferences.language, ...grabarNext].slice(0, 2)
+}
+
+/** At most MAX_LANGUAGES in product order, keeping `active` and then KEEP_FIRST when some must go. */
+function capLanguages(languages: readonly Language[], active: Language): Language[] {
+  if (languages.length <= MAX_LANGUAGES) return [...languages]
+  const kept = [active, ...KEEP_FIRST.filter(item => item !== active)].filter(item => languages.includes(item)).slice(0, MAX_LANGUAGES)
+  return LANGUAGES.filter(item => kept.includes(item))
 }

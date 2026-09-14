@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
 import { Animated, Easing, PanResponder, View } from 'react-native'
+import { useRecyclingState } from '@shopify/flash-list'
 import { AppButton } from '../../components/AppButton'
 import { useTheme } from '../../design/ThemeProvider'
 import { spacing, touchTarget } from '../../design/tokens'
@@ -18,16 +19,22 @@ export function SwipeablePart({ children, partLabel, testID, reduceMotion, onSwi
   const restingOffset = useRef(0)
   const dragOrigin = useRef(0)
   const touchStarted = useRef(0)
-  const [revealed, setRevealed] = useState(false)
-  const [dragging, setDragging] = useState(false)
-  const [actionTop, setActionTop] = useState<number>(spacing.lg)
+  // The reading list recycles rows: when this row is reused for another part, it starts closed, not half-swiped.
+  // Swipe state never changes the row's height, so its setters skip the list relayout.
+  const [revealed, setRevealed] = useRecyclingState(false, [testID], () => {
+    translation.stopAnimation()
+    translation.setValue(0)
+    restingOffset.current = 0
+  })
+  const [dragging, setDragging] = useRecyclingState(false, [testID])
+  const [actionTop, setActionTop] = useRecyclingState<number>(spacing.lg, [testID])
 
   const gesture = useMemo(() => {
     const settle = (show: boolean) => {
       const offset = show ? -actionWidth : 0
       restingOffset.current = offset
-      setRevealed(show)
-      setDragging(false)
+      setRevealed(show, true)
+      setDragging(false, true)
       translation.stopAnimation()
       if (reduceMotion) translation.setValue(offset)
       else Animated.timing(translation, { toValue: offset, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
@@ -46,12 +53,12 @@ export function SwipeablePart({ children, partLabel, testID, reduceMotion, onSwi
       onPanResponderGrant: (_event, movement) => {
         translation.stopAnimation()
         dragOrigin.current = restingOffset.current
-        setDragging(true)
+        setDragging(true, true)
         actions.current.onSwipeStart()
         // Parts can be taller than the screen. Keep the info target beside the
         // place the user swiped, rather than halfway down an offscreen prayer.
         row.current?.measureInWindow((_x, y, _width, height) => {
-          setActionTop(Math.max(spacing.sm, Math.min(movement.y0 - y - touchTarget / 2, height - touchTarget - spacing.sm)))
+          setActionTop(Math.max(spacing.sm, Math.min(movement.y0 - y - touchTarget / 2, height - touchTarget - spacing.sm)), true)
         })
       },
       onPanResponderMove: (_event, movement) => {
@@ -63,15 +70,15 @@ export function SwipeablePart({ children, partLabel, testID, reduceMotion, onSwi
         if (-movement.dx >= fullSwipe && Math.abs(movement.dx) > Math.abs(movement.dy) * 1.5) {
           restingOffset.current = 0
           translation.setValue(0)
-          setRevealed(false)
-          setDragging(false)
+          setRevealed(false, true)
+          setDragging(false, true)
           actions.current.onOpen()
         } else settle(dragOrigin.current + movement.dx < -actionWidth / 2)
       },
       onPanResponderTerminationRequest: () => true,
       onPanResponderTerminate: () => settle(false),
     })
-  }, [translation, reduceMotion])
+  }, [translation, reduceMotion, setRevealed, setDragging, setActionTop])
 
   return <View ref={row} testID={testID} onLayout={event => { dimensions.current = event.nativeEvent.layout }}
     style={{ overflow: 'hidden' }}>
@@ -84,7 +91,7 @@ export function SwipeablePart({ children, partLabel, testID, reduceMotion, onSwi
             restingOffset.current = 0
             translation.stopAnimation()
             translation.setValue(0)
-            setRevealed(false)
+            setRevealed(false, true)
             actions.current.onOpen()
           }}>Details</AppButton>
       </View>

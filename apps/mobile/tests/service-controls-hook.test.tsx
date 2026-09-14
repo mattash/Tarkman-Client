@@ -53,3 +53,16 @@ it('surfaces a failed command without retrying it', async () => {
   expect(result.current.running).toBeNull()
   expect(refresh).not.toHaveBeenCalled()
 })
+
+it('reports which command failed, and keeps a refused permission once seen', async () => {
+  setOnline(true)
+  const forbidden = Object.assign(new Error('You do not have permission to control this service.'), { name: 'ControlForbiddenError' })
+  const { result } = await renderHook(() => useControls(jest.fn()))
+  let accepted = true
+  await act(async () => { accepted = await result.current.run('paused', async () => { throw forbidden }) })
+  expect(accepted).toBe(false)
+  expect(result.current).toMatchObject({ failed: 'paused', failure: 'forbidden', forbidden: true })
+  await act(async () => { accepted = await result.current.run('next', async () => {}) })
+  expect(accepted).toBe(true)
+  expect(result.current).toMatchObject({ failed: null, failure: null, error: null, forbidden: true })
+})

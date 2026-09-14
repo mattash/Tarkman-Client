@@ -12,6 +12,9 @@ jest.mock('../features/auth/AuthProvider', () => ({ useAuth: () => ({ state: { s
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
 const preferencesStore = { get: async () => null, set: async () => {}, remove: async () => {} }
 const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={preferencesStore}>{children}</PreferencesProvider></ThemeProvider>
+// A reader who chose Russian among their three languages.
+const russianStore = { ...preferencesStore, get: async () => JSON.stringify({ language: 'en', selectedLanguages: ['en', 'ru', 'grabar'], appearance: 'system', readingSize: 'standard' }) }
+const russianWrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={russianStore}>{children}</PreferencesProvider></ThemeProvider>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const retry = jest.fn(), dispatch = jest.fn()
 beforeEach(() => { jest.clearAllMocks(); jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false }, retry, dispatch }) })
@@ -51,12 +54,12 @@ it('renders current occurrence, switches language and dismisses explanation shee
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'English prayer', ru: 'Молитва', grabar: 'Հայր մեր', role: 'Choir' } }] })
   jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
-  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper: russianWrapper })
   expect(screen.getByRole('button', { name: 'Choir, current part' })).toBeOnTheScreen()
   expect(screen.getByText('NOW')).toBeOnTheScreen()
   expect(screen.queryByText('Молитва')).toBeNull()
   await fireEvent.press(screen.getByRole('button', { name: 'Choose reading language' }))
-  await fireEvent.press(screen.getByRole('button', { name: 'Русский' }))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Русский' }))
   expect(screen.getByText('Молитва')).toBeOnTheScreen()
   expect(screen.queryByText('English prayer')).toBeNull()
   expect(dispatch).not.toHaveBeenCalled()
@@ -73,7 +76,10 @@ it('drafts selected languages, enforces one, and falls back in stable order', as
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   await fireEvent.press(screen.getByRole('button', { name: 'Choose reading language' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Choose languages' }))
-  for (const label of ['English', 'Русский', 'Գրաբար', 'Translit']) await fireEvent.press(screen.getByRole('checkbox', { name: label }))
+  // Three are chosen by default, the most that fit side by side, so a fourth cannot be added until one is removed.
+  expect(screen.getByRole('checkbox', { name: 'Русский' })).toBeDisabled()
+  for (const label of ['English', 'Գրաբար', 'Translit']) await fireEvent.press(screen.getByRole('checkbox', { name: label }))
+  expect(screen.getByRole('checkbox', { name: 'Русский' })).not.toBeDisabled()
   await fireEvent.press(screen.getByRole('button', { name: 'Apply languages' }))
   expect(screen.getByRole('alert', { name: 'Keep at least one reading language.' })).toHaveTextContent('Keep at least one reading language.')
   await fireEvent.press(screen.getByRole('checkbox', { name: 'Русский' }))
@@ -100,7 +106,8 @@ it('offers only selected available translations and preserves manual mode when s
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: null, ru: 'Молитва', grabar: 'Հայր մեր', role: 'priest' } }] })
   jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, connected: true, session, parts, following: false }, retry, dispatch })
-  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper: russianWrapper })
+  expect(await screen.findByRole('button', { name: 'Read in Русский' })).toBeOnTheScreen()
   expect(screen.getByText('Translation not available.')).toBeOnTheScreen()
   expect(screen.queryByText('Молитва')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Read in Translit' })).toBeNull()
@@ -129,7 +136,8 @@ it('keeps the steady Live indicator out of live announcements and anchors readin
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   expect(screen.getByLabelText('Live')).toHaveProp('accessibilityLiveRegion', 'none')
   expect(screen.getByRole('button', { name: 'priest, current part' })).toBeOnTheScreen()
-  expect(screen.getByTestId('reading-list')).toHaveProp('maintainVisibleContentPosition', { minIndexForVisible: 1 }) // header + first part
+  // FlashList keeps the first visible part anchored unless told not to, so a status pill growing the header never moves prayer text.
+  expect(screen.getByTestId('reading-list').props.maintainVisibleContentPosition?.disabled).not.toBe(true)
 })
 it('previews larger text and asks before resetting reading choices', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })

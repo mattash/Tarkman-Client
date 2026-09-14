@@ -13,7 +13,7 @@ import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
 import { radii, spacing } from '../../design/tokens'
 import { useAuth } from '../auth/AuthProvider'
-import { usePreferences } from '../preferences/PreferencesProvider'
+import { MAX_LANGUAGES, usePreferences } from '../preferences/PreferencesProvider'
 
 /** Reading choices first; the operator account sits last, the only place sign-in appears. */
 export function Settings() {
@@ -45,9 +45,10 @@ export function Settings() {
       </Section>
 
       <Section title="Reading languages">
-        <AppText variant="caption" tone="muted">Choose the languages available in the reader’s quick switcher.</AppText>
+        <AppText variant="caption" tone="muted">{`Choose up to ${MAX_LANGUAGES} languages for the reader’s quick switcher. On a wide screen they are shown side by side.`}</AppText>
         {lastLanguage && <StatusPill tone="danger" label="Keep at least one reading language." />}
         {sampleLanguages.map(item => <LanguageSelectionRow key={item.value} language={item.value} label={item.label} multiple
+          disabled={!preferences.selectedLanguages.includes(item.value) && preferences.selectedLanguages.length >= MAX_LANGUAGES}
           selected={preferences.selectedLanguages.includes(item.value)} onPress={() => toggle(item.value)} />)}
       </Section>
 

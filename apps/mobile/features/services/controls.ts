@@ -10,9 +10,14 @@ export interface ServiceControls {
 }
 
 const STALE = 'StalePartError'
+const FORBIDDEN = 'ControlForbiddenError'
 /** The service moved on before this command arrived, so the screen should resync instead of moving again. */
 export function isStalePart(error: unknown): boolean {
   return error instanceof Error && error.name === STALE
+}
+/** This account may not control the service. Permission can be revoked mid-service, so every later command would fail too. */
+export function isControlForbidden(error: unknown): boolean {
+  return error instanceof Error && error.name === FORBIDDEN
 }
 
 /** Live control commands. Each call is sent once: nothing here retries or queues, so a stale move can never replay. */
@@ -22,6 +27,7 @@ export function createServiceControls(authorizedFetch: AuthContextValue['authori
     if (response.ok) return
     const failure = new Error(await failureMessage(response))
     if (response.status === 409) failure.name = STALE
+    if (response.status === 403) failure.name = FORBIDDEN
     throw failure
   }
   // The server records when the part actually changed, which keeps its timing analytics honest.
@@ -39,7 +45,8 @@ export function createServiceControls(authorizedFetch: AuthContextValue['authori
 async function failureMessage(response: Response): Promise<string> {
   if (response.status === 403) return 'You do not have permission to control this service.'
   if (response.status === 404) return 'This service is no longer available.'
-  if (response.status === 409) return 'The service already moved on, so nothing was changed. Check the current part and try again.'
+  // The screen names where the service is now once it has resynced, so this does not ask the operator to look it up.
+  if (response.status === 409) return 'The service already moved on, so nothing was changed.'
   const data = record(await response.json().catch(() => null))
   const reported = typeof data.error === 'string' && data.error.length > 0 && data.error.length <= 200 ? data.error : undefined
   return reported ?? 'Could not update the service. Please try again.'
