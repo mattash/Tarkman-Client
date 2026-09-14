@@ -8,7 +8,9 @@ import { AppText, type AppTextProps } from './AppText'
 
 export interface LiturgyTextProps extends Omit<AppTextProps, 'children'> { text: string | null | undefined; readingSize?: ReadingSize; compactStanzas?: boolean }
 export function LiturgyText({ text, selectable = true, language = 'en', tone = 'default', readingSize = 'standard', compactStanzas = false, variant = 'liturgy', style, ...props }: LiturgyTextProps) {
-  const [linkFailed, setLinkFailed] = useState(false)
+  // Keyed to the text it happened on, so a reused row showing another part does not carry the message over.
+  const [failedText, setFailedText] = useState<string | null>(null)
+  const linkFailed = failedText !== null && failedText === text
   const { colors } = useTheme()
   const { fontScale } = useWindowDimensions()
   const fontReady = useReadingFont()
@@ -29,7 +31,7 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
         accessibilityLabel={run.kind === 'link' ? `${run.text} (${run.url})` : undefined}
         accessibilityHint={run.kind === 'link' ? 'Opens an HTTPS website in your browser' : undefined}
         onPress={run.kind === 'link' && Platform.OS !== 'web' ? () => {
-          if (run.url && safeHttpsUrl(run.url)) Linking.openURL(run.url).catch(() => setLinkFailed(true))
+          if (run.url && safeHttpsUrl(run.url)) Linking.openURL(run.url).catch(() => setFailedText(text ?? null))
         } : undefined}
         style={run.kind === 'bold'
           ? language === 'grabar' && fontReady ? { fontFamily: 'NotoSerifArmenian-Bold', fontWeight: '400' }

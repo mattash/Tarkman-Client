@@ -7,7 +7,7 @@ import { AppModal } from '../../components/AppModal'
 import { AppText } from '../../components/AppText'
 import { SegmentedControl } from '../../components/SegmentedControl'
 import { StatusPill } from '../../components/StatusPill'
-import { usePreferences } from '../preferences/PreferencesProvider'
+import { MAX_LANGUAGES, usePreferences } from '../preferences/PreferencesProvider'
 import { LiturgyText } from '../../components/LiturgyText'
 import { LanguageSelectionRow } from '../../components/LanguageSelectionRow'
 import { radii, spacing } from '../../design/tokens'
@@ -16,6 +16,7 @@ import { sampleLanguages } from '../../design/samples'
 import type { Endpoints } from './config'
 import { currentPart } from './contracts'
 import { useReader } from './useReader'
+import { publishLivePosition } from './livePosition'
 import { saveLastReading } from '../progress/lastReading'
 import { PartList } from './PartList'
 import { ReaderStatus } from './ReaderStatus'
@@ -42,6 +43,10 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   useEffect(() => {
     if (session) void saveLastReading({ sessionId: id, title: session.title, church: session.church, date: session.date, role })
   }, [id, session, role])
+  // Part detail reads the live position from here rather than opening its own connection.
+  const parts = state.parts, currentKey = part?.key
+  useEffect(() => publishLivePosition({ sessionId: id, parts, currentKey, follow: () => { dispatch({ type: 'follow' }); retry() } }),
+    [id, parts, currentKey, dispatch, retry])
   const accessibilitySize = fontScale > 1.5
   const compactReading = accessibilitySize || width > height || !state.following
   const dismissSheet = () => {
@@ -92,7 +97,9 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       selectedLanguages={preferences.selectedLanguages} readingSize={preferences.readingSize} paused={state.session?.status === 'paused'}
       header={details} compact={compactReading} switchLanguage={setLanguage}
       manual={() => { if (state.following) setManualPart(part?.key); dispatch({ type: 'manual' }) }}
-      open={item => router.push(`/sessions/${id}/part/${item.id}`)} />}
+      // Role and posture travel with the route so part detail can draw its header before the part loads.
+      open={item => router.push({ pathname: '/sessions/[id]/part/[partId]', params: { id: String(id), partId: String(item.id), key: item.key,
+        role: item.role, service: title, ...(item.posture ? { posture: item.posture } : {}) } })} />}
     {!state.following && <View testID="return-to-live" style={{ alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md,
       paddingTop: spacing.sm, paddingBottom: spacing.sm, backgroundColor: colors.background }}>
       {!accessibilitySize && <AppText variant="caption" tone="muted">{manualPart !== undefined && manualPart !== part?.key ? 'Live reading moved on' : 'Reading at your own pace'}</AppText>}
@@ -116,9 +123,11 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           setLanguageMode('choose')
         }}>Choose languages</AppButton>
       </> : <>
-        <AppText variant="caption" tone="muted">Choose the languages available in the quick switcher.</AppText>
+        <AppText variant="caption" tone="muted">{`Choose up to ${MAX_LANGUAGES} languages for the quick switcher. On a wide screen they are shown side by side.`}</AppText>
         {languageError && <StatusPill tone="danger" label="Keep at least one reading language." />}
+        {/* Three is the most that fit side by side, so a fourth cannot be added until one is removed. */}
         {sampleLanguages.map(item => <LanguageSelectionRow key={item.value} language={item.value} label={item.label} multiple
+          disabled={!draftLanguages.includes(item.value) && draftLanguages.length >= MAX_LANGUAGES}
           selected={draftLanguages.includes(item.value)} onPress={() => {
             setLanguageError(false)
             setDraftLanguages(current => current.includes(item.value) ? current.filter(value => value !== item.value) : [...current, item.value])

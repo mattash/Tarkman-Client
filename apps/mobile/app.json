@@ -12,6 +12,7 @@
     ],
     "ios": {
       "bundleIdentifier": "app.tarkman",
+      "supportsTablet": true,
       "associatedDomains": [
         "applinks:web.tarkman.app"
       ],
