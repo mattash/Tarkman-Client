@@ -25,6 +25,17 @@ CI=1 npm run export:web
 npm ls --all
 ```
 
+### FlashList Jest measurement stand-in
+
+FlashList obtains layout from native measurements that Jest's renderer does not
+provide. `tests/setup.ts` therefore replaces only FlashList's measurement helpers
+with stable dimensions; it keeps list behavior under test without using
+FlashList's bundled `jestSetup`, which expects a RecyclerView export unavailable
+in the pinned version. The stand-in currently returns a 402 × 2000 parent and
+402 × 100 item size; these are test scaffolding, not evidence of real item
+heights, viewport calculations, or scroll positions. Keep this narrowly scoped
+stand-in unless a compatible FlashList test setup is deliberately adopted.
+
 Core is a source-linked `file:` dependency. After installing both apps, run
 `npm run core:test` and `npm run core:check-consumers` at repository root. The
 reader and gallery use core language types; their narrower response models match
