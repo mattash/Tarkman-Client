@@ -17,7 +17,7 @@ const russianStore = { ...preferencesStore, get: async () => JSON.stringify({ la
 const russianWrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={russianStore}>{children}</PreferencesProvider></ThemeProvider>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const retry = jest.fn(), dispatch = jest.fn()
-beforeEach(() => { jest.clearAllMocks(); jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false }, retry, dispatch }) })
+beforeEach(() => { jest.clearAllMocks(); jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false }, retry, dispatch }) })
 it('hides Return to live while automatically following', async () => {
   const back = jest.fn()
   await render(<SessionReader endpoints={endpoints} id={7} back={back} />, { wrapper })
@@ -26,7 +26,7 @@ it('hides Return to live while automatically following', async () => {
   expect(back).toHaveBeenCalledTimes(1)
 })
 it('offers Return to live in manual state and resumes following with a refresh', async () => {
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, following: false }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, following: false }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   const button = screen.getByRole('button', { name: 'Return to live' })
   expect(button).toBeOnTheScreen()
@@ -39,7 +39,7 @@ it('offers Return to live in manual state and resumes following with a refresh',
 })
 it('keeps recovery and secondary actions reachable outside long scrolling details', async () => {
   const session = normalizeSession({ session: { id: 7, liturgy: 'Long service title '.repeat(100), status: 'paused', status_message: 'Long status message '.repeat(100) } })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, following: false, session }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, following: false, session }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   const actions = screen.getByTestId('reader-header-actions')
   expect(within(actions).getByRole('button', { name: 'All services' })).toBeOnTheScreen()
@@ -53,7 +53,7 @@ it('keeps recovery and secondary actions reachable outside long scrolling detail
 it('renders current occurrence, switches language and dismisses explanation sheet', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'English prayer', ru: 'Молитва', grabar: 'Հայր մեր', role: 'Choir' } }] })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper: russianWrapper })
   expect(screen.getByRole('button', { name: 'Choir, current part' })).toBeOnTheScreen()
   expect(screen.getByText('NOW')).toBeOnTheScreen()
@@ -72,7 +72,7 @@ it('renders current occurrence, switches language and dismisses explanation shee
 it('drafts selected languages, enforces one, and falls back in stable order', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'English prayer', ru: 'Молитва', grabar: 'Հայր մեր', translit: 'Hayr mer', role: 'Choir' } }] })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, session, parts, following: false }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   await fireEvent.press(screen.getByRole('button', { name: 'Choose reading language' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Choose languages' }))
@@ -92,7 +92,7 @@ it('drafts selected languages, enforces one, and falls back in stable order', as
 it('keeps service and connection states separate and offers recovery without hiding text', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer', status: 'paused' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Prayer kept while reconnecting', role: 'priest' } }] })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, session, parts }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session, parts }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   expect(screen.getByLabelText('Service paused. Text stays where it is.')).toBeOnTheScreen()
   expect(screen.getByLabelText('Reconnecting. Connection interrupted. Reading may be out of date.')).toBeOnTheScreen()
@@ -105,7 +105,7 @@ it('keeps service and connection states separate and offers recovery without hid
 it('offers only selected available translations and preserves manual mode when switching', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: null, ru: 'Молитва', grabar: 'Հայր մեր', role: 'priest' } }] })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, connected: true, session, parts, following: false }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts, following: false }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper: russianWrapper })
   expect(await screen.findByRole('button', { name: 'Read in Русский' })).toBeOnTheScreen()
   expect(screen.getByText('Translation not available.')).toBeOnTheScreen()
@@ -122,7 +122,7 @@ it('omits the switch prompt when no selected language has this part, and names l
     { part: { id: 1, en: null, role: 'priest' } },
     { part: { id: 2, en: null, grabar: 'Հայր մեր', role: 'deacon' } },
   ] })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, connected: true, session, parts }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   expect(screen.getAllByText('Translation not available.')).toHaveLength(2)
   // Only the deacon part has an alternative, so the prompt appears once.
@@ -132,7 +132,7 @@ it('omits the switch prompt when no selected language has this part, and names l
 it('keeps the steady Live indicator out of live announcements and anchors reading content', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Prayer', role: 'priest' } }] })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, connected: true, listed: true, session, parts }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, listed: true, session, parts }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   expect(screen.getByLabelText('Live')).toHaveProp('accessibilityLiveRegion', 'none')
   expect(screen.getByRole('button', { name: 'priest, current part' })).toBeOnTheScreen()
@@ -142,7 +142,7 @@ it('keeps the steady Live indicator out of live announcements and anchors readin
 it('previews larger text and asks before resetting reading choices', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Current prayer preview', role: 'priest' } }] })
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, connected: true, session, parts }, retry, dispatch })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts }, retry, dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   await fireEvent.press(screen.getByRole('button', { name: 'Reading preferences' }))
   await fireEvent.press(screen.getByRole('radio', { name: 'Reading size, Larger' }))
@@ -166,10 +166,10 @@ it.each([
     const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Service title' } })
     const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Prayer', role: 'priest' } }] })
     const state = { ...initialState, loading: false, stale: false, connected: true, session, parts }
-    jest.mocked(useReader).mockReturnValue({ state, retry, dispatch })
+    jest.mocked(useReader).mockReturnValue({ saved: null, state, retry, dispatch })
     const view = await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
     for (const following of [true, false]) {
-      jest.mocked(useReader).mockReturnValue({ state: { ...state, following }, retry, dispatch })
+      jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...state, following }, retry, dispatch })
       await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
       const header = within(screen.getByTestId('reader-header-actions'))
       expect(header.getByLabelText('Live')).toBeOnTheScreen()

@@ -38,7 +38,7 @@ const parts = normalizeParts({ parts: [
   { part: { id: 2, position: 2, role: 'Deacon', posture: 'stand', en: 'Let us beseech the Lord.' } },
 ] })
 const retry = jest.fn()
-const reader = (overrides: Partial<ReaderState> = {}) => ({ state: { ...initialState, loading: false, stale: false, connected: true, session, parts, updatedAt: 1, ...overrides }, retry, dispatch: jest.fn() })
+const reader = (overrides: Partial<ReaderState> = {}) => ({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts, updatedAt: 1, ...overrides }, retry, dispatch: jest.fn() })
 
 beforeEach(() => {
   jest.clearAllMocks()

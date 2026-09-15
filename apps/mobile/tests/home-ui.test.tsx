@@ -51,7 +51,7 @@ const stJohn = { id: 9, church_name: 'St. John Armenian Church', liturgy: 'Divin
 const trinity = { id: 12, church_name: 'Holy Trinity, Cambridge', liturgy: 'Morning Service', status: 'active', church_latitude: 42.3736, church_longitude: -71.1097 }
 const retry = jest.fn()
 function listing(sessions: object[]) {
-  jest.mocked(useReader).mockReturnValue({ state: { ...initialState, loading: false, stale: false, services: normalizeServices({ sessions: sessions.map(session => ({ session })) }) }, retry, dispatch: jest.fn() })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, services: normalizeServices({ sessions: sessions.map(session => ({ session })) }) }, retry, dispatch: jest.fn() })
 }
 
 beforeEach(() => {

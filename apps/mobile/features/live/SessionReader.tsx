@@ -23,7 +23,7 @@ import { ReaderStatus } from './ReaderStatus'
 
 const abbreviations = { en: 'EN', ru: 'RU', grabar: 'Գրբ', translit: 'TR' } as const
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
-  const { state, retry, dispatch } = useReader(endpoints, id)
+  const { state, retry, dispatch, saved } = useReader(endpoints, id)
   const { preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear: clearPreferences } = usePreferences()
   const { colors } = useTheme()
   const { width, height, fontScale } = useWindowDimensions()
@@ -36,8 +36,13 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null), explanationOpener = useRef<View>(null)
   const activeOpener = useRef<View>(null)
   const [manualPart, setManualPart] = useState<string | undefined>(undefined)
+  // Storage is a render fallback only; live state and its position channel stay authoritative.
+  const showingSaved = !state.loading && state.parts.length === 0 && saved != null && saved.session.id === id
+  const following = !showingSaved && state.following
+  const savedExplanations = showingSaved ? saved.explanations?.items ?? [] : []
   const part = state.session ? currentPart(state.session, state.parts) : undefined
-  const title = state.session?.title ?? `Session ${id}`
+  const title = state.session?.title ?? (showingSaved ? saved.session.title : `Session ${id}`)
+  const church = state.session?.church ?? (showingSaved ? saved.session.church : undefined)
   // Continue reading on Today: the service and the part it had reached, kept on this device only.
   const session = state.session, role = part?.role ?? null
   useEffect(() => {
@@ -48,7 +53,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   useEffect(() => publishLivePosition({ sessionId: id, parts, currentKey, follow: () => { dispatch({ type: 'follow' }); retry() } }),
     [id, parts, currentKey, dispatch, retry])
   const accessibilitySize = fontScale > 1.5
-  const compactReading = accessibilitySize || width > height || !state.following
+  const compactReading = accessibilitySize || width > height || !following
   const dismissSheet = () => {
     setDraftLanguages(preferences.selectedLanguages)
     setLanguageError(false)
@@ -67,12 +72,12 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     setSelectedLanguages(draftLanguages)
     dismissSheet()
   }
-  const live = state.listed && state.connected && !state.stale && !state.error && state.session?.status === 'active'
+  const live = !showingSaved && state.listed && state.connected && !state.stale && !state.error && state.session?.status === 'active'
   const details = <View testID="reader-header-details" style={{ paddingHorizontal: spacing.page, paddingBottom: spacing.md, gap: spacing.sm }}>
     <AppText variant="heading">{title}</AppText>
-    {state.session?.church && <AppText variant="caption" tone="muted">{state.session.church}</AppText>}
-    <ReaderStatus state={state} retry={retry} showLive={false} />
-    {state.session && !part && !state.loading && <AppText variant="caption">The current part is not available. You can browse the readings.</AppText>}
+    {church && <AppText variant="caption" tone="muted">{church}</AppText>}
+    <ReaderStatus state={state} retry={retry} showLive={false} savedCopy={showingSaved} />
+    {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">The current part is not available. You can browse the readings.</AppText>}
   </View>
   return <View style={{ flex: 1 }}>
     <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
@@ -87,23 +92,23 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           accessibilityLabel="Choose reading language" accessibilityHint={`Current language: ${sampleLanguages.find(l => l.value === language)!.label}`}>
           {abbreviations[language]}
         </AppButton>
-        <AppButton testID="reader-explain" ref={explanationOpener} variant="quiet" icon="explanation" iconOnly disabled={!part}
-          onPress={() => { activeOpener.current = explanationOpener.current; setSheet('explanation') }}>Explain current part</AppButton>
+        <AppButton testID="reader-explain" ref={explanationOpener} variant="quiet" icon="explanation" iconOnly disabled={!showingSaved && !part}
+          onPress={() => { activeOpener.current = explanationOpener.current; setSheet('explanation') }}>{showingSaved ? 'Explain saved text' : 'Explain current part'}</AppButton>
         <AppButton testID="reader-preferences" ref={preferencesOpener} variant="quiet" icon="preferences" iconOnly
           onPress={() => { activeOpener.current = preferencesOpener.current; setSheet('preferences') }}>Reading preferences</AppButton>
       </View>
     </View>
-    {state.loading ? details : <PartList parts={state.parts} currentKey={part?.key} following={state.following} language={language}
-      selectedLanguages={preferences.selectedLanguages} readingSize={preferences.readingSize} paused={state.session?.status === 'paused'}
+    {state.loading ? details : <PartList parts={showingSaved ? saved.parts : state.parts} currentKey={showingSaved ? undefined : part?.key} following={following} language={language}
+      selectedLanguages={preferences.selectedLanguages} readingSize={preferences.readingSize} paused={!showingSaved && state.session?.status === 'paused'}
       header={details} compact={compactReading} switchLanguage={setLanguage}
-      manual={() => { if (state.following) setManualPart(part?.key); dispatch({ type: 'manual' }) }}
+      manual={() => { if (showingSaved) return; if (state.following) setManualPart(part?.key); dispatch({ type: 'manual' }) }}
       // Role and posture travel with the route so part detail can draw its header before the part loads.
       open={item => router.push({ pathname: '/sessions/[id]/part/[partId]', params: { id: String(id), partId: String(item.id), key: item.key,
         role: item.role, service: title, ...(item.posture ? { posture: item.posture } : {}) } })} />}
-    {!state.following && <View testID="return-to-live" style={{ alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md,
+    {!following && <View testID="return-to-live" style={{ alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md,
       paddingTop: spacing.sm, paddingBottom: spacing.sm, backgroundColor: colors.background }}>
-      {!accessibilitySize && <AppText variant="caption" tone="muted">{manualPart !== undefined && manualPart !== part?.key ? 'Live reading moved on' : 'Reading at your own pace'}</AppText>}
-      <AppButton icon="live" rounded accessibilityHint="Resumes automatically following the current part."
+      {!accessibilitySize && <AppText variant="caption" tone="muted">{showingSaved ? 'Showing saved text' : manualPart !== undefined && manualPart !== part?.key ? 'Live reading moved on' : 'Reading at your own pace'}</AppText>}
+      <AppButton icon="live" rounded accessibilityHint={showingSaved ? "Retries the connection to resume following the live service." : "Resumes automatically following the current part."}
         onPress={() => { dispatch({ type: 'follow' }); retry() }}>Return to live</AppButton>
     </View>}
     <AppModal visible={sheet !== null} title={sheet === 'language' ? (languageMode === 'quick' ? 'Reading language' : 'Choose languages')
@@ -141,8 +146,8 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
         <SegmentedControl label="Reading size" value={preferences.readingSize} onChange={setReadingSize}
           options={[{ value: 'standard', label: 'Standard' }, { value: 'larger', label: 'Larger' }, { value: 'extraLarge', label: 'Extra large' }]} />
         <View style={{ backgroundColor: colors.surface, padding: spacing.md, gap: spacing.sm, borderRadius: radii.control }}>
-          <AppText variant="caption" tone="muted">Preview · current part</AppText>
-          <LiturgyText text={part?.text[language]?.split(/\r?\n/)[0]} language={language} readingSize={preferences.readingSize} compactStanzas />
+          <AppText variant="caption" tone="muted">{showingSaved ? 'Preview · saved text' : 'Preview · current part'}</AppText>
+          <LiturgyText text={(showingSaved ? saved.parts[0] : part)?.text[language]?.split(/\r?\n/)[0]} language={language} readingSize={preferences.readingSize} compactStanzas />
         </View>
         <AppText variant="caption" tone="muted">Reading size adds to your device’s text size setting.</AppText>
         <View style={{ borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: spacing.lg, marginTop: spacing.md, gap: spacing.sm }}>
@@ -153,9 +158,13 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           </> : <AppButton variant="secondary" onPress={() => setForgetting(true)}>Forget my reading choices</AppButton>}
         </View>
       </> : <>
-        <AppText variant="label" style={{ textTransform: 'capitalize' }}>{part?.role ?? 'Current part unavailable'}</AppText>
-        <AppText variant="caption" tone="muted">Explanations follow the service’s current part, even while you read elsewhere.</AppText>
-        {state.loading ? <StatusPill label="Loading the explanation…" tone="info" busy />
+        <AppText variant="label" style={{ textTransform: 'capitalize' }}>{showingSaved ? 'Last-seen explanations' : part?.role ?? 'Current part unavailable'}</AppText>
+        <AppText variant="caption" tone="muted">{showingSaved ? 'Saved explanations from the last time this service was read. They may be out of date and do not follow the service.' : 'Explanations follow the service’s current part, even while you read elsewhere.'}</AppText>
+        {showingSaved ? savedExplanations.length === 0 ? <AppText variant="explanation">No explanation was saved for this service.</AppText>
+          : savedExplanations.map(explanation => <View key={explanation.id} style={{ gap: spacing.sm }}>
+            <AppText variant="heading">{explanation.title}</AppText><LiturgyText variant="explanation" text={explanation.description} />
+          </View>)
+          : state.loading ? <StatusPill label="Loading the explanation…" tone="info" busy />
           : state.stale ? <StatusPill label="Reconnecting" tone="info" message="Explanations will refresh with the current part." />
           : state.explanationError ? <><StatusPill label="Could not load explanations." tone="danger" /><AppButton loading={state.refreshing} onPress={retry}>Retry explanations</AppButton></>
           : state.explanations.length === 0 ? <AppText variant="explanation">No explanation is available for this part.</AppText>
@@ -166,4 +175,3 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     </AppModal>
   </View>
 }
-
