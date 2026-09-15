@@ -37,7 +37,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const activeOpener = useRef<View>(null)
   const [manualPart, setManualPart] = useState<string | undefined>(undefined)
   // Storage is a render fallback only; live state and its position channel stay authoritative.
-  const showingSaved = !state.loading && state.parts.length === 0 && saved != null && saved.session.id === id
+  const showingSaved = !state.loading && !!state.error && state.parts.length === 0 && saved != null && saved.session.id === id
   const following = !showingSaved && state.following
   const savedExplanations = showingSaved ? saved.explanations?.items ?? [] : []
   const part = state.session ? currentPart(state.session, state.parts) : undefined

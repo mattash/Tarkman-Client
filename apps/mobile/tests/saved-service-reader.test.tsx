@@ -116,6 +116,44 @@ it('does not flash saved content before the cold live attempt resolves; authorit
   expect(screen.getByRole('button', { name: 'Choir, current part' })).toBeOnTheScreen()
 })
 
+it('successful empty live recovery keeps the ordinary reader despite a matching saved record', async () => {
+  let resolve!: (value: ReturnType<typeof parts>) => void
+  api.parts.mockImplementation(() => new Promise(r => { resolve = r }))
+  const expectNoSavedContent = () => {
+    for (const text of ['Saved prayer', 'Saved copy — not live', 'Showing saved text', 'Saved service title', 'Saved church',
+      'Last-seen explanations', 'Saved explanation', 'Last seen meaning',
+      'Saved explanations from the last time this service was read. They may be out of date and do not follow the service.']) {
+      expect(screen.queryByText(text)).toBeNull()
+    }
+    expect(screen.queryByLabelText(savedLabel)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Explain saved text' })).toBeNull()
+    for (const [props] of jest.mocked(PartList).mock.calls) expect(props.parts).toEqual([])
+  }
+  await mount()
+  expect(screen.getByText('Loading service…')).toBeOnTheScreen()
+  expect(preferencesStore.get).toHaveBeenCalled()
+  expectNoSavedContent()
+  await act(async () => { resolve([]) })
+  await flush()
+  expect(screen.getByText('No reading parts are available for this service.')).toBeOnTheScreen()
+  expect(screen.getByText('The current part is not available. You can browse the readings.')).toBeOnTheScreen()
+  expect(within(screen.getByTestId('reader-header-details')).getByText(session.title)).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Explain current part' })).toBeDisabled()
+  expectNoSavedContent()
+  await act(async () => { cable.connected() })
+  await act(async () => { resolve([]) })
+  await flush()
+  expect(screen.getByLabelText('Live')).toBeOnTheScreen()
+  expectNoSavedContent()
+  await act(async () => { cable.disconnected() })
+  expect(screen.getByText('Reconnecting')).toBeOnTheScreen()
+  expectNoSavedContent()
+  await act(async () => { resolve([]) })
+  await flush()
+  expect(screen.getByText('No reading parts are available for this service.')).toBeOnTheScreen()
+  expectNoSavedContent()
+})
+
 it('T-10: reconnect replaces saved mode and subsequent loss keeps the existing in-memory path', async () => {
   await mount()
   expect(screen.getByText('Saved prayer')).toBeOnTheScreen()
