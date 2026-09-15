@@ -1,3 +1,4 @@
+import type { SavedServiceInput } from '../offline/savedService'
 import type { ReaderApi } from './api'
 import type { CableClient } from './cable'
 import { currentPart, parseEvent } from './contracts'
@@ -5,9 +6,12 @@ import { initialState, readerReducer, type ReaderAction } from './state'
 export interface Lifecycle {
   listen(callback: (active: boolean, online: boolean) => void): () => void
 }
-// One controller per mounted route/session. No persisted content. All async work
+export interface ReaderCache {
+  save(input: SavedServiceInput): void | Promise<void>
+}
+// One controller per mounted route/session. Cache writes never supply reader state. All async work
 // is generation-scoped and abortable; event bursts schedule at most one rerun.
-export function createReaderController(api: ReaderApi, cable: CableClient, cableUrl: string, lifecycle: Lifecycle, id: number | null) {
+export function createReaderController(api: ReaderApi, cable: CableClient, cableUrl: string, lifecycle: Lifecycle, id: number | null, cache?: ReaderCache) {
   let state = { ...initialState }, alive = false, active = true, online = true, epoch = 0, queued = false
   let request: AbortController | null = null, unsubscribe: (() => void) | null = null
   let polling: ReturnType<typeof setInterval> | null = null
@@ -41,6 +45,15 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         const explanations = explanationResult.explanations.filter(e => !e.liturgyPartId || e.liturgyPartId === part?.liturgyPartId)
         dispatch({ type: 'recovered', now: Date.now(), snapshot: { services, session: after, parts, explanations,
           explanationError: explanationResult.failed, listed: services.some(s => s.id === id) } })
+        if (cache && parts.length > 0 && alive && epoch === generation && !queued) {
+          // Subscribers may dispose this generation during dispatch. Storage must
+          // never delay recovery or turn a successful live read into a failure.
+          try {
+            void Promise.resolve(cache.save({ session: after, parts,
+              explanations: explanationResult.failed ? undefined : { liturgyPartId: part?.liturgyPartId ?? null, items: explanations },
+            })).catch(() => {})
+          } catch { /* Losing saved text must never interrupt live reading. */ }
+        }
       }
     } catch {
       if (alive && epoch === generation) dispatch({ type: 'failure', message: 'Could not refresh the service. Check your connection and retry.' })
