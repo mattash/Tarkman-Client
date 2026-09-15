@@ -37,10 +37,23 @@ CI=1 npm run export:web
 npm ls --all
 ```
 
+### FlashList Jest measurement stand-in
+
+FlashList obtains layout from native measurements that Jest's renderer does not
+provide. `tests/setup.ts` therefore replaces only FlashList's measurement helpers
+with stable dimensions; it keeps list behavior under test without using
+FlashList's bundled `jestSetup`, which expects a RecyclerView export unavailable
+in the pinned version. The stand-in currently returns a 402 × 2000 parent and
+402 × 100 item size; these are test scaffolding, not evidence of real item
+heights, viewport calculations, or scroll positions. Keep this narrowly scoped
+stand-in unless a compatible FlashList test setup is deliberately adopted.
+
 Core is a source-linked `file:` dependency. After installing both apps, run
 `npm run core:test` and `npm run core:check-consumers` at repository root. The
 reader and gallery use core language types; their narrower response models match
-nullable Rails fields. Metro needs no custom core resolver.
+nullable Rails fields. Metro uses a package-scoped resolver so only core's
+NodeNext `.js` internals load from TypeScript source; app and third-party imports
+are untouched.
 
 NativeWind **4** with Tailwind **3** is configured through `global.css`, the
 NativeWind preset, Babel and `withNativeWind` in Metro. Scanning is limited to
@@ -359,12 +372,38 @@ The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
 the Jest suite, the UI and font guards, `expo config`, the Expo web export, and
 an iOS config smoke check that prebuilds the native project and asserts the
 associated-domains entitlement and bundle identifier survive. The `build` matrix
-runs the web client's typecheck, build and tests on Node 18, 20 and 22.
+runs the web client's typecheck, build and tests on Node 22 and 24. The `design`
+job checks generated tokens and color contrast; `mobile` uses Node 24.
 
 The smoke check runs last because `expo prebuild` rewrites `package.json`
 scripts; it catches a broken app config or config plugin in CI rather than
-during a release build. It does not compile Swift, so it is not a substitute for
-an EAS build.
+during a release build. It generates native configuration but does not compile
+Swift/Objective-C/C++ with Xcode.
+
+For every PR to `main`, [Node.js CI](../../.github/workflows/node.js.yml) also
+reports the stable **`ios-build`** check. The inexpensive Linux `ios-changes` job
+compares the PR against its merge base. Changes under `apps/mobile/**`,
+`packages/tarkman-core/**`, `packages/tarkman-design/**`, or to the workflow
+itself trigger `ios-compile` on macOS 26. That job uses Node 24, a clean
+`npm ci --prefix apps/mobile`, clean Expo iOS prebuild with `--no-install`,
+CocoaPods installation, and an unsigned Debug `xcodebuild` of the generated
+`ios/Tarkman.xcworkspace` / `Tarkman` scheme for a generic iOS Simulator.
+It compiles without launching or signing the app, API credentials, or production
+service tests. Generated `ios/` files stay on the runner.
+
+The Linux `ios-build` aggregate passes only after a successful compile, or after
+successful change detection intentionally skips compilation for a non-mobile
+PR. Detection failures and failed, cancelled, or unexpectedly skipped compiles
+fail the gate. Non-mobile PRs consume no macOS runner. macOS runners have
+materially higher cost than Linux, so compilation is limited to relevant PRs;
+the existing push-to-`main` checks remain unchanged.
+
+After merge, the owner must select the exact check **`ios-build`** from
+**GitHub Actions** in `main` branch protection/rulesets, alongside the existing
+required checks. Select the aggregate, not `ios-compile`. This repository change
+does not enable branch protection; verify the setting live before closing #119.
+A green compile proves native compilation, not simulator launch, device behavior,
+or distribution readiness.
 
 ### Configuration by environment
 
@@ -378,23 +417,11 @@ belongs in EAS secrets, never in `app.json`, `eas.json` or source control.
 
 ### Beta exit criteria
 
-A build may go to testers when, on real hardware:
-
-1. A live service reads correctly end to end: joining, following the current
-   part, switching language, and opening explanations and part details.
-2. Returning from background and recovering from lost connectivity restore the
-   correct current part without a reload, and stale state is labelled.
-3. Signed-out readers can do everything above; only service controls require
-   signing in, and an expired sign-in returns to the sign-in screen.
-4. Service controls move the service exactly once per press, refuse to send
-   while offline, and report a refused, missing or stale command.
-5. CI is green on the commit being distributed.
-
-Blocker severity: **blocking** means wrong or duplicated live-service commands,
-a reader stuck on stale text presented as live, a crash in any of the flows
-above, or credentials leaving the device improperly. **Not blocking** means
-layout and formatting problems, missing translations from the API, and anything
-only reachable outside these flows.
+The canonical [beta exit criteria](../../docs/beta-exit-criteria.md) define the
+physical-device scenarios, evidence, severity, acceptable gaps and release
+blockers for Expo 10 ([#78](https://github.com/mattash/Tarkman-Client/issues/78))
+and the first TestFlight beta ([#79](https://github.com/mattash/Tarkman-Client/issues/79)).
+They do not authorise a build, upload, or tester invitation.
 
 ### Error reporting
 
@@ -483,17 +510,21 @@ comes back. `part-link.yaml` opens a part straight from a link. Both are signed
 out and read-only, so no flow can change a live service and none needs
 credentials.
 
-The flows read session 4006 on the production API, so they depend on that
-service existing. They are not wired into CI: that needs a macOS runner, which
-bills at ten times the Linux rate on a private repository, and a build to
-install. Run them locally before distributing a build.
+The existing flows target production session 4006 and depend on mutable live
+service state. Maestro CI is deferred until those flows can start the app and
+run against the deterministic local
+[mock-reader fixture](qa/design-system/mock-reader-server.cjs), without live
+credentials or production state. A scheduled fixture-backed Maestro job belongs
+to a separate PR; this compile gate does not run those flows or contact that
+service. Read-only production flows are still unsuitable as deterministic CI
+tests. macOS also has materially higher runner cost than Linux.
 
 ### Known gaps
 
 Recorded rather than implied: source maps are not uploaded, so release stack
 traces are minified; device flows run locally and are not enforced by CI; universal links are unverified on a device
 (#101); large text sizes still break reader layout (#91); block-level Markdown in
-explanations renders literally (#99); the services list shows only the first ten
+explanations renders literally (#99); My services cursor pagination still needs device and backend rollout verification
 (#92). Jest covers behaviour, not rendering on a device, so it is not evidence
 for any item in this section.
 
@@ -531,3 +562,23 @@ found path end to end therefore needs a geocoded church with a live service;
 a simulator can supply the position
 (`xcrun simctl location booted set <lat>,<lon>`), but the permission prompt
 itself is worth seeing once on a physical iPhone.
+
+## My services pagination / #92
+
+The signed-in list opts in to `GET /s.json?pagination=cursor&limit=20`, adding
+an encoded `cursor` for subsequent pages. The backend must return newest-first
+`{ sessions: [{ session: ... }], page: { limit, has_more, next_cursor } }`.
+Legacy `{ sessions: [...] }` and `{ error: "No sessions found" }` responses
+remain supported as complete lists with no client-side cap.
+
+`features/services/useMyServices.ts` serializes page requests and keeps loaded
+cards visible during refresh and failures. Load-more Retry repeats the failed
+cursor; a 400 `{ error: "invalid_cursor" }` triggers one page-one recovery.
+Repeated cursors anywhere in the current chain are rejected before appending;
+history resets only after a successful first-page replacement or recovery.
+Failed recovery exposes ordinary Retry without automatically looping. FlashList
+renders the cards, pull-to-refresh, and accessible load-more/end controls.
+Native accessibility announces “All services loaded” once after a terminal
+load-more response, excluding initial complete lists and first-page recovery.
+Web retains its polite live region. Jest covers these transitions; native scrolling and assistive technology still
+need device verification against the paginated backend.

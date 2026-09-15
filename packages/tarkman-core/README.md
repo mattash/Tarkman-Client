@@ -10,6 +10,14 @@ Vite and Expo consume plain TypeScript;
 no prepare hook or prebuilt dist is required for app installs. The local build
 emits JS and declarations to ignored `dist/` for verification and core tests.
 
+Core's internal `.js` specifiers support the NodeNext verification build. Mobile's
+Metro and Jest resolvers map these to `.ts` only when both the importer and target
+are inside `packages/tarkman-core/src`; third-party and app imports are untouched.
+Vite resolves these source imports without custom configuration. Both apps test
+runtime values through `@tarkman/core`, and mobile services re-export the shared
+`STATUS_LABELS`. Run mobile Jest plus Expo web/iOS exports when changing resolution;
+an iOS export verifies Metro/Hermes bundling, not an Xcode build or device launch.
+
 Run repository verification from the repository root, in this order:
 
 ```sh

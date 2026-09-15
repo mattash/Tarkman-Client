@@ -146,9 +146,10 @@ simulator or compatible Expo Go app. The `android` script remains an intentional
 internal/future emulator path, not a supported or released v1 target. The `ios`
 and `android` scripts start Metro; they do not create native projects or cloud builds.
 
-See [mobile setup and future EAS initialization](apps/mobile/README.md). The app
-is deliberately unlinked: the owner must choose an Expo account/team before
-running `eas init`, **only from `apps/mobile`**. The old Vinxi `app.config.ts`
+See [mobile setup and EAS configuration](apps/mobile/README.md) and the
+[first iOS beta exit criteria](docs/beta-exit-criteria.md). EAS configuration
+belongs under `apps/mobile`; run any EAS commands there and do not run `eas init`
+merely to work on the existing project configuration. The old Vinxi `app.config.ts`
 lives exclusively under `apps/web`, outside Expo's app root.
 
 Mobile public environment placeholders are in `apps/mobile/.env.example`;
