@@ -364,23 +364,11 @@ belongs in EAS secrets, never in `app.json`, `eas.json` or source control.
 
 ### Beta exit criteria
 
-A build may go to testers when, on real hardware:
-
-1. A live service reads correctly end to end: joining, following the current
-   part, switching language, and opening explanations and part details.
-2. Returning from background and recovering from lost connectivity restore the
-   correct current part without a reload, and stale state is labelled.
-3. Signed-out readers can do everything above; only service controls require
-   signing in, and an expired sign-in returns to the sign-in screen.
-4. Service controls move the service exactly once per press, refuse to send
-   while offline, and report a refused, missing or stale command.
-5. CI is green on the commit being distributed.
-
-Blocker severity: **blocking** means wrong or duplicated live-service commands,
-a reader stuck on stale text presented as live, a crash in any of the flows
-above, or credentials leaving the device improperly. **Not blocking** means
-layout and formatting problems, missing translations from the API, and anything
-only reachable outside these flows.
+The canonical [beta exit criteria](../../docs/beta-exit-criteria.md) define the
+physical-device scenarios, evidence, severity, acceptable gaps and release
+blockers for Expo 10 ([#78](https://github.com/mattash/Tarkman-Client/issues/78))
+and the first TestFlight beta ([#79](https://github.com/mattash/Tarkman-Client/issues/79)).
+They do not authorise a build, upload, or tester invitation.
 
 ### Error reporting
 
