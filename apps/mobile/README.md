@@ -39,7 +39,9 @@ stand-in unless a compatible FlashList test setup is deliberately adopted.
 Core is a source-linked `file:` dependency. After installing both apps, run
 `npm run core:test` and `npm run core:check-consumers` at repository root. The
 reader and gallery use core language types; their narrower response models match
-nullable Rails fields. Metro needs no custom core resolver.
+nullable Rails fields. Metro uses a package-scoped resolver so only core's
+NodeNext `.js` internals load from TypeScript source; app and third-party imports
+are untouched.
 
 NativeWind **4** with Tailwind **3** is configured through `global.css`, the
 NativeWind preset, Babel and `withNativeWind` in Metro. Scanning is limited to
