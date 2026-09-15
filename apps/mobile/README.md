@@ -358,12 +358,38 @@ The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
 the Jest suite, the UI and font guards, `expo config`, the Expo web export, and
 an iOS config smoke check that prebuilds the native project and asserts the
 associated-domains entitlement and bundle identifier survive. The `build` matrix
-runs the web client's typecheck, build and tests on Node 18, 20 and 22.
+runs the web client's typecheck, build and tests on Node 22 and 24. The `design`
+job checks generated tokens and color contrast; `mobile` uses Node 24.
 
 The smoke check runs last because `expo prebuild` rewrites `package.json`
 scripts; it catches a broken app config or config plugin in CI rather than
-during a release build. It does not compile Swift, so it is not a substitute for
-an EAS build.
+during a release build. It generates native configuration but does not compile
+Swift/Objective-C/C++ with Xcode.
+
+For every PR to `main`, [Node.js CI](../../.github/workflows/node.js.yml) also
+reports the stable **`ios-build`** check. The inexpensive Linux `ios-changes` job
+compares the PR against its merge base. Changes under `apps/mobile/**`,
+`packages/tarkman-core/**`, `packages/tarkman-design/**`, or to the workflow
+itself trigger `ios-compile` on macOS 26. That job uses Node 24, a clean
+`npm ci --prefix apps/mobile`, clean Expo iOS prebuild with `--no-install`,
+CocoaPods installation, and an unsigned Debug `xcodebuild` of the generated
+`ios/Tarkman.xcworkspace` / `Tarkman` scheme for a generic iOS Simulator.
+It compiles without launching or signing the app, API credentials, or production
+service tests. Generated `ios/` files stay on the runner.
+
+The Linux `ios-build` aggregate passes only after a successful compile, or after
+successful change detection intentionally skips compilation for a non-mobile
+PR. Detection failures and failed, cancelled, or unexpectedly skipped compiles
+fail the gate. Non-mobile PRs consume no macOS runner. macOS runners have
+materially higher cost than Linux, so compilation is limited to relevant PRs;
+the existing push-to-`main` checks remain unchanged.
+
+After merge, the owner must select the exact check **`ios-build`** from
+**GitHub Actions** in `main` branch protection/rulesets, alongside the existing
+required checks. Select the aggregate, not `ios-compile`. This repository change
+does not enable branch protection; verify the setting live before closing #119.
+A green compile proves native compilation, not simulator launch, device behavior,
+or distribution readiness.
 
 ### Configuration by environment
 
@@ -470,10 +496,14 @@ comes back. `part-link.yaml` opens a part straight from a link. Both are signed
 out and read-only, so no flow can change a live service and none needs
 credentials.
 
-The flows read session 4006 on the production API, so they depend on that
-service existing. They are not wired into CI: that needs a macOS runner, which
-bills at ten times the Linux rate on a private repository, and a build to
-install. Run them locally before distributing a build.
+The existing flows target production session 4006 and depend on mutable live
+service state. Maestro CI is deferred until those flows can start the app and
+run against the deterministic local
+[mock-reader fixture](qa/design-system/mock-reader-server.cjs), without live
+credentials or production state. A scheduled fixture-backed Maestro job belongs
+to a separate PR; this compile gate does not run those flows or contact that
+service. Read-only production flows are still unsuitable as deterministic CI
+tests. macOS also has materially higher runner cost than Linux.
 
 ### Known gaps
 
