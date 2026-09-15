@@ -22,8 +22,14 @@ export function loadSavedService(store: KeyValueAdapter = preferencesStore, now:
 /** Snapshot the entire input before queuing; callers may subsequently replace or mutate their network data. */
 export function saveSavedService(input: SavedServiceInput, store: KeyValueAdapter = preferencesStore, now: () => number = Date.now): Promise<void> {
   const record = buildSavedService(input, now())
-  const result = record ? serializeSavedService(record) : { invalid: true as const }
+  const preserveExplanations = input.explanations === undefined
   return enqueue(store, async () => {
+    // Read and merge within this same operation: a later save/clear cannot overtake it.
+    if (record && preserveExplanations) {
+      const prior = readSavedService(await store.get(SAVED_SERVICE_KEY), now())
+      if (prior?.session.id === record.session.id) record.explanations = prior.explanations
+    }
+    const result = record ? serializeSavedService(record) : { invalid: true as const }
     if ('json' in result) await store.set(SAVED_SERVICE_KEY, result.json)
     else await store.remove(SAVED_SERVICE_KEY)
   }, undefined)

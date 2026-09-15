@@ -160,3 +160,44 @@ test('adapter exceptions and rejections never interrupt reading or poison the qu
   await saveSavedService(input(), store, () => now)
   expect(await loadSavedService(store, () => now)).toEqual(record())
 })
+
+test('T-07: preserves last-seen explanations inside the queue and snapshots new content', async () => {
+  const store = adapter()
+  const latest = input()
+  latest.explanations.items[0].title = 'Latest seen'
+  const first = saveSavedService(latest, store, () => now)
+  const next = { ...input(), explanations: undefined }
+  next.parts[0].text.en = 'New reading'
+  const preserving = saveSavedService(next, store, () => now + 1)
+  next.parts[0].text.en = 'Mutation'
+  await Promise.all([first, preserving])
+  const saved = await loadSavedService(store, () => now + 1)
+  expect(saved?.explanations).toEqual(latest.explanations)
+  expect(saved?.parts[0].text.en).toBe('New reading')
+  expect(saved?.savedAt).toBe(now + 1)
+  await Promise.all([saveSavedService(next, store, () => now + 2), saveSavedService(input(), store, () => now + 3)])
+  expect((await loadSavedService(store, () => now + 3))?.explanations).toEqual(input().explanations)
+  await Promise.all([saveSavedService(next, store, () => now + 4), clearSavedService(store)])
+  expect(await loadSavedService(store, () => now + 4)).toBeNull()
+})
+test.each(['absent', 'corrupt', 'expired', 'other-session'] as const)('T-07: never preserves explanations from %s records', async kind => {
+  const prior = record()
+  if (kind === 'other-session') prior.session.id = 2
+  const store = adapter(kind === 'absent' ? null : kind === 'corrupt' ? '{' : JSON.stringify(prior))
+  const time = kind === 'expired' ? now + SAVED_SERVICE_TTL_MS : now
+  await saveSavedService({ ...input(), explanations: undefined }, store, () => time)
+  expect((await loadSavedService(store, () => time))?.explanations).toBeNull()
+})
+test.each([null, { liturgyPartId: 12, items: [] }])('T-07: explicit successful explanation value %j replaces prior text', async explanations => {
+  const store = adapter(JSON.stringify(record()))
+  await saveSavedService({ ...input(), explanations }, store, () => now)
+  expect((await loadSavedService(store, () => now))?.explanations).toEqual(explanations)
+})
+test('T-07: preservation still applies the size cap and a failed lookup leaves the prior record intact', async () => {
+  const store = adapter(JSON.stringify(record()))
+  store.get.mockRejectedValueOnce(new Error('unavailable'))
+  await expect(saveSavedService({ ...input(), explanations: undefined }, store, () => now)).resolves.toBeUndefined()
+  expect(store.set).not.toHaveBeenCalled(); expect(store.remove).not.toHaveBeenCalled()
+  await saveSavedService({ ...sized(SAVED_SERVICE_MAX_BYTES), explanations: undefined }, store, () => now)
+  expect((await loadSavedService(store, () => now))?.explanations).toBeNull()
+})

@@ -8,6 +8,7 @@ export const SAVED_SERVICE_MAX_BYTES = 1_500_000
 export interface SavedServiceInput {
   session: Pick<LiveSession, 'id' | 'title' | 'church' | 'date'>
   parts: LivePart[]
+  /** On save, omission preserves the valid prior block for this session; null explicitly clears it. */
   explanations?: { liturgyPartId: number | null; items: LiveExplanation[] } | null
 }
 export interface SavedServiceV1 extends SavedServiceInput {
