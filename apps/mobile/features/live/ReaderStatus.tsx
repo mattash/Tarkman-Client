@@ -4,16 +4,18 @@ import { StatusPill } from '../../components/StatusPill'
 import type { ReaderState } from './state'
 import { spacing } from '../../design/tokens'
 
-export function ReaderStatus({ state, retry, compact = false, showLive = true, showService = true }: {
+export function ReaderStatus({ state, retry, compact = false, showLive = true, showService = true, savedCopy = false }: {
   state: ReaderState; retry(): void; compact?: boolean; showLive?: boolean
   /** False where the screen already shows the service's status itself, as service control does in its header. */
-  showService?: boolean
+  showService?: boolean; savedCopy?: boolean
 }) {
   const connectionLost = !!state.session && !state.connected && !state.stale
   const live = !!state.session && state.listed && state.connected && !state.stale && !state.error && state.session.status === 'active' && state.following
   return <View style={{ gap: spacing.sm }}>
+    {savedCopy && <StatusPill tone="neutral" icon="offline" label="Saved copy — not live"
+      message="Saved from the last time you read this service. It may be out of date and does not follow the service." />}
     {state.loading ? <StatusPill label="Loading service…" tone="info" busy /> : <>
-      {showLive && live && <StatusPill label="Live" tone="success" icon="connected" announce={false} message={compact ? undefined : 'Following the service'} />}
+      {!savedCopy && showLive && live && <StatusPill label="Live" tone="success" icon="connected" announce={false} message={compact ? undefined : 'Following the service'} />}
       {showService && state.session && state.session.status !== 'active' && <StatusPill tone="warning" icon="paused"
         label={state.session.status === 'paused' ? 'Service paused' : `Service status: ${state.session.status.replaceAll('_', ' ')}`}
         message={state.session.message ?? (state.session.status === 'paused' ? 'Text stays where it is.' : undefined)} />}

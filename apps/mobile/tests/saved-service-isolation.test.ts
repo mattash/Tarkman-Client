@@ -9,7 +9,7 @@ function sources(directory: string): string[] {
     return entry.isDirectory() ? sources(path) : /\.tsx?$/.test(path) ? [path] : []
   })
 }
-test('PR 2 has only a write hookup and a type-only controller port; no saved-content consumers or control imports', () => {
+test('PR 3 confines saved hydration to the reader hook; controller and control paths cannot read storage', () => {
   const references = sources(join(root, 'features')).concat(sources(join(root, 'app')))
     .filter(path => !relative(root, path).startsWith('features/offline/'))
     .filter(path => /offline\/|savedService|SavedService|ReaderCache/.test(readFileSync(path, 'utf8')))
@@ -21,5 +21,6 @@ test('PR 2 has only a write hookup and a type-only controller port; no saved-con
   const hook = readFileSync(join(root, 'features/live/useReader.ts'), 'utf8')
   expect(hook).toContain('id === null ? undefined : { save: saveSavedService }')
   expect(hook).not.toMatch(/loadSavedService|readSavedService/)
-  expect(hook).toContain('return { state, retry: controller.retry, dispatch: controller.dispatch }')
+  expect(hook).toContain('const saved = useSavedService(id)')
+  expect(hook).toContain('return { saved, state, retry: controller.retry, dispatch: controller.dispatch }')
 })
