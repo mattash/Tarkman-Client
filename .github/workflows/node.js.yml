@@ -82,3 +82,99 @@ jobs:
         grep -q 'com.apple.developer.associated-domains' ios/Tarkman/Tarkman.entitlements
         grep -q 'applinks:web.tarkman.app' ios/Tarkman/Tarkman.entitlements
         grep -q 'app.tarkman' ios/Tarkman/Info.plist
+
+  ios-changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      mobile: ${{ steps.changes.outputs.mobile }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        # Full history supports the PR merge-base diff, including fork PRs.
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Detect mobile-relevant changes
+      id: changes
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        # Disable rename detection so moving a file out of mobile still builds.
+        # Git pathspecs avoid API pagination and changed-file count limits.
+        git diff --no-renames --name-only "$BASE_SHA...$HEAD_SHA" -- \
+          apps/mobile/ packages/tarkman-core/ packages/tarkman-design/ \
+          .github/workflows/node.js.yml > "$RUNNER_TEMP/ios-changes.txt"
+        if [ -s "$RUNNER_TEMP/ios-changes.txt" ]; then
+          echo "mobile=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "mobile=false" >> "$GITHUB_OUTPUT"
+        fi
+
+  ios-compile:
+    needs: ios-changes
+    if: needs.ios-changes.outputs.mobile == 'true'
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      CI: '1'
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      EXPO_NO_DOTENV: '1'
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: 'npm'
+        cache-dependency-path: apps/mobile/package-lock.json
+    - run: npm ci --prefix apps/mobile
+    - name: Clean iOS prebuild
+      working-directory: apps/mobile
+      run: npx expo prebuild --platform ios --clean --no-install
+    - name: Install iOS pods
+      working-directory: apps/mobile/ios
+      run: pod install
+    - name: Compile unsigned iOS simulator app
+      working-directory: apps/mobile
+      run: |
+        xcodebuild -version
+        xcodebuild -workspace ios/Tarkman.xcworkspace -scheme Tarkman \
+          -configuration Debug -sdk iphonesimulator \
+          -destination 'generic/platform=iOS Simulator' \
+          -derivedDataPath "$RUNNER_TEMP/tarkman-ios-build" \
+          CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
+  # Require this stable check, not the conditional macOS job.
+  ios-build:
+    name: ios-build
+    needs: [ios-changes, ios-compile]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - name: Verify iOS compile outcome
+      env:
+        CHANGES_RESULT: ${{ needs.ios-changes.result }}
+        MOBILE_CHANGED: ${{ needs.ios-changes.outputs.mobile }}
+        COMPILE_RESULT: ${{ needs.ios-compile.result }}
+      run: |
+        if [ "$CHANGES_RESULT" != success ]; then
+          echo "Mobile change detection did not succeed."
+          exit 1
+        fi
+        if [ "$MOBILE_CHANGED" = false ] && [ "$COMPILE_RESULT" = skipped ]; then
+          echo "No mobile-relevant changes; no macOS runner needed."
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$COMPILE_RESULT" = success ]; then
+          echo "Unsigned iOS simulator compile succeeded."
+        else
+          echo "Expected a successful compile or an intentional non-mobile skip; got $COMPILE_RESULT."
+          exit 1
+        fi
