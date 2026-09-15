@@ -1,4 +1,4 @@
-import type { KnownSessionStatus } from '@tarkman/core'
+export { STATUS_LABELS } from '@tarkman/core'
 import { normalizeSession, record, type LiveSession } from '../live/contracts'
 import type { AuthContextValue } from '../auth/AuthProvider'
 
@@ -52,19 +52,6 @@ export function formatServiceDate(date: string | null): string | null {
   if (!match) return null
   const [year, month, day] = match.slice(1).map(Number)
   return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(undefined, { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-/**
- * `STATUS_LABELS` from @tarkman/core, verbatim. The core package re-exports with `.js` specifiers that this app's
- * bundler and tests do not resolve, so only its types are imported here; tests/service-controls.test.ts keeps the two identical.
- */
-export const STATUS_LABELS: Record<KnownSessionStatus, string> = {
-  active: 'Active',
-  paused: 'Paused',
-  showing_gospel: 'Gospel Reading',
-  showing_epistle: 'Epistle Reading',
-  showing_welcome: 'Welcome Message',
-  showing_custom: 'Custom Announcement',
 }
 
 export function statusLabel(status: string): string {
