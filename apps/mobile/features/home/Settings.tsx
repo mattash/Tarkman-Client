@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { ScrollView, View, useWindowDimensions } from 'react-native'
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
+import { AppIcon } from '../../components/AppIcon'
 import { AppText } from '../../components/AppText'
 import { LanguageSelectionRow } from '../../components/LanguageSelectionRow'
 import { ScreenHeader } from '../../components/ScreenHeader'
@@ -11,20 +12,21 @@ import { ServiceRow } from '../../components/ServiceRow'
 import { StatusPill } from '../../components/StatusPill'
 import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
-import { radii, spacing } from '../../design/tokens'
+import { radii, spacing, touchTarget } from '../../design/tokens'
 import { useAuth } from '../auth/AuthProvider'
 import { showsTestErrorControls, TestErrorControls } from '../observability/TestErrorControls'
 import { observabilityConfig } from '../observability/sentry'
 import { clearSavedService } from '../offline/savedServiceStore'
 import { MAX_LANGUAGES, usePreferences } from '../preferences/PreferencesProvider'
-import { useI18n } from '../i18n'
+import { availableInterfaceLanguages, includesDraftLanguages, INTERFACE_CATALOGS, useI18n } from '../i18n'
 
 /** Reading choices first; the operator account sits last, the only place sign-in appears. */
 export function Settings() {
-  const { preferences, setAppearance, setReadingSize, setSelectedLanguages, clear } = usePreferences()
+  const { preferences, setAppearance, setReadingSize, setSelectedLanguages, setInterfaceLanguage, clear } = usePreferences()
   const { state, signOut } = useAuth()
   const { fontScale } = useWindowDimensions()
   const { t } = useI18n()
+  const interfaceLanguages = availableInterfaceLanguages(includesDraftLanguages())
   const [forgetting, setForgetting] = useState(false)
   const [forgettingSavedCopy, setForgettingSavedCopy] = useState(false)
   const [lastLanguage, setLastLanguage] = useState(false)
@@ -58,6 +60,16 @@ export function Settings() {
           selected={preferences.selectedLanguages.includes(item.value)} onPress={() => toggle(item.value)} />)}
       </Section>
 
+      {/* Hidden until a second language ships, so a build with only English has nothing to choose. */}
+      {interfaceLanguages.length > 1 && <Section title={t('settings.interfaceLanguage')}>
+        <AppText variant="caption" tone="muted">{t('settings.interfaceHint')}</AppText>
+        <ChoiceRow label={t('settings.interfaceSystem')} selected={!preferences.interfaceLanguage} onPress={() => setInterfaceLanguage('system')} />
+        {interfaceLanguages.map(language => <ChoiceRow key={language} lang={language} selected={preferences.interfaceLanguage === language}
+          label={INTERFACE_CATALOGS[language].reviewed ? INTERFACE_CATALOGS[language].nativeName : t('settings.draftLanguage', { language: INTERFACE_CATALOGS[language].nativeName })}
+          onPress={() => setInterfaceLanguage(language)} />)}
+        {interfaceLanguages.some(language => !INTERFACE_CATALOGS[language].reviewed) && <AppText variant="caption" tone="muted">{t('settings.draftNote')}</AppText>}
+      </Section>}
+
       <Section title={t('settings.readingChoices')}>
         {forgetting ? <>
           <AppText accessibilityRole="alert">{t('readingPreferences.resetConfirm')}</AppText>
@@ -90,6 +102,19 @@ export function Settings() {
       </Section>}
     </View>
   </ScrollView>
+}
+
+/** A single-choice row for the interface language; each language's name is tagged so VoiceOver reads it in that language. */
+function ChoiceRow({ label, lang, selected, onPress }: { label: string; lang?: string; selected: boolean; onPress(): void }) {
+  const { colors } = useTheme()
+  const [pressed, setPressed] = useState(false)
+  return <Pressable accessibilityRole="radio" accessibilityState={{ checked: selected, selected }} accessibilityLanguage={lang} onPress={onPress}
+    onPressIn={() => setPressed(true)} onPressOut={() => setPressed(false)}
+    style={{ minHeight: touchTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.sm,
+      borderRadius: radii.control, backgroundColor: pressed ? colors.pressedSubtle : 'transparent' }}>
+    <AppText style={{ flex: 1 }}>{label}</AppText>
+    {selected && <AppIcon name="selected" color={colors.primary} />}
+  </Pressable>
 }
 
 function Section({ title, plain = false, children }: { title: string; plain?: boolean; children: ReactNode }) {

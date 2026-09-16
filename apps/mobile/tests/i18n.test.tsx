@@ -1,10 +1,11 @@
-import { expect, it } from '@jest/globals'
+import { afterEach, expect, it } from '@jest/globals'
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { Text } from 'react-native'
 import { en } from '../features/i18n/catalogs/en'
 import {
-  activeInterfaceLanguage, availableInterfaceLanguages, I18nProvider, INTERFACE_CATALOGS, resolveInterfaceLanguage, statusName, t, translate, useI18n,
+  activeInterfaceLanguage, availableInterfaceLanguages, I18nProvider, includesDraftLanguages, INTERFACE_CATALOGS, resolveInterfaceLanguage, setActiveInterfaceLanguage,
+  statusName, t, translate, useI18n,
   type InterfaceLanguage,
 } from '../features/i18n'
 import { formatMessage, isPluralMessage, placeholders, pluralCategory, type Message } from '../features/i18n/messages'
@@ -17,6 +18,9 @@ function messages(node: unknown, prefix = ''): [string, Message][] {
   return Object.entries(node as Record<string, unknown>).flatMap(([key, value]) => messages(value, prefix ? `${prefix}.${key}` : key))
 }
 const english = new Map(messages(en))
+
+// The provider sets the language code outside React reads; never let one test's language leak into the next.
+afterEach(() => { setActiveInterfaceLanguage('en') })
 const requiredForms: Record<string, readonly string[]> = { en: ['one', 'other'], ru: ['one', 'few', 'many', 'other'] }
 
 it.each(Object.keys(INTERFACE_CATALOGS) as InterfaceLanguage[])('the %s catalog has every English message, with the same placeholders', language => {
@@ -59,10 +63,14 @@ it('falls back to English for a missing message and names only statuses it knows
 })
 
 it('follows an explicit choice, then the device languages, then English', () => {
-  const available = ['en'] as InterfaceLanguage[]
-  expect(resolveInterfaceLanguage(undefined, ['fr-FR', 'en-GB'], available)).toBe('en')
+  const available = ['en', 'ru'] as InterfaceLanguage[]
+  expect(resolveInterfaceLanguage(undefined, ['fr-FR', 'ru-RU'], available)).toBe('ru')
   expect(resolveInterfaceLanguage('system', [null, 'de'], available)).toBe('en')
-  expect(resolveInterfaceLanguage('en', ['fr'], available)).toBe('en')
+  expect(resolveInterfaceLanguage('en', ['ru'], available)).toBe('en')
+  expect(resolveInterfaceLanguage('ru', ['en'], ['en'])).toBe('en')
+  expect(includesDraftLanguages(false, 'preview')).toBe(true)
+  expect(includesDraftLanguages(false, 'production')).toBe(false)
+  expect(includesDraftLanguages(true, undefined)).toBe(true)
   // An unreviewed draft is offered only where testers can check it.
   const drafts = availableInterfaceLanguages(true), released = availableInterfaceLanguages(false)
   expect(released.every(language => INTERFACE_CATALOGS[language].reviewed)).toBe(true)
@@ -103,3 +111,20 @@ it('drops a stored interface language this build does not ship without losing re
   expect(result.current.preferences).not.toHaveProperty('interfaceLanguage')
   await waitFor(() => expect(store.set).toHaveBeenCalledWith(PREFERENCES_KEY, expect.not.stringContaining('interfaceLanguage')))
 })
+
+it('shows the Russian draft only where drafts are allowed, with Russian plurals and English fallback outside it', async () => {
+  expect(INTERFACE_CATALOGS.ru.reviewed).toBe(false)
+  expect(availableInterfaceLanguages(false)).not.toContain('ru')
+  function Probe() {
+    const { t: translateHere, language } = useI18n()
+    return <Text>{`${language}|${translateHere('common.done')}|${translateHere('settings.chooseUpTo', { count: 3 })}`}</Text>
+  }
+  const { rerender } = await render(<I18nProvider preference="ru" includeDrafts><Probe /></I18nProvider>)
+  expect(screen.getByText(/^ru\|Готово\|Выберите до 3 языков/)).toBeOnTheScreen()
+  expect(t('control.positionLabel', { position: 2, total: 5 })).toBe('Часть 2 из 5')
+  expect(statusName('showing_gospel')).toBe('Чтение Евангелия')
+  await rerender(<I18nProvider preference="ru" includeDrafts={false}><Probe /></I18nProvider>)
+  expect(screen.getByText(/^en\|Done\|Choose up to 3 languages/)).toBeOnTheScreen()
+  expect(translate('ru', 'controlLanguages.full', { count: 1 })).toContain('1 языка')
+})
+
