@@ -20,9 +20,11 @@ import { publishLivePosition } from './livePosition'
 import { saveLastReading } from '../progress/lastReading'
 import { PartList } from './PartList'
 import { ReaderStatus } from './ReaderStatus'
+import { useScreenKeepAwake } from '../keepAwake/useScreenKeepAwake'
 
 const abbreviations = { en: 'EN', ru: 'RU', grabar: 'Գրբ', translit: 'TR' } as const
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
+  useScreenKeepAwake('tarkman-live-reader')
   const { state, retry, dispatch, saved } = useReader(endpoints, id)
   const { preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear: clearPreferences } = usePreferences()
   const { colors } = useTheme()

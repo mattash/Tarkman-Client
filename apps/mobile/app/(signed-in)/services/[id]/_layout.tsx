@@ -2,12 +2,14 @@ import { Stack, useLocalSearchParams } from 'expo-router'
 import { useTheme } from '../../../../design/ThemeProvider'
 import { radii } from '../../../../design/tokens'
 import { ServiceControlProvider } from '../../../../features/services/ServiceControlProvider'
+import { useScreenKeepAwake } from '../../../../features/keepAwake/useScreenKeepAwake'
 
 /** Service control and its Service sheet share one reader connection and one command runner. */
 export default function ServiceControlLayout() {
   const { id } = useLocalSearchParams<{ id?: string }>()
   const { colors } = useTheme()
   const sessionId = Number(id)
+  useScreenKeepAwake('tarkman-service-control')
   return <ServiceControlProvider key={sessionId} sessionId={sessionId}>
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="index" />
