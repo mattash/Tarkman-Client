@@ -40,14 +40,26 @@ Record the owner’s resulting answers in App Store Connect, including the
 privacy-policy URL and the source/date used for each answer. A privacy manifest
 describes required-reason APIs; it does not replace the App Store privacy label.
 
-## Versioning decision still needed
+## Versioning
 
-`eas.json` deliberately keeps `appVersionSource: local`. Switching to remote
-EAS build numbers changes account-managed release state, so it requires the
-owner to choose the EAS account/team and initialize the first remote iOS build
-number. Recommended policy once that choice is made: use semantic `expo.version`
-for the customer-visible release (starting with `0.1.0`) and remote,
-auto-incremented iOS build numbers for every preview or production upload.
+Decided by the owner on 2026-09-16:
+
+- `eas.json` uses `appVersionSource: remote`, so EAS stores the iOS build
+  number. The first remote build starts at `1`.
+- The `production` profile sets `autoIncrement: true`, so every store build gets
+  a new build number. Preview (ad hoc) builds reuse the current remote number.
+- `expo.version` is the version customers see. It stays `0.1.0` through the
+  TestFlight beta and changes to `1.0.0` for the public App Store release.
+- The `submit.production.ios` profile names the Apple Team ID and App Store
+  Connect app ID, which are not secret. The App Store Connect API key is stored
+  on EAS through `eas credentials`, never in the repository.
+
+## Privacy policy URL
+
+The App Store privacy policy URL is `https://tarkman.app/privacy`, served by the
+Rails app (mattash/Tarkman#428). It does not exist yet and must be published and
+reviewed before the privacy answers are entered. `web.tarkman.app/privacy` is not
+a privacy page: the web app returns its home page for every path.
 
 ## Screenshot release task
 
