@@ -366,6 +366,16 @@ Activating them needs three steps outside this repository:
 
 ## Release checks and observability / Expo 10
 
+## Screen wake lock
+
+The live reader and service-control route keep the screen awake while they are
+foregrounded. Each route releases its own wake lock when the app backgrounds or
+the route exits; its sheets remain covered by the service-control route lock.
+Today, Services, Settings, and part detail do not request it. There is no
+reader opt-out in v1: opening a live-reading screen is the explicit signal that
+the device is being used to follow a service, while service control must remain
+awake for the operator.
+
 ### What CI runs
 
 The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
