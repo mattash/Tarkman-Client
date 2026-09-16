@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /* global console, setInterval, clearInterval, Buffer, process */
 
-// Read-only local fixture for native SessionReader design QA.
+// Local fixture for native and web reader/control QA. Its optional operator
+// account is synthetic and only serves this loopback process.
 // Run from the repository root with:
 //   node apps/mobile/qa/design-system/mock-reader-server.cjs
 // FIXTURE_SERVICES=single (default) | several | none chooses what /services.json lists,
@@ -16,6 +17,9 @@ const SESSION_ID = 9001
 const SECOND_SESSION_ID = 9002
 const SCENARIO = process.env.FIXTURE_SERVICES || 'single'
 const LITURGY_ID = 99001
+const OPERATOR = { email: 'operator@example.test', password: 'fixture-only-password', token: 'fixture-access-token', user: {
+  id: 42, email: 'operator@example.test', name: 'Fixture operator', roles: ['priest'],
+} }
 
 const prayer = {
   grabar: 'Հայր մեր, որ յերկինս ես,\nսուրբ եղիցի անուն քո։\n\nԵկեսցէ արքայութիւն քո,\nեղիցին կամք քո որպէս յերկինս եւ յերկրի։',
@@ -80,32 +84,79 @@ const secondSession = { session: {
 const listed = { single: [session], several: [session, secondSession], none: [] }[SCENARIO] ?? [session]
 const explanationResponse = { explanations: [{ explanation }] }
 
-function json(res, status, value) {
+function json(res, status, value, headers = {}) {
   const body = JSON.stringify(value)
   res.writeHead(status, {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Accept, Content-Type, X-Polling-Client',
+    'Access-Control-Allow-Headers': 'Accept, Authorization, Content-Type, X-Polling-Client',
+    'Access-Control-Expose-Headers': 'Authorization',
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
+    ...headers,
   })
   res.end(body)
 }
 
 function error(res, status, message) { json(res, status, { error: message }) }
 
-function route(req, res) {
+function empty(res, status = 204) {
+  res.writeHead(status, {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Accept, Authorization, Content-Type, X-Polling-Client',
+    'Access-Control-Expose-Headers': 'Authorization',
+    'Cache-Control': 'no-store',
+  })
+  res.end()
+}
+
+function authorized(req) { return req.headers.authorization === `Bearer ${OPERATOR.token}` }
+
+async function requestJson(req) {
+  const chunks = []
+  for await (const chunk of req) chunks.push(chunk)
+  try {
+    const value = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : null
+  } catch { return null }
+}
+
+function moveTo(index) {
+  const next = parts[index]?.part
+  if (!next) return false
+  session.session.current_part_id = next.id
+  session.session.current_part_position = next.position
+  session.session.current_part_role = next.role
+  return true
+}
+
+async function route(req, res) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Accept, Content-Type, X-Polling-Client',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Accept, Authorization, Content-Type, X-Polling-Client',
+      'Access-Control-Allow-Methods': 'DELETE, GET, OPTIONS, PATCH, POST',
     })
     return res.end()
   }
-  if (req.method !== 'GET') return error(res, 405, 'Fixture is read-only; only GET and OPTIONS are supported.')
 
   const path = new URL(req.url, `http://${HOST}:${PORT}`).pathname
+  if (path === '/users/sign_in' && req.method === 'POST') {
+    const input = await requestJson(req)
+    const user = input?.user
+    if (user?.email !== OPERATOR.email || user?.password !== OPERATOR.password) return error(res, 401, 'Email or password is incorrect.')
+    return json(res, 200, { user: OPERATOR.user }, { Authorization: `Bearer ${OPERATOR.token}` })
+  }
+  if (path === '/users/sign_out' && req.method === 'DELETE') {
+    if (!authorized(req)) return error(res, 401, 'Sign in required.')
+    return empty(res)
+  }
+  if (path === '/s.json') {
+    if (!authorized(req)) return error(res, 401, 'Sign in required.')
+    if (req.method !== 'GET') return error(res, 405, 'Use GET to list fixture services.')
+    return json(res, 200, { sessions: [session], page: { limit: 20, has_more: false, next_cursor: null } })
+  }
+
   if (path === '/services.json') return json(res, 200, listed.length ? listed : { message: 'No sessions today' })
   if (path === `/s/${SESSION_ID}.json`) return json(res, 200, session)
   if (path === `/s/${SECOND_SESSION_ID}.json`) return json(res, 200, secondSession)
@@ -118,10 +169,30 @@ function route(req, res) {
   if (path === `/s/${SESSION_ID}/explanations/current.json`) return json(res, 200, explanationResponse)
   const explanationMatch = path.match(new RegExp(`^/s/${SESSION_ID}/explanations/(\\d+)\\.json$`))
   if (explanationMatch && Number(explanationMatch[1]) === explanation.id) return json(res, 200, { explanation })
+  const control = path.match(new RegExp(`^/s/${SESSION_ID}/(next|prev|set_part|update_status)\\.json$`))
+  if (control) {
+    if (!authorized(req)) return error(res, 401, 'Sign in required.')
+    if (!['POST', 'PATCH'].includes(req.method)) return error(res, 405, 'Use the matching fixture control method.')
+    const input = await requestJson(req)
+    const current = session.session.current_part_id
+    if (typeof input?.expected_part_id === 'number' && input.expected_part_id !== current) return error(res, 409, 'The service already moved on.')
+    switch (control[1]) {
+      case 'next': if (!moveTo(parts.findIndex(({ part }) => part.id === current) + 1)) return error(res, 422, 'Already at the final fixture part.'); break
+      case 'prev': if (!moveTo(parts.findIndex(({ part }) => part.id === current) - 1)) return error(res, 422, 'Already at the first fixture part.'); break
+      case 'set_part': if (!moveTo(parts.findIndex(({ part }) => part.id === input?.part_id))) return error(res, 404, 'Unknown fixture part.'); break
+      case 'update_status':
+        if (typeof input?.status !== 'string') return error(res, 422, 'A status is required.')
+        session.session.status = input.status
+        session.session.status_message = typeof input.status_message === 'string' ? input.status_message : null
+        break
+    }
+    return empty(res)
+  }
+  if (req.method !== 'GET') return error(res, 405, 'Fixture endpoint does not accept this method.')
   return error(res, 404, 'Unknown fixture endpoint')
 }
 
-const server = http.createServer(route)
+const server = http.createServer((req, res) => { void route(req, res).catch(() => error(res, 500, 'Fixture request failed.')) })
 let cableServer = null
 try {
   // ws is already available in this checkout; keeping this optional makes the

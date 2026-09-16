@@ -1,7 +1,7 @@
 # Native SessionReader design fixture
 
-This is a bounded, read-only local sample API for manual native QA of the
-SessionReader. It serves numeric session `9001`, three Lord’s Prayer part
+This is a bounded local sample API for manual native and Expo web QA of the
+reader and service controls. It serves numeric session `9001`, three Lord’s Prayer part
 occurrences, a missing Russian translation on part 2, long Grabar on part 3,
 and one sample explanation. The title and church name identify the content as
 sample data.
@@ -26,11 +26,15 @@ the missing-Russian state, long-text scrolling, explanation sheet, and live
 connection state. On an Android emulator, use `adb reverse tcp:8100 tcp:8100`
 first if loopback does not resolve to the host.
 
-The fixture implements only `GET` and `OPTIONS` for `/services.json`,
+Public-reader endpoints use `GET` and `OPTIONS` for `/services.json`,
 `/s/9001.json`, `/s/9001/parts.json`, part detail paths, and current or numeric
-explanation paths. It has no authentication, credentials, mutation or live
-backend commands. CORS is intentionally wildcard for this public local
-fixture. If the already-installed `ws` package can be resolved, `/cable`
+explanation paths. For local control QA only, the fixture also accepts the
+synthetic credentials `operator@example.test` / `fixture-only-password`. That
+session can list `/s.json` and mutate only the in-memory session through the
+same sign-in, next, previous, set-part, and status routes as the app. It binds
+only to `127.0.0.1`, never contacts a live backend, and resets every time the
+process starts. CORS is intentionally wildcard for this local fixture. If the
+already-installed `ws` package can be resolved, `/cable`
 provides the minimal ActionCable welcome, `SessionChannel` subscription
 confirmation, and rejection frames; otherwise HTTP QA still works and live
 verification is unavailable.
