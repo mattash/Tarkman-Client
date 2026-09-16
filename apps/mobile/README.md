@@ -479,6 +479,20 @@ Both should appear in Sentry with readable frames, the `preview` environment and
 the build's release. These controls render only in development and preview
 builds, never in production.
 
+### Local EAS builds and Sentry
+
+`eas build --local` cannot read the `SENTRY_AUTH_TOKEN` secret; EAS provides
+secrets only to its cloud builders. Without the token, the Sentry source-map
+upload fails the archive. For local builds, turn the upload off:
+
+```sh
+SENTRY_DISABLE_AUTO_UPLOAD=true eas build --profile preview --platform ios --local
+```
+
+A local build still reports errors, but its stack traces are not symbolicated.
+Use an EAS cloud build to verify symbolication. Keep this setting out of
+`eas.json` so a broken upload still fails cloud builds.
+
 ### Building locally after the associated-domains entitlement
 
 `npx expo run:ios` fails with "No code signing certificates are available" once
