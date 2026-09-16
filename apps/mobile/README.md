@@ -456,12 +456,28 @@ header in breadcrumb data.
 
 Verified on 2026-09-11: the development-only "Send a test error" control in the
 design gallery produced `TARKMAN-MOBILE-1` in the `development` environment,
-with no user attached. That control never renders outside `__DEV__`.
+with no user attached.
 
-Source maps are not uploaded yet. The Sentry Expo plugin is configured with the
-organisation and project; uploading also needs `SENTRY_AUTH_TOKEN` as an EAS
-secret, after which release builds get readable stack traces. Until then, native
-frames in release builds stay minified.
+#### Release stack traces
+
+`metro.config.js` builds on `getSentryExpoConfig`, which stamps each bundle and
+its source map with the same Sentry debug ID. During an EAS build the Sentry
+Expo plugin uploads the source maps and native debug symbols, using the
+`SENTRY_AUTH_TOKEN` secret stored in the EAS `development`, `preview` and
+`production` environments (never in the repository or the bundle). Releases and
+distributions are left to the SDK defaults, so the app and the uploaded
+artifacts share the same `bundle-id@version+build` name.
+
+`eas.json` sets `EXPO_PUBLIC_SENTRY_ENVIRONMENT` for each build profile. The DSN
+is not committed: set `EXPO_PUBLIC_SENTRY_DSN` as a plain EAS environment
+variable in each environment, or EAS builds report nothing.
+
+To prove symbolication, install a `preview` build and open **Settings → Error
+reporting (preview builds)**. "Send a test error" reports a JavaScript error;
+"Crash the app (native)" crashes natively and is reported on the next launch.
+Both should appear in Sentry with readable frames, the `preview` environment and
+the build's release. These controls render only in development and preview
+builds, never in production.
 
 ### Building locally after the associated-domains entitlement
 

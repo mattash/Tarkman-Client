@@ -13,6 +13,8 @@ import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
 import { radii, spacing } from '../../design/tokens'
 import { useAuth } from '../auth/AuthProvider'
+import { showsTestErrorControls, TestErrorControls } from '../observability/TestErrorControls'
+import { observabilityConfig } from '../observability/sentry'
 import { clearSavedService } from '../offline/savedServiceStore'
 import { MAX_LANGUAGES, usePreferences } from '../preferences/PreferencesProvider'
 
@@ -79,6 +81,10 @@ export function Settings() {
           <ServiceRow title="My services" subtitle="Run the services you manage" onPress={() => router.push('/services')} />
           <View style={{ alignSelf: 'flex-start' }}><AppButton variant="secondary" size="card" onPress={signOut}>Sign out</AppButton></View>
         </> : <ServiceRow title="Sign in" subtitle="For clergy and parish staff who run services" onPress={() => router.push('/sign-in')} />}
+      </Section>}
+
+      {showsTestErrorControls(observabilityConfig(), __DEV__) && <Section title="Error reporting (preview builds)">
+        <TestErrorControls />
       </Section>}
     </View>
   </ScrollView>
