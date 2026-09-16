@@ -17,6 +17,7 @@ import TabsLayout from '../app/(tabs)/_layout'
 const mockPush = jest.fn(), mockNavigate = jest.fn()
 const mockAuth = { current: { status: 'signedOut' } as Record<string, unknown> }
 const mockStored: Record<string, string> = {}
+const mockClearSavedService = jest.fn(async () => {})
 const mockGetPermission = jest.fn<() => Promise<{ granted: boolean; canAskAgain: boolean }>>()
 const mockRequestPermission = jest.fn<() => Promise<{ granted: boolean; canAskAgain: boolean }>>()
 const mockGetPosition = jest.fn<() => Promise<{ coords: { latitude: number; longitude: number } }>>()
@@ -41,6 +42,7 @@ jest.mock('../features/preferences/storage', () => ({
     remove: async (key: string) => { delete mockStored[key] },
   },
 }))
+jest.mock('../features/offline/savedServiceStore', () => ({ clearSavedService: () => mockClearSavedService() }))
 
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const preferences = { get: async () => null, set: async () => {}, remove: async () => {} }
@@ -171,6 +173,15 @@ it('keeps at least one reading language in Settings', async () => {
   expect(remaining).toHaveLength(1)
   await fireEvent.press(remaining[0])
   expect(screen.getByText('Keep at least one reading language.')).toBeOnTheScreen()
+})
+
+it('removes only the saved service copy after confirmation', async () => {
+  await render(<Settings />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove saved service copy' }))
+  expect(screen.getByText('Remove the saved service copy from this device? It will not be available when you are offline.')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove saved copy' }))
+  expect(mockClearSavedService).toHaveBeenCalledTimes(1)
+  expect(screen.getByRole('button', { name: 'Remove saved service copy' })).toBeOnTheScreen()
 })
 
 it('labels tabs as a three-item tab list and never truncates the label', async () => {

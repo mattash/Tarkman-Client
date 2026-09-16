@@ -13,6 +13,7 @@ import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
 import { radii, spacing } from '../../design/tokens'
 import { useAuth } from '../auth/AuthProvider'
+import { clearSavedService } from '../offline/savedServiceStore'
 import { MAX_LANGUAGES, usePreferences } from '../preferences/PreferencesProvider'
 
 /** Reading choices first; the operator account sits last, the only place sign-in appears. */
@@ -21,6 +22,7 @@ export function Settings() {
   const { state, signOut } = useAuth()
   const { fontScale } = useWindowDimensions()
   const [forgetting, setForgetting] = useState(false)
+  const [forgettingSavedCopy, setForgettingSavedCopy] = useState(false)
   const [lastLanguage, setLastLanguage] = useState(false)
   const page = fontScale > 2 ? spacing.md : spacing.page
   const toggle = (language: Language) => {
@@ -58,6 +60,17 @@ export function Settings() {
           <AppButton variant="destructive" size="card" onPress={() => { clear(); setForgetting(false); setLastLanguage(false) }}>Reset reading choices</AppButton>
           <AppButton variant="quiet" onPress={() => setForgetting(false)}>Keep my choices</AppButton>
         </> : <AppButton variant="secondary" size="card" onPress={() => setForgetting(true)}>Forget my reading choices</AppButton>}
+      </Section>
+
+      <Section title="Saved service copy">
+        {forgettingSavedCopy ? <>
+          <AppText accessibilityRole="alert">Remove the saved service copy from this device? It will not be available when you are offline.</AppText>
+          <AppButton variant="destructive" size="card" onPress={() => { void clearSavedService(); setForgettingSavedCopy(false) }}>Remove saved copy</AppButton>
+          <AppButton variant="quiet" onPress={() => setForgettingSavedCopy(false)}>Keep saved copy</AppButton>
+        </> : <>
+          <AppText variant="caption" tone="muted">Tarkman may keep the last service you read so it can be clearly shown as saved text when you are offline.</AppText>
+          <AppButton variant="secondary" size="card" onPress={() => setForgettingSavedCopy(true)}>Remove saved service copy</AppButton>
+        </>}
       </Section>
 
       {state.status !== 'hydrating' && <Section title="Account" plain>

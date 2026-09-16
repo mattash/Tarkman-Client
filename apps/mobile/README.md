@@ -286,12 +286,13 @@ Simulator build success and mocked web tests do not prove that handshake.
 
 ## Offline reading and local preferences / Expo 08
 
-Offline downloads are **deferred**. Expo 01 (issue #69) decided that offline
-reading waits beyond the first vertical slice and that only safe local
-preferences are kept on the device, so there is no downloaded liturgy content,
-no content versioning, and no download progress in this app. Reading requires a
-connection; a service that has not loaded fails with a visible message rather
-than showing stale text as if it were live.
+Full offline downloads are **deferred**. Expo 01 (issue #69) decided against
+download queues, content versioning, and download progress in this app. One
+bounded, expiring copy of the most recently recovered service is still kept as
+a narrow fallback: when that same service cannot load after a cold launch, the
+reader labels it **Saved copy — not live** and never presents its position or
+status as current. A service without a matching saved copy fails with a visible
+connection message rather than showing stale text as if it were live.
 
 What the device does keep:
 
@@ -304,6 +305,10 @@ What the device does keep:
 - The sign-in token is separate and lives in the keychain.
 - "Forget my reading choices" resets the active/selected languages and preserves
   an explicit appearance choice; with System appearance it can remove the record.
+- One saved service copy, limited in size and age, with its parts and any
+  last-seen explanations. Settings can remove it without changing reading
+  choices or sign-in. Clearing it affects the next offline launch; a copy that
+  is already visible stays readable until the reader leaves or recovers live data.
 
 Storage differs by platform, because the native key-value store does not run in
 a browser: native builds use `expo-sqlite`'s key-value store, and web uses
