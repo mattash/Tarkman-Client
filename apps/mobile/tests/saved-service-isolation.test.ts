@@ -9,12 +9,15 @@ function sources(directory: string): string[] {
     return entry.isDirectory() ? sources(path) : /\.tsx?$/.test(path) ? [path] : []
   })
 }
-test('PR 3 confines saved hydration to the reader hook; controller and control paths cannot read storage', () => {
+test('saved storage is only read by the reader hook and only cleared from Settings', () => {
   const references = sources(join(root, 'features')).concat(sources(join(root, 'app')))
     .filter(path => !relative(root, path).startsWith('features/offline/'))
     .filter(path => /offline\/|savedService|SavedService|ReaderCache/.test(readFileSync(path, 'utf8')))
     .map(path => relative(root, path)).sort()
-  expect(references).toEqual(['features/live/controller.ts', 'features/live/useReader.ts'])
+  expect(references).toEqual(['features/home/Settings.tsx', 'features/live/controller.ts', 'features/live/useReader.ts'])
+  const settings = readFileSync(join(root, 'features/home/Settings.tsx'), 'utf8')
+  expect(settings).toContain("import { clearSavedService } from '../offline/savedServiceStore'")
+  expect(settings).not.toMatch(/loadSavedService|readSavedService|useSavedService/)
   const controller = readFileSync(join(root, 'features/live/controller.ts'), 'utf8')
   expect(controller).toContain("import type { SavedServiceInput } from '../offline/savedService'")
   expect(controller).not.toMatch(/loadSavedService|readSavedService|cache\.(load|read|clear)/)
