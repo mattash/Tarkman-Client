@@ -72,6 +72,7 @@ jobs:
     - run: npm test
     - run: npm run check:ui
     - run: npm run check:fonts
+    - run: npm run check:store-config
     - run: npm run config
     - run: npm run export:web
     # Generates the native iOS project so a broken app config or config plugin fails here
@@ -82,6 +83,11 @@ jobs:
         grep -q 'com.apple.developer.associated-domains' ios/Tarkman/Tarkman.entitlements
         grep -q 'applinks:web.tarkman.app' ios/Tarkman/Tarkman.entitlements
         grep -q 'app.tarkman' ios/Tarkman/Info.plist
+        grep -q 'ITSAppUsesNonExemptEncryption' ios/Tarkman/Info.plist
+        grep -q 'NSPrivacyAccessedAPICategoryDiskSpace' ios/Tarkman/PrivacyInfo.xcprivacy
+        grep -q 'NSPrivacyAccessedAPICategoryFileTimestamp' ios/Tarkman/PrivacyInfo.xcprivacy
+        grep -q 'NSPrivacyAccessedAPICategorySystemBootTime' ios/Tarkman/PrivacyInfo.xcprivacy
+        grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' ios/Tarkman/PrivacyInfo.xcprivacy
 
   ios-changes:
     if: github.event_name == 'pull_request'
