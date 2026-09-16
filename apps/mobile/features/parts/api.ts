@@ -1,4 +1,5 @@
 import { positiveId, record, requiredId } from '../live/contracts'
+import { t } from '../i18n'
 
 export interface PartTexts { grabar: string | null; translit: string | null; en: string | null; ru: string | null; hyEast: string | null; hyWest: string | null }
 export interface PartDetail {
@@ -7,7 +8,6 @@ export interface PartDetail {
 }
 export interface PartExplanation { id: number; title: string; description: string | null }
 
-const LOAD_ERROR = 'Could not load this part. Please retry.'
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null
@@ -17,7 +17,7 @@ export function normalizePartDetail(value: unknown): PartDetail {
   const part = record(record(value).part)
   return {
     id: requiredId(part.id),
-    role: text(part.role) ?? 'Part',
+    role: text(part.role) ?? t('fallbacks.part'),
     posture: text(part.posture),
     position: positiveId(part.position),
     page: positiveId(part.page),
@@ -28,14 +28,14 @@ export function normalizePartDetail(value: unknown): PartDetail {
 
 export function normalizePartExplanation(value: unknown): PartExplanation {
   const explanation = record(record(value).explanation ?? value)
-  return { id: requiredId(explanation.id), title: text(explanation.title) ?? 'Explanation', description: text(explanation.description) }
+  return { id: requiredId(explanation.id), title: text(explanation.title) ?? t('fallbacks.explanation'), description: text(explanation.description) }
 }
 
 /** Public reads, matching what the website's part page shows. No credentials are sent. */
 export function createPartsApi(base: string, request: typeof fetch = fetch) {
   async function get(path: string, signal: AbortSignal): Promise<unknown> {
     const response = await request(`${base}${path}`, { signal, credentials: 'omit', cache: 'no-store', redirect: 'error', headers: { Accept: 'application/json' } })
-    if (!response.ok) throw new Error(response.status === 404 ? 'This part is no longer available.' : LOAD_ERROR)
+    if (!response.ok) throw new Error(response.status === 404 ? t('part.unavailable') : t('part.loadFailed'))
     return response.json()
   }
   return {

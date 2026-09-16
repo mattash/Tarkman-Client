@@ -16,6 +16,7 @@ import { createApi } from '../features/live/api'
 import { readerConfig } from '../features/live/config'
 import type { LiveSession } from '../features/live/contracts'
 import { readScannedLink, type ScannedLink } from '../features/scan/links'
+import { useI18n } from '../features/i18n'
 
 type Found = Exclude<ScannedLink, { kind: 'unknown' }>
 type Phase =
@@ -35,6 +36,7 @@ const FRAME = 240
  */
 export default function ScanScreen() {
   const insets = useSafeAreaInsets()
+  const { t } = useI18n()
   const [permission, requestPermission] = useCameraPermissions()
   const [phase, setPhase] = useState<Phase>({ kind: 'scanning' })
   const [notCode, setNotCode] = useState(false)
@@ -73,7 +75,7 @@ export default function ScanScreen() {
     if (!api) { router.replace(link.path); return }
     api.session(link.sessionId, new AbortController().signal).then(session => {
       setPhase({ kind: 'found', link, session })
-      AccessibilityInfo.announceForAccessibility(`Found ${session.title} at ${session.church}${session.status === 'active' ? ', live' : ''}`)
+      AccessibilityInfo.announceForAccessibility(t(session.status === 'active' ? 'scan.foundLive' : 'scan.found', { title: session.title, church: session.church }))
     }, () => setPhase({ kind: 'unavailable' }))
   }
 
@@ -87,50 +89,50 @@ export default function ScanScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.md), paddingLeft: insets.left, paddingRight: insets.right }}>
         <View style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 }}>
-          <Pressable testID="scan-close" accessibilityRole="button" accessibilityLabel="Close" accessibilityHint="Returns to Today" onPress={leave}
+          <Pressable testID="scan-close" accessibilityRole="button" accessibilityLabel={t('common.close')} accessibilityHint={t('scan.closeHint')} onPress={leave}
             style={{ width: touchTarget, height: touchTarget, borderRadius: touchTarget / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: scanner.scrim }}>
             <AppIcon name="close" color={scanner.foreground} size={26} />
           </Pressable>
-          <AppText variant="action" accessibilityRole="header" style={{ color: scanner.foreground, flexShrink: 1, textAlign: 'center' }}>Scan a code</AppText>
+          <AppText variant="action" accessibilityRole="header" style={{ color: scanner.foreground, flexShrink: 1, textAlign: 'center' }}>{t('common.scanACode')}</AppText>
           <View style={{ width: touchTarget }} />
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.page }}>
-          <AppText style={{ marginTop: 30, color: scanner.muted, textAlign: 'center' }}>Point your camera at the code on your church’s screen.</AppText>
+          <AppText style={{ marginTop: 30, color: scanner.muted, textAlign: 'center' }}>{t('scan.instruction')}</AppText>
           <View style={{ flexGrow: 1, alignItems: 'center', paddingTop: 42, paddingBottom: spacing.lg }}>
             {phase.kind !== 'manual' && <Frame />}
           </View>
           <View style={{ gap: 14, alignItems: 'center' }}>
             {phase.kind === 'manual' ? <SessionIdEntry cancel={() => setPhase({ kind: 'scanning' })} />
               : refused ? <ResultCard>
-                <AppText style={{ fontSize: 15, lineHeight: 23 }}>Tarkman needs the camera to scan a code. You can still open a service from the list or by session ID.</AppText>
+                <AppText style={{ fontSize: 15, lineHeight: 23 }}>{t('scan.cameraNeeded')}</AppText>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                  <AppButton size="card" onPress={() => { void Linking.openSettings() }}>Open Settings</AppButton>
-                  <AppButton size="card" variant="secondary" onPress={() => router.replace('/')}>Back to Today</AppButton>
+                  <AppButton size="card" onPress={() => { void Linking.openSettings() }}>{t('scan.openSettings')}</AppButton>
+                  <AppButton size="card" variant="secondary" onPress={() => router.replace('/')}>{t('scan.backToToday')}</AppButton>
                 </View>
               </ResultCard>
               : phase.kind === 'found' ? <ResultCard testID="scan-found">
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  {phase.session.status === 'active' ? <LivePill label="Live" /> : null}
+                  {phase.session.status === 'active' ? <LivePill label={t('common.live')} /> : null}
                   <View style={{ flex: 1 }}>
                     <AppText variant="rowTitle">{phase.session.title}</AppText>
                     <AppText variant="caption" tone="muted">{phase.session.church}</AppText>
                   </View>
                 </View>
                 <AppButton size="card" onPress={() => router.replace(phase.link.path)}
-                  accessibilityHint={`Opens ${phase.session.title} at ${phase.session.church}`}>Read along</AppButton>
-                <AppButton variant="quiet" onPress={() => setPhase({ kind: 'scanning' })}>Scan a different code</AppButton>
+                  accessibilityHint={t('scan.readAlongHint', { title: phase.session.title, church: phase.session.church })}>{t('common.readAlong')}</AppButton>
+                <AppButton variant="quiet" onPress={() => setPhase({ kind: 'scanning' })}>{t('scan.scanDifferent')}</AppButton>
               </ResultCard>
               : phase.kind === 'unavailable' ? <ResultCard>
-                <Notice tone="danger" accessibilityRole="alert">That service isn’t available. Try the code on your church’s screen.</Notice>
-                <AppButton size="card" variant="secondary" onPress={() => setPhase({ kind: 'scanning' })}>Scan again</AppButton>
+                <Notice tone="danger" accessibilityRole="alert">{t('scan.unavailable')}</Notice>
+                <AppButton size="card" variant="secondary" onPress={() => setPhase({ kind: 'scanning' })}>{t('scan.scanAgain')}</AppButton>
               </ResultCard>
               : notCode ? <ResultCard testID="scan-not-a-code">
-                <Notice tone="danger" accessibilityRole="alert">That code isn’t a Tarkman service. Try the code on your church’s screen.</Notice>
+                <Notice tone="danger" accessibilityRole="alert">{t('scan.notACode')}</Notice>
               </ResultCard>
               : permission?.granted ? <LookingChip checking={phase.kind === 'checking'} /> : null}
             {phase.kind !== 'manual' && <Pressable testID="scan-session-id" accessibilityRole="button" onPress={() => { setNotCode(false); setPhase({ kind: 'manual' }) }}
               style={{ minHeight: touchTarget, paddingHorizontal: 20, justifyContent: 'center', borderRadius: touchTarget / 2, backgroundColor: scanner.scrim, marginTop: 24 }}>
-              <AppText variant="label" style={{ color: scanner.foreground, textAlign: 'center' }}>Enter a session ID instead</AppText>
+              <AppText variant="label" style={{ color: scanner.foreground, textAlign: 'center' }}>{t('scan.enterIdInstead')}</AppText>
             </Pressable>}
           </View>
         </ScrollView>
@@ -174,12 +176,13 @@ function Frame() {
 
 function LookingChip({ checking }: { checking: boolean }) {
   const reduce = useReduceMotion()
+  const { t } = useI18n()
   // Kept out of the accessibility order so focus moves from the instruction straight to session ID entry.
   return <View accessible={false} importantForAccessibility="no-hide-descendants"
     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 18, borderRadius: radii.card, backgroundColor: scanner.scrimStrong }}>
     {reduce ? <View style={{ width: 10, height: 10, borderRadius: 5, marginHorizontal: 5, backgroundColor: scanner.foreground }} />
       : <ActivityIndicator color={scanner.foreground} accessible={false} />}
-    <AppText variant="label" style={{ color: scanner.foreground, fontWeight: '400' }}>{checking ? 'Checking the code…' : 'Looking for a code…'}</AppText>
+    <AppText variant="label" style={{ color: scanner.foreground, fontWeight: '400' }}>{checking ? t('scan.checking') : t('scan.looking')}</AppText>
   </View>
 }
 
@@ -192,18 +195,19 @@ function ResultCard({ children, testID }: { children: React.ReactNode; testID?: 
 
 function SessionIdEntry({ cancel }: { cancel(): void }) {
   const [input, setInput] = useState(''), [error, setError] = useState<string>()
+  const { t } = useI18n()
   function submit() {
     const id = Number(input)
-    if (!/^\d+$/.test(input) || !Number.isSafeInteger(id) || id <= 0) { setError('Enter a valid numeric session ID.'); return }
+    if (!/^\d+$/.test(input) || !Number.isSafeInteger(id) || id <= 0) { setError(t('scan.invalidId')); return }
     Keyboard.dismiss()
     router.replace(`/sessions/${id}/parts`)
   }
   return <ResultCard testID="scan-manual">
-    <AppText variant="rowTitle">Open a service by session ID</AppText>
-    <AppText variant="caption" tone="muted">Use the number your church gives with the service.</AppText>
-    <TextField testID="session-id" label="Session ID" value={input} autoFocus onChangeText={value => { setInput(value); setError(undefined) }}
+    <AppText variant="rowTitle">{t('scan.openById')}</AppText>
+    <AppText variant="caption" tone="muted">{t('scan.idNote')}</AppText>
+    <TextField testID="session-id" label={t('scan.sessionId')} value={input} autoFocus onChangeText={value => { setInput(value); setError(undefined) }}
       keyboardType="number-pad" inputMode="numeric" returnKeyType="go" onSubmitEditing={submit} error={error} />
-    <AppButton size="card" onPress={submit}>Open session</AppButton>
-    <AppButton variant="quiet" onPress={cancel}>Back to scanning</AppButton>
+    <AppButton size="card" onPress={submit}>{t('scan.openSession')}</AppButton>
+    <AppButton variant="quiet" onPress={cancel}>{t('scan.backToScanning')}</AppButton>
   </ResultCard>
 }

@@ -1,6 +1,7 @@
 import type { KnownSessionStatus } from '@tarkman/core'
 import { record } from '../live/contracts'
 import type { AuthContextValue } from '../auth/AuthProvider'
+import { t } from '../i18n'
 
 export interface ServiceControls {
   next(id: number, expectedPartId: number | null): Promise<void>
@@ -43,11 +44,11 @@ export function createServiceControls(authorizedFetch: AuthContextValue['authori
 }
 
 async function failureMessage(response: Response): Promise<string> {
-  if (response.status === 403) return 'You do not have permission to control this service.'
-  if (response.status === 404) return 'This service is no longer available.'
+  if (response.status === 403) return t('control.forbidden')
+  if (response.status === 404) return t('common.serviceNoLongerAvailable')
   // The screen names where the service is now once it has resynced, so this does not ask the operator to look it up.
-  if (response.status === 409) return 'The service already moved on, so nothing was changed.'
+  if (response.status === 409) return t('control.staleMove')
   const data = record(await response.json().catch(() => null))
   const reported = typeof data.error === 'string' && data.error.length > 0 && data.error.length <= 200 ? data.error : undefined
-  return reported ?? 'Could not update the service. Please try again.'
+  return reported ?? t('control.updateFailed')
 }

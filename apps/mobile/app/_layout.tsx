@@ -11,6 +11,7 @@ import { AuthProvider } from '../features/auth/AuthProvider'
 import { PreferencesProvider, usePreferences } from '../features/preferences/PreferencesProvider'
 import { readerConfig } from '../features/live/config'
 import { startObservability } from '../features/observability/sentry'
+import { I18nProvider } from '../features/i18n'
 
 // Starts before the first screen so a crash during startup is still reported.
 startObservability()
@@ -20,7 +21,7 @@ function RootLayout() {
 }
 function PreferenceTheme() {
   const { preferences } = usePreferences()
-  return <ThemeProvider appearance={preferences.appearance}><RootContent /></ThemeProvider>
+  return <I18nProvider preference={preferences.interfaceLanguage}><ThemeProvider appearance={preferences.appearance}><RootContent /></ThemeProvider></I18nProvider>
 }
 function RootContent() {
   const { colors, scheme } = useTheme()

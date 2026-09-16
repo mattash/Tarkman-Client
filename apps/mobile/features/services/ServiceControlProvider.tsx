@@ -7,6 +7,7 @@ import type { ReaderState } from '../live/state'
 import { useReader } from '../live/useReader'
 import { createServiceControls, type ServiceControls } from './controls'
 import { useControls } from './useControls'
+import { t } from '../i18n'
 
 export const STOP_ANNOUNCEMENT = 'stop-announcement'
 
@@ -57,7 +58,7 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
   const resynced = state.updatedAt !== sentAgainst && !state.refreshing
   const value: ServiceControlValue = {
     sessionId,
-    invalid: !config.endpoints ? config.error ?? 'This service cannot be opened.' : valid ? null : 'That service link is not valid.',
+    invalid: !config.endpoints ? config.error ?? t('control.cannotOpen') : valid ? null : t('common.serviceLinkInvalid'),
     state, retry, controls,
     commands: createServiceControls(authorizedFetch),
     part, index,

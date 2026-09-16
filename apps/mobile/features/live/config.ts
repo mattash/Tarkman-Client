@@ -19,7 +19,8 @@ export function validateConfig(api: unknown, cable: unknown, development: boolea
     }
     return { endpoints: { api: parse(api, 'api'), cable: parse(cable, 'cable') } }
   } catch {
-    return { error: 'Live reader is not configured. Set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_ACTIONCABLE_URL to public HTTPS/WSS endpoints. Local development may use HTTP/WS on a local host. Credentials, queries and fragments are not allowed.' }
+    // A build configuration error for developers, never seen by readers of a configured build.
+    return { error: 'Live reader is not configured. Set EXPO_PUBLIC_API_URL and EXPO_PUBLIC_ACTIONCABLE_URL to public HTTPS/WSS endpoints. Local development may use HTTP/WS on a local host. Credentials, queries and fragments are not allowed.' } // i18n-ignore
   }
 }
 export function readerConfig(): ReaderConfig {

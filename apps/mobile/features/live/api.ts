@@ -1,5 +1,6 @@
 import { normalizeExplanations, normalizeParts, normalizeServices, normalizeSession } from './contracts'
 import type { LiveExplanation, LivePart, LiveSession } from './contracts'
+import { t } from '../i18n'
 export interface ReaderApi {
   services(signal: AbortSignal): Promise<LiveSession[]>
   session(id: number, signal: AbortSignal): Promise<LiveSession>
@@ -9,7 +10,7 @@ export interface ReaderApi {
 export function createApi(base: string, request: typeof fetch = fetch): ReaderApi {
   async function get(path: string, signal: AbortSignal): Promise<unknown> {
     const response = await request(`${base}${path}`, { signal, credentials: 'omit', cache: 'no-store', redirect: 'error', headers: { Accept: 'application/json', 'X-Polling-Client': 'true' } })
-    if (!response.ok) throw new Error(response.status === 404 ? 'This service is no longer available.' : 'Could not load the service. Please retry.')
+    if (!response.ok) throw new Error(response.status === 404 ? t('common.serviceNoLongerAvailable') : t('errors.loadService'))
     return response.json()
   }
   return {

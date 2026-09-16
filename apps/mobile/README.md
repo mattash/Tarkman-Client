@@ -384,7 +384,7 @@ awake for the operator.
 ### What CI runs
 
 The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
-the Jest suite, the UI and font guards, `expo config`, the Expo web export, and
+the Jest suite, the UI, interface-copy and font guards, `expo config`, the Expo web export, and
 an iOS config smoke check that prebuilds the native project and asserts the
 associated-domains entitlement and bundle identifier survive. The `build` matrix
 runs the web client's typecheck, build and tests on Node 22 and 24. The `design`
@@ -613,3 +613,26 @@ Native accessibility announces “All services loaded” once after a terminal
 load-more response, excluding initial complete lists and first-page recovery.
 Web retains its polite live region. Jest covers these transitions; native scrolling and assistive technology still
 need device verification against the paginated backend.
+
+## Interface languages / #123
+
+Interface copy (buttons, statuses, errors, sheets, Settings and VoiceOver labels) lives in typed catalogs under
+`features/i18n/catalogs`. The English catalog `en.ts` is the source wording; liturgical text and anything the
+server sends (service titles, part roles, announcements) is not interface copy and is shown as received.
+
+- **Using copy.** Components call `const { t } = useI18n()` and `t('section.key', { name })`. Code outside React
+  (API errors, parsed fallbacks) imports `t` from `features/i18n`, which uses the language the root provider last
+  resolved. Placeholders are `{name}`; a message with `one`/`other` forms (plus `few`/`many` for Russian) is
+  chosen by its `count` parameter.
+- **Choosing the language.** `I18nProvider` in `app/_layout.tsx` uses the reader's saved `interfaceLanguage`
+  when set, otherwise the first device language the app ships, otherwise English. A missing message always falls
+  back to English. English keeps the device's regional date format; other interface languages format dates in
+  that language.
+- **Adding a language.** Add `catalogs/<code>.ts` typed as `Catalog` (a missing key fails `tsc`), register it in
+  `INTERFACE_CATALOGS` with `reviewed: false`, and add its plural forms to `pluralCategory` if they differ.
+  Unreviewed catalogs are offered only in development builds. Set `reviewed: true` only after a fluent reader
+  has checked the wording on a device.
+- **Guards.** `tests/i18n.test.tsx` fails when a catalog lacks a message, a plural form or a placeholder that
+  English has. `npm run check:i18n` fails CI when reader-facing English is written inline outside the catalogs;
+  mark a deliberate exception with `// i18n-ignore` on that line.
+

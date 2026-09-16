@@ -3,6 +3,7 @@ import type { ReaderApi } from './api'
 import type { CableClient } from './cable'
 import { currentPart, parseEvent } from './contracts'
 import { initialState, readerReducer, type ReaderAction } from './state'
+import { t } from '../i18n'
 export interface Lifecycle {
   listen(callback: (active: boolean, online: boolean) => void): () => void
 }
@@ -39,7 +40,7 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         // canonical session again to detect transitions during the parallel GETs.
         const after = await api.session(id, abort.signal)
         if (!alive || epoch !== generation || queued) return
-        if (session.id !== id || after.id !== id) throw new Error('Unexpected session response.')
+        if (session.id !== id || after.id !== id) throw new Error(t('errors.unexpectedSession'))
         if (JSON.stringify(session) !== JSON.stringify(after)) { queued = true; dispatch({ type: 'stale' }); return }
         const part = currentPart(after, parts)
         const explanations = explanationResult.explanations.filter(e => !e.liturgyPartId || e.liturgyPartId === part?.liturgyPartId)
@@ -56,7 +57,7 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         }
       }
     } catch {
-      if (alive && epoch === generation) dispatch({ type: 'failure', message: 'Could not refresh the service. Check your connection and retry.' })
+      if (alive && epoch === generation) dispatch({ type: 'failure', message: t('errors.refreshService') })
     } finally {
       clearTimeout(timeout)
       if (requestTimeout === timeout) requestTimeout = null
@@ -97,7 +98,7 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         if (!alive || (active === nextActive && online === nextOnline)) return
         active = nextActive; online = nextOnline
         stopResources(); dispatch({ type: 'connection', connected: false }); dispatch({ type: 'stale' })
-        if (!online) dispatch({ type: 'failure', message: 'No network connection. Reading will refresh when you reconnect.' })
+        if (!online) dispatch({ type: 'failure', message: t('errors.noNetwork') })
         startResources()
       })
       startResources()

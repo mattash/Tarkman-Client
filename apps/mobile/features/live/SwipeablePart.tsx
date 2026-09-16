@@ -4,6 +4,7 @@ import { useRecyclingState } from '@shopify/flash-list'
 import { AppButton } from '../../components/AppButton'
 import { useTheme } from '../../design/ThemeProvider'
 import { spacing, touchTarget } from '../../design/tokens'
+import { useI18n } from '../i18n'
 
 const actionWidth = 72
 
@@ -11,6 +12,7 @@ export function SwipeablePart({ children, partLabel, testID, reduceMotion, onSwi
   partLabel: string; testID: string; reduceMotion: boolean; onSwipeStart(): void; onOpen(): void
 }>) {
   const { colors } = useTheme()
+  const { t } = useI18n()
   const row = useRef<View>(null)
   const actions = useRef({ onSwipeStart, onOpen })
   useEffect(() => { actions.current = { onSwipeStart, onOpen } }, [onSwipeStart, onOpen])
@@ -86,14 +88,14 @@ export function SwipeablePart({ children, partLabel, testID, reduceMotion, onSwi
       importantForAccessibility={revealed ? 'auto' : 'no-hide-descendants'}
       style={{ position: 'absolute', inset: 0, backgroundColor: colors.secondary }}>
       <View style={{ position: 'absolute', right: 0, top: actionTop, width: actionWidth, alignItems: 'center' }}>
-        <AppButton icon="info" iconOnly variant="quiet" accessibilityLabel={`View details for ${partLabel}`}
+        <AppButton icon="info" iconOnly variant="quiet" accessibilityLabel={t('partList.viewDetails', { part: partLabel })}
           onPress={() => {
             restingOffset.current = 0
             translation.stopAnimation()
             translation.setValue(0)
             setRevealed(false, true)
             actions.current.onOpen()
-          }}>Details</AppButton>
+          }}>{t('partList.details')}</AppButton>
       </View>
     </View>}
     <Animated.View testID={`${testID}-gesture`} {...gesture.panHandlers} style={{ transform: [{ translateX: translation }] }}>

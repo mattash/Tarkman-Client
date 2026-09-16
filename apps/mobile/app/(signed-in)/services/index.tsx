@@ -9,16 +9,19 @@ import { spacing } from '../../../design/tokens'
 import { useAuth } from '../../../features/auth/AuthProvider'
 import { formatServiceDate, statusLabel } from '../../../features/services/api'
 import { useMyServices } from '../../../features/services/useMyServices'
+import { useI18n } from '../../../features/i18n'
 
 export default function MyServicesScreen() {
   const { state, authorizedFetch, signOut } = useAuth()
   const result = useMyServices(authorizedFetch)
   const user = state.status === 'signedIn' ? state.user : null
+  const { t } = useI18n()
+  const allLoaded = t('myServices.allLoaded')
   useEffect(() => {
     if (result.paginationComplete && Platform.OS !== 'web') {
-      AccessibilityInfo.announceForAccessibility('All services loaded')
+      AccessibilityInfo.announceForAccessibility(allLoaded)
     }
-  }, [result.paginationComplete])
+  }, [result.paginationComplete, allLoaded])
 
   return <FlashList testID="my-services-list" data={result.services} keyExtractor={service => String(service.id)}
     contentContainerStyle={{ padding: spacing.lg }}
@@ -28,32 +31,32 @@ export default function MyServicesScreen() {
     ListHeaderComponent={
     <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg }}>
       <View style={{ alignSelf: 'flex-start' }}>
-        <AppButton variant="quiet" icon="back" onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/settings') } }}>Settings</AppButton>
+        <AppButton variant="quiet" icon="back" onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/settings') } }}>{t('common.settings')}</AppButton>
       </View>
-      <AppText variant="label" tone="accent">TARKMAN / MY SERVICES</AppText>
-      <AppText variant="title">Your services</AppText>
-      {user && <AppText tone="muted">Signed in as {user.name || user.email}</AppText>}
-      {result.loading && <ActivityIndicator accessibilityLabel="Loading your services" />}
-      {result.error && <Card><AppText accessibilityRole="alert">{result.error}</AppText><AppButton variant="secondary" onPress={result.retry}>Retry</AppButton></Card>}
-      {!result.loading && !result.error && result.services.length === 0 && <Card><AppText variant="heading">No services yet</AppText>
-        <AppText tone="muted">Services you create on the Tarkman website appear here.</AppText></Card>}
+      <AppText variant="label" tone="accent">{t('myServices.eyebrow')}</AppText>
+      <AppText variant="title">{t('myServices.title')}</AppText>
+      {user && <AppText tone="muted">{t('common.signedInAs', { name: user.name || user.email })}</AppText>}
+      {result.loading && <ActivityIndicator accessibilityLabel={t('myServices.loading')} />}
+      {result.error && <Card><AppText accessibilityRole="alert">{result.error}</AppText><AppButton variant="secondary" onPress={result.retry}>{t('common.retry')}</AppButton></Card>}
+      {!result.loading && !result.error && result.services.length === 0 && <Card><AppText variant="heading">{t('myServices.noneTitle')}</AppText>
+        <AppText tone="muted">{t('myServices.noneNote')}</AppText></Card>}
     </View>}
     renderItem={({ item: service }) => <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', marginTop: spacing.lg }}><Card>
         <AppText variant="heading">{service.title}</AppText>
         <AppText tone="muted">{[service.church, formatServiceDate(service.date)].filter(Boolean).join(' · ')}</AppText>
         <AppText variant="caption">{statusLabel(service.status)}</AppText>
-        <AppButton accessibilityLabel={`Open controls for ${service.title}`} onPress={() => router.push(`/services/${service.id}`)}>Open controls</AppButton>
+        <AppButton accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })} onPress={() => router.push(`/services/${service.id}`)}>{t('myServices.openControls')}</AppButton>
       </Card></View>}
     ListFooterComponent={<View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg, marginTop: spacing.lg }}>
-      {result.loadingMore && <ActivityIndicator accessibilityLabel="Loading more services" />}
+      {result.loadingMore && <ActivityIndicator accessibilityLabel={t('myServices.loadingMore')} />}
       {result.loadMoreError && <Card><AppText accessibilityRole="alert">{result.loadMoreError}</AppText>
-        <AppButton variant="secondary" accessibilityLabel="Retry loading more services" onPress={result.retryLoadMore}>Retry</AppButton></Card>}
+        <AppButton variant="secondary" accessibilityLabel={t('myServices.retryMoreLabel')} onPress={result.retryLoadMore}>{t('common.retry')}</AppButton></Card>}
       {!result.loading && !result.error && !result.loadingMore && !result.loadMoreError && result.services.length > 0 && (
         result.nextCursor
-          ? <AppButton variant="quiet" onPress={result.loadMore}>Load more services</AppButton>
-          : <AppText accessibilityLiveRegion="polite" tone="muted">All services loaded</AppText>
+          ? <AppButton variant="quiet" onPress={result.loadMore}>{t('myServices.loadMore')}</AppButton>
+          : <AppText accessibilityLiveRegion="polite" tone="muted">{allLoaded}</AppText>
       )}
-      <AppButton variant="secondary" onPress={signOut}>Sign out</AppButton>
+      <AppButton variant="secondary" onPress={signOut}>{t('common.signOut')}</AppButton>
     </View>}
   />
 }
