@@ -9,6 +9,11 @@ on:
   pull_request:
     branches: [ "main" ]
 
+concurrency:
+  # Supersede older runs for this PR or branch without cancelling unrelated PRs.
+  group: node-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
 
@@ -96,6 +101,7 @@ jobs:
       contents: read
     outputs:
       mobile: ${{ steps.changes.outputs.mobile }}
+      native: ${{ steps.changes.outputs.native }}
     steps:
     - uses: actions/checkout@v7
       with:
@@ -119,9 +125,51 @@ jobs:
           echo "mobile=false" >> "$GITHUB_OUTPUT"
         fi
 
-  ios-compile:
+        native=false
+        while IFS= read -r path; do
+          case "$path" in
+            .github/workflows/node.js.yml|\
+            apps/mobile/app.json|apps/mobile/app.config.*|apps/mobile/eas.json|apps/mobile/.easignore|\
+            apps/mobile/package.json|apps/mobile/package-lock.json|apps/mobile/npm-shrinkwrap.json|\
+            apps/mobile/ios/*|apps/mobile/plugins/*|apps/mobile/config-plugins/*|\
+            apps/mobile/app.plugin.*|apps/mobile/assets/icons/*)
+              native=true
+              break
+              ;;
+          esac
+        done < "$RUNNER_TEMP/ios-changes.txt"
+        echo "native=$native" >> "$GITHUB_OUTPUT"
+
+  ios-bundle-smoke:
     needs: ios-changes
     if: needs.ios-changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CI: '1'
+      EXPO_NO_DOTENV: '1'
+      EXPO_PUBLIC_API_URL: https://reader.invalid
+      EXPO_PUBLIC_ACTIONCABLE_URL: wss://reader.invalid/cable
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: 'npm'
+        cache-dependency-path: apps/mobile/package-lock.json
+    - run: npm ci --prefix apps/mobile
+    - name: Export iOS JavaScript bundle
+      working-directory: apps/mobile
+      run: npx expo export --platform ios --clear --output-dir "$RUNNER_TEMP/tarkman-ios-bundle"
+
+  ios-compile:
+    needs: ios-changes
+    if: needs.ios-changes.outputs.native == 'true'
     runs-on: macos-26
     timeout-minutes: 60
     permissions:
@@ -161,7 +209,7 @@ jobs:
   # Require this stable check, not the conditional macOS job.
   ios-build:
     name: ios-build
-    needs: [ios-changes, ios-compile]
+    needs: [ios-changes, ios-bundle-smoke, ios-compile]
     if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions: {}
@@ -170,17 +218,24 @@ jobs:
       env:
         CHANGES_RESULT: ${{ needs.ios-changes.result }}
         MOBILE_CHANGED: ${{ needs.ios-changes.outputs.mobile }}
+        NATIVE_CHANGED: ${{ needs.ios-changes.outputs.native }}
+        BUNDLE_RESULT: ${{ needs.ios-bundle-smoke.result }}
         COMPILE_RESULT: ${{ needs.ios-compile.result }}
       run: |
         if [ "$CHANGES_RESULT" != success ]; then
           echo "Mobile change detection did not succeed."
           exit 1
         fi
-        if [ "$MOBILE_CHANGED" = false ] && [ "$COMPILE_RESULT" = skipped ]; then
-          echo "No mobile-relevant changes; no macOS runner needed."
-        elif [ "$MOBILE_CHANGED" = true ] && [ "$COMPILE_RESULT" = success ]; then
-          echo "Unsigned iOS simulator compile succeeded."
+        if [ "$MOBILE_CHANGED" = false ] && [ "$NATIVE_CHANGED" = false ] && \
+           [ "$BUNDLE_RESULT" = skipped ] && [ "$COMPILE_RESULT" = skipped ]; then
+          echo "No mobile-relevant changes; iOS validation intentionally skipped."
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = false ] && \
+             [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = skipped ]; then
+          echo "Linux iOS JavaScript bundle smoke check succeeded; no native compile needed."
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = true ] && \
+             [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = success ]; then
+          echo "Linux iOS bundle smoke check and unsigned iOS simulator compile succeeded."
         else
-          echo "Expected a successful compile or an intentional non-mobile skip; got $COMPILE_RESULT."
+          echo "Unexpected iOS validation outcomes: mobile=$MOBILE_CHANGED native=$NATIVE_CHANGED bundle=$BUNDLE_RESULT compile=$COMPILE_RESULT."
           exit 1
         fi
