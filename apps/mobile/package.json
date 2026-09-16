@@ -17,7 +17,8 @@
     "config": "expo config --type public",
     "test": "jest --runInBand",
     "check:ui": "node scripts/check-ui.mjs",
-    "check:fonts": "node scripts/check-fonts.mjs"
+    "check:fonts": "node scripts/check-fonts.mjs",
+    "check:store-config": "node scripts/check-store-config.mjs"
   },
   "dependencies": {
     "@react-native-vector-icons/ionicons": "13.1.4",
