@@ -193,6 +193,11 @@ export const en = {
     myServicesSubtitle: 'Run the services you manage',
     signInSubtitle: 'For clergy and parish staff who run services',
     errorReporting: 'Error reporting (preview builds)',
+    interfaceLanguage: 'Interface language',
+    interfaceSystem: 'Same as this device',
+    interfaceHint: 'Buttons, messages and Settings. Liturgical text keeps your reading languages.',
+    draftLanguage: '{language} · draft',
+    draftNote: 'Draft translations are still being checked and may contain mistakes.',
   },
   signIn: {
     settingsHint: 'Returns to Settings',

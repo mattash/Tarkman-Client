@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useLocales } from 'expo-localization'
 import { en } from './catalogs/en'
+import { ru } from './catalogs/ru'
 import { formatMessage, lookupMessage, type CatalogShape, type MessageParams, type MessagePath } from './messages'
 
 export type Catalog = CatalogShape<typeof en>
@@ -12,6 +13,8 @@ export type MessageKey = MessagePath<typeof en>
  */
 export const INTERFACE_CATALOGS = {
   en: { catalog: en as Catalog, nativeName: 'English', reviewed: true },
+  // Machine-drafted; set reviewed to true once a fluent reader has confirmed the wording on a device.
+  ru: { catalog: ru, nativeName: 'Русский', reviewed: false },
 } satisfies Record<string, { catalog: Catalog; nativeName: string; reviewed: boolean }>
 
 export type InterfaceLanguage = keyof typeof INTERFACE_CATALOGS
@@ -20,6 +23,11 @@ export const DEFAULT_INTERFACE_LANGUAGE: InterfaceLanguage = 'en'
 
 export function isInterfaceLanguage(value: unknown): value is InterfaceLanguage {
   return typeof value === 'string' && Object.hasOwn(INTERFACE_CATALOGS, value)
+}
+
+/** Development and preview builds offer draft translations so testers can check them; production builds never do. */
+export function includesDraftLanguages(isDevelopment = __DEV__, environment = process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT): boolean {
+  return isDevelopment || environment === 'preview'
 }
 
 /** Languages a reader may choose: reviewed ones always, unreviewed drafts only where testers can check them. */
@@ -75,7 +83,7 @@ interface I18nValue { language: InterfaceLanguage; t(key: MessageKey, params?: M
 
 const I18nContext = createContext<I18nValue | null>(null)
 
-export function I18nProvider({ preference, includeDrafts = __DEV__, children }: { preference?: InterfaceLanguagePreference; includeDrafts?: boolean; children: ReactNode }) {
+export function I18nProvider({ preference, includeDrafts = includesDraftLanguages(), children }: { preference?: InterfaceLanguagePreference; includeDrafts?: boolean; children: ReactNode }) {
   const locales = useLocales()
   const deviceLanguages = locales.map(locale => locale.languageCode)
   const language = resolveInterfaceLanguage(preference, deviceLanguages, availableInterfaceLanguages(includeDrafts))
