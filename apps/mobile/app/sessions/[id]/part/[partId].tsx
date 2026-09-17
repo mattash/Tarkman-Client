@@ -128,7 +128,7 @@ export default function PartDetailScreen() {
           {state.explanations.length > 0 && <AppText variant="heading">{t('common.explanation')}</AppText>}
           {state.explanations.map(explanation => <View key={explanation.id} style={{ gap: spacing.sm }}>
             <AppText variant="rowTitle" accessibilityRole="header">{explanation.title}</AppText>
-            <LiturgyText variant="explanation" text={explanation.description} />
+            <LiturgyText variant="explanation" text={explanation.description} blocks />
           </View>)}
           {state.explanationError && <StatusPill tone="warning" label={t('part.someExplanationsFailed')} />}
           {state.explanations.length === 0 && !state.explanationError && <AppText tone="muted">{t('common.noPartExplanation')}</AppText>}
