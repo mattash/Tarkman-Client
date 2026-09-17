@@ -41,6 +41,12 @@ export function beginRecovery(sessionId: number | null, signal: AbortSignal, rea
 
 export function recoveryContext(signal: AbortSignal): BenchmarkContext | undefined { const context = recoveries.get(signal); return context ? { ...context, request: `request_${++requestNumber}` } : undefined }
 
+/** Keep independent background work correlated with the reading that requested it. */
+export function inheritRecovery(signal: AbortSignal, parent: AbortSignal): void {
+  const context = recoveries.get(parent)
+  if (context) recoveries.set(signal, context)
+}
+
 export function benchmarkHeaders(context?: BenchmarkContext): Record<string, string> {
   if (!context) return {}
   return { 'X-Tarkman-Benchmark-Run': context.run, 'X-Tarkman-Benchmark-Client': context.client,

@@ -30,7 +30,7 @@ it('T-06: saves filtered content only after the second authoritative read and re
   cache.save.mockImplementation(() => { expect(controller.getSnapshot()).toMatchObject({ loading: false, stale: false, session, parts }) })
   await flush(); expect(cache.save).not.toHaveBeenCalled()
   second.resolve(session); await flush()
-  expect(cache.save).toHaveBeenCalledTimes(1)
+  expect(cache.save).toHaveBeenCalledTimes(2)
   expect(cache.save).toHaveBeenCalledWith({ session, parts, explanations: { liturgyPartId: 11, items: [explanation] } })
   stop()
 })
@@ -59,7 +59,7 @@ it.each(['torn', 'event'] as const)('T-06: discards %s snapshots and saves only 
   first.resolve(reason === 'torn' ? changed : session); await flush()
   expect(cache.save).not.toHaveBeenCalled(); expect(controller.getSnapshot().stale).toBe(true)
   rerun.resolve(session); await flush()
-  expect(cache.save).toHaveBeenCalledTimes(1); stop()
+  expect(cache.save).toHaveBeenCalledTimes(2); stop()
 })
 it.each(['stop', 'offline', 'background'] as const)('does not save late results from a generation invalidated by %s', async reason => {
   const second = deferred<typeof session>()
@@ -83,7 +83,7 @@ it.each(['throw', 'reject', 'pending'] as const)('cache %s does not alter recove
   const { controller, stop } = setup(); await flush()
   expect(controller.getSnapshot()).toMatchObject({ loading: false, stale: false, error: null, session, parts })
   controller.retry(); await flush()
-  expect(cache.save).toHaveBeenCalledTimes(2); expect(controller.getSnapshot().error).toBeNull(); stop()
+  expect(cache.save).toHaveBeenCalledTimes(4); expect(controller.getSnapshot().error).toBeNull(); stop()
 })
 it('T-07: requests preservation on explanation failure, but writes a successful empty response', async () => {
   api.explanations.mockRejectedValueOnce(new Error('down')).mockResolvedValue([])

@@ -1,5 +1,5 @@
 import { describe, beforeEach, afterEach, it, expect, jest } from '@jest/globals'
-import { benchmarkContext, benchmarkHeaders, benchmarkMark, beginRecovery, recoveryContext } from '../features/observability/latencyBenchmark'
+import { benchmarkContext, benchmarkHeaders, benchmarkMark, beginRecovery, recoveryContext, inheritRecovery } from '../features/observability/latencyBenchmark'
 import { createApi } from '../features/live/api'
 import { createServiceControls } from '../features/services/controls'
 
@@ -42,6 +42,20 @@ describe('latency benchmark isolation and correlation', () => {
     expect(first!.cycle).toBe(second!.cycle)
     expect(first!.request).not.toBe(second!.request)
     expect(benchmarkHeaders(undefined)).toEqual({})
+  })
+
+  it('keeps background explanations correlated with their original recovery and independently abortable', async () => {
+    const parent = new AbortController(), background = new AbortController()
+    const originalRecovery = beginRecovery(4008, parent.signal, 'cable')
+    globalThis.__TARKMAN_BENCHMARK__!.command = 'command_2'
+    inheritRecovery(background.signal, parent.signal)
+    parent.abort()
+    const request = jest.fn<typeof fetch>().mockResolvedValue({ ok: true, status: 200, json: async () => ({ explanations: [] }) } as Response)
+    await createApi('https://example.test', request).explanations(4008, background.signal)
+    expect(request.mock.calls[0][1]?.headers).toMatchObject({
+      'X-Tarkman-Benchmark-Command': 'command_1', 'X-Tarkman-Benchmark-Cycle': originalRecovery!.cycle,
+    })
+    expect(background.signal.aborted).toBe(false)
   })
 
   it('never turns telemetry failure into a failed command', async () => {

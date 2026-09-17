@@ -156,12 +156,13 @@ it('does not publish a late fast recovery after disposal', async () => {
   expect(controller.getSnapshot().session).toEqual(session)
   expect(jest.getTimerCount()).toBe(0)
 })
-it('refreshes explanations after a covered notification so an earlier response cannot attach to the wrong reading', async () => {
+it('starts explanations only after accepting the reading, including coalesced notifications', async () => {
   const controller = await setup(), pending = defer<LiveSession>()
   api.session.mockReturnValueOnce(pending.promise).mockResolvedValue(next())
-  api.explanations.mockResolvedValueOnce([{ id: 1, title: 'old', description: null, liturgyPartId: null }])
-    .mockResolvedValue([{ id: 2, title: 'new', description: null, liturgyPartId: null }])
-  event(); controller.refreshAfterCommand(); pending.resolve(next()); await flush()
-  expect(api.explanations).toHaveBeenCalledTimes(2)
+  api.explanations.mockResolvedValue([{ id: 2, title: 'new', description: null, liturgyPartId: 12 }])
+  event(); controller.refreshAfterCommand(); await flush()
+  expect(api.explanations).not.toHaveBeenCalled()
+  pending.resolve(next()); await flush()
+  expect(api.explanations).toHaveBeenCalledTimes(1)
   expect(controller.getSnapshot().explanations.map(e => e.id)).toEqual([2])
 })

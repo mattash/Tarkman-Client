@@ -1,8 +1,8 @@
-import { benchmarkMark, benchmarkContext, beginRecovery, benchmarkCable } from '../observability/latencyBenchmark'
+import { benchmarkMark, benchmarkContext, beginRecovery, benchmarkCable, inheritRecovery } from '../observability/latencyBenchmark'
 import type { SavedServiceInput } from '../offline/savedService'
 import type { ReaderApi } from './api'
 import type { CableClient } from './cable'
-import { currentPart, parseEvent } from './contracts'
+import { currentPart, parseEvent, type LivePart, type LiveSession } from './contracts'
 import { initialState, readerReducer, type ReaderAction } from './state'
 import { t } from '../i18n'
 const FULL_REFRESH_MS = 30000
@@ -15,16 +15,66 @@ export interface ReaderCache {
 }
 // One controller per mounted route/session. Cache writes never supply reader state. All async work
 // is generation-scoped and abortable; event bursts schedule at most one rerun.
-export function createReaderController(api: ReaderApi, cable: CableClient, cableUrl: string, lifecycle: Lifecycle, id: number | null, cache?: ReaderCache) {
+export function createReaderController(api: ReaderApi, cable: CableClient, cableUrl: string, lifecycle: Lifecycle, id: number | null, cache?: ReaderCache, loadExplanations = true) {
   let state = { ...initialState }, alive = false, active = true, online = true, epoch = 0, queued = false
   let invalidations = 0, queuedFull = false, partsFetchedAt: number | null = null
   let request: AbortController | null = null, unsubscribe: (() => void) | null = null
   let polling: ReturnType<typeof setInterval> | null = null
   let requestTimeout: ReturnType<typeof setTimeout> | null = null
+  let explanationRequest: AbortController | null = null, explanationGeneration = 0
+  let explanationTimeout: ReturnType<typeof setTimeout> | null = null
   const listeners = new Set<() => void>()
   function dispatch(action: ReaderAction) { state = readerReducer(state, action); listeners.forEach(listener => listener()) }
+  function cancelExplanations() {
+    explanationGeneration++
+    explanationRequest?.abort(); explanationRequest = null
+    if (explanationTimeout) clearTimeout(explanationTimeout)
+    explanationTimeout = null
+  }
+  function save(input: SavedServiceInput) {
+    if (!cache || input.parts.length === 0) return
+    try { void Promise.resolve(cache.save(input)).catch(() => {}) }
+    catch { /* Losing saved text must never interrupt live reading. */ }
+  }
+  async function refreshExplanations(session: LiveSession, parts: LivePart[], generation: number, parent: AbortSignal) {
+    const part = currentPart(session, parts)
+    if (!loadExplanations || !part || !alive || epoch !== generation || queued) return
+    const sequence = explanationGeneration, abort = new AbortController()
+    inheritRecovery(abort.signal, parent)
+    const isCurrent = () => alive && epoch === generation && sequence === explanationGeneration && !abort.signal.aborted && !state.stale
+    explanationRequest = abort
+    const timeout = setTimeout(() => {
+      if (isCurrent()) dispatch({ type: 'explanations', explanations: [], failed: true })
+      abort.abort()
+    }, 12000)
+    explanationTimeout = timeout
+    try {
+      const result = await api.explanations(session.id, abort.signal)
+      if (!isCurrent()) return
+      // Older servers can omit ownership. Verify those responses in the background;
+      // a reading transition never waits for explanations or this compatibility check.
+      if (result.some(explanation => explanation.liturgyPartId === null)) {
+        const after = await api.session(session.id, abort.signal)
+        if (!isCurrent()) return
+        if (JSON.stringify(session) !== JSON.stringify(after)) {
+          dispatch({ type: 'stale' }); void recover('explanation_context', 'navigation'); return
+        }
+      }
+      const explanations = result.filter(e => !e.liturgyPartId || e.liturgyPartId === part.liturgyPartId)
+      dispatch({ type: 'explanations', explanations, failed: false })
+      // A subscriber can dispose or start another recovery during dispatch.
+      if (isCurrent()) save({ session, parts, explanations: { liturgyPartId: part.liturgyPartId, items: explanations } })
+    } catch {
+      if (isCurrent()) dispatch({ type: 'explanations', explanations: [], failed: true })
+    } finally {
+      clearTimeout(timeout)
+      if (explanationTimeout === timeout) explanationTimeout = null
+      if (explanationRequest === abort) explanationRequest = null
+    }
+  }
   async function recover(reason = 'retry', mode: RecoveryMode = 'full') {
     if (!alive || !active || !online) return
+    cancelExplanations()
     if (request) {
       invalidations++; queued = true; queuedFull ||= mode === 'full'
       benchmarkMark('recovery.queued', { reason }, benchmarkContext(id)); return
@@ -43,9 +93,8 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         if (alive && epoch === generation) dispatch({ type: 'recovered', now: Date.now(), snapshot: { services, session: null, parts: [], explanations: [], explanationError: false, listed: true } })
       } else {
         let fetchedParts = !reuse
-        const [services, session, loadedParts, initialExplanations] = await Promise.all([
+        const [services, session, loadedParts] = await Promise.all([
           servicesPromise, api.session(id, abort.signal), reuse ? Promise.resolve(state.parts) : api.parts(id, abort.signal),
-          api.explanations(id, abort.signal).then(explanations => ({ explanations, failed: false }), () => ({ explanations: [], failed: true })),
         ])
         if (!alive || epoch !== generation) return
         let parts = loadedParts
@@ -58,30 +107,19 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         // This read also covers navigation notifications/command acknowledgements that arrived BEFORE it.
         // A later notification or a full invalidation still requires another recovery.
         const verifying = invalidations, mustRerun = queuedFull
-        // An earlier explanation request may have run before the covered notification. Refresh it after that
-        // notification as well; anything arriving during this refresh or the session check still invalidates both.
-        const explanationResult = queued && !mustRerun
-          ? await api.explanations(id, abort.signal).then(explanations => ({ explanations, failed: false }), () => ({ explanations: [], failed: true }))
-          : initialExplanations
         const after = await api.session(id, abort.signal)
-        if (!alive || epoch !== generation || mustRerun || verifying !== invalidations) { benchmarkMark('recovery.discarded', { reason: queued ? 'queued' : 'generation' }, trace); return }
+        if (!alive || epoch !== generation || abort.signal.aborted || mustRerun || verifying !== invalidations) { benchmarkMark('recovery.discarded', { reason: queued ? 'queued' : 'generation' }, trace); return }
         if (session.id !== id || after.id !== id) throw new Error(t('errors.unexpectedSession'))
         if (JSON.stringify(session) !== JSON.stringify(after)) { benchmarkMark('recovery.discarded', { reason: 'changed_snapshot' }, trace); queued = true; dispatch({ type: 'stale' }); return }
         const part = currentPart(after, parts)
-        const explanations = explanationResult.explanations.filter(e => !e.liturgyPartId || e.liturgyPartId === part?.liturgyPartId)
         queued = false; queuedFull = false
         if (fetchedParts) partsFetchedAt = Date.now()
         benchmarkMark('recovery.accepted', { part_id: after.currentPartId, part_key: part?.key, position: after.currentPosition }, trace)
-        dispatch({ type: 'recovered', now: Date.now(), snapshot: { services, session: after, parts, explanations,
-          explanationError: explanationResult.failed, listed: services.some(s => s.id === id) } })
-        if (cache && parts.length > 0 && alive && epoch === generation && !queued) {
-          // Subscribers may dispose this generation during dispatch. Storage must
-          // never delay recovery or turn a successful live read into a failure.
-          try {
-            void Promise.resolve(cache.save({ session: after, parts,
-              explanations: explanationResult.failed ? undefined : { liturgyPartId: part?.liturgyPartId ?? null, items: explanations },
-            })).catch(() => {})
-          } catch { /* Losing saved text must never interrupt live reading. */ }
+        dispatch({ type: 'recovered', now: Date.now(), explanationsLoading: loadExplanations && !!part,
+          snapshot: { services, session: after, parts, explanations: [], explanationError: false, listed: services.some(s => s.id === id) } })
+        if (alive && epoch === generation && !queued) {
+          save({ session: after, parts, explanations: undefined })
+          void refreshExplanations(after, parts, generation, abort.signal)
         }
       }
     } catch {
@@ -99,6 +137,7 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     }
   }
   function stopResources() {
+    cancelExplanations()
     epoch++; queued = false; queuedFull = false; partsFetchedAt = null; request?.abort(); request = null
     if (requestTimeout) clearTimeout(requestTimeout)
     requestTimeout = null

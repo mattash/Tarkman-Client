@@ -25,9 +25,9 @@ These are pilot results, not a native-device measurement, SLO, or guarantee. Tim
 ## What changed
 
 - `PartList.tsx` puts the newly accepted live reading into position immediately. Manual browsing, language changes, Return to live, occurrence keys and long-distance jump support remain. This removes the transition animation; it does not alter swipe navigation.
-- `controller.ts` distinguishes navigation recovery from full recovery. For a recently loaded manifest with matching content context, navigation reads session state and explanations, then verifies session state again. It reuses the existing parts and discovery data. That preserves stable row objects and avoids repeatedly downloading the full reading text.
+- `controller.ts` distinguishes navigation recovery from full recovery. For a recently loaded manifest with matching content context, navigation reads session state, then verifies session state again. It reuses the existing parts and discovery data. That preserves stable row objects and avoids repeatedly downloading the full reading text.
 - Full refreshes remain on initial load, reconnect, foreground/network restoration, manual retry, status/explanation events and the existing 30-second poll. An expired cache, missing current occurrence or changed content context forces another parts fetch.
-- An acknowledgement/event received before final verification can be covered by that verification. Explanations are also refreshed after a covered notification, because an earlier explanation response could belong to an older part. A notification arriving during that refresh/verification, or a full invalidation, still requires a rerun. Changed before/after session state is never accepted.
+- An acknowledgement/event received before final verification can be covered by that verification. A notification arriving during verification, or a full invalidation, still requires a rerun. Changed before/after session state is never accepted.
 - `ServiceControlProvider` uses the navigation refresh after command completion; explicit Retry still forces recovery. Commands retain their existing authorization, expected-part guard and no-automatic-retry behavior.
 - `contracts.ts` compares ordered liturgies, part count, readings, options and relevant status fields to decide whether the loaded text context still matches. This is not a server content version. Signed avatar URLs and other unrelated response fields are excluded.
 - Generated `dist-*` exports are ignored by Git and lint so the benchmark's compiled JavaScript does not contaminate source checks.
@@ -59,3 +59,17 @@ This work issued 96 production transitions in total: 24 baseline, 24 scrolling-o
 Durable artifacts are in `/Users/mattash/Projects/Tarkman/output/latency-benchmark/2026-09-17/mobile-optimization/`: before, scrolling-only, rejected and final reports/raw captures; the final before/after comparison; restoration evidence; the source patch; and validation logs. `final/report.html` is the interactive comparison. `final/comparison.json` preserves all four runs, including failure metadata.
 
 Reproduction uses the existing commands in `tools/latency-benchmark/README.md`. The final export remains served at `http://localhost:8101`, pointed at production. The benchmark profile remains local and excluded from all artifacts.
+
+## Follow-up: explanations no longer block navigation
+
+The timings above precede this follow-up and do not quantify its effect. After canonical verification, the mobile reader now publishes and saves the reading immediately, then fetches explanations in an independent request. The control screen does not fetch explanations because it does not display them.
+
+Explanation requests have their own loading/error state and 12-second timeout. A new recovery, route disposal, offline transition, or background transition cancels the previous explanation request. Generation checks reject late results even when a reused Part ID appears again. Tagged responses are filtered by `liturgy_part_id`; legacy responses without ownership require another session check in the background before they can be attached. Explanation failure leaves the reading usable. The explanation sheet uses its existing localized loading message while the request is pending.
+
+Saved reading text is written before explanations complete. A successful explanation response adds the matching explanations to the saved copy; failure preserves previously saved explanations under their existing occurrence identity.
+
+Deterministic tests cover pending explanations with a usable reading, zero controller explanation requests, repeated occurrences, cancellation and late responses, independent failures/timeouts, legacy ownership checks, offline cache writes, and the loading sheet. The production gain must be measured with the existing benchmark after deployment; no new production navigation commands were issued for this follow-up.
+
+Backend follow-ups: [lightweight session state #432](https://github.com/mattash/Tarkman/issues/432) and [revisioned updates #433](https://github.com/mattash/Tarkman/issues/433).
+
+The shared Rails reading-order cache change is in [backend PR #434](https://github.com/mattash/Tarkman/pull/434). A Chrome fixture verified zero controller explanation requests at 320, 390, 820, and 1200 px while retaining the stable connection-status layout. All HTTP and WebSocket traffic in that check was mocked. Background explanation fetches retain the original recovery correlation in the existing benchmark.
