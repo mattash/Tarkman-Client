@@ -9,7 +9,7 @@ import { TextField } from '../components/TextField'
 import { AppModal } from '../components/AppModal'
 import { ReadingFontContext } from '../design/readingFont'
 import { colors } from '../design/tokens'
-import { parseMarkdown } from '../design/markdown'
+import { parseMarkdown, parseMarkdownBlocks } from '../design/markdown'
 import { prayer, marksSample } from '../design/samples'
 
 const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider scheme="light"><ReadingFontContext.Provider value={true}>{children}</ReadingFontContext.Provider></ThemeProvider>
@@ -56,6 +56,73 @@ describe('native primitives', () => {
   })
   it('breaks paragraphs once when the source uses Windows line endings', async () => {
     expect(parseMarkdown('First.\r\n\r\nSecond.').map(run => run.text).join('')).toBe('First.\n\nSecond.')
+  })
+  it('parses the agreed block subset with inline marks inside every block', () => {
+    expect(parseMarkdownBlocks('One.\r\n\r\nTwo.')).toEqual([
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: 'One.' }] },
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: 'Two.' }] },
+    ])
+    expect(parseMarkdownBlocks('## The *hymn*\n\n- one\n- two *marked*\n\n2. two\n3. three\n\n> quoted\n> more')).toEqual([
+      { kind: 'heading', level: 2, runs: [{ kind: 'plain', text: 'The ' }, { kind: 'italic', text: 'hymn' }] },
+      { kind: 'list', ordered: false, start: 0, items: [[{ kind: 'plain', text: 'one' }], [{ kind: 'plain', text: 'two ' }, { kind: 'italic', text: 'marked' }]] },
+      { kind: 'list', ordered: true, start: 2, items: [[{ kind: 'plain', text: 'two' }], [{ kind: 'plain', text: 'three' }]] },
+      { kind: 'quote', runs: [{ kind: 'plain', text: 'quoted\nmore' }] },
+    ])
+  })
+  it('keeps non-agreed block markup literal and folds deeper headings', () => {
+    expect(parseMarkdownBlocks('#NoSpace\n\n-NoBullet\n\n\\# Escaped\n\n| table |')).toEqual([
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: '#NoSpace' }] },
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: '-NoBullet' }] },
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: '# Escaped' }] },
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: '| table |' }] },
+    ])
+    expect(parseMarkdownBlocks('Para\n\n```\n# not a heading\n\n- not a list\n```\n\nTail')).toEqual([
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: 'Para' }] },
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: '```\n# not a heading\n\n- not a list\n```' }] },
+      { kind: 'paragraph', runs: [{ kind: 'plain', text: 'Tail' }] },
+     ])
+     expect(parseMarkdownBlocks('#### Deepest')).toEqual([{ kind: 'heading', level: 3, runs: [{ kind: 'plain', text: 'Deepest' }] }])
+  })
+  it('renders explanation blocks through the reading primitives, keeping selection and the reading font', async () => {
+    const text = '# Top title\n\nIntro line.\n\n## The *hymn*\n\n- one\n- two\n\n1. first\n2. second\n\n> Quoted words'
+    await render(<LiturgyText variant="explanation" text={text} blocks />, { wrapper })
+    const intro = screen.getByText('Intro line.')
+    expect(intro.props.selectable).toBe(true)
+    expect(intro.props.allowFontScaling).toBe(true)
+    expect(screen.getByRole('header', { name: 'The hymn' })).toHaveStyle({ fontFamily: 'SourceSerif4-Semibold', fontWeight: '400' })
+    // The h1 cap keeps it above the uncapped body at the OS maximum: 23pt × 2.4 > 17pt × ~3.1.
+    expect(screen.getByRole('header', { name: 'Top title' }).props.maxFontSizeMultiplier).toBe(2.4)
+    expect(screen.getByRole('header', { name: 'The hymn' }).props.maxFontSizeMultiplier).toBeUndefined()
+    expect(screen.getAllByText('•')).toHaveLength(2)
+    expect(screen.getAllByText('•')[0].props.selectable).toBe(false)
+    expect(screen.getByText('1.')).toBeOnTheScreen()
+    expect(screen.getByText('2.')).toBeOnTheScreen()
+    expect(screen.getByText('Quoted words')).toBeOnTheScreen()
+    // A single paragraph stays on the original inline path.
+    await render(<LiturgyText variant="explanation" text="Plain *emphasis* only." blocks />, { wrapper })
+    expect(screen.getByText('Plain emphasis only.').props.selectable).toBe(true)
+  })
+  it('applies the reading size choice to every paragraph-shaped block', async () => {
+    await render(<LiturgyText variant="liturgy" readingSize="larger" blocks text={'Para\n\n> Quoted\n\n- item'} />, { wrapper })
+    expect(screen.getByText('Para')).toHaveStyle({ fontSize: 30, lineHeight: 46 })
+    expect(screen.getByText('Quoted')).toHaveStyle({ fontSize: 30, lineHeight: 46 })
+    expect(screen.getByText('item')).toHaveStyle({ fontSize: 30, lineHeight: 46 })
+  })
+  it('caps title and heading growth at 1.6× while other text keeps scaling fully', async () => {
+    await render(<>
+      <AppText variant="title">Divine Liturgy</AppText>
+      <AppText variant="heading">The service</AppText>
+      <AppText variant="body">Plain body</AppText>
+      <AppText variant="explanation">Explanation body</AppText>
+      <AppText variant="tab" maxFontSizeMultiplier={1.6}>Services</AppText>
+      <AppText variant="title" maxFontSizeMultiplier={1.2}>Custom cap</AppText>
+    </>, { wrapper })
+    expect(screen.getByText('Divine Liturgy').props.maxFontSizeMultiplier).toBe(1.6)
+    expect(screen.getByText('The service').props.maxFontSizeMultiplier).toBe(1.6)
+    expect(screen.getByText('Plain body').props.maxFontSizeMultiplier).toBeUndefined()
+    expect(screen.getByText('Explanation body').props.maxFontSizeMultiplier).toBeUndefined()
+    expect(screen.getByText('Services').props.maxFontSizeMultiplier).toBe(1.6)
+    expect(screen.getByText('Custom cap').props.maxFontSizeMultiplier).toBe(1.2)
   })
   it('preserves paragraphs, marks, selection, language and text scaling', async () => {
     const text = prayer.grabar + '\n\n' + marksSample

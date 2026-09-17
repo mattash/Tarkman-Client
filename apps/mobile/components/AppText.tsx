@@ -18,10 +18,15 @@ export function AppText({ variant = 'body', language = 'en', tone = 'default', s
   const armenian = language === 'grabar' && fontReady
   const semibold = variant === 'title' || variant === 'heading' || variant === 'screenTitle' || variant === 'feature' || variant === 'rowTitle'
   const literary = (semibold || variant === 'liturgy' || variant === 'explanation') && fontReady
+  // Title and heading stop growing at 1.6× so single words keep fitting the width at the largest
+  // accessibility sizes; body, reading and explanation text stay fully scalable (#91). Past that
+  // point body text overtakes them on purpose, as iOS large titles do: reading content dominates.
+  // Authored content that must keep its hierarchy overrides this with its own cap (LiturgyText h1).
+  const maxFont = props.maxFontSizeMultiplier ?? (variant === 'title' || variant === 'heading' ? 1.6 : undefined)
   // This React Native/iOS runtime keeps old text frames when the content-size
   // category changes behind a presented sheet. Refresh only the native Text
   // leaf; parent controls, inputs, lists, scroll position and reader state stay mounted.
-  return <Text key={Platform.OS === 'ios' ? fontScale : 'native'} {...props} allowFontScaling accessibilityLanguage={languageTags[language]}
+  return <Text key={Platform.OS === 'ios' ? fontScale : 'native'} {...props} allowFontScaling maxFontSizeMultiplier={maxFont} accessibilityLanguage={languageTags[language]}
     {...(Platform.OS === 'web' ? { lang: languageTags[language] } : {})}
     accessibilityRole={props.accessibilityRole ?? (variant === 'title' || variant === 'heading' || variant === 'screenTitle' || variant === 'feature' ? 'header' : undefined)}
     style={[type, {
