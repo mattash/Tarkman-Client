@@ -21,5 +21,5 @@ export function useReader(endpoints: Endpoints, id: number | null) {
       connected: state.connected, following: state.following, failed: !!state.error }, trace)
   }, [id, state])
   const saved = useSavedService(id)
-  return { saved, state, retry: controller.retry, dispatch: controller.dispatch }
+  return { saved, state, retry: controller.retry, refreshAfterCommand: controller.refreshAfterCommand, dispatch: controller.dispatch }
 }

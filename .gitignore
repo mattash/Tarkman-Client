@@ -8,8 +8,7 @@ coverage
 
 # Production
 dist
-/apps/mobile/dist-benchmark/
-/apps/mobile/dist-fixture/
+/apps/mobile/dist-*/
 build
 
 # Misc

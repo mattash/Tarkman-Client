@@ -155,7 +155,7 @@ describe('return to live', () => {
 it('opens a part from the reading list', async () => {
   const session = normalizeSession({ session: { id: 9, liturgy: 'Divine Liturgy', current_part_id: 1 } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, position: 1, role: 'Choir', en: 'Lord, have mercy.' } }, { part: { id: 52, position: 46, role: 'deacon', posture: 'stand', en: 'Alleluia. Stand up' } }] })
-  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, session, parts }, retry: jest.fn(), dispatch: jest.fn() })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, session, parts }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
   await render(<SessionReader endpoints={{ api: 'https://api.test', cable: 'wss://api.test/cable' }} id={9} back={jest.fn()} />, { wrapper })
   await fireEvent.press(screen.getByLabelText('deacon'))
   // Role and posture travel with the route; position does not, since readers never see it.
@@ -170,7 +170,7 @@ it.each([-80, -220])('opens the swiped part, not the live part, after a %s point
   clearSwipeableMocks()
   const session = normalizeSession({ session: { id: 9, liturgy: 'Divine Liturgy', current_part_id: 1 } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, position: 1, role: 'Choir', en: 'Lord, have mercy.' } }, { part: { id: 52, position: 46, role: 'deacon', en: 'Alleluia. Stand up' } }] })
-  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, session, parts }, retry: jest.fn(), dispatch: jest.fn() })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, session, parts }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
   await render(<SessionReader endpoints={{ api: 'https://api.test', cable: 'wss://api.test/cable' }} id={9} back={jest.fn()} />, { wrapper })
   const instance = findSwipeable('swipe-part:52:liturgy:null:position:46-gesture')
   // The row has no measured width here, so the threshold is the 144px floor → 2.0 progress.

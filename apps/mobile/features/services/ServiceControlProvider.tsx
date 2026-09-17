@@ -48,8 +48,8 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
   const { authorizedFetch } = useAuth()
   const config = readerConfig()
   const valid = Number.isInteger(sessionId) && sessionId > 0
-  const { state, retry } = useReader(config.endpoints ?? { api: '', cable: '' }, valid ? sessionId : null)
-  const controls = useControls(retry)
+  const { state, retry, refreshAfterCommand } = useReader(config.endpoints ?? { api: '', cable: '' }, valid ? sessionId : null)
+  const controls = useControls(refreshAfterCommand)
   const [sheetOpen, setSheetOpen] = useState(false)
   // The snapshot a command was sent against, so a refused move names where the service is only once the screen has caught up.
   const [sentAgainst, setSentAgainst] = useState<number | null>(null)

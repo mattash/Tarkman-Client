@@ -13,6 +13,8 @@ export interface LiveSession {
   currentRole: string | null
   /** Published by the API for churches that have been geocoded; absent otherwise. */
   latitude: number | null; longitude: number | null
+  /** Content-related session fields, not a server revision. Reuse is bounded by a full-refresh interval. */
+  partsContext: string | null
 }
 export interface LivePart {
   id: number; key: string; liturgyId: number | null; liturgyPartId: number | null
@@ -40,7 +42,16 @@ export function normalizeSession(value: unknown): LiveSession {
     currentPartId: positiveId(s.current_part_id), currentLiturgyId: positiveId(s.current_liturgy_id),
     currentPosition: positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
     date: text(s.date), currentRole: text(s.current_part_role)?.trim() || null,
-    latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180) }
+    latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180), partsContext: partsContext(s) }
+}
+function partsContext(session: Record<string, unknown>): string | null {
+  // Older/incomplete API responses cannot establish that the loaded manifest still belongs to this session.
+  if (!Array.isArray(session.liturgies) || !session.liturgies.length ||
+      !Number.isSafeInteger(session.num_of_parts) || Number(session.num_of_parts) < 1) return null
+  // Compare content inputs, not unrelated metadata: church_avatar is a signed URL that changes between reads.
+  // This is deliberately not an arbitrary snapshot hash or a substitute for a server content revision.
+  return JSON.stringify([session.id, session.date, session.liturgy_id, session.liturgies, session.num_of_parts,
+    session.readings, session.options, session.status, session.status_message])
 }
 /** Only a real, in-range number counts; anything else means the church has no published position. */
 function coordinate(value: unknown, limit: number): number | null {

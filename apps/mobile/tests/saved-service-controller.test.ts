@@ -52,10 +52,11 @@ it('does not save a response for a different session', async () => {
 it.each(['torn', 'event'] as const)('T-06: discards %s snapshots and saves only the consistent rerun', async reason => {
   const first = deferred<typeof session>(), rerun = deferred<typeof session>()
   const changed = { ...session, currentPartId: 2 }
-  api.session.mockReturnValueOnce(first.promise).mockResolvedValueOnce(reason === 'torn' ? changed : session).mockReturnValueOnce(rerun.promise)
-  const { controller, stop } = setup()
+  api.session.mockResolvedValueOnce(session).mockReturnValueOnce(first.promise).mockReturnValueOnce(rerun.promise)
+  const { controller, stop } = setup(); await flush()
+  // The notification arrives after final verification started, so this snapshot cannot cover it.
   if (reason === 'event') callbacks.received({ event: 'part_change', data: { session: 7 } })
-  first.resolve(session); await flush()
+  first.resolve(reason === 'torn' ? changed : session); await flush()
   expect(cache.save).not.toHaveBeenCalled(); expect(controller.getSnapshot().stale).toBe(true)
   rerun.resolve(session); await flush()
   expect(cache.save).toHaveBeenCalledTimes(1); stop()
