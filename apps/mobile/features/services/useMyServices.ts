@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isUnauthorized, type AuthContextValue } from '../auth/AuthProvider'
 import { fetchMyServices, type MyService } from './api'
+import { t } from '../i18n'
 
 interface ServicesState {
   services: MyService[]
@@ -51,7 +52,7 @@ export function useMyServices(authorizedFetch: AuthContextValue['authorizedFetch
       }
       if (controller.signal.aborted) return
       if (!replacing && page.nextCursor !== null && seenCursors.current.has(page.nextCursor)) {
-        throw new Error('Unexpected services pagination.')
+        throw new Error(t('errors.unexpectedPagination'))
       }
       // Failed requests preserve the chain; only an accepted replacement resets it.
       if (replacing) seenCursors.current = new Set()
@@ -62,7 +63,7 @@ export function useMyServices(authorizedFetch: AuthContextValue['authorizedFetch
     } catch (failure) {
       // The signed-in layout handles expired authentication.
       if (controller.signal.aborted || isUnauthorized(failure)) return
-      const message = failure instanceof Error ? failure.message : 'Could not load your services. Please retry.'
+      const message = failure instanceof Error ? failure.message : t('myServices.loadFailed')
       update(replacing ? { error: message } : { loadMoreError: message })
     } finally {
       if (active.current === controller) {

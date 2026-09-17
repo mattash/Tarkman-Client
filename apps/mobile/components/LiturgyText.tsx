@@ -5,6 +5,7 @@ import { useTheme } from '../design/ThemeProvider'
 import { useReadingFont } from '../design/readingFont'
 import { readingSizes, spacing, type ReadingSize } from '../design/tokens'
 import { AppText, type AppTextProps } from './AppText'
+import { useI18n } from '../features/i18n'
 
 export interface LiturgyTextProps extends Omit<AppTextProps, 'children'> { text: string | null | undefined; readingSize?: ReadingSize; compactStanzas?: boolean }
 export function LiturgyText({ text, selectable = true, language = 'en', tone = 'default', readingSize = 'standard', compactStanzas = false, variant = 'liturgy', style, ...props }: LiturgyTextProps) {
@@ -12,6 +13,7 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
   const [failedText, setFailedText] = useState<string | null>(null)
   const linkFailed = failedText !== null && failedText === text
   const { colors } = useTheme()
+  const { t } = useI18n()
   const { fontScale } = useWindowDimensions()
   const fontReady = useReadingFont()
   const missing = text == null || text.trim().length === 0
@@ -25,11 +27,11 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
   }
   // Nested native Text preserves paragraph breaks and selection without a DOM renderer.
   return <><AppText {...props} variant={variant} style={[variant === 'liturgy' ? readingSizes[readingSize] : undefined, style]} selectable={selectable} language={missing ? 'en' : language} tone={missing ? 'muted' : tone}>
-    {missing ? 'Translation not available.' : parseMarkdown(text!).map((run, index) => run.kind === 'plain' ? run.text :
+    {missing ? t('liturgyText.translationUnavailable') : parseMarkdown(text!).map((run, index) => run.kind === 'plain' ? run.text :
       <Text key={index} allowFontScaling
         {...(run.kind === 'link' && Platform.OS === 'web' ? { href: run.url, hrefAttrs: { target: '_blank', rel: 'noopener noreferrer' } } : {})} accessibilityRole={run.kind === 'link' ? 'link' : undefined}
         accessibilityLabel={run.kind === 'link' ? `${run.text} (${run.url})` : undefined}
-        accessibilityHint={run.kind === 'link' ? 'Opens an HTTPS website in your browser' : undefined}
+        accessibilityHint={run.kind === 'link' ? t('liturgyText.linkHint') : undefined}
         onPress={run.kind === 'link' && Platform.OS !== 'web' ? () => {
           if (run.url && safeHttpsUrl(run.url)) Linking.openURL(run.url).catch(() => setFailedText(text ?? null))
         } : undefined}
@@ -44,5 +46,5 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
           }
           : run.kind === 'code' ? { backgroundColor: colors.subtle }
           : { color: colors.primary, textDecorationLine: 'underline' }}>{run.text}</Text>)}
-  </AppText>{linkFailed && <AppText variant="caption" accessibilityRole="alert">Could not open the link. Try the link again.</AppText>}</>
+  </AppText>{linkFailed && <AppText variant="caption" accessibilityRole="alert">{t('liturgyText.linkFailed')}</AppText>}</>
 }

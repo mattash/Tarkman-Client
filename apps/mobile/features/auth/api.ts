@@ -1,6 +1,7 @@
 import type { AuthResponse, LoginCredentials } from '@tarkman/core'
 import { record } from '../live/contracts'
 import { normalizeAuth } from './session'
+import { t } from '../i18n'
 
 export interface AuthApi {
   signIn(credentials: LoginCredentials): Promise<AuthResponse>
@@ -9,8 +10,6 @@ export interface AuthApi {
 }
 
 const TIMEOUT_MS = 15000
-const CONNECTION_ERROR = 'Could not reach Tarkman. Check your connection and try again.'
-const GENERIC_ERROR = 'Could not sign in. Please try again.'
 
 export function createAuthApi(base: string, request: typeof fetch = fetch): AuthApi {
   async function send(path: string, init: RequestInit): Promise<Response> {
@@ -29,19 +28,19 @@ export function createAuthApi(base: string, request: typeof fetch = fetch): Auth
       try {
         response = await send('/users/sign_in', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ user: { email, password } }) })
       } catch {
-        throw new Error(CONNECTION_ERROR)
+        throw new Error(t('signIn.unreachable'))
       }
       const data = record(await response.json().catch(() => null))
-      if (!response.ok) throw new Error(response.status === 401 ? serverMessage(data) ?? 'Email or password is incorrect.' : GENERIC_ERROR)
+      if (!response.ok) throw new Error(response.status === 401 ? serverMessage(data) ?? t('signIn.incorrect') : t('signIn.failed'))
       const header = response.headers.get('Authorization')
       const auth = normalizeAuth({ ...data, token: data.token ?? (header?.startsWith('Bearer ') ? header.slice(7) : undefined) })
-      if (!auth) throw new Error(GENERIC_ERROR)
+      if (!auth) throw new Error(t('signIn.failed'))
       return auth
     },
     async signOut(token) {
       const response = await send('/users/sign_out', { method: 'DELETE', headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } })
       // A 401 means the token is already expired or revoked.
-      if (!response.ok && response.status !== 401) throw new Error('Could not revoke the sign-in.')
+      if (!response.ok && response.status !== 401) throw new Error(t('signIn.revokeFailed'))
     },
   }
 }

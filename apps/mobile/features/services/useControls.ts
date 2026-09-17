@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { isUnauthorized } from '../auth/AuthProvider'
 import { lifecycle } from '../live/lifecycle'
 import { isControlForbidden, isStalePart } from './controls'
+import { t } from '../i18n'
 
 export interface ControlsState {
   running: string | null; error: string | null; online: boolean
@@ -13,7 +14,6 @@ export interface ControlsState {
   forbidden: boolean
 }
 
-const OFFLINE_ERROR = 'You are offline. Reconnect before changing the service.'
 
 /**
  * Runs one control command at a time and refuses to send any while offline, so a command cannot
@@ -36,7 +36,7 @@ export function useControls(refresh: () => void) {
   /** Resolves true only when the server accepted the command. */
   const run = useCallback(async (name: string, command: () => Promise<void>): Promise<boolean> => {
     if (running.current) return false
-    if (!online.current) { setState(current => ({ ...current, error: OFFLINE_ERROR, failed: name, failure: 'offline' })); return false }
+    if (!online.current) { setState(current => ({ ...current, error: t('control.offline'), failed: name, failure: 'offline' })); return false }
     running.current = name
     setState(current => ({ ...current, running: name, error: null, failed: null, failure: null }))
     try {
@@ -48,7 +48,7 @@ export function useControls(refresh: () => void) {
       // An ended sign-in is handled by the signed-in layout, which returns to the sign-in screen.
       // A refused stale move means this screen is behind, so pull the current state before the next command.
       if (isStalePart(failure)) refresh()
-      const message = isUnauthorized(failure) ? null : failure instanceof Error ? failure.message : 'Could not update the service. Please try again.'
+      const message = isUnauthorized(failure) ? null : failure instanceof Error ? failure.message : t('control.updateFailed')
       const kind = message === null ? null : isStalePart(failure) ? 'stale' : isControlForbidden(failure) ? 'forbidden' : 'other'
       if (mounted.current) setState(current => ({ ...current, running: null, error: message, failed: message === null ? null : name, failure: kind,
         forbidden: current.forbidden || kind === 'forbidden' }))

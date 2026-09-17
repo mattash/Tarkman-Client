@@ -4,6 +4,7 @@ import { useTheme } from '../design/ThemeProvider'
 import { radii, touchTarget } from '../design/tokens'
 import { AppIcon } from './AppIcon'
 import { AppText } from './AppText'
+import { useI18n } from '../features/i18n'
 
 /** A tappable service summary: optional live dot, serif title, one line of context, and a chevron. */
 export function ServiceRow({ title, subtitle, live = false, accessibilityLabel, onPress, testID }: {
@@ -30,11 +31,12 @@ export function LiveDot() {
 }
 
 /** "Live now" as text on the success pair; the dot is decoration and hidden from assistive technology. */
-export function LivePill({ label = 'Live now' }: { label?: string }) {
+export function LivePill({ label }: { label?: string }) {
   const { colors } = useTheme()
+  const { t } = useI18n()
   return <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 27, paddingHorizontal: 11,
     borderRadius: 999, backgroundColor: colors.successSurface }}>
     <LiveDot />
-    <AppText variant="caption" style={{ color: colors.success, fontWeight: '600' }}>{label}</AppText>
+    <AppText variant="caption" style={{ color: colors.success, fontWeight: '600' }}>{label ?? t('common.liveNow')}</AppText>
   </View>
 }

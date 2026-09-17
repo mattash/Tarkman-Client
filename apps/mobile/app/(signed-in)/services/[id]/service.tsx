@@ -13,10 +13,10 @@ import { useTheme } from '../../../../design/ThemeProvider'
 import { spacing } from '../../../../design/tokens'
 import type { LivePart } from '../../../../features/live/contracts'
 import { resolveControlLanguages, usePreferences } from '../../../../features/preferences/PreferencesProvider'
-import { STATUS_LABELS } from '../../../../features/services/api'
 import { ControlButton } from '../../../../features/services/ControlButton'
 import { OpeningLine } from '../../../../features/services/OpeningLine'
 import { STOP_ANNOUNCEMENT, useServiceControl } from '../../../../features/services/ServiceControlProvider'
+import { statusName, useI18n } from '../../../../features/i18n'
 
 // KnownSessionStatus is one enum answering two questions, so the sheet groups them apart.
 const DOING: KnownSessionStatus[] = ['active', 'paused']
@@ -26,6 +26,7 @@ const INSTEAD: KnownSessionStatus[] = ['showing_gospel', 'showing_epistle', 'sho
 export default function ServiceSheet() {
   const { sessionId, state, controls, commands, part, offline, announcing, expected, run, holds, errorMessage, setSheetOpen } = useServiceControl()
   const { colors } = useTheme()
+  const { t } = useI18n()
   const { preferences } = usePreferences()
   // Previews come from the operator's first control language, the one they read from.
   const controlLanguages = resolveControlLanguages(preferences)
@@ -66,17 +67,17 @@ export default function ServiceSheet() {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.lg, paddingBottom: spacing.sm,
       paddingHorizontal: spacing.lg, backgroundColor: colors.overlay }}>
       {page === 'parts' && <View style={{ marginLeft: -spacing.sm }}>
-        <AppButton variant="quiet" icon="back" iconOnly accessibilityLabel="Back to Service" onPress={() => setPage('service')}>Service</AppButton>
+        <AppButton variant="quiet" icon="back" iconOnly accessibilityLabel={t('serviceSheet.backToService')} onPress={() => setPage('service')}>{t('common.service')}</AppButton>
       </View>}
-      <AppText variant="heading" style={{ flex: 1 }}>{page === 'parts' ? 'Go to another part' : 'Service'}</AppText>
-      <AppButton variant="quiet" accessibilityLabel={`Close ${page === 'parts' ? 'Go to another part' : 'Service'}`} onPress={close}>Done</AppButton>
+      <AppText variant="heading" style={{ flex: 1 }}>{page === 'parts' ? t('serviceSheet.goToAnother') : t('common.service')}</AppText>
+      <AppButton variant="quiet" accessibilityLabel={t('common.closeTitle', { title: page === 'parts' ? t('serviceSheet.goToAnother') : t('common.service') })} onPress={close}>{t('common.done')}</AppButton>
     </View>
     <View style={{ gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
-      {offline && <Notice tone="neutral">You are offline. Reconnect before changing the service.</Notice>}
+      {offline && <Notice tone="neutral">{t('control.offline')}</Notice>}
       {page === 'parts' ? state.parts.map(item => <PartRow key={item.key} item={item} current={item.key === part?.key} language={controlLanguages[0]} selected={controlLanguages}
         failure={failureUnder([item.key])} {...holds(item.key)}
         onPress={async () => { if (await run(item.key, () => commands.goToPart(sessionId, item.id, expected))) close() }} />) : <>
-        <SheetSection label="WHAT THE CONGREGATION SEES">
+        <SheetSection label={t('serviceSheet.congregationSees')}>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {DOING.map(item => <StatusButton key={item} status={item} height={52} selected={status === item} {...holds(item)} onPress={() => { void setStatus(item) }} />)}
           </View>
@@ -86,14 +87,14 @@ export default function ServiceSheet() {
           </View>
           {failureUnder(INSTEAD)}
         </SheetSection>
-        <SheetSection label="ANNOUNCEMENT" divided>
+        <SheetSection label={t('serviceSheet.announcement')} divided>
           {announcing ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md }}>
             <AppText style={{ flex: 1, minWidth: 160 }}>{state.session?.message ?? ''}</AppText>
-            <ControlButton label="Stop showing" height={48} labelVariant="label" {...holds(STOP_ANNOUNCEMENT)} onPress={stopShowing} />
+            <ControlButton label={t('serviceSheet.stopShowing')} height={48} labelVariant="label" {...holds(STOP_ANNOUNCEMENT)} onPress={stopShowing} />
           </View> : <>
-            <TextField label="Message" placeholder="Type a message for the congregation…" value={message} onChangeText={setMessage}
+            <TextField label={t('serviceSheet.message')} placeholder={t('serviceSheet.messagePlaceholder')} value={message} onChangeText={setMessage}
               editable={!offline} multiline returnKeyType="done" />
-            <ControlButton variant="primary" label="Show this" height={52} unavailable={message.trim().length === 0} {...holds('showing_custom')}
+            <ControlButton variant="primary" label={t('serviceSheet.showThis')} height={52} unavailable={message.trim().length === 0} {...holds('showing_custom')}
               onPress={async () => {
                 // Closes on send, not on keystroke.
                 if (await run('showing_custom', () => commands.setStatus(sessionId, 'showing_custom', message.trim()))) close()
@@ -101,9 +102,9 @@ export default function ServiceSheet() {
           </>}
           {failureUnder(['showing_custom', STOP_ANNOUNCEMENT])}
         </SheetSection>
-        <Pressable accessibilityRole="button" accessibilityHint="Shows every part, to move the service to one of them." onPress={() => setPage('parts')}
+        <Pressable accessibilityRole="button" accessibilityHint={t('serviceSheet.partsHint')} onPress={() => setPage('parts')}
           style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: spacing.sm, marginTop: spacing.md }}>
-          <AppText variant="rowTitle" style={{ flex: 1 }}>Go to another part</AppText>
+          <AppText variant="rowTitle" style={{ flex: 1 }}>{t('serviceSheet.goToAnother')}</AppText>
           <AppIcon name="next" color={colors.muted} />
         </Pressable>
       </>}
@@ -120,7 +121,7 @@ function SheetSection({ label, divided = false, children }: { label: string; div
 }
 
 function StatusButton({ status, height, selected, sending, held, onPress }: { status: KnownSessionStatus; height: number; selected: boolean; sending: boolean; held: boolean; onPress(): void }) {
-  return <ControlButton label={STATUS_LABELS[status]} height={height} flex={height === 52 ? 1 : undefined} labelVariant="label"
+  return <ControlButton label={statusName(status)} height={height} flex={height === 52 ? 1 : undefined} labelVariant="label"
     selected={selected} sending={sending} held={held} onPress={onPress} />
 }
 
@@ -128,13 +129,14 @@ function PartRow({ item, current, language, selected, failure, sending, held, on
   item: LivePart; current: boolean; language: Language; selected: readonly Language[]; failure: ReactNode; sending: boolean; held: boolean; onPress(): void
 }) {
   const { colors } = useTheme()
+  const { t } = useI18n()
   return <View style={{ gap: spacing.sm, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.divider }}>
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md }}>
       <View style={{ flex: 1, minWidth: 160, gap: 2 }}>
-        <AppText variant="label" tone={current ? 'accent' : 'default'}>{`${item.position} · ${capitalized(item.role)}${current ? ' · Current part' : ''}`}</AppText>
+        <AppText variant="label" tone={current ? 'accent' : 'default'}>{t(current ? 'serviceSheet.currentPartRow' : 'serviceSheet.partRow', { position: item.position, role: capitalized(item.role) })}</AppText>
         <OpeningLine part={item} language={language} selected={selected} numberOfLines={2} />
       </View>
-      <ControlButton label="Go here" accessibilityLabel={`Go to part ${item.position}`} height={48} labelVariant="label"
+      <ControlButton label={t('serviceSheet.goHere')} accessibilityLabel={t('serviceSheet.goToPartLabel', { position: item.position })} height={48} labelVariant="label"
         sending={sending} held={held} unavailable={current} onPress={onPress} />
     </View>
     {failure}

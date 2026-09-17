@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { ScrollView, View, useWindowDimensions } from 'react-native'
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
+import { AppIcon } from '../../components/AppIcon'
 import { AppText } from '../../components/AppText'
 import { LanguageSelectionRow } from '../../components/LanguageSelectionRow'
 import { ScreenHeader } from '../../components/ScreenHeader'
@@ -11,18 +12,21 @@ import { ServiceRow } from '../../components/ServiceRow'
 import { StatusPill } from '../../components/StatusPill'
 import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
-import { radii, spacing } from '../../design/tokens'
+import { radii, spacing, touchTarget } from '../../design/tokens'
 import { useAuth } from '../auth/AuthProvider'
 import { showsTestErrorControls, TestErrorControls } from '../observability/TestErrorControls'
 import { observabilityConfig } from '../observability/sentry'
 import { clearSavedService } from '../offline/savedServiceStore'
 import { MAX_LANGUAGES, usePreferences } from '../preferences/PreferencesProvider'
+import { availableInterfaceLanguages, includesDraftLanguages, INTERFACE_CATALOGS, useI18n } from '../i18n'
 
 /** Reading choices first; the operator account sits last, the only place sign-in appears. */
 export function Settings() {
-  const { preferences, setAppearance, setReadingSize, setSelectedLanguages, clear } = usePreferences()
+  const { preferences, setAppearance, setReadingSize, setSelectedLanguages, setInterfaceLanguage, clear } = usePreferences()
   const { state, signOut } = useAuth()
   const { fontScale } = useWindowDimensions()
+  const { t } = useI18n()
+  const interfaceLanguages = availableInterfaceLanguages(includesDraftLanguages())
   const [forgetting, setForgetting] = useState(false)
   const [forgettingSavedCopy, setForgettingSavedCopy] = useState(false)
   const [lastLanguage, setLastLanguage] = useState(false)
@@ -35,59 +39,82 @@ export function Settings() {
   }
   return <ScrollView testID="settings" contentContainerStyle={{ paddingTop: 6, paddingHorizontal: page, paddingBottom: spacing.xl }}>
     <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center' }}>
-      <ScreenHeader title="Settings" />
+      <ScreenHeader title={t('common.settings')} />
 
-      <Section title="Reading">
-        <AppText variant="label">Appearance</AppText>
-        <SegmentedControl label="Appearance" value={preferences.appearance} onChange={setAppearance}
-          options={[{ value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
-        <AppText variant="caption" tone="muted">System follows this device’s light or dark appearance.</AppText>
-        <AppText variant="label" style={{ marginTop: spacing.sm }}>Reading size</AppText>
-        <SegmentedControl label="Reading size" value={preferences.readingSize} onChange={setReadingSize}
-          options={[{ value: 'standard', label: 'Standard' }, { value: 'larger', label: 'Larger' }, { value: 'extraLarge', label: 'Extra large' }]} />
-        <AppText variant="caption" tone="muted">Reading size adds to your device’s text size setting.</AppText>
+      <Section title={t('settings.reading')}>
+        <AppText variant="label">{t('readingPreferences.appearance')}</AppText>
+        <SegmentedControl label={t('readingPreferences.appearance')} value={preferences.appearance} onChange={setAppearance}
+          options={[{ value: 'system', label: t('readingPreferences.system') }, { value: 'light', label: t('readingPreferences.light') }, { value: 'dark', label: t('readingPreferences.dark') }]} />
+        <AppText variant="caption" tone="muted">{t('readingPreferences.systemHint')}</AppText>
+        <AppText variant="label" style={{ marginTop: spacing.sm }}>{t('readingPreferences.readingSize')}</AppText>
+        <SegmentedControl label={t('readingPreferences.readingSize')} value={preferences.readingSize} onChange={setReadingSize}
+          options={[{ value: 'standard', label: t('readingPreferences.standard') }, { value: 'larger', label: t('readingPreferences.larger') }, { value: 'extraLarge', label: t('readingPreferences.extraLarge') }]} />
+        <AppText variant="caption" tone="muted">{t('readingPreferences.readingSizeHint')}</AppText>
       </Section>
 
-      <Section title="Reading languages">
-        <AppText variant="caption" tone="muted">{`Choose up to ${MAX_LANGUAGES} languages for the reader’s quick switcher. On a wide screen they are shown side by side.`}</AppText>
-        {lastLanguage && <StatusPill tone="danger" label="Keep at least one reading language." />}
+      <Section title={t('settings.readingLanguages')}>
+        <AppText variant="caption" tone="muted">{t('settings.chooseUpTo', { count: MAX_LANGUAGES })}</AppText>
+        {lastLanguage && <StatusPill tone="danger" label={t('common.keepOneReadingLanguage')} />}
         {sampleLanguages.map(item => <LanguageSelectionRow key={item.value} language={item.value} label={item.label} multiple
           disabled={!preferences.selectedLanguages.includes(item.value) && preferences.selectedLanguages.length >= MAX_LANGUAGES}
           selected={preferences.selectedLanguages.includes(item.value)} onPress={() => toggle(item.value)} />)}
       </Section>
 
-      <Section title="Reading choices">
+      {/* Hidden until a second language ships, so a build with only English has nothing to choose. */}
+      {interfaceLanguages.length > 1 && <Section title={t('settings.interfaceLanguage')}>
+        <AppText variant="caption" tone="muted">{t('settings.interfaceHint')}</AppText>
+        <ChoiceRow label={t('settings.interfaceSystem')} selected={!preferences.interfaceLanguage} onPress={() => setInterfaceLanguage('system')} />
+        {interfaceLanguages.map(language => <ChoiceRow key={language} lang={language} selected={preferences.interfaceLanguage === language}
+          label={INTERFACE_CATALOGS[language].reviewed ? INTERFACE_CATALOGS[language].nativeName : t('settings.draftLanguage', { language: INTERFACE_CATALOGS[language].nativeName })}
+          onPress={() => setInterfaceLanguage(language)} />)}
+        {interfaceLanguages.some(language => !INTERFACE_CATALOGS[language].reviewed) && <AppText variant="caption" tone="muted">{t('settings.draftNote')}</AppText>}
+      </Section>}
+
+      <Section title={t('settings.readingChoices')}>
         {forgetting ? <>
-          <AppText accessibilityRole="alert">Reset your reading languages and reading size? Appearance will stay the same.</AppText>
-          <AppButton variant="destructive" size="card" onPress={() => { clear(); setForgetting(false); setLastLanguage(false) }}>Reset reading choices</AppButton>
-          <AppButton variant="quiet" onPress={() => setForgetting(false)}>Keep my choices</AppButton>
-        </> : <AppButton variant="secondary" size="card" onPress={() => setForgetting(true)}>Forget my reading choices</AppButton>}
+          <AppText accessibilityRole="alert">{t('readingPreferences.resetConfirm')}</AppText>
+          <AppButton variant="destructive" size="card" onPress={() => { clear(); setForgetting(false); setLastLanguage(false) }}>{t('readingPreferences.reset')}</AppButton>
+          <AppButton variant="quiet" onPress={() => setForgetting(false)}>{t('readingPreferences.keep')}</AppButton>
+        </> : <AppButton variant="secondary" size="card" onPress={() => setForgetting(true)}>{t('readingPreferences.forget')}</AppButton>}
       </Section>
 
-      <Section title="Saved service copy">
+      <Section title={t('settings.savedCopy')}>
         {forgettingSavedCopy ? <>
-          <AppText accessibilityRole="alert">Remove the saved service copy from this device? It will not be available when you are offline.</AppText>
-          <AppButton variant="destructive" size="card" onPress={() => { void clearSavedService(); setForgettingSavedCopy(false) }}>Remove saved copy</AppButton>
-          <AppButton variant="quiet" onPress={() => setForgettingSavedCopy(false)}>Keep saved copy</AppButton>
+          <AppText accessibilityRole="alert">{t('settings.removeSavedConfirm')}</AppText>
+          <AppButton variant="destructive" size="card" onPress={() => { void clearSavedService(); setForgettingSavedCopy(false) }}>{t('settings.removeSaved')}</AppButton>
+          <AppButton variant="quiet" onPress={() => setForgettingSavedCopy(false)}>{t('settings.keepSaved')}</AppButton>
         </> : <>
-          <AppText variant="caption" tone="muted">Tarkman may keep the last service you read so it can be clearly shown as saved text when you are offline.</AppText>
-          <AppButton variant="secondary" size="card" onPress={() => setForgettingSavedCopy(true)}>Remove saved service copy</AppButton>
+          <AppText variant="caption" tone="muted">{t('settings.savedNote')}</AppText>
+          <AppButton variant="secondary" size="card" onPress={() => setForgettingSavedCopy(true)}>{t('settings.removeSavedButton')}</AppButton>
         </>}
       </Section>
 
-      {state.status !== 'hydrating' && <Section title="Account" plain>
+      {state.status !== 'hydrating' && <Section title={t('settings.account')} plain>
         {state.status === 'signedIn' ? <>
-          <AppText variant="caption" tone="muted">Signed in as {state.user.name || state.user.email}</AppText>
-          <ServiceRow title="My services" subtitle="Run the services you manage" onPress={() => router.push('/services')} />
-          <View style={{ alignSelf: 'flex-start' }}><AppButton variant="secondary" size="card" onPress={signOut}>Sign out</AppButton></View>
-        </> : <ServiceRow title="Sign in" subtitle="For clergy and parish staff who run services" onPress={() => router.push('/sign-in')} />}
+          <AppText variant="caption" tone="muted">{t('common.signedInAs', { name: state.user.name || state.user.email })}</AppText>
+          <ServiceRow title={t('common.myServices')} subtitle={t('settings.myServicesSubtitle')} onPress={() => router.push('/services')} />
+          <View style={{ alignSelf: 'flex-start' }}><AppButton variant="secondary" size="card" onPress={signOut}>{t('common.signOut')}</AppButton></View>
+        </> : <ServiceRow title={t('common.signIn')} subtitle={t('settings.signInSubtitle')} onPress={() => router.push('/sign-in')} />}
       </Section>}
 
-      {showsTestErrorControls(observabilityConfig(), __DEV__) && <Section title="Error reporting (preview builds)">
+      {showsTestErrorControls(observabilityConfig(), __DEV__) && <Section title={t('settings.errorReporting')}>
         <TestErrorControls />
       </Section>}
     </View>
   </ScrollView>
+}
+
+/** A single-choice row for the interface language; each language's name is tagged so VoiceOver reads it in that language. */
+function ChoiceRow({ label, lang, selected, onPress }: { label: string; lang?: string; selected: boolean; onPress(): void }) {
+  const { colors } = useTheme()
+  const [pressed, setPressed] = useState(false)
+  return <Pressable accessibilityRole="radio" accessibilityState={{ checked: selected, selected }} accessibilityLanguage={lang} onPress={onPress}
+    onPressIn={() => setPressed(true)} onPressOut={() => setPressed(false)}
+    style={{ minHeight: touchTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.sm,
+      borderRadius: radii.control, backgroundColor: pressed ? colors.pressedSubtle : 'transparent' }}>
+    <AppText style={{ flex: 1 }}>{label}</AppText>
+    {selected && <AppIcon name="selected" color={colors.primary} />}
+  </Pressable>
 }
 
 function Section({ title, plain = false, children }: { title: string; plain?: boolean; children: ReactNode }) {

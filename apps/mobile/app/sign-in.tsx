@@ -10,11 +10,13 @@ import { useTheme } from '../design/ThemeProvider'
 import { spacing, touchTarget } from '../design/tokens'
 import { useAuth } from '../features/auth/AuthProvider'
 import { safeReturnTo } from '../features/auth/returnTo'
+import { useI18n } from '../features/i18n'
 
 /** Operators only, reached from Settings. Reading along never needs an account. */
 export default function SignInScreen() {
   const { state, signIn } = useAuth()
   const { colors } = useTheme()
+  const { t } = useI18n()
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,19 +26,19 @@ export default function SignInScreen() {
   const inFlight = useRef(false)
   const passwordField = useRef<TextInput>(null)
   if (state.status === 'signedIn') return <Redirect href={safeReturnTo(returnTo)} />
-  if (state.status === 'hydrating') return <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator accessibilityLabel="Checking your sign-in" /></View>
+  if (state.status === 'hydrating') return <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator accessibilityLabel={t('common.checkingSignIn')} /></View>
 
   async function submit() {
     // A ref, not state, so a fast double tap cannot send two sign-in requests before the button disables.
     if (inFlight.current) return
-    if (!email.trim() || !password) { setError('Enter your email and password.'); return }
+    if (!email.trim() || !password) { setError(t('signIn.enterBoth')); return }
     inFlight.current = true
     setPending(true)
     setError(undefined)
     try {
       await signIn({ email: email.trim(), password })
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Could not sign in. Please try again.')
+      setError(failure instanceof Error ? failure.message : t('signIn.failed'))
       setPassword('')
       setPending(false)
     } finally {
@@ -48,33 +50,33 @@ export default function SignInScreen() {
 
   return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
     <View style={{ minHeight: 52, paddingHorizontal: spacing.md - 4, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.divider }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Settings" accessibilityHint="Returns to Settings" disabled={pending} onPress={back}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('common.settings')} accessibilityHint={t('signIn.settingsHint')} disabled={pending} onPress={back}
         style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
         <AppIcon name="back" color={colors.primary} size={22} />
-        <AppText variant="label" tone="accent">Settings</AppText>
+        <AppText variant="label" tone="accent">{t('common.settings')}</AppText>
       </Pressable>
     </View>
     <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: 28, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg }}>
       <View style={{ width: '100%', maxWidth: 480, alignSelf: 'center', gap: 20 }}>
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="feature">Sign in</AppText>
-          <AppText tone="muted">For clergy and parish staff who run services. Reading along never needs an account.</AppText>
+          <AppText variant="feature">{t('common.signIn')}</AppText>
+          <AppText tone="muted">{t('signIn.intro')}</AppText>
         </View>
-        {state.expired && <AppText accessibilityRole="alert">Your sign-in has ended. Sign in again to continue.</AppText>}
+        {state.expired && <AppText accessibilityRole="alert">{t('signIn.expired')}</AppText>}
         {error && <Notice tone="danger" accessibilityRole="alert">{error}</Notice>}
         <View style={{ gap: spacing.md }}>
-          <TextField label="Email" value={email} onChangeText={setEmail} editable={!pending} autoCapitalize="none" autoCorrect={false}
+          <TextField label={t('signIn.email')} value={email} onChangeText={setEmail} editable={!pending} autoCapitalize="none" autoCorrect={false}
             autoComplete="email" textContentType="username" keyboardType="email-address" inputMode="email"
             returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => passwordField.current?.focus()} />
-          <TextField ref={passwordField} label="Password" value={password} onChangeText={setPassword} editable={!pending} secureTextEntry={!revealed}
+          <TextField ref={passwordField} label={t('signIn.password')} value={password} onChangeText={setPassword} editable={!pending} secureTextEntry={!revealed}
             autoCapitalize="none" autoCorrect={false} autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={submit}
-            trailing={<Pressable accessibilityRole="button" accessibilityLabel={revealed ? 'Hide password' : 'Show password'} onPress={() => setRevealed(value => !value)}
+            trailing={<Pressable accessibilityRole="button" accessibilityLabel={revealed ? t('signIn.hidePassword') : t('signIn.showPassword')} onPress={() => setRevealed(value => !value)}
               style={{ minHeight: touchTarget, minWidth: touchTarget, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' }}>
-              <AppText variant="label" tone="accent">{revealed ? 'Hide' : 'Show'}</AppText>
+              <AppText variant="label" tone="accent">{revealed ? t('signIn.hide') : t('signIn.show')}</AppText>
             </Pressable>} />
-          <AppButton size="form" loading={pending} onPress={submit}>Sign in</AppButton>
+          <AppButton size="form" loading={pending} onPress={submit}>{t('common.signIn')}</AppButton>
         </View>
-        <Notice tone="neutral">Accounts are created on the Tarkman website, not in the app.</Notice>
+        <Notice tone="neutral">{t('signIn.accountsNote')}</Notice>
       </View>
     </ScrollView>
   </KeyboardAvoidingView>

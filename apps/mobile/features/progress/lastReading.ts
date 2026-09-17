@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { KeyValueAdapter } from '@tarkman/core'
 import { preferencesStore } from '../preferences/storage'
+import { formatLocale, t } from '../i18n'
 
 export const LAST_READING_KEY = 'tarkman.last-reading.v1'
 
@@ -49,10 +50,10 @@ export function relativeServiceDay(date: string | null, now = new Date()): strin
   const service = new Date(year, month - 1, day)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const days = Math.round((today.getTime() - service.getTime()) / 86_400_000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days > 1 && days < 7) return `Last ${service.toLocaleDateString(undefined, { weekday: 'long' })}`
-  return service.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  if (days === 0) return t('days.today')
+  if (days === 1) return t('days.yesterday')
+  if (days > 1 && days < 7) return t('days.lastWeekday', { weekday: service.toLocaleDateString(formatLocale(), { weekday: 'long' }) })
+  return service.toLocaleDateString(formatLocale(), { month: 'short', day: 'numeric' })
 }
 
 export function roleLabel(role: string): string {
