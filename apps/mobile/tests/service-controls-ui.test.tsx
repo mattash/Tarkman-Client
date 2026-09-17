@@ -60,6 +60,74 @@ function Control() {
 
 const sent = () => mockAuthorizedFetch.mock.calls.map(call => `${call[1]?.method} ${call[0]}`)
 
+it.each([402, 1200])('keeps routine synchronization quiet and real recovery outside the reading at %ipx', async width => {
+  mockWindow = { ...mockWindow, width }
+  jest.mocked(useReader).mockReturnValue(reader({ listed: false }))
+  const view = await render(<Control />, { wrapper })
+  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  expect(screen.queryByText('Active')).toBeNull()
+  expect(screen.queryByText('Not live')).toBeNull()
+
+  // Next/Previous and cable events briefly invalidate the snapshot while the socket stays healthy.
+  jest.mocked(useReader).mockReturnValue(reader({ listed: false, stale: true, refreshing: true }))
+  await view.rerender(<Control />)
+  expect(screen.getByLabelText('Server connection: Synchronizing')).toHaveProp('accessibilityState', { busy: true })
+  expect(screen.queryByText('Reconnecting')).toBeNull()
+  expect(screen.queryByText('Connection interrupted. Reading may be out of date.')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Retry connection' })).toBeNull()
+  expect(screen.getByText('Lord, have mercy.')).toBeOnTheScreen()
+
+  jest.mocked(useReader).mockReturnValue(reader({ connected: false, stale: true, refreshing: true }))
+  await view.rerender(<Control />)
+  expect(screen.getByText('Reconnecting')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Retry connection' })).toBeDisabled()
+  expect(within(screen.getByTestId('control-reading')).queryByText('Reconnecting')).toBeNull()
+  expect(within(screen.getByTestId('control-reading')).getByText('Lord, have mercy.')).toBeOnTheScreen()
+
+  // A successful HTTP refresh does not imply the live socket recovered.
+  jest.mocked(useReader).mockReturnValue(reader({ connected: false }))
+  await view.rerender(<Control />)
+  expect(screen.getByLabelText('Server connection: Reconnecting')).toBeOnTheScreen()
+  expect(screen.getByText('Live connection unavailable. Checking for updates every 30 seconds.')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry connection' }))
+  expect(retry).toHaveBeenCalledTimes(1)
+
+  jest.mocked(useReader).mockReturnValue(reader())
+  await view.rerender(<Control />)
+  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  expect(screen.queryByRole('button', { name: 'Retry connection' })).toBeNull()
+})
+
+it('offers a failed update retry without claiming the live socket disconnected', async () => {
+  jest.mocked(useReader).mockReturnValue(reader({ stale: true, error: 'Could not refresh the service.' }))
+  await render(<Control />, { wrapper })
+  expect(screen.getByText('Updates unavailable')).toBeOnTheScreen()
+  expect(screen.queryByText('Connection lost')).toBeNull()
+  expect(screen.queryByText('Reconnecting')).toBeNull()
+  expect(within(screen.getByTestId('control-reading')).queryByText('Updates unavailable')).toBeNull()
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry' }))
+  expect(retry).toHaveBeenCalledTimes(1)
+})
+
+it('shows synchronization while a control command is awaiting acknowledgement', async () => {
+  const pending = deferred<Response>()
+  mockAuthorizedFetch.mockReturnValueOnce(pending.promise)
+  await render(<Control />, { wrapper })
+  void fireEvent.press(screen.getByRole('button', { name: 'Next part' }))
+  await waitFor(() => expect(screen.getByLabelText('Server connection: Synchronizing')).toHaveProp('accessibilityState', { busy: true }))
+  expect(screen.queryByRole('button', { name: 'Retry connection' })).toBeNull()
+  pending.resolve(respond(200, { status: 'ok' }))
+  await waitFor(() => expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen())
+})
+
+it('shows offline connection health independently of the service status', async () => {
+  ;(globalThis as { __online?: boolean }).__online = false
+  await render(<Control />, { wrapper })
+  expect(screen.getByLabelText('Server connection: Offline')).toHaveProp('accessibilityState', { busy: false })
+  expect(screen.queryByText('Connected')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Next part' })).toBeDisabled()
+})
+
 it('shows the full current part at reading size, with its position, for the operator to read aloud', async () => {
   await render(<Control />, { wrapper })
   expect(screen.getByText('ON NOW')).toBeOnTheScreen()
@@ -207,10 +275,10 @@ it('queues nothing while offline', async () => {
   expect(mockAuthorizedFetch).not.toHaveBeenCalled()
 })
 
-it('states a showing announcement in the header and above the deck, with Stop', async () => {
+it('keeps the announcement above the deck with Stop while the header shows connection health', async () => {
   jest.mocked(useReader).mockReturnValue(reader({ session: { ...session, status: 'showing_custom', message: 'Coffee hour follows' } }))
   await render(<Control />, { wrapper })
-  expect(screen.getByLabelText('Announcement showing')).toBeOnTheScreen()
+  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
   expect(screen.getByTestId('announcement-band')).toHaveTextContent(/ON THE SCREEN INSTEAD/)
   expect(screen.getByTestId('announcement-band')).toHaveTextContent(/Coffee hour follows/)
   // The band takes its height from the text region: it is never inside the deck, so Next and Back do not move.

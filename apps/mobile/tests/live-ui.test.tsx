@@ -102,6 +102,15 @@ it('keeps service and connection states separate and offers recovery without hid
   await fireEvent.press(screen.getByRole('button', { name: 'Retry connection' }))
   expect(retry).toHaveBeenCalledTimes(1)
 })
+it('does not report an interrupted connection while a connected reader synchronizes', async () => {
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Prayer kept during synchronization', role: 'priest' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, connected: true, stale: true, refreshing: true, session, parts }, retry, refreshAfterCommand: jest.fn(), dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.getByText('Prayer kept during synchronization')).toBeOnTheScreen()
+  expect(screen.queryByText('Reconnecting')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Retry connection' })).toBeNull()
+})
 it('offers only selected available translations and preserves manual mode when switching', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: null, ru: 'Молитва', grabar: 'Հայր մեր', role: 'priest' } }] })

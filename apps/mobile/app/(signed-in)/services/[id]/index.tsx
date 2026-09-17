@@ -6,15 +6,14 @@ import { AppText } from '../../../../components/AppText'
 import { LiturgyText } from '../../../../components/LiturgyText'
 import { Notice } from '../../../../components/Notice'
 import { capitalized } from '../../../../components/PartHeading'
-import { StatusPill } from '../../../../components/StatusPill'
 import { useTheme } from '../../../../design/ThemeProvider'
 import { radii, readingSizes, spacing } from '../../../../design/tokens'
-import { ReaderStatus } from '../../../../features/live/ReaderStatus'
 import { resolveControlLanguages, usePreferences } from '../../../../features/preferences/PreferencesProvider'
 import { ControlButton } from '../../../../features/services/ControlButton'
+import { ControlConnectionRecovery, ControlConnectionStatus } from '../../../../features/services/ControlConnectionStatus'
 import { OpeningLine } from '../../../../features/services/OpeningLine'
 import { STOP_ANNOUNCEMENT, useServiceControl } from '../../../../features/services/ServiceControlProvider'
-import { statusName, t as translateActive, useI18n } from '../../../../features/i18n'
+import { useI18n } from '../../../../features/i18n'
 
 /** One breakpoint: below it (a phone, or an iPad in narrow Split View) the tablet layout collapses to the phone layout exactly. */
 const TWO_PANE_WIDTH = 700
@@ -32,7 +31,6 @@ export default function ServiceControlScreen() {
   const { preferences } = usePreferences()
   const { width, fontScale } = useWindowDimensions()
   const reading = useRef<ScrollView>(null)
-  const status = state.session?.status
   const wide = width >= TWO_PANE_WIDTH
 
   // The operator is the position: a new part replaces the text from its top, however far they had scrolled.
@@ -60,7 +58,9 @@ export default function ServiceControlScreen() {
     gap: spacing.sm, paddingHorizontal: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
     <AppButton variant="quiet" icon="back" onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/services') } }}>{t('common.myServices')}</AppButton>
     {wide && state.session && <AppText variant="rowTitle" style={{ flexShrink: 1 }}>{state.session.title}</AppText>}
-    {status && <View style={{ marginLeft: 'auto', paddingRight: spacing.sm }}><StatusPill announce={false} {...statusPill(status)} /></View>}
+    <View style={{ marginLeft: 'auto', paddingRight: spacing.sm, maxWidth: '100%' }}>
+      <ControlConnectionStatus state={state} offline={offline} sending={controls.running !== null} />
+    </View>
   </View>
 
   const text = part && <View testID="control-text" style={{ flexDirection: columns ? 'row' : 'column', gap: spacing.lg }}>
@@ -77,7 +77,6 @@ export default function ServiceControlScreen() {
 
   const readingPane = <ScrollView testID="control-reading" ref={reading} style={{ flex: 1 }}
     contentContainerStyle={{ padding: spacing.page, paddingBottom: spacing.xxl, gap: spacing.md }}>
-    <ReaderStatus state={state} retry={retry} showLive={false} showService={false} />
     {part ? <>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: spacing.sm }}>
         <AppText variant="eyebrow" tone="muted">{t('control.onNow')}</AppText>
@@ -103,6 +102,9 @@ export default function ServiceControlScreen() {
   const bands = <>
     {controls.forbidden ? <Notice tone="danger" accessibilityRole="alert">{t('control.forbidden')}</Notice> : <>
       {offline && <Notice tone="neutral" accessibilityRole="alert">{t('control.offline')}</Notice>}
+      {/* Keep recovery beside the controls so its appearance cannot push the current reading down.
+          The reading pane already handles initial loading; today's listing is unrelated to control. */}
+      {!offline && <ControlConnectionRecovery state={state} retry={retry} />}
       {/* A command refused inside the open sheet reports there, under its control, not on the screen behind. */}
       {controls.error && controls.failure !== 'offline' && !(sheetOpen && sheetCommand) && <Notice tone="danger" accessibilityRole="alert">{errorMessage!}</Notice>}
       {announcing && <View testID="announcement-band" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md,
@@ -170,13 +172,4 @@ export default function ServiceControlScreen() {
       </View>}
     </>}
   </View>
-}
-
-function statusPill(status: string): { label: string; tone: 'success' | 'warning' | 'info'; icon: 'connected' | 'paused' | 'alert' | 'info' } {
-  const label = statusName(status)
-  if (status === 'active') return { label, tone: 'success', icon: 'connected' }
-  if (status === 'paused') return { label, tone: 'warning', icon: 'paused' }
-  // While an announcement is up the congregation is not seeing the reading: warning, not danger, since nothing is broken.
-  if (status === 'showing_custom') return { label: translateActive('statuses.announcementShowing'), tone: 'warning', icon: 'alert' }
-  return { label, tone: 'info', icon: 'info' }
 }
