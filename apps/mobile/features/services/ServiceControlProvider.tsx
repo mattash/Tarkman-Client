@@ -1,3 +1,4 @@
+import { benchmarkMark, benchmarkContext } from '../observability/latencyBenchmark'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { capitalized } from '../../components/PartHeading'
 import { useAuth } from '../auth/AuthProvider'
@@ -68,6 +69,7 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
     announcing: state.session?.status === 'showing_custom',
     expected: part?.id ?? null,
     run: (name, command) => {
+      benchmarkMark('control.tap', { direction: name, expected_part_id: part?.id }, benchmarkContext(sessionId))
       setSentAgainst(state.updatedAt)
       return controls.run(name, command)
     },

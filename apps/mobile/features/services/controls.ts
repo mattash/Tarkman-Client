@@ -1,3 +1,4 @@
+import { benchmarkContext, benchmarkHeaders, benchmarkMark } from '../observability/latencyBenchmark'
 import type { KnownSessionStatus } from '@tarkman/core'
 import { record } from '../live/contracts'
 import type { AuthContextValue } from '../auth/AuthProvider'
@@ -24,7 +25,10 @@ export function isControlForbidden(error: unknown): boolean {
 /** Live control commands. Each call is sent once: nothing here retries or queues, so a stale move can never replay. */
 export function createServiceControls(authorizedFetch: AuthContextValue['authorizedFetch']): ServiceControls {
   async function command(path: string, method: 'POST' | 'PATCH', body: Record<string, unknown>): Promise<void> {
-    const response = await authorizedFetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const trace = benchmarkContext(Number(path.split('/')[2]))
+    benchmarkMark('command.start', { path }, trace)
+    const response = await authorizedFetch(path, { method, headers: { 'Content-Type': 'application/json', ...benchmarkHeaders(trace) }, body: JSON.stringify(body) })
+    benchmarkMark('command.response', { status: response.status }, trace)
     if (response.ok) return
     const failure = new Error(await failureMessage(response))
     if (response.status === 409) failure.name = STALE

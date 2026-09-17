@@ -1,3 +1,4 @@
+import { benchmarkHeaders, benchmarkMark, recoveryContext } from '../observability/latencyBenchmark'
 import { normalizeExplanations, normalizeParts, normalizeServices, normalizeSession } from './contracts'
 import type { LiveExplanation, LivePart, LiveSession } from './contracts'
 import { t } from '../i18n'
@@ -9,9 +10,14 @@ export interface ReaderApi {
 }
 export function createApi(base: string, request: typeof fetch = fetch): ReaderApi {
   async function get(path: string, signal: AbortSignal): Promise<unknown> {
-    const response = await request(`${base}${path}`, { signal, credentials: 'omit', cache: 'no-store', redirect: 'error', headers: { Accept: 'application/json', 'X-Polling-Client': 'true' } })
+    const trace = recoveryContext(signal)
+    benchmarkMark('fetch.start', { path }, trace)
+    const response = await request(`${base}${path}`, { signal, credentials: 'omit', cache: 'no-store', redirect: 'error', headers: { Accept: 'application/json', 'X-Polling-Client': 'true', ...benchmarkHeaders(trace) } })
+    benchmarkMark('fetch.headers', { path, status: response.status }, trace)
     if (!response.ok) throw new Error(response.status === 404 ? t('common.serviceNoLongerAvailable') : t('errors.loadService'))
-    return response.json()
+    const data: unknown = await response.json()
+    benchmarkMark('fetch.parsed', { path }, trace)
+    return data
   }
   return {
     services: async signal => normalizeServices(await get(`/services.json?tz=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}`, signal)),

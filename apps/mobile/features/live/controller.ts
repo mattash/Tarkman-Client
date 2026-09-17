@@ -1,3 +1,4 @@
+import { benchmarkMark, benchmarkContext, beginRecovery, benchmarkCable } from '../observability/latencyBenchmark'
 import type { SavedServiceInput } from '../offline/savedService'
 import type { ReaderApi } from './api'
 import type { CableClient } from './cable'
@@ -19,10 +20,11 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
   let requestTimeout: ReturnType<typeof setTimeout> | null = null
   const listeners = new Set<() => void>()
   function dispatch(action: ReaderAction) { state = readerReducer(state, action); listeners.forEach(listener => listener()) }
-  async function recover() {
+  async function recover(reason = 'retry') {
     if (!alive || !active || !online) return
-    if (request) { queued = true; return }
+    if (request) { queued = true; benchmarkMark('recovery.queued', { reason }, benchmarkContext(id)); return }
     const generation = epoch, abort = new AbortController()
+    const trace = beginRecovery(id, abort.signal, reason)
     request = abort; dispatch({ type: 'refresh' })
     const timeout = setTimeout(() => abort.abort(), 12000)
     requestTimeout = timeout
@@ -39,11 +41,12 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         // Rails has no atomic snapshot endpoint or event sequence number. Read
         // canonical session again to detect transitions during the parallel GETs.
         const after = await api.session(id, abort.signal)
-        if (!alive || epoch !== generation || queued) return
+        if (!alive || epoch !== generation || queued) { benchmarkMark('recovery.discarded', { reason: queued ? 'queued' : 'generation' }, trace); return }
         if (session.id !== id || after.id !== id) throw new Error(t('errors.unexpectedSession'))
-        if (JSON.stringify(session) !== JSON.stringify(after)) { queued = true; dispatch({ type: 'stale' }); return }
+        if (JSON.stringify(session) !== JSON.stringify(after)) { benchmarkMark('recovery.discarded', { reason: 'changed_snapshot' }, trace); queued = true; dispatch({ type: 'stale' }); return }
         const part = currentPart(after, parts)
         const explanations = explanationResult.explanations.filter(e => !e.liturgyPartId || e.liturgyPartId === part?.liturgyPartId)
+        benchmarkMark('recovery.accepted', { part_id: after.currentPartId, part_key: part?.key, position: after.currentPosition }, trace)
         dispatch({ type: 'recovered', now: Date.now(), snapshot: { services, session: after, parts, explanations,
           explanationError: explanationResult.failed, listed: services.some(s => s.id === id) } })
         if (cache && parts.length > 0 && alive && epoch === generation && !queued) {
@@ -57,12 +60,14 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         }
       }
     } catch {
+      benchmarkMark('recovery.failed', { aborted: abort.signal.aborted }, trace)
       if (alive && epoch === generation) dispatch({ type: 'failure', message: t('errors.refreshService') })
     } finally {
+      benchmarkMark('recovery.end', {}, trace)
       clearTimeout(timeout)
       if (requestTimeout === timeout) requestTimeout = null
       if (request === abort) request = null
-      if (alive && epoch === generation && queued) { queued = false; void recover() }
+      if (alive && epoch === generation && queued) { queued = false; void recover('queued') }
     }
   }
   function stopResources() {
@@ -75,13 +80,13 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
   }
   function startResources() {
     if (!alive || !active || !online || polling) return
-    polling = setInterval(() => { void recover() }, 30000)
+    polling = setInterval(() => { void recover('poll') }, 30000)
     if (id !== null) unsubscribe = cable.subscribe(cableUrl, id, {
-      connected: () => { dispatch({ type: 'connection', connected: true }); void recover() },
-      disconnected: () => { dispatch({ type: 'connection', connected: false }); void recover() },
-      received: value => { if (parseEvent(value)?.sessionId === id) { dispatch({ type: 'stale' }); void recover() } },
+      connected: () => { dispatch({ type: 'connection', connected: true }); benchmarkMark('cable.connected', {}, benchmarkContext(id)); void recover('connected') },
+      disconnected: () => { dispatch({ type: 'connection', connected: false }); benchmarkMark('cable.disconnected', {}, benchmarkContext(id)); void recover('disconnected') },
+      received: value => { if (parseEvent(value)?.sessionId === id) { benchmarkCable(value, id); dispatch({ type: 'stale' }); void recover('cable') } },
     })
-    void recover()
+    void recover('start')
   }
   return {
     getSnapshot: () => state,
