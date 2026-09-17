@@ -36,6 +36,13 @@ it('explains refused, missing, stale and rejected commands', async () => {
   await expect(controls(respond(500, {})).commands.next(9, 1)).rejects.toThrow('Could not update the service. Please try again.')
 })
 
+it('names the end of the service when the server refuses a move past it', async () => {
+  await expect(controls(respond(422, { status: 'Could not advance session', current_part_id: 334 })).commands.next(9, 334))
+    .rejects.toThrow('This is the last part. There is nothing after it.')
+  await expect(controls(respond(422, { status: 'Could not back session', current_part_id: 1 })).commands.previous(9, 1))
+    .rejects.toThrow('This is the first part. There is nothing before it.')
+})
+
 it('marks a move the server refused as stale so the screen can resync', async () => {
   const failure = await controls(respond(409, { error: 'The current part changed', current_part_id: 7 })).commands.next(9, 1).catch(error => error)
   expect(isStalePart(failure)).toBe(true)

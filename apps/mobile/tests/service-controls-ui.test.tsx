@@ -76,20 +76,58 @@ it('shows the full current part at reading size, with its position, for the oper
 })
 
 it('moves the service forward and back, and jumps to a chosen part from the sheet', async () => {
-  await render(<Control />, { wrapper })
+  const view = await render(<Control />, { wrapper })
   await fireEvent.press(screen.getByRole('button', { name: 'Next part' }))
   await waitFor(() => expect(retry).toHaveBeenCalled())
+  // The move landed on part 2, where Back becomes available again.
+  const moved = normalizeSession({ session: { id: 9, liturgy: 'Divine Liturgy', church_name: 'St. John', status: 'active', current_part_id: 2 } })
+  jest.mocked(useReader).mockReturnValue(reader({ session: moved }))
+  await view.rerender(<Control />)
   await fireEvent.press(screen.getByRole('button', { name: 'Previous part' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
   // Next and Back are never in the sheet.
   expect(screen.getAllByRole('button', { name: 'Next part' })).toHaveLength(1)
   await fireEvent.press(screen.getByRole('button', { name: 'Go to another part' }))
-  expect(screen.getByRole('button', { name: 'Go to part 1' })).toBeDisabled()
-  await fireEvent.press(screen.getByRole('button', { name: 'Go to part 2' }))
+  expect(screen.getByRole('button', { name: 'Go to part 2' })).toBeDisabled()
+  await fireEvent.press(screen.getByRole('button', { name: 'Go to part 1' }))
   expect(sent()).toEqual(['POST /s/9/next.json', 'POST /s/9/prev.json', 'POST /s/9/set_part.json'])
   expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ expected_part_id: 1 })
-  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[2][1]?.body))).toMatchObject({ part_id: 2, expected_part_id: 1 })
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[2][1]?.body))).toMatchObject({ part_id: 1, expected_part_id: 2 })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Go to part 2' })).toBeNull())
+})
+
+it('makes no move at the last part, and names the end instead of showing an error', async () => {
+  const last = normalizeSession({ session: { id: 9, liturgy: 'Divine Liturgy', church_name: 'St. John', status: 'active', current_part_id: 2 } })
+  jest.mocked(useReader).mockReturnValue(reader({ session: last }))
+  await render(<Control />, { wrapper })
+  const next = screen.getByRole('button', { name: 'Next part' })
+  expect(next).toBeDisabled()
+  expect(next.props.accessibilityHint).toBe('This is the last part.')
+  expect(screen.getByTestId('next-up')).toHaveTextContent('This is the last part.')
+  await fireEvent.press(next)
+  expect(mockAuthorizedFetch).not.toHaveBeenCalled()
+  expect(screen.queryByText('Could not update the service. Please try again.')).toBeNull()
+  // Back still moves from the last part, and the deck keeps its size.
+  expect(screen.getByRole('button', { name: 'Previous part' })).toBeEnabled()
+  expect(screen.getByTestId('control-next')).toHaveStyle({ minHeight: 76 })
+})
+
+it('makes no move before the first part of the service', async () => {
+  await render(<Control />, { wrapper })
+  const back = screen.getByRole('button', { name: 'Previous part' })
+  expect(back).toBeDisabled()
+  expect(back.props.accessibilityHint).toBe('This is the first part.')
+  await fireEvent.press(back)
+  expect(mockAuthorizedFetch).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: 'Next part' })).toBeEnabled()
+})
+
+it('names the end the server reports when this device\'s part list is behind', async () => {
+  mockAuthorizedFetch.mockResolvedValueOnce(respond(422, { status: 'Could not advance session', current_part_id: 1 }))
+  await render(<Control />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Next part' }))
+  expect(await screen.findByText('This is the last part. There is nothing after it.')).toBeOnTheScreen()
+  expect(screen.queryByText('Could not update the service. Please try again.')).toBeNull()
 })
 
 it('changes what the congregation sees from one sheet, closing it once the status is picked', async () => {

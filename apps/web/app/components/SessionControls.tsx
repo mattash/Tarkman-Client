@@ -6,10 +6,12 @@ import {
   prevPart,
   nextPart,
   fetchSession,
+  fetchSessionParts,
   classifyControlFailure,
   controlFailureMessage,
 } from '@/queries/sessions'
 import { SessionWrapper } from '@/types/session'
+import { PartsResponse } from '@/types/part'
 import { SessionStatusControl } from './SessionStatusControl'
 
 interface SessionControlsProps {
@@ -28,9 +30,28 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
     queryFn: () => fetchSession(sessionIdString),
     staleTime: 1000
   })
-
   const currentPartId = sessionData?.session?.current_part_id ?? null
 
+  // The parts list rides the reading screen's own query, so adding it here costs no extra request.
+  const { data: partsData } = useQuery<PartsResponse>({
+    queryKey: sessionsKeys.sessionParts(sessionIdString),
+    queryFn: async () => {
+      const sessionData = await queryClient.fetchQuery({
+        queryKey: sessionsKeys.session(sessionIdString),
+        queryFn: () => fetchSession(sessionIdString),
+        staleTime: 1000,
+      })
+      return fetchSessionParts(sessionIdString, sessionData)
+    },
+  })
+
+  // A move past either end of the service can never succeed, so its control is not offered. While the
+  // parts list is still unknown the controls keep their enabled behaviour instead of guessing.
+  const parts = partsData?.parts ?? []
+  const currentPartIndex =
+    currentPartId == null ? -1 : parts.findIndex(({ part }) => part.id === currentPartId)
+  const atFirstPart = currentPartIndex === 0
+  const atLastPart = currentPartIndex >= 0 && currentPartIndex === parts.length - 1
   const refreshFromServer = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
     queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionIdString) }),
@@ -67,7 +88,8 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
     <div className="flex gap-4 items-center p-4 rounded-lg bg-white shadow-md">
       <button
         onClick={() => runPartCommand('previous')}
-        disabled={isCommandPending}
+        disabled={isCommandPending || atFirstPart}
+        title={atFirstPart ? 'This is the first part.' : undefined}
         className="px-5 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Previous part"
       >
@@ -87,7 +109,8 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
 
       <button
         onClick={() => runPartCommand('next')}
-        disabled={isCommandPending}
+        disabled={isCommandPending || atLastPart}
+        title={atLastPart ? 'This is the last part.' : undefined}
         className="px-5 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Next part"
       >

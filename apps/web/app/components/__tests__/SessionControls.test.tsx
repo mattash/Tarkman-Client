@@ -18,10 +18,11 @@ vi.mock('@/queries/sessions', async () => ({
   prevPart: vi.fn(),
   nextPart: vi.fn(),
   fetchSession: vi.fn(),
+  fetchSessionParts: vi.fn(),
   updateSessionStatus: vi.fn(),
 }))
 
-import { prevPart, nextPart, fetchSession } from '@/queries/sessions'
+import { prevPart, nextPart, fetchSession, fetchSessionParts } from '@/queries/sessions'
 
 const mockSession: SessionWrapper = {
   session: {
@@ -46,6 +47,26 @@ const mockSession: SessionWrapper = {
   },
 }
 
+const mockParts = [1, 2, 3].map((id) => ({
+  part: {
+    id,
+    position: id,
+    role: 'Reading',
+    grabar: '',
+    translit: '',
+    en: '',
+    ru: null,
+    hy_east: null,
+    hy_west: null,
+    posture: null,
+    sheet_music: null,
+    duration_type: 'default' as const,
+    page: null,
+    explanation_ids: [],
+    effective_duration_ms: 0,
+  },
+}))
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -67,6 +88,8 @@ describe('SessionControls', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(fetchSession).mockResolvedValue(mockSession)
+    // No parts list until a test provides one, so the boundary controls stay out of the way.
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: [], sessionData: mockSession })
   })
 
   it('should render previous and next buttons', () => {
@@ -267,5 +290,52 @@ describe('SessionControls', () => {
     await userEvent.click(screen.getByLabelText('Next part'))
 
     expect(await screen.findByText(/do not have permission/)).toBeInTheDocument()
+  })
+
+  it('does not offer Back on the first part of the service', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: mockParts, sessionData: mockSession })
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+
+    const prevButton = await screen.findByLabelText('Previous part')
+    expect(prevButton).toBeDisabled()
+    expect(prevButton).toHaveAttribute('title', 'This is the first part.')
+    expect(screen.getByLabelText('Next part')).toBeEnabled()
+    await user.click(prevButton)
+    expect(prevPart).not.toHaveBeenCalled()
+  })
+
+  it('does not offer Next on the last part of the service', async () => {
+    const user = userEvent.setup()
+    const atLast = {
+      ...mockSession,
+      session: { ...mockSession.session, current_part_id: 3, current_part_position: 3 },
+    }
+    vi.mocked(fetchSession).mockResolvedValue(atLast)
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: mockParts, sessionData: atLast })
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+
+    const nextButton = await screen.findByLabelText('Next part')
+    expect(nextButton).toBeDisabled()
+    expect(nextButton).toHaveAttribute('title', 'This is the last part.')
+    expect(screen.getByLabelText('Previous part')).toBeEnabled()
+    await user.click(nextButton)
+    expect(nextPart).not.toHaveBeenCalled()
+  })
+
+  it('says which end of the service a refused move ran into', async () => {
+    const refused = Object.assign(new Error('request failed'), {
+      isAxiosError: true,
+      response: { status: 422, data: { status: 'Could not advance session', current_part_id: 334 } },
+    })
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: mockParts, sessionData: mockSession })
+    vi.mocked(nextPart).mockRejectedValue(refused)
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+    await userEvent.click(await screen.findByLabelText('Next part'))
+
+    expect(await screen.findByText('This is the last part. There is nothing after it.')).toBeInTheDocument()
   })
 })

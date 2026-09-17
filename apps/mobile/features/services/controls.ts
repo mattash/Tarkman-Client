@@ -49,6 +49,11 @@ async function failureMessage(response: Response): Promise<string> {
   // The screen names where the service is now once it has resynced, so this does not ask the operator to look it up.
   if (response.status === 409) return t('control.staleMove')
   const data = record(await response.json().catch(() => null))
+  // A refused move past either end of the service reports that boundary instead of an error string
+  // (Rails: { status: 'Could not advance session' } / 'Could not back session'), and trying again can
+  // never succeed, so it is named rather than offered as a retry.
+  if (data.status === 'Could not advance session') return t('control.lastPartBoundary') // i18n-ignore: Rails protocol status, not interface copy
+  if (data.status === 'Could not back session') return t('control.firstPartBoundary') // i18n-ignore: Rails protocol status, not interface copy
   const reported = typeof data.error === 'string' && data.error.length > 0 && data.error.length <= 200 ? data.error : undefined
   return reported ?? t('control.updateFailed')
 }

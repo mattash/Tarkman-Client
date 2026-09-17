@@ -117,12 +117,14 @@ export default function ServiceControlScreen() {
     </>}
   </>
 
+  // A move past either end of the service can never succeed, so the deck never sends it. The control
+  // reads as unavailable rather than failed, and the position row already names the end it is at.
   const deckButtons = <View style={{ flexDirection: 'row', gap: 12 }}>
     <ControlButton testID="control-previous" label={t('control.back')} accessibilityLabel={t('control.previousPart')} icon="back" iconOnly={wide} minWidth={96} height={76}
-      accessibilityHint={previousPart ? t('control.backHint', { role: capitalized(previousPart.role) }) : undefined} {...holds('previous')}
+      accessibilityHint={previousPart ? t('control.backHint', { role: capitalized(previousPart.role) }) : t('control.firstPart')} unavailable={!previousPart} {...holds('previous')}
       onPress={() => { void run('previous', () => commands.previous(sessionId, expected)) }} />
     <ControlButton testID="control-next" variant="primary" label={wide ? t('control.next') : t('control.nextPart')} accessibilityLabel={t('control.nextPart')} labelVariant="heading" flex={1} height={76}
-      accessibilityHint={nextPart ? t('control.nextHint', { role: capitalized(nextPart.role) }) : undefined} {...holds('next')}
+      accessibilityHint={nextPart ? t('control.nextHint', { role: capitalized(nextPart.role) }) : t('common.lastPart')} unavailable={!nextPart} {...holds('next')}
       onPress={() => { void run('next', () => commands.next(sessionId, expected)) }} />
   </View>
 
