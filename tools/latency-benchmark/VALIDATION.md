@@ -1,10 +1,12 @@
-# Validation — 2026-09-17
+# Baseline benchmark validation — 2026-09-17
+
+This document records validation of the original instrumentation and baseline. For the subsequent mobile optimization, its 405-test validation and before/after results, see [mobile session latency](../../docs/performance/mobile-session-latency.md).
 
 The final production integration run passed after backend PRs #429, #430, and #431 were merged and deployed to both Render services at `c517194`. Run `01b11908-b67b-4580-99ea-eb091c783946` completed twenty measured commands plus four warmups, restored session 4008, and captured 655 records: 559 requests, 72 cable transmissions, and 24 jobs. No requests/jobs were missing, no records were malformed, and no individual spans were dropped. All 35,952 partial-render events were retained as aggregate counts/timings. Ordinary worker completion logs independently matched all 24 jobs.
 
 The final backend suite passed **957 tests** and all GitHub test/system/lint jobs passed. A confirmed duplicate-profile test fixture blocked the intermediate master run; its regression failed with two profiles before the fix, then passed with one afterward. The fix is test-only. The corrected recorder has nine focused examples; collector/report tests and browser validation pass. The Expo application build is unchanged from the baseline.
 
-Final artifacts are under `results/production-complete/` in this worktree and copied to `/Users/mattash/Projects/Tarkman/output/latency-benchmark/2026-09-17/production-complete/`. The client runner commits remain local on `codex/session-latency-benchmark`. The original client checkout is untouched.
+Final artifacts are under `results/production-complete/` in this worktree and copied to `/Users/mattash/Projects/Tarkman/output/latency-benchmark/2026-09-17/production-complete/`. The client runner source is on `codex/session-latency-benchmark`. The original client checkout is untouched.
 
 ## Initial implementation checks
 
@@ -36,4 +38,4 @@ The initial production run used `--client-only` before backend deployment. Exist
 
 Artifacts from this workspace are in `results/production-baseline/`, which is ignored by Git. Open `findings.md` for the measured breakdown and `report.html` for interactive command waterfalls. The exact diagnostic source patch is retained as `client-source.patch`; profile credentials and build outputs are excluded. `run.json` includes the base commit, dirty status, and served entry HTML fingerprint, which references content-hashed bundles.
 
-Production web and worker now run the backend change with `LATENCY_BENCHMARK_SESSION_IDS=4008`. No migration, navigation optimization, timing-policy change, or analytics cleanup is part of this change. Native device behavior, cellular networks, and simultaneous rapid control commands are outside this baseline.
+Production web and worker now run the backend change with `LATENCY_BENCHMARK_SESSION_IDS=4008`. No migration, navigation optimization, timing-policy change, or analytics cleanup was introduced for this baseline capture. The later mobile optimization is documented separately above. Native device behavior, cellular networks, and simultaneous rapid control commands are outside this baseline.

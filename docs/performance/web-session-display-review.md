@@ -64,4 +64,4 @@ The mobile implementation keeps canonical before/after reads and bounded full re
 
 ## Verification scope
 
-The source paths and both checkouts were compared directly. Existing display tests were inspected. A focused Vitest invocation could not start because this isolated worktree has no web dependencies (`vitest: command not found`); no web test pass or runtime profiling is claimed. The mobile production benchmark must not be used to infer a web display timing distribution.
+The source paths and both checkouts were compared directly. During PR preparation, the locked web dependencies were installed and the full web suite passed 356 tests across 40 files; the production build, including TypeScript, also passed. These checks establish regression coverage, not runtime profiling. The mobile production benchmark must not be used to infer a web display timing distribution.

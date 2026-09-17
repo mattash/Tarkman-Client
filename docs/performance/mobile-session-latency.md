@@ -1,6 +1,6 @@
 # Mobile session-control latency improvement
 
-Implemented in the isolated client worktree `/private/tmp/tarkman-client-latency`, on `codex/session-latency-benchmark`. The user's primary checkout is preserved. This change is local; it has not been pushed or deployed as a client release. The production backend was unchanged during the comparison.
+Implemented in the isolated client worktree `/private/tmp/tarkman-client-latency`, on `codex/session-latency-benchmark`. The user's primary checkout is preserved. This branch contains the benchmark runner and mobile optimization; it has not been deployed as a client release. The production backend was unchanged during the comparison.
 
 ## Measured result
 
@@ -19,6 +19,8 @@ A scrolling-only intermediate run reduced reader medians to 1,532 / 1,480 ms, wi
 The final run `c34a636c-3bd0-42e6-b69f-82e64858900b` covered 20:01:47–20:02:46 UTC on 2026-09-17. All 24 commands including warmups succeeded and session 4008 returned to `lp:219`. Its 407 correlated server/cable/job records had no missing requests/jobs, malformed records, truncated pagination or dropped spans. The baseline run was `8b0d2ff0-bcd5-4457-9653-11d475e9771e`, 19:46:13–19:47:31 UTC.
 
 These are pilot results, not a native-device measurement, SLO, or guarantee. Timing uses the beginning of the correct reading stable in the viewport for two animation-frame intervals. Warmups are excluded from percentiles. The unchanged minimum cadence allows faster runs to finish earlier; server/cache conditions are not perfectly controlled. Do not add separately measured stage medians as if they were one command.
+
+![Production benchmark overview](assets/mobile-latency-comparison.png)
 
 ## What changed
 
@@ -48,7 +50,8 @@ This work issued 96 production transitions in total: 24 baseline, 24 scrolling-o
 
 ## Validation and artifacts
 
-- Mobile: 37 suites / **405 tests passed**, including 20 new navigation-recovery cases; TypeScript, lint and production Expo web export passed.
+- Mobile: 37 suites / **405 tests passed**, including 20 new navigation-recovery cases; TypeScript, lint and production Expo web export passed. The PR-preparation coverage run also passed all 405 tests (controller: 100% line coverage, 94.91% branch coverage).
+- PR checks: five benchmark-tool tests and 356 web tests passed; the web production build including TypeScript passed.
 - Cases include overlapping notifications, late verification, explanations, signed-avatar churn, single/multiple liturgies, repeated occurrence resolution, content/context changes, missing occurrences, polling, reconnect, offline/failure, disposal and manual browsing.
 - Existing gesture-worklet and delayed Jest-exit warnings remain in the test output; the test process completed with exit code zero.
 - The web display was reviewed separately in [web-session-display-review.md](web-session-display-review.md); no web runtime performance claim is made.
