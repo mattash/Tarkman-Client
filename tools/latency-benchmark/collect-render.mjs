@@ -59,7 +59,9 @@ export async function collectRender(run, outputDirectory, { query = args => exec
     dropped_spans: records.reduce((sum, r) => sum + (r.dropped || 0), 0) }
   await writeFile(`${outputDirectory}/server.jsonl`, records.map(r => JSON.stringify(r)).join('\n') + '\n')
   await writeFile(`${outputDirectory}/render-log-capture.json`, JSON.stringify(capture, null, 2))
-  await writeReport({ ...run, metadata: { ...run.metadata, render_log_capture: capture } }, `${outputDirectory}/report.html`, { server: records })
+  run.metadata = { ...run.metadata, render_log_capture: capture }
+  await writeFile(`${outputDirectory}/run.json`, JSON.stringify(run, null, 2))
+  await writeReport(run, `${outputDirectory}/report.html`, { server: records })
   return capture
 }
 
