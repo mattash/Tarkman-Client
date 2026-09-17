@@ -66,6 +66,8 @@ Warmups and unsuccessful/incomplete observations are excluded from percentiles b
 
 The endpoint is the top of the correct reading inside the viewport, stable across two animation-frame intervals after React commit. This is a **visibility estimate**, not proof of physical screen presentation. Scrolling remains enabled. Browser clocks use `performance.timeOrigin + performance.now()` in the same Chrome process on one awake host. Do not extend those assumptions to multiple machines. Server spans use monotonic durations within each process; queue wait is explicitly a wall-clock estimate. Network/Render-edge/OS scheduling not observed by these clocks remains unattributed, rather than being guessed by subtracting host timestamps. Parallel and nested spans must not be summed.
 
+Server records retain complete per-category counts, total durations, and maximums. The report shows these totals alongside individual spans. Repetitive partial renders are aggregated to preserve space for SQL and enclosing spans; `aggregated_only_spans` is intentional compaction, while `dropped_spans` still flags detail-budget exhaustion. Category durations may overlap and nest.
+
 Render CPU/memory/database connection metrics can be fetched for the run window with the Render integration and imported as a JSON snapshot. These coarse metrics provide context rather than per-command causality:
 
 ```sh

@@ -55,6 +55,7 @@ export async function collectRender(run, outputDirectory, { query = args => exec
     records: records.length, missing_job_ids: [...enqueued].filter(id => !performed.has(id)),
     missing_request_ids: [...new Set(expectedRequests.filter(r => !requestIds.has(r.request_id)).map(r => r.request_id))],
     malformed_diagnostic_logs: [...logs.values()].filter(log => log.message.includes('{"type":"latency_benchmark"') && !parseServerLogs(log.message, run.run).length).length,
+    aggregated_only_spans: records.reduce((sum, r) => sum + (r.aggregated_only || 0), 0),
     dropped_spans: records.reduce((sum, r) => sum + (r.dropped || 0), 0) }
   await writeFile(`${outputDirectory}/server.jsonl`, records.map(r => JSON.stringify(r)).join('\n') + '\n')
   await writeFile(`${outputDirectory}/render-log-capture.json`, JSON.stringify(capture, null, 2))
