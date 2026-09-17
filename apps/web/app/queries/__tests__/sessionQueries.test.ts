@@ -343,4 +343,16 @@ describe('control failures', () => {
     expect(controlFailureMessage({ kind: 'other' }, 'position')).toMatch(/position could not be updated/)
     expect(controlFailureMessage({ kind: 'other' }, 'status')).toMatch(/status could not be updated/)
   })
+
+  it('names the end of the service a refused move ran into', () => {
+    expect(classifyControlFailure(axiosError(422, { status: 'Could not advance session', current_part_id: 334 })))
+      .toEqual({ kind: 'boundary', direction: 'next' })
+    expect(classifyControlFailure(axiosError(422, { status: 'Could not back session' })))
+      .toEqual({ kind: 'boundary', direction: 'previous' })
+    expect(classifyControlFailure(axiosError(422, { error: 'Status cannot change now' }))).toEqual({ kind: 'other' })
+    expect(controlFailureMessage({ kind: 'boundary', direction: 'next' }, 'position'))
+      .toBe('This is the last part. There is nothing after it.')
+    expect(controlFailureMessage({ kind: 'boundary', direction: 'previous' }, 'position'))
+      .toBe('This is the first part. There is nothing before it.')
+  })
 })

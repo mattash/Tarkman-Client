@@ -110,6 +110,7 @@ export async function nextPart(sessionId: string, transitionedAt?: string, expec
 
 export type ControlFailure =
   | { kind: 'stale'; currentPartId: number | null }
+  | { kind: 'boundary'; direction: 'next' | 'previous' }
   | { kind: 'forbidden' }
   | { kind: 'unauthenticated' }
   | { kind: 'other' }
@@ -123,6 +124,11 @@ export function classifyControlFailure(error: unknown): ControlFailure {
   }
   if (status === 403) return { kind: 'forbidden' }
   if (status === 401) return { kind: 'unauthenticated' }
+  // The move endpoints report a refusal past either end of the service with these bodies instead of
+  // an error string (Rails next/prev at the boundary), and trying again can never succeed.
+  const reported = (data as { status?: unknown } | undefined)?.status
+  if (status === 422 && reported === 'Could not advance session') return { kind: 'boundary', direction: 'next' }
+  if (status === 422 && reported === 'Could not back session') return { kind: 'boundary', direction: 'previous' }
   return { kind: 'other' }
 }
 
@@ -130,6 +136,11 @@ export function controlFailureMessage(failure: ControlFailure, subject: 'positio
   switch (failure.kind) {
     case 'stale':
       return 'The service moved on somewhere else, so nothing changed here. The position shown has been refreshed.'
+    case 'boundary':
+      // A move past the end of the service is not a retryable failure; name the end it hit.
+      return failure.direction === 'next'
+        ? 'This is the last part. There is nothing after it.'
+        : 'This is the first part. There is nothing before it.'
     case 'forbidden':
       return 'You do not have permission to control this service.'
     case 'unauthenticated':
