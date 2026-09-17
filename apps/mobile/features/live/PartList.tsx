@@ -98,16 +98,16 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
       ListEmptyComponent={<AppText style={{ padding: page, paddingHorizontal: page + gutter }}>{t('common.noReadingParts')}</AppText>}
       renderItem={({ item, index: itemIndex }) => <ReadingRow item={item} current={item.key === currentKey} past={index >= 0 && itemIndex < index}
         paused={paused} language={language} visibleLanguages={visibleLanguages} alternativesFrom={alternativesFrom} compare={compare}
-        columnWidth={columnWidth} columnIndent={columnIndent} page={page} gutter={gutter} readingSize={readingSize} reduceMotion={reduceMotion}
+        columnWidth={columnWidth} columnIndent={columnIndent} page={page} gutter={gutter} readingSize={readingSize}
         onSwipeStart={stopFollowing} open={openPart} readIn={readIn} />} />
   </View>
 }
 
 const ReadingRow = memo(function ReadingRow({ item, current, past, paused, language, visibleLanguages, alternativesFrom, compare, columnWidth, columnIndent,
-  page, gutter, readingSize, reduceMotion, onSwipeStart, open, readIn }: {
+  page, gutter, readingSize, onSwipeStart, open, readIn }: {
   item: LivePart; current: boolean; past: boolean; paused: boolean; language: Language; visibleLanguages: readonly Language[]
   alternativesFrom: readonly Language[]; compare: boolean; columnWidth: number | undefined; columnIndent: number; page: number; gutter: number
-  readingSize: ReadingSize; reduceMotion: boolean; onSwipeStart(): void; open(part: LivePart): void; readIn?(language: Language): void
+  readingSize: ReadingSize; onSwipeStart(): void; open(part: LivePart): void; readIn?(language: Language): void
 }) {
   const { colors, scheme } = useTheme()
   const { t } = useI18n()
@@ -115,7 +115,7 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
   const openThis = () => open(item)
   // Position is occurrence identity, not reader-facing content; keep it out of spoken labels.
   return <SwipeablePart testID={`swipe-${item.key}`} partLabel={item.role}
-    reduceMotion={reduceMotion} onSwipeStart={onSwipeStart} onOpen={openThis}>
+    onSwipeStart={onSwipeStart} onOpen={openThis}>
     <View testID={`reading-${item.key}`} style={{ paddingHorizontal: page + gutter, paddingVertical: spacing.lg,
     gap: spacing.sm, backgroundColor: current ? colors.surface : colors.background, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
     {current && <View accessible={false} style={{ position: 'absolute', top: 0, bottom: 0, left: gutter, width: 3, backgroundColor: colors.currentRule }} />}

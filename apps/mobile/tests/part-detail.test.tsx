@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react-native'
-import { PanResponder, type GestureResponderEvent, type PanResponderGestureState } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
 import { createPartsApi, normalizePartDetail, normalizePartExplanation } from '../features/parts/api'
@@ -11,6 +10,13 @@ import { SessionReader } from '../features/live/SessionReader'
 import { publishLivePosition } from '../features/live/livePosition'
 import PartDetailScreen from '../app/sessions/[id]/part/[partId]'
 import { deferred, fakeApi, respond } from './auth-helpers'
+import { clearSwipeableMocks, findSwipeable } from './swipeable-helpers'
+
+jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => ({
+  __esModule: true,
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- the hoisted factory can't reference an imported binding
+  default: require('./swipeable-helpers').MockSwipeable,
+}))
 
 const mockPush = jest.fn()
 const mockBack = jest.fn()
@@ -161,25 +167,23 @@ it('opens a part from the reading list', async () => {
 afterEach(() => { jest.restoreAllMocks() })
 
 it.each([-80, -220])('opens the swiped part, not the live part, after a %s point swipe', async dx => {
-  const create = jest.spyOn(PanResponder, 'create')
+  clearSwipeableMocks()
   const session = normalizeSession({ session: { id: 9, liturgy: 'Divine Liturgy', current_part_id: 1 } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, position: 1, role: 'Choir', en: 'Lord, have mercy.' } }, { part: { id: 52, position: 46, role: 'deacon', en: 'Alleluia. Stand up' } }] })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, session, parts }, retry: jest.fn(), dispatch: jest.fn() })
   await render(<SessionReader endpoints={{ api: 'https://api.test', cable: 'wss://api.test/cable' }} id={9} back={jest.fn()} />, { wrapper })
-  const handler = create.mock.calls.at(-1)![0]
-  const event = { nativeEvent: { timestamp: 1000 } } as GestureResponderEvent
-  const movement = { dx, dy: 0, numberActiveTouches: 1, y0: 100 } as PanResponderGestureState
-  handler.onStartShouldSetPanResponderCapture?.(event, movement)
-  expect(handler.onMoveShouldSetPanResponderCapture?.(event, movement)).toBe(true)
-  await act(async () => {
-    handler.onPanResponderGrant?.(event, movement)
-    handler.onPanResponderMove?.(event, movement)
-    handler.onPanResponderRelease?.(event, movement)
-  })
+  const instance = findSwipeable('swipe-part:52:liturgy:null:position:46-gesture')
+  // The row has no measured width here, so the threshold is the 144px floor → 2.0 progress.
+  const progress = Math.abs(dx) / 72
+  // Gesture lifecycle: start drag clears the peak tracker; the per-frame progress writes then
+  // accumulate the maximum; on release willOpen reads the peak and either reveals or triggers.
+  await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
+  instance.progress.value = progress
+  await act(async () => { (instance.props['onSwipeableWillOpen'] as () => void)() })
   if (dx === -80) {
     expect(mockPush).not.toHaveBeenCalled()
     await fireEvent.press(screen.getByRole('button', { name: 'View details for deacon' }))
   }
-  expect(mockPush).toHaveBeenCalledTimes(1)
+  await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
   expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ partId: '52', role: 'deacon' }) }))
 })
