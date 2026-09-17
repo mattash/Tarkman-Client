@@ -96,7 +96,8 @@
           "locationWhenInUsePermission": "Tarkman checks your location on this device to offer the service at the church you are in. Your location is never sent anywhere.",
           "isAndroidBackgroundLocationEnabled": false
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "router": {},

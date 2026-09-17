@@ -10,6 +10,7 @@ import { readingSizes, spacing, type ReadingSize } from '../../design/tokens'
 import { sampleLanguages } from '../../design/samples'
 import { SwipeablePart } from './SwipeablePart'
 import type { LivePart } from './contracts'
+import { useI18n } from '../i18n'
 
 const READING_WIDTH = 1152
 
@@ -56,6 +57,7 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
   // Rows are memoized and recycled; they reach the latest callbacks through this ref instead of new functions each render.
   const actions = useRef({ manual, open, switchLanguage })
   useEffect(() => { actions.current = { manual, open, switchLanguage } }, [manual, open, switchLanguage])
+  const { t } = useI18n()
   const stopFollowing = useCallback(() => actions.current.manual(), [])
   const openPart = useCallback((part: LivePart) => actions.current.open(part), [])
   const readIn = useMemo(() => switchLanguage ? (value: Language) => actions.current.switchLanguage?.(value) : undefined, [switchLanguage])
@@ -93,7 +95,7 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
       onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y }} scrollEventThrottle={100}
       ListHeaderComponent={header ? <View style={{ paddingHorizontal: gutter }}>{header}</View> : null}
       ListFooterComponent={<View style={{ height: spacing.xxl }} />}
-      ListEmptyComponent={<AppText style={{ padding: page, paddingHorizontal: page + gutter }}>No reading parts are available for this service.</AppText>}
+      ListEmptyComponent={<AppText style={{ padding: page, paddingHorizontal: page + gutter }}>{t('common.noReadingParts')}</AppText>}
       renderItem={({ item, index: itemIndex }) => <ReadingRow item={item} current={item.key === currentKey} past={index >= 0 && itemIndex < index}
         paused={paused} language={language} visibleLanguages={visibleLanguages} alternativesFrom={alternativesFrom} compare={compare}
         columnWidth={columnWidth} columnIndent={columnIndent} page={page} gutter={gutter} readingSize={readingSize}
@@ -108,6 +110,7 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
   readingSize: ReadingSize; onSwipeStart(): void; open(part: LivePart): void; readIn?(language: Language): void
 }) {
   const { colors, scheme } = useTheme()
+  const { t } = useI18n()
   const alternatives = alternativesFrom.filter(value => item.text[value]?.trim())
   const openThis = () => open(item)
   // Position is occurrence identity, not reader-facing content; keep it out of spoken labels.
@@ -116,11 +119,11 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
     <View testID={`reading-${item.key}`} style={{ paddingHorizontal: page + gutter, paddingVertical: spacing.lg,
     gap: spacing.sm, backgroundColor: current ? colors.surface : colors.background, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
     {current && <View accessible={false} style={{ position: 'absolute', top: 0, bottom: 0, left: gutter, width: 3, backgroundColor: colors.currentRule }} />}
-    <Pressable accessibilityRole="button" accessibilityHint="Opens this part in every language, with its explanations."
-      accessibilityLabel={`${item.role}${current ? ', current part' : ''}`} onPress={openThis}
+    <Pressable accessibilityRole="button" accessibilityHint={t('partList.opensPartHint')}
+      accessibilityLabel={current ? t('partList.currentPartLabel', { role: item.role }) : item.role} onPress={openThis}
       style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
       <AppText variant="label" tone={current && scheme === 'light' ? 'accent' : 'muted'} style={{ textTransform: 'capitalize' }}>{item.role}</AppText>
-      {current && <AppText variant="caption" tone="muted">{paused ? 'PAUSED HERE' : 'NOW'}</AppText>}
+      {current && <AppText variant="caption" tone="muted">{paused ? t('partList.pausedHere') : t('partList.now')}</AppText>}
     </Pressable>
     <View testID={`reading-languages-${item.key}`} style={{ flexDirection: compare ? 'row' : 'column', gap: spacing.lg }}>
       {visibleLanguages.map(visibleLanguage => <View key={visibleLanguage} testID={`reading-column-${item.key}-${visibleLanguage}`}
@@ -128,13 +131,13 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
         gap: spacing.sm, paddingLeft: compare ? columnIndent - (visibleLanguage === language ? 3 : 1) : 0,
         borderLeftWidth: compare ? visibleLanguage === language ? 3 : 1 : 0,
         borderLeftColor: visibleLanguage === language ? colors.currentRule : colors.divider }}>
-        {compare && <AppText variant="label">{sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage}
-          {visibleLanguage === language ? ' · reading' : ' · comparison'}</AppText>}
+        {compare && <AppText variant="label">{t(visibleLanguage === language ? 'partList.readingColumn' : 'partList.comparisonColumn',
+          { language: sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage })}</AppText>}
         <LiturgyText language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
         {!item.text[visibleLanguage]?.trim() && readIn && alternatives.length > 0 && <View style={{ gap: spacing.sm }}>
-          <AppText variant="caption" tone="muted">Choose another reading language for this part.</AppText>
+          <AppText variant="caption" tone="muted">{t('partList.chooseAnother')}</AppText>
           {alternatives.map(value => <AppButton key={value} variant="secondary" onPress={() => readIn(value)}>
-            {`Read in ${sampleLanguages.find(candidate => candidate.value === value)!.label}`}
+            {t('partList.readIn', { language: sampleLanguages.find(candidate => candidate.value === value)!.label })}
           </AppButton>)}
         </View>}
       </View>)}

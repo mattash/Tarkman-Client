@@ -3,6 +3,7 @@ import type { KeyValueAdapter, LoginCredentials, User } from '@tarkman/core'
 import { createAuthApi } from './api'
 import { clearAuth, loadAuth, saveAuth } from './session'
 import { authStore } from './storage'
+import { t } from '../i18n'
 
 export type AuthState =
   | { status: 'hydrating' }
@@ -50,7 +51,7 @@ export function AuthProvider({ apiBase, store = authStore, request = fetch, chil
   }, [store, commit])
 
   const signIn = useCallback(async (credentials: LoginCredentials) => {
-    if (!api) throw new Error('Sign-in is not configured for this build.')
+    if (!api) throw new Error(t('signIn.notConfigured'))
     const auth = await api.signIn(credentials)
     await persist(() => saveAuth(store, auth))
     commit({ status: 'signedIn', ...auth })
@@ -90,7 +91,7 @@ export function useAuth(): AuthContextValue {
 
 const UNAUTHORIZED = 'UnauthorizedError'
 function unauthorizedError(): Error {
-  return Object.assign(new Error('Your sign-in has ended. Sign in again to continue.'), { name: UNAUTHORIZED })
+  return Object.assign(new Error(t('signIn.expired')), { name: UNAUTHORIZED })
 }
 export function isUnauthorized(error: unknown): boolean {
   return error instanceof Error && error.name === UNAUTHORIZED

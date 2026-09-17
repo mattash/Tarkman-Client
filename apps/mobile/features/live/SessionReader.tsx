@@ -21,6 +21,7 @@ import { saveLastReading } from '../progress/lastReading'
 import { PartList } from './PartList'
 import { ReaderStatus } from './ReaderStatus'
 import { useScreenKeepAwake } from '../keepAwake/useScreenKeepAwake'
+import { useI18n } from '../i18n'
 
 const abbreviations = { en: 'EN', ru: 'RU', grabar: 'Գրբ', translit: 'TR' } as const
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
@@ -28,6 +29,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const { state, retry, dispatch, saved } = useReader(endpoints, id)
   const { preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear: clearPreferences } = usePreferences()
   const { colors } = useTheme()
+  const { t } = useI18n()
   const { width, height, fontScale } = useWindowDimensions()
   const language = preferences.language
   const [sheet, setSheet] = useState<'language' | 'preferences' | 'explanation' | null>(null)
@@ -43,7 +45,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const following = !showingSaved && state.following
   const savedExplanations = showingSaved ? saved.explanations?.items ?? [] : []
   const part = state.session ? currentPart(state.session, state.parts) : undefined
-  const title = state.session?.title ?? (showingSaved ? saved.session.title : `Session ${id}`)
+  const title = state.session?.title ?? (showingSaved ? saved.session.title : t('reader.sessionFallbackTitle', { id }))
   const church = state.session?.church ?? (showingSaved ? saved.session.church : undefined)
   // Continue reading on Today: the service and the part it had reached, kept on this device only.
   const session = state.session, role = part?.role ?? null
@@ -79,25 +81,25 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     <AppText variant="heading">{title}</AppText>
     {church && <AppText variant="caption" tone="muted">{church}</AppText>}
     <ReaderStatus state={state} retry={retry} showLive={false} savedCopy={showingSaved} />
-    {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">The current part is not available. You can browse the readings.</AppText>}
+    {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">{t('reader.currentPartUnavailable')}</AppText>}
   </View>
   return <View style={{ flex: 1 }}>
     <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
       paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }}>
-        <AppButton variant="quiet" icon="back" iconOnly={width < 600 || accessibilitySize} onPress={back}>All services</AppButton>
-        {live && <StatusPill label="Live" tone="success" icon="connected" announce={false} />}
+        <AppButton variant="quiet" icon="back" iconOnly={width < 600 || accessibilitySize} onPress={back}>{t('common.allServices')}</AppButton>
+        {live && <StatusPill label={t('common.live')} tone="success" icon="connected" announce={false} />}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginLeft: 'auto', flexShrink: 1 }}>
         <AppButton testID="reader-language" ref={languageOpener} variant="quiet" selected icon="languages"
           onPress={() => { activeOpener.current = languageOpener.current; openLanguage() }}
-          accessibilityLabel="Choose reading language" accessibilityHint={`Current language: ${sampleLanguages.find(l => l.value === language)!.label}`}>
+          accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === language)!.label })}>
           {abbreviations[language]}
         </AppButton>
         <AppButton testID="reader-explain" ref={explanationOpener} variant="quiet" icon="explanation" iconOnly disabled={!showingSaved && !part}
-          onPress={() => { activeOpener.current = explanationOpener.current; setSheet('explanation') }}>{showingSaved ? 'Explain saved text' : 'Explain current part'}</AppButton>
+          onPress={() => { activeOpener.current = explanationOpener.current; setSheet('explanation') }}>{showingSaved ? t('reader.explainSavedText') : t('reader.explainCurrentPart')}</AppButton>
         <AppButton testID="reader-preferences" ref={preferencesOpener} variant="quiet" icon="preferences" iconOnly
-          onPress={() => { activeOpener.current = preferencesOpener.current; setSheet('preferences') }}>Reading preferences</AppButton>
+          onPress={() => { activeOpener.current = preferencesOpener.current; setSheet('preferences') }}>{t('readingPreferences.title')}</AppButton>
       </View>
     </View>
     {state.loading ? details : <PartList parts={showingSaved ? saved.parts : state.parts} currentKey={showingSaved ? undefined : part?.key} following={following} language={language}
@@ -109,16 +111,16 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
         role: item.role, service: title, ...(item.posture ? { posture: item.posture } : {}) } })} />}
     {!following && <View testID="return-to-live" style={{ alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md,
       paddingTop: spacing.sm, paddingBottom: spacing.sm, backgroundColor: colors.background }}>
-      {!accessibilitySize && <AppText variant="caption" tone="muted">{showingSaved ? 'Showing saved text' : manualPart !== undefined && manualPart !== part?.key ? 'Live reading moved on' : 'Reading at your own pace'}</AppText>}
-      <AppButton icon="live" rounded accessibilityHint={showingSaved ? "Retries the connection to resume following the live service." : "Resumes automatically following the current part."}
-        onPress={() => { dispatch({ type: 'follow' }); retry() }}>Return to live</AppButton>
+      {!accessibilitySize && <AppText variant="caption" tone="muted">{showingSaved ? t('reader.showingSavedText') : manualPart !== undefined && manualPart !== part?.key ? t('reader.liveMovedOn') : t('reader.ownPace')}</AppText>}
+      <AppButton icon="live" rounded accessibilityHint={showingSaved ? t('reader.returnToLiveSavedHint') : t('reader.returnToLiveHint')}
+        onPress={() => { dispatch({ type: 'follow' }); retry() }}>{t('reader.returnToLive')}</AppButton>
     </View>}
-    <AppModal visible={sheet !== null} title={sheet === 'language' ? (languageMode === 'quick' ? 'Reading language' : 'Choose languages')
-      : sheet === 'preferences' ? 'Reading preferences' : 'Explanation'}
-      openerRef={activeOpener} onDismiss={dismissSheet} dismissLabel={sheet === 'language' && languageMode === 'choose' ? 'Cancel' : 'Done'}
-      headerAction={sheet === 'language' && languageMode === 'choose' ? <AppButton variant="quiet" onPress={applyLanguages}>Apply languages</AppButton> : undefined}>
+    <AppModal visible={sheet !== null} title={sheet === 'language' ? (languageMode === 'quick' ? t('reader.readingLanguage') : t('reader.chooseLanguages'))
+      : sheet === 'preferences' ? t('readingPreferences.title') : t('common.explanation')}
+      openerRef={activeOpener} onDismiss={dismissSheet} dismissLabel={sheet === 'language' && languageMode === 'choose' ? t('common.cancel') : t('common.done')}
+      headerAction={sheet === 'language' && languageMode === 'choose' ? <AppButton variant="quiet" onPress={applyLanguages}>{t('reader.applyLanguages')}</AppButton> : undefined}>
       {sheet === 'language' ? languageMode === 'quick' ? <>
-        <AppText variant="caption" tone="muted">Switching keeps your place and live-following state.</AppText>
+        <AppText variant="caption" tone="muted">{t('reader.switchingKeepsPlace')}</AppText>
         {preferences.selectedLanguages.map(value => {
           const item = sampleLanguages.find(candidate => candidate.value === value)!
           return <LanguageSelectionRow key={value} language={value} label={item.label} selected={value === language}
@@ -128,10 +130,10 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           setDraftLanguages(preferences.selectedLanguages)
           setLanguageError(false)
           setLanguageMode('choose')
-        }}>Choose languages</AppButton>
+        }}>{t('reader.chooseLanguages')}</AppButton>
       </> : <>
-        <AppText variant="caption" tone="muted">{`Choose up to ${MAX_LANGUAGES} languages for the quick switcher. On a wide screen they are shown side by side.`}</AppText>
-        {languageError && <StatusPill tone="danger" label="Keep at least one reading language." />}
+        <AppText variant="caption" tone="muted">{t('reader.chooseUpTo', { count: MAX_LANGUAGES })}</AppText>
+        {languageError && <StatusPill tone="danger" label={t('common.keepOneReadingLanguage')} />}
         {/* Three is the most that fit side by side, so a fourth cannot be added until one is removed. */}
         {sampleLanguages.map(item => <LanguageSelectionRow key={item.value} language={item.value} label={item.label} multiple
           disabled={!draftLanguages.includes(item.value) && draftLanguages.length >= MAX_LANGUAGES}
@@ -140,36 +142,36 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
             setDraftLanguages(current => current.includes(item.value) ? current.filter(value => value !== item.value) : [...current, item.value])
           }} />)}
       </> : sheet === 'preferences' ? <>
-        <AppText variant="label">Appearance</AppText>
-        <SegmentedControl label="Appearance" value={preferences.appearance} onChange={setAppearance}
-          options={[{ value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
-        <AppText variant="caption" tone="muted">System follows this device’s light or dark appearance.</AppText>
-        <AppText variant="label" style={{ marginTop: spacing.md }}>Reading size</AppText>
-        <SegmentedControl label="Reading size" value={preferences.readingSize} onChange={setReadingSize}
-          options={[{ value: 'standard', label: 'Standard' }, { value: 'larger', label: 'Larger' }, { value: 'extraLarge', label: 'Extra large' }]} />
+        <AppText variant="label">{t('readingPreferences.appearance')}</AppText>
+        <SegmentedControl label={t('readingPreferences.appearance')} value={preferences.appearance} onChange={setAppearance}
+          options={[{ value: 'system', label: t('readingPreferences.system') }, { value: 'light', label: t('readingPreferences.light') }, { value: 'dark', label: t('readingPreferences.dark') }]} />
+        <AppText variant="caption" tone="muted">{t('readingPreferences.systemHint')}</AppText>
+        <AppText variant="label" style={{ marginTop: spacing.md }}>{t('readingPreferences.readingSize')}</AppText>
+        <SegmentedControl label={t('readingPreferences.readingSize')} value={preferences.readingSize} onChange={setReadingSize}
+          options={[{ value: 'standard', label: t('readingPreferences.standard') }, { value: 'larger', label: t('readingPreferences.larger') }, { value: 'extraLarge', label: t('readingPreferences.extraLarge') }]} />
         <View style={{ backgroundColor: colors.surface, padding: spacing.md, gap: spacing.sm, borderRadius: radii.control }}>
-          <AppText variant="caption" tone="muted">{showingSaved ? 'Preview · saved text' : 'Preview · current part'}</AppText>
+          <AppText variant="caption" tone="muted">{showingSaved ? t('reader.previewSaved') : t('reader.previewCurrent')}</AppText>
           <LiturgyText text={(showingSaved ? saved.parts[0] : part)?.text[language]?.split(/\r?\n/)[0]} language={language} readingSize={preferences.readingSize} compactStanzas />
         </View>
-        <AppText variant="caption" tone="muted">Reading size adds to your device’s text size setting.</AppText>
+        <AppText variant="caption" tone="muted">{t('readingPreferences.readingSizeHint')}</AppText>
         <View style={{ borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: spacing.lg, marginTop: spacing.md, gap: spacing.sm }}>
           {forgetting ? <>
-            <AppText accessibilityRole="alert">Reset your reading languages and reading size? Appearance will stay the same.</AppText>
-            <AppButton variant="destructive" onPress={() => { clearPreferences(); dismissSheet() }}>Reset reading choices</AppButton>
-            <AppButton variant="quiet" onPress={() => setForgetting(false)}>Keep my choices</AppButton>
-          </> : <AppButton variant="secondary" onPress={() => setForgetting(true)}>Forget my reading choices</AppButton>}
+            <AppText accessibilityRole="alert">{t('readingPreferences.resetConfirm')}</AppText>
+            <AppButton variant="destructive" onPress={() => { clearPreferences(); dismissSheet() }}>{t('readingPreferences.reset')}</AppButton>
+            <AppButton variant="quiet" onPress={() => setForgetting(false)}>{t('readingPreferences.keep')}</AppButton>
+          </> : <AppButton variant="secondary" onPress={() => setForgetting(true)}>{t('readingPreferences.forget')}</AppButton>}
         </View>
       </> : <>
-        <AppText variant="label" style={{ textTransform: 'capitalize' }}>{showingSaved ? 'Last-seen explanations' : part?.role ?? 'Current part unavailable'}</AppText>
-        <AppText variant="caption" tone="muted">{showingSaved ? 'Saved explanations from the last time this service was read. They may be out of date and do not follow the service.' : 'Explanations follow the service’s current part, even while you read elsewhere.'}</AppText>
-        {showingSaved ? savedExplanations.length === 0 ? <AppText variant="explanation">No explanation was saved for this service.</AppText>
+        <AppText variant="label" style={{ textTransform: 'capitalize' }}>{showingSaved ? t('reader.lastSeenExplanations') : part?.role ?? t('reader.currentPartUnavailableShort')}</AppText>
+        <AppText variant="caption" tone="muted">{showingSaved ? t('reader.savedExplanationsNote') : t('reader.explanationsFollowNote')}</AppText>
+        {showingSaved ? savedExplanations.length === 0 ? <AppText variant="explanation">{t('reader.noSavedExplanation')}</AppText>
           : savedExplanations.map(explanation => <View key={explanation.id} style={{ gap: spacing.sm }}>
             <AppText variant="heading">{explanation.title}</AppText><LiturgyText variant="explanation" text={explanation.description} />
           </View>)
-          : state.loading ? <StatusPill label="Loading the explanation…" tone="info" busy />
-          : state.stale ? <StatusPill label="Reconnecting" tone="info" message="Explanations will refresh with the current part." />
-          : state.explanationError ? <><StatusPill label="Could not load explanations." tone="danger" /><AppButton loading={state.refreshing} onPress={retry}>Retry explanations</AppButton></>
-          : state.explanations.length === 0 ? <AppText variant="explanation">No explanation is available for this part.</AppText>
+          : state.loading ? <StatusPill label={t('reader.loadingExplanation')} tone="info" busy />
+          : state.stale ? <StatusPill label={t('common.reconnecting')} tone="info" message={t('reader.explanationsRefresh')} />
+          : state.explanationError ? <><StatusPill label={t('reader.couldNotLoadExplanations')} tone="danger" /><AppButton loading={state.refreshing} onPress={retry}>{t('reader.retryExplanations')}</AppButton></>
+          : state.explanations.length === 0 ? <AppText variant="explanation">{t('common.noPartExplanation')}</AppText>
           : state.explanations.map(explanation => <View key={explanation.id} style={{ gap: spacing.sm }}>
             <AppText variant="heading">{explanation.title}</AppText><LiturgyText variant="explanation" text={explanation.description} />
           </View>)}

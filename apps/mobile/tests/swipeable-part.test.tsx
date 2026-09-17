@@ -41,7 +41,7 @@ const trayReachable = (view: RenderResult) => view.queryByLabelText('View detail
 it('leaves the tray unreachable until a swipe settles it open', async () => {
   const view = await render(row('row-hidden', jest.fn(), jest.fn()))
   expect(trayReachable(view)).toBe(false)
-  const instance = findSwipeable('row-hidden')
+  const instance = findSwipeable('row-hidden-gesture')
   await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
   instance.progress.value = reveal
   await act(async () => { (instance.props['onSwipeableWillOpen'] as () => void)() })
@@ -51,7 +51,7 @@ it('leaves the tray unreachable until a swipe settles it open', async () => {
 it('reports the drag start once the gesture is recognised, before it settles', async () => {
   const onSwipeStart = jest.fn()
   await render(row('row-start', onSwipeStart, jest.fn()))
-  const instance = findSwipeable('row-start')
+  const instance = findSwipeable('row-start-gesture')
   await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
   expect(onSwipeStart).toHaveBeenCalledTimes(1)
 })
@@ -59,7 +59,7 @@ it('reports the drag start once the gesture is recognised, before it settles', a
 it('opens the part from the revealed tray button', async () => {
   const onOpen = jest.fn()
   const view = await render(row('row-press', jest.fn(), onOpen))
-  const instance = findSwipeable('row-press')
+  const instance = findSwipeable('row-press-gesture')
   await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
   instance.progress.value = reveal
   await act(async () => { (instance.props['onSwipeableWillOpen'] as () => void)() })
@@ -74,7 +74,7 @@ it('opens the part without the tray when a drag crosses half the row', async () 
   const onOpen = jest.fn()
   const view = await render(row('row-full', jest.fn(), onOpen))
   await measure(view, 'row-full')
-  const instance = findSwipeable('row-full')
+  const instance = findSwipeable('row-full-gesture')
   await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
   instance.progress.value = fullSwipe
   await act(async () => { (instance.props['onSwipeableWillOpen'] as () => void)() })
@@ -87,7 +87,7 @@ it('reveals the tray, and opens nothing, when a drag stops short of half the row
   const onOpen = jest.fn()
   const view = await render(row('row-short', jest.fn(), onOpen))
   await measure(view, 'row-short')
-  const instance = findSwipeable('row-short')
+  const instance = findSwipeable('row-short-gesture')
   await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
   // 2.2 progress is 158pt: past the tray, short of the 201pt half-row trigger.
   instance.progress.value = 2.2
@@ -99,7 +99,7 @@ it('reveals the tray, and opens nothing, when a drag stops short of half the row
 
 it('takes the tray back out of reach when the row swipes closed', async () => {
   const view = await render(row('row-close', jest.fn(), jest.fn()))
-  const instance = findSwipeable('row-close')
+  const instance = findSwipeable('row-close-gesture')
   await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
   instance.progress.value = reveal
   await act(async () => { (instance.props['onSwipeableWillOpen'] as () => void)() })
@@ -111,7 +111,7 @@ it('measures each drag on its own, so a closed row does not inherit the last pea
   const onOpen = jest.fn()
   const view = await render(row('row-peak', jest.fn(), onOpen))
   await measure(view, 'row-peak')
-  const instance = findSwipeable('row-peak')
+  const instance = findSwipeable('row-peak-gesture')
   await act(async () => { (instance.props['onSwipeableOpenStartDrag'] as () => void)() })
   instance.progress.value = fullSwipe
   await act(async () => { (instance.props['onSwipeableWillOpen'] as () => void)() })
@@ -128,7 +128,7 @@ it('opens the part the recycled row now shows, closing the row it inherited', as
   const second = jest.fn()
   const view = await render(row('row-first', jest.fn(), first))
   await view.rerender(row('row-second', jest.fn(), second))
-  const instance = findSwipeable('row-second')
+  const instance = findSwipeable('row-second-gesture')
   // Recycling resets the swipeable so the new part never appears mid-swipe.
   expect(instance.methods.reset).toHaveBeenCalled()
   await measure(view, 'row-second')

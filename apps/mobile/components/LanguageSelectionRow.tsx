@@ -5,6 +5,7 @@ import { useTheme } from '../design/ThemeProvider'
 import { radii, spacing, touchTarget } from '../design/tokens'
 import { AppIcon } from './AppIcon'
 import { AppText } from './AppText'
+import { useI18n } from '../features/i18n'
 
 export function LanguageSelectionRow({ label, language, selected, multiple = false, disabled = false, onPress }: {
   label: string; language: Language; selected: boolean; multiple?: boolean
@@ -12,9 +13,10 @@ export function LanguageSelectionRow({ label, language, selected, multiple = fal
   disabled?: boolean; onPress(): void
 }) {
   const { colors } = useTheme()
+  const { t } = useI18n()
   const [pressed, setPressed] = useState(false)
   return <Pressable accessibilityRole={multiple ? 'checkbox' : 'button'} accessibilityLabel={label}
-    accessibilityHint={multiple ? selected ? 'Double tap to remove this language' : 'Double tap to add this language' : undefined}
+    accessibilityHint={multiple ? selected ? t('languageRow.removeHint') : t('languageRow.addHint') : undefined}
     {...(Platform.OS === 'web' ? multiple ? { 'aria-checked': selected } : { 'aria-selected': selected } : {})}
     accessibilityState={multiple ? { checked: selected, selected, disabled } : { selected, disabled }} disabled={disabled} onPress={onPress}
     onPressIn={() => setPressed(true)} onPressOut={() => setPressed(false)}

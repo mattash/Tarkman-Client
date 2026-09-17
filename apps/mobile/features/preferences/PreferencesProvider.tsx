@@ -2,12 +2,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { KeyValueAdapter, Language } from '@tarkman/core'
 import { readingSizes, type ReadingSize } from '../../design/tokens'
 import { preferencesStore } from './storage'
+import { isInterfaceLanguage, type InterfaceLanguage, type InterfaceLanguagePreference } from '../i18n'
 
 export const PREFERENCES_KEY = 'tarkman.preferences.v1'
 export const DEFAULT_LANGUAGE: Language = 'en'
 export const LANGUAGES: readonly Language[] = ['en', 'ru', 'grabar', 'translit']
-/** Spoken language names, pronounceable without an Armenian or Russian voice, for labels beside text in its own script. */
-export const SPOKEN_LANGUAGE: Record<Language, string> = { en: 'English', ru: 'Russian', grabar: 'Classical Armenian', translit: 'Transliteration' }
 export type AppearancePreference = 'system' | 'light' | 'dark'
 /** The most languages that fit side by side on a wide screen, for reading and for service control alike. */
 export const MAX_LANGUAGES = 3
@@ -28,6 +27,8 @@ export interface Preferences {
    * so control follows the reading language, with Grabar next. Kept apart so arranging control never changes the reading screen.
    */
   controlLanguages?: Language[]
+  /** The interface language; absent means follow the device. Kept apart from reading languages, which choose liturgical text. */
+  interfaceLanguage?: InterfaceLanguage
 }
 
 const DEFAULT_PREFERENCES: Preferences = {
@@ -47,7 +48,9 @@ export interface PreferencesContextValue {
   setReadingSize(size: ReadingSize): void
   /** Sets service control's languages in order; duplicates, unknown values and anything past the limit are dropped. */
   setControlLanguages(languages: readonly Language[]): void
-  /** Resets reading choices while preserving the reader's appearance. */
+  /** Chooses the interface language, or 'system' to follow the device again. */
+  setInterfaceLanguage(language: InterfaceLanguagePreference): void
+  /** Resets reading choices while preserving the reader's appearance and interface language. */
   clear(): void
 }
 
@@ -137,19 +140,30 @@ export function PreferencesProvider({ store = preferencesStore, children }: { st
     })
   }, [store, persist])
 
+  const setInterfaceLanguage = useCallback((language: InterfaceLanguagePreference) => {
+    if (language !== 'system' && !isInterfaceLanguage(language)) return
+    localRevision.current += 1
+    setPreferences(current => {
+      const next: Preferences = { ...current, interfaceLanguage: language === 'system' ? undefined : language }
+      if (language === 'system') delete next.interfaceLanguage
+      persist(() => store.set(PREFERENCES_KEY, JSON.stringify(next)))
+      return next
+    })
+  }, [store, persist])
+
   const clear = useCallback(() => {
     localRevision.current += 1
     setPreferences(current => {
-      const next = { ...DEFAULT_PREFERENCES, appearance: current.appearance }
-      persist(() => current.appearance === 'system'
+      const next: Preferences = { ...DEFAULT_PREFERENCES, appearance: current.appearance, ...(current.interfaceLanguage ? { interfaceLanguage: current.interfaceLanguage } : {}) }
+      persist(() => current.appearance === 'system' && !current.interfaceLanguage
         ? store.remove(PREFERENCES_KEY)
         : store.set(PREFERENCES_KEY, JSON.stringify(next)))
       return next
     })
   }, [store, persist])
 
-  const value = useMemo(() => ({ ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, setControlLanguages, clear }),
-    [ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, setControlLanguages, clear])
+  const value = useMemo(() => ({ ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, setControlLanguages, setInterfaceLanguage, clear }),
+    [ready, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, setControlLanguages, setInterfaceLanguage, clear])
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
 
@@ -164,7 +178,7 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
   try {
     const data: unknown = JSON.parse(raw)
     if (!data || typeof data !== 'object') return null
-    const record = data as { language?: unknown; selectedLanguages?: unknown; appearance?: unknown; readingSize?: unknown; controlLanguages?: unknown }
+    const record = data as { language?: unknown; selectedLanguages?: unknown; appearance?: unknown; readingSize?: unknown; controlLanguages?: unknown; interfaceLanguage?: unknown }
     if (typeof record.language !== 'string' || !LANGUAGES.includes(record.language as Language)) return null
     const language = record.language as Language
     const storedLanguages = Array.isArray(record.selectedLanguages) ? record.selectedLanguages : null
@@ -181,6 +195,9 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
     const controlLanguages = Array.isArray(record.controlLanguages) ? normalizeControlLanguages(record.controlLanguages) : null
     const controlChanged = record.controlLanguages !== undefined && (!controlLanguages
       || JSON.stringify(controlLanguages) !== JSON.stringify(record.controlLanguages))
+    // An interface language this build does not ship is dropped, so the app follows the device instead.
+    const interfaceLanguage = isInterfaceLanguage(record.interfaceLanguage) ? record.interfaceLanguage : undefined
+    const interfaceChanged = record.interfaceLanguage !== undefined && interfaceLanguage === undefined
     const normalizedSelection = storedLanguages !== null && storedLanguages.length === selectedLanguages.length
       && storedLanguages.every((item, index) => item === selectedLanguages[index])
     return {
@@ -190,8 +207,9 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
         appearance,
         readingSize,
         ...(controlLanguages ? { controlLanguages } : {}),
+        ...(interfaceLanguage ? { interfaceLanguage } : {}),
       },
-      migrated: !validReadingSize || !normalizedSelection || !validAppearance || !selectedLanguages.includes(language) || controlChanged,
+      migrated: !validReadingSize || !normalizedSelection || !validAppearance || !selectedLanguages.includes(language) || controlChanged || interfaceChanged,
     }
   } catch {
     return null

@@ -2,11 +2,12 @@ import { beforeEach, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { colors } from '../design/tokens'
-import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
+import { PreferencesProvider, usePreferences } from '../features/preferences/PreferencesProvider'
 import { ServicesProvider } from '../features/home/ServicesProvider'
 import { Today } from '../features/home/Today'
 import { ServicesList } from '../features/home/ServicesList'
 import { Settings } from '../features/home/Settings'
+import { I18nProvider, setActiveInterfaceLanguage } from '../features/i18n'
 import { TabBar } from '../components/TabBar'
 import { normalizeServices } from '../features/live/contracts'
 import { initialState } from '../features/live/state'
@@ -207,3 +208,23 @@ it('shows configuration failure without mounting network consumers', async () =>
     expect(useReader).not.toHaveBeenCalled()
   } finally { if (api !== undefined) process.env.EXPO_PUBLIC_API_URL = api; if (cable !== undefined) process.env.EXPO_PUBLIC_ACTIONCABLE_URL = cable }
 })
+
+it('chooses a draft interface language in Settings and switches the screen to it', async () => {
+  function Localized({ children }: { children: React.ReactNode }) {
+    const { preferences: chosen } = usePreferences()
+    return <I18nProvider preference={chosen.interfaceLanguage} includeDrafts>{children}</I18nProvider>
+  }
+  try {
+    await render(<Settings />, { wrapper: ({ children }) => wrapper({ children: <Localized>{children}</Localized> }) })
+    expect(screen.getByText('Interface language')).toBeOnTheScreen()
+    expect(screen.getByText('Draft translations are still being checked and may contain mistakes.')).toBeOnTheScreen()
+    await fireEvent.press(screen.getByRole('radio', { name: 'Русский · draft' }))
+    expect(await screen.findByText('Язык интерфейса')).toBeOnTheScreen()
+    expect(screen.getByRole('radio', { name: 'Русский · черновик' })).toBeSelected()
+    await fireEvent.press(screen.getByRole('radio', { name: 'Как на устройстве' }))
+    expect(await screen.findByText('Interface language')).toBeOnTheScreen()
+  } finally {
+    setActiveInterfaceLanguage('en')
+  }
+})
+

@@ -5,6 +5,7 @@ import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture
 import { useAnimatedReaction, useSharedValue, type SharedValue } from 'react-native-reanimated'
 import { AppButton } from '../../components/AppButton'
 import { useTheme } from '../../design/ThemeProvider'
+import { useI18n } from '../i18n'
 
 const actionWidth = 72
 
@@ -30,7 +31,9 @@ export function SwipeablePart({ children, partLabel, testID, onSwipeStart, onOpe
     actions.current.onSwipeStart()
   }
   return <View testID={testID} onLayout={event => { width.current = event.nativeEvent.layout.width }}>
-    <ReanimatedSwipeable ref={swipeable} testID={testID}
+    {/* The gesture surface keeps the "-gesture" suffix the old PanResponder view established, so row
+        queries and gesture queries stay distinct testIDs on device. */}
+    <ReanimatedSwipeable ref={swipeable} testID={`${testID}-gesture`}
       renderRightActions={progress => <PartActionsTray progress={progress} maxProgress={maxProgress}
         partLabel={partLabel} revealed={revealed} onPress={() => {
           swipeable.current?.reset()
@@ -67,6 +70,7 @@ function PartActionsTray({ progress, maxProgress, partLabel, revealed, onPress }
   progress: SharedValue<number>; maxProgress: SharedValue<number>; partLabel: string; revealed: boolean; onPress(): void
 }) {
   const { colors } = useTheme()
+  const { t } = useI18n()
   // Track the highest progress reached during a drag so the full-swipe trigger can read it on the JS thread.
   useAnimatedReaction(() => progress.value, value => {
     // eslint-disable-next-line react-hooks/immutability -- worklet writes back to the parent's shared value
@@ -75,6 +79,6 @@ function PartActionsTray({ progress, maxProgress, partLabel, revealed, onPress }
   return <View pointerEvents={revealed ? 'auto' : 'none'} accessibilityElementsHidden={!revealed}
     importantForAccessibility={revealed ? 'auto' : 'no-hide-descendants'}
     style={{ width: actionWidth, height: '100%', backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' }}>
-    <AppButton icon="details" iconOnly variant="quiet" accessibilityLabel={`View details for ${partLabel}`} onPress={onPress}>Details</AppButton>
+    <AppButton icon="details" iconOnly variant="quiet" accessibilityLabel={t('partList.viewDetails', { part: partLabel })} onPress={onPress}>{t('partList.details')}</AppButton>
   </View>
 }
