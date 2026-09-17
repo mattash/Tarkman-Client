@@ -2,7 +2,7 @@
 
 This runs the **Expo mobile app's web export**, one authenticated control screen and two independent readers. It presses the real Next/Back buttons on session **4008** and preserves the application's current recovery behavior. Each command is joined to browser, Rails, ActionCable, and job observations by opaque run/command IDs.
 
-See [validation](VALIDATION.md) for completed checks and the production baseline's remaining integration boundary.
+See [validation](VALIDATION.md) for completed production checks and measurement limits.
 
 ## Install and build
 
@@ -50,7 +50,7 @@ Resources verified on 2026-09-17:
 - Web: `srv-d4gimpali9vc73dl02vg`, standard plan, Oregon.
 - Worker: `srv-d4gio34hg0os73fqro8g`, starter plan, Oregon.
 - Database: `dpg-d4gi9e3uibrs73d0hqjg-a`, PostgreSQL 18, Oregon.
-- Web and worker revision at inspection: `4e8df4c54df23bf43e7e1e57f7d0633bea4207fc`.
+- Initial baseline revision: `4e8df4c54df23bf43e7e1e57f7d0633bea4207fc`; verified instrumentation deployed on both services at `c5171948a746d8c516acae90877c39148cbeb127` after PRs #429–431.
 - Session 4008: three liturgies, initial production part 216, dated 2026-09-13. The runner always reads fresh state; it does not change the date to make it appear in Today's services.
 
 `--client-only` permits a browser-only run before backend instrumentation is deployed. It cannot establish a complete server/worker breakdown and labels correlation accordingly. It does not bypass control authorization or subscription checks. Do not compare this population directly to a fully instrumented run without accounting for instrumentation overhead.
