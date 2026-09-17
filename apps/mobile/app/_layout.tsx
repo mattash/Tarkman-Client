@@ -1,7 +1,7 @@
 import '../global.css'
 import * as Sentry from '@sentry/react-native'
 import { Stack } from 'expo-router'
-import { View } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { ThemeProvider, useTheme } from '../design/ThemeProvider'
@@ -27,7 +27,7 @@ function RootContent() {
   const insets = useSafeAreaInsets()
   // Each screen owns its safe area, so the tab bar can reach the home indicator and the scanner can fill the display.
   const safe = { paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }
-  return <View style={{ flex: 1, backgroundColor: colors.background }}>
+  return <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
     <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     <ReadingFontProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background, ...safe } }}>
@@ -35,7 +35,7 @@ function RootContent() {
         <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: scanner.canvas } }} />
       </Stack>
     </AuthProvider></ReadingFontProvider>
-  </View>
+  </GestureHandlerRootView>
 }
 
 export default Sentry.wrap(RootLayout)
