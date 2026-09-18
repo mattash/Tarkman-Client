@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, useWindowDimensions } from 'react-native'
+import { View, useWindowDimensions, type LayoutChangeEvent } from 'react-native'
 import { router } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
@@ -20,6 +20,8 @@ import { publishLivePosition } from './livePosition'
 import { saveLastReading } from '../progress/lastReading'
 import { PartList } from './PartList'
 import { ReaderStatus } from './ReaderStatus'
+import { ControlConnectionStatus } from './ConnectionStatus'
+import { lifecycle } from './lifecycle'
 import { useScreenKeepAwake } from '../keepAwake/useScreenKeepAwake'
 import { useI18n } from '../i18n'
 
@@ -58,6 +60,20 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     [id, parts, currentKey, dispatch, retry])
   const accessibilitySize = fontScale > 1.5
   const compactReading = accessibilitySize || width > height || !following
+  // The reader sends no commands; its indicator reads the same connection fields as the controller's.
+  const [online, setOnline] = useState(true)
+  useEffect(() => lifecycle.listen((_active, connected) => { setOnline(current => current === connected ? current : connected) }), [])
+  // The status widget is the first thing to go: the left group (Back) marks the single-row height,
+  // and if the actions group grows past it with the widget included, the widget is omitted until the
+  // viewport, text scale, or language changes. A saved copy must not imply server synchronization.
+  const fitKey = `${width}:${fontScale}:${language}`
+  const [wrappedAt, setWrappedAt] = useState<string | null>(null)
+  const rowHeight = useRef<number | null>(null)
+  const showStatus = !showingSaved && wrappedAt !== fitKey
+  const markRow = (event: LayoutChangeEvent) => { rowHeight.current ??= event.nativeEvent.layout.height }
+  const markActions = (event: LayoutChangeEvent) => {
+    if (rowHeight.current !== null && event.nativeEvent.layout.height > rowHeight.current + 1) setWrappedAt(fitKey)
+  }
   const dismissSheet = () => {
     setDraftLanguages(preferences.selectedLanguages)
     setLanguageError(false)
@@ -86,11 +102,12 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   return <View style={{ flex: 1 }}>
     <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
       paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }}>
+      <View testID="reader-header-nav" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }} onLayout={markRow}>
         <AppButton variant="quiet" icon="back" iconOnly={width < 600 || accessibilitySize} onPress={back}>{t('common.allServices')}</AppButton>
         {live && <StatusPill label={t('common.live')} tone="success" icon="connected" announce={false} />}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginLeft: 'auto', flexShrink: 1 }}>
+      <View testID="reader-header-buttons" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginLeft: 'auto', flexShrink: 1 }} onLayout={markActions}>
+        {showStatus && <ControlConnectionStatus state={state} offline={!online} sending={false} />}
         <AppButton testID="reader-language" ref={languageOpener} variant="quiet" selected icon="languages"
           onPress={() => { activeOpener.current = languageOpener.current; openLanguage() }}
           accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === language)!.label })}>

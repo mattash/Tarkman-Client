@@ -23,6 +23,7 @@ const mockBack = jest.fn()
 let mockParams: Record<string, string> = { id: '9', partId: '52' }
 jest.mock('expo-router', () => ({ router: { push: (path: unknown) => mockPush(path), back: () => mockBack(), replace: jest.fn(), canGoBack: () => true }, useLocalSearchParams: () => mockParams }))
 jest.mock('../features/live/useReader')
+jest.mock('../features/live/lifecycle', () => ({ lifecycle: { listen: (callback: (active: boolean, online: boolean) => void) => { callback(true, true); return () => {} } } }))
 
 const preferences = { get: async () => null, set: async () => {}, remove: async () => {} }
 const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider scheme="light"><PreferencesProvider store={preferences}>{children}</PreferencesProvider></ThemeProvider>

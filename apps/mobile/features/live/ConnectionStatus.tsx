@@ -7,7 +7,7 @@ import { Notice } from '../../components/Notice'
 import { useTheme } from '../../design/ThemeProvider'
 import { radii, spacing } from '../../design/tokens'
 import { useI18n } from '../i18n'
-import type { ReaderState } from '../live/state'
+import type { ReaderState } from './state'
 
 export function ControlConnectionStatus({ state, offline, sending }: { state: ReaderState; offline: boolean; sending: boolean }) {
   const { colors } = useTheme()
