@@ -146,7 +146,7 @@ it('successful empty live recovery keeps the ordinary reader despite a matching 
   expect(screen.getByLabelText('Live')).toBeOnTheScreen()
   expectNoSavedContent()
   await act(async () => { cable.disconnected() })
-  expect(screen.getByText('Reconnecting')).toBeOnTheScreen()
+  expect(within(screen.getByTestId('reader-header-details')).getByText('Reconnecting')).toBeOnTheScreen()
   expectNoSavedContent()
   await act(async () => { resolve([]) })
   await flush()
