@@ -97,7 +97,7 @@ it('leads with a single live service and reads along in one tap', async () => {
   const lead = screen.getByTestId('lead-service')
   expect(within(lead).getByText('Live now')).toBeOnTheScreen()
   expect(within(lead).getByText('Priest')).toBeOnTheScreen()
-  await fireEvent.press(within(lead).getByRole('button', { name: 'Read along' }))
+  await fireEvent.press(within(lead).getByRole('button', { name: 'Pray along' }))
   expect(mockPush).toHaveBeenCalledWith('/sessions/9/parts')
   // A number is never shown, even when the API sends a position.
   expect(screen.queryByText(/\b\d+\b/)).toBeNull()
@@ -107,7 +107,7 @@ it('drops Now reading until the API publishes the current role', async () => {
   listing([stJohn])
   await render(<Today />, { wrapper })
   expect(screen.queryByTestId('now-reading')).toBeNull()
-  expect(within(screen.getByTestId('lead-service')).getByRole('button', { name: 'Read along' })).toBeOnTheScreen()
+  expect(within(screen.getByTestId('lead-service')).getByRole('button', { name: 'Pray along' })).toBeOnTheScreen()
 })
 
 it('does not guess a lead when several services are live and location is unknown', async () => {
@@ -258,4 +258,3 @@ it('chooses a draft interface language in Settings and switches the screen to it
     setActiveInterfaceLanguage('en')
   }
 })
-

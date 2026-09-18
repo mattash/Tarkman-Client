@@ -101,6 +101,8 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
   const { colors, scheme } = useTheme()
   const { t } = useI18n()
   const alternatives = alternativesFrom.filter(value => item.text[value]?.trim())
+  // The row's live-state rule already identifies the active reading column. Keeping its
+  // column rule would draw two competing accents, while older rows retain their column rule.
   const openThis = () => open(item)
   // Position is occurrence identity, not reader-facing content; keep it out of spoken labels.
   return <SwipeablePart testID={`swipe-${item.key}`} partLabel={item.role}
@@ -115,10 +117,12 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
       {current && <AppText variant="caption" tone="muted">{paused ? t('partList.pausedHere') : t('partList.now')}</AppText>}
     </Pressable>
     <View testID={`reading-languages-${item.key}`} style={{ flexDirection: compare ? 'row' : 'column', gap: spacing.lg }}>
-      {visibleLanguages.map(visibleLanguage => <View key={visibleLanguage} testID={`reading-column-${item.key}-${visibleLanguage}`}
+      {visibleLanguages.map(visibleLanguage => {
+        const suppressActiveColumnRule = current && compare && visibleLanguage === language
+        return <View key={visibleLanguage} testID={`reading-column-${item.key}-${visibleLanguage}`}
         style={{ width: columnWidth, flexGrow: 0, flexShrink: 0, minWidth: 0,
-        gap: spacing.sm, paddingLeft: compare ? columnIndent - (visibleLanguage === language ? 3 : 1) : 0,
-        borderLeftWidth: compare ? visibleLanguage === language ? 3 : 1 : 0,
+        gap: spacing.sm, paddingLeft: compare ? columnIndent - (suppressActiveColumnRule ? 0 : visibleLanguage === language ? 3 : 1) : 0,
+        borderLeftWidth: compare && !suppressActiveColumnRule ? visibleLanguage === language ? 3 : 1 : 0,
         borderLeftColor: visibleLanguage === language ? colors.currentRule : colors.divider }}>
         {compare && <AppText variant="label">{t(visibleLanguage === language ? 'partList.readingColumn' : 'partList.comparisonColumn',
           { language: sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage })}</AppText>}
@@ -129,7 +133,8 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
             {t('partList.readIn', { language: sampleLanguages.find(candidate => candidate.value === value)!.label })}
           </AppButton>)}
         </View>}
-      </View>)}
+      </View>
+      })}
     </View>
     </View>
   </SwipeablePart>

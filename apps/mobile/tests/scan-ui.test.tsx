@@ -54,7 +54,7 @@ it('confirms the service a scanned code points at before entering it', async () 
   expect(mockSession).toHaveBeenCalledTimes(1)
   expect(mockReplace).not.toHaveBeenCalled()
   expect(announce).toHaveBeenCalledWith('Found Divine Liturgy at St. John Armenian Church, live')
-  await fireEvent.press(screen.getByRole('button', { name: 'Read along' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Pray along' }))
   expect(mockReplace).toHaveBeenCalledWith('/sessions/4006/parts')
 })
 
