@@ -1,6 +1,6 @@
 import * as ReactNative from 'react-native'
 import { beforeEach, expect, it, jest } from '@jest/globals'
-import { fireEvent, render, screen, within } from '@testing-library/react-native'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
 import { SessionReader } from '../features/live/SessionReader'
@@ -10,6 +10,8 @@ import { normalizeParts, normalizeSession } from '../features/live/contracts'
 jest.mock('../features/live/useReader')
 jest.mock('../features/auth/AuthProvider', () => ({ useAuth: () => ({ state: { status: 'signedOut' } }) }))
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
+let mockOnline = true
+jest.mock('../features/live/lifecycle', () => ({ lifecycle: { listen: (callback: (active: boolean, online: boolean) => void) => { callback(true, mockOnline); return () => {} } } }))
 const preferencesStore = { get: async () => null, set: async () => {}, remove: async () => {} }
 const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={preferencesStore}>{children}</PreferencesProvider></ThemeProvider>
 // A reader who chose Russian among their three languages.
@@ -17,7 +19,7 @@ const russianStore = { ...preferencesStore, get: async () => JSON.stringify({ la
 const russianWrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={russianStore}>{children}</PreferencesProvider></ThemeProvider>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const retry = jest.fn(), dispatch = jest.fn()
-beforeEach(() => { jest.clearAllMocks(); jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false }, retry, refreshAfterCommand: jest.fn(), dispatch }) })
+beforeEach(() => { jest.clearAllMocks(); mockOnline = true; jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false }, retry, refreshAfterCommand: jest.fn(), dispatch }) })
 it('hides Return to live while automatically following', async () => {
   const back = jest.fn()
   await render(<SessionReader endpoints={endpoints} id={7} back={back} />, { wrapper })
@@ -191,4 +193,57 @@ it.each([
     await fireEvent.press(screen.getByRole('button', { name: 'Explain current part' }))
     expect(screen.getByText('No explanation is available for this part.')).toBeOnTheScreen()
   } finally { viewport.mockRestore() }
+})
+
+it('shows the shared connection indicator in the reader toolbar', async () => {
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session }, retry, refreshAfterCommand: jest.fn(), dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+})
+
+it('derives the indicator from the same connection fields as the controller, without polling', async () => {
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
+  const show = (state: object) => jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, ...state }, retry, refreshAfterCommand: jest.fn(), dispatch })
+  show({ connected: true, stale: false, session })
+  const view = await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  show({ connected: true, stale: true, session })
+  await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
+  expect(screen.getByLabelText('Server connection: Synchronizing')).toBeOnTheScreen()
+  show({ connected: false, stale: true, session })
+  await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
+  expect(screen.getByLabelText('Server connection: Reconnecting')).toBeOnTheScreen()
+  show({ connected: true, stale: false, error: 'Could not refresh', session })
+  await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
+  expect(screen.getByLabelText('Server connection: Updates unavailable')).toBeOnTheScreen()
+})
+
+it('shows Offline when the device reports no network', async () => {
+  mockOnline = false
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session }, retry, refreshAfterCommand: jest.fn(), dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.getByLabelText('Server connection: Offline')).toBeOnTheScreen()
+})
+
+it('hides the indicator while the reader shows a saved copy', async () => {
+  const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Saved prayer', role: 'priest' } }] })
+  jest.mocked(useReader).mockReturnValue({
+    saved: { version: 1, savedAt: 1, session: { id: 7, title: 'Saved service', church: 'St. John', date: null }, parts, explanations: null },
+    state: { ...initialState, loading: false, error: 'offline', connected: false, parts: [] }, retry, refreshAfterCommand: jest.fn(), dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.queryByLabelText(/^Server connection/)).toBeNull()
+})
+
+it('omits the indicator only when the actions row wraps, leaving every button reachable', async () => {
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session }, retry, refreshAfterCommand: jest.fn(), dispatch })
+  await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
+  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  // On the test renderer onLayout doesn't fire automatically; simulate the narrow-viewport wrap.
+  fireEvent(screen.getByTestId('reader-header-nav'), 'layout', { nativeEvent: { layout: { width: 200, height: 56, x: 0, y: 0 } } })
+  fireEvent(screen.getByTestId('reader-header-buttons'), 'layout', { nativeEvent: { layout: { width: 340, height: 112, x: 0, y: 0 } } })
+  await waitFor(() => expect(screen.queryByTestId('control-connection')).toBeNull())
+  for (const name of ['All services', 'Choose reading language', 'Explain current part', 'Reading preferences']) expect(screen.getByRole('button', { name })).toBeOnTheScreen()
 })
