@@ -6,7 +6,7 @@ import { touchTarget } from '../design/tokens'
 import { AppIcon, type IconName } from './AppIcon'
 import { AppText } from './AppText'
 
-export interface TabItem { name: string; label: string; icon: 'tab-today' | 'tab-services' | 'tab-settings' }
+export interface TabItem { name: string; label: string; icon: 'tab-today' | 'tab-services' | 'tab-settings' | 'tab-about' }
 
 /**
  * Icon plus an always-visible label. Selected ink is actionPrimary; unselected is onDisabled on the

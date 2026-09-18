@@ -12,6 +12,8 @@ import type { LiveSession } from '../live/contracts'
 import { ReaderStatus } from '../live/ReaderStatus'
 import { useNearbyChurch, type NearbyState } from '../nearby/useNearbyChurch'
 import { relativeServiceDay, roleLabel, useLastReading } from '../progress/lastReading'
+import { useRecentlyControlled } from '../progress/recentlyControlled'
+import { useAuth } from '../auth/AuthProvider'
 import { useServices } from './ServicesProvider'
 import { useI18n } from '../i18n'
 
@@ -25,6 +27,9 @@ export function Today() {
   const { fontScale } = useWindowDimensions()
   const nearby = useNearbyChurch(state.services)
   const { reading, reload } = useLastReading()
+  const { state: auth } = useAuth()
+  const operatorId = auth.status === 'signedIn' ? auth.user.id : null
+  const { services: controlled, reload: reloadControlled } = useRecentlyControlled(operatorId)
   const { t } = useI18n()
   const [pulling, setPulling] = useState(false)
   const { check } = nearby
@@ -35,8 +40,9 @@ export function Today() {
   // It runs when Today is shown or the set of listed services changes, not on every poll.
   useFocusEffect(useCallback(() => {
     reload()
+    reloadControlled()
     if (located && serviceKey) void check()
-  }, [reload, located, serviceKey, check]))
+  }, [reload, reloadControlled, located, serviceKey, check]))
 
   const found = nearby.state.status === 'found' ? state.services.find(session => nearby.state.status === 'found' && session.id === nearby.state.nearby.session.id) : undefined
   const lead = found ?? (state.services.length === 1 ? state.services[0] : undefined)
@@ -76,6 +82,14 @@ export function Today() {
             onPress={() => router.push(`/sessions/${reading.sessionId}/parts`)} />
         </View>}
       </>}
+
+      {controlled.length > 0 && <View style={{ marginTop: 26, gap: 10 }}>
+        <AppText variant="label" tone="muted" accessibilityRole="header">{t('today.recentlyControlled')}</AppText>
+        {controlled.map(service => <ServiceRow key={service.sessionId} testID={`controlled-${service.sessionId}`} title={service.title}
+          subtitle={[relativeServiceDay(service.date), service.church].filter(Boolean).join(' · ')}
+          accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })}
+          onPress={() => router.push(`/services/${service.sessionId}`)} />)}
+      </View>}
     </View>
   </ScrollView>
 }

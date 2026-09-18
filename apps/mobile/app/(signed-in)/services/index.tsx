@@ -7,6 +7,7 @@ import { AppText } from '../../../components/AppText'
 import { Card } from '../../../components/Surface'
 import { spacing } from '../../../design/tokens'
 import { useAuth } from '../../../features/auth/AuthProvider'
+import { recordRecentlyControlled } from '../../../features/progress/recentlyControlled'
 import { formatServiceDate, statusLabel } from '../../../features/services/api'
 import { useMyServices } from '../../../features/services/useMyServices'
 import { useI18n } from '../../../features/i18n'
@@ -45,7 +46,10 @@ export default function MyServicesScreen() {
         <AppText variant="heading">{service.title}</AppText>
         <AppText tone="muted">{[service.church, formatServiceDate(service.date)].filter(Boolean).join(' · ')}</AppText>
         <AppText variant="caption">{statusLabel(service.status)}</AppText>
-        <AppButton accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })} onPress={() => router.push(`/services/${service.id}`)}>{t('myServices.openControls')}</AppButton>
+        <AppButton accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })} onPress={() => {
+          if (user) void recordRecentlyControlled({ sessionId: service.id, title: service.title, church: service.church, date: service.date }, user.id)
+          router.push(`/services/${service.id}`)
+        }}>{t('myServices.openControls')}</AppButton>
       </Card></View>}
     ListFooterComponent={<View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg, marginTop: spacing.lg }}>
       {result.loadingMore && <ActivityIndicator accessibilityLabel={t('myServices.loadingMore')} />}

@@ -12,9 +12,10 @@ const TABS = [
   { name: 'index', label: 'tabs.today', icon: 'tab-today' },
   { name: 'live', label: 'tabs.services', icon: 'tab-services' },
   { name: 'settings', label: 'tabs.settings', icon: 'tab-settings' },
+  { name: 'about', label: 'tabs.about', icon: 'tab-about' },
 ] as const satisfies readonly (Omit<TabItem, 'label'> & { label: MessageKey })[]
 
-/** Today · Services · Settings. My services and sign-in live behind Settings, never in the bar. */
+/** Today · Services · Settings · About. My services and sign-in live behind About, never in the bar. */
 export default function TabsLayout() {
   const { colors } = useTheme()
   const config = readerConfig()

@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
-import { router } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
 import { AppIcon } from '../../components/AppIcon'
@@ -8,22 +7,19 @@ import { AppText } from '../../components/AppText'
 import { LanguageSelectionRow } from '../../components/LanguageSelectionRow'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { SegmentedControl } from '../../components/SegmentedControl'
-import { ServiceRow } from '../../components/ServiceRow'
 import { StatusPill } from '../../components/StatusPill'
 import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
 import { radii, spacing, touchTarget } from '../../design/tokens'
-import { useAuth } from '../auth/AuthProvider'
 import { showsTestErrorControls, TestErrorControls } from '../observability/TestErrorControls'
 import { observabilityConfig } from '../observability/sentry'
 import { clearSavedService } from '../offline/savedServiceStore'
 import { MAX_LANGUAGES, usePreferences } from '../preferences/PreferencesProvider'
 import { availableInterfaceLanguages, includesDraftLanguages, INTERFACE_CATALOGS, useI18n } from '../i18n'
 
-/** Reading choices first; the operator account sits last, the only place sign-in appears. */
+/** Reading choices only; the operator account lives on the About tab. */
 export function Settings() {
   const { preferences, setAppearance, setReadingSize, setSelectedLanguages, setInterfaceLanguage, clear } = usePreferences()
-  const { state, signOut } = useAuth()
   const { fontScale } = useWindowDimensions()
   const { t } = useI18n()
   const interfaceLanguages = availableInterfaceLanguages(includesDraftLanguages())
@@ -89,14 +85,6 @@ export function Settings() {
         </>}
       </Section>
 
-      {state.status !== 'hydrating' && <Section title={t('settings.account')} plain>
-        {state.status === 'signedIn' ? <>
-          <AppText variant="caption" tone="muted">{t('common.signedInAs', { name: state.user.name || state.user.email })}</AppText>
-          <ServiceRow title={t('common.myServices')} subtitle={t('settings.myServicesSubtitle')} onPress={() => router.push('/services')} />
-          <View style={{ alignSelf: 'flex-start' }}><AppButton variant="secondary" size="card" onPress={signOut}>{t('common.signOut')}</AppButton></View>
-        </> : <ServiceRow title={t('common.signIn')} subtitle={t('settings.signInSubtitle')} onPress={() => router.push('/sign-in')} />}
-      </Section>}
-
       {showsTestErrorControls(observabilityConfig(), __DEV__) && <Section title={t('settings.errorReporting')}>
         <TestErrorControls />
       </Section>}
@@ -117,11 +105,11 @@ function ChoiceRow({ label, lang, selected, onPress }: { label: string; lang?: s
   </Pressable>
 }
 
-function Section({ title, plain = false, children }: { title: string; plain?: boolean; children: ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   const { colors } = useTheme()
   return <View style={{ marginTop: 26, gap: 10 }}>
     <AppText variant="label" tone="muted" accessibilityRole="header">{title}</AppText>
-    <View style={plain ? { gap: 10 } : { gap: spacing.sm, padding: spacing.md, borderRadius: radii.card, borderWidth: 1, borderColor: colors.divider, backgroundColor: colors.raised }}>
+    <View style={{ gap: spacing.sm, padding: spacing.md, borderRadius: radii.card, borderWidth: 1, borderColor: colors.divider, backgroundColor: colors.raised }}>
       {children}
     </View>
   </View>

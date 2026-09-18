@@ -49,7 +49,12 @@ export const ru: Catalog = {
     today: 'Сегодня',
     services: 'Службы',
     settings: 'Настройки',
+    about: 'О программе',
     notConfiguredTitle: 'Следите за службой.',
+  },
+  about: {
+    creditsTitle: 'Помощник для богослужения',
+    credits: 'Tarkman разработан отцом Месропом Ашем и армянской церковью Святого Иоанна как помощник для богослужения. Любой приход или группа может использовать его для литургического богослужения или молитвенного руководства.',
   },
   days: {
     today: 'Сегодня',
@@ -161,6 +166,7 @@ export const ru: Catalog = {
     rowLiveLabel: '{title}, {church}, идёт сейчас',
     nothingLive: 'Сейчас не идёт ни одна служба.',
     continueReading: 'Продолжить чтение',
+    recentlyControlled: 'Недавно под вашим управлением',
     stoppedAt: 'остановились на: {role}',
     nowReading: 'СЕЙЧАС ЧИТАЕТСЯ',
     readAlongHintLive: 'Открывает «{title}» — {church}, идёт сейчас.',
