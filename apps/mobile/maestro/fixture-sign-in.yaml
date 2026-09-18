@@ -7,7 +7,7 @@ appId: app.tarkman
 ---
 - runFlow: launch.yaml
 - tapOn:
-    id: "tab-settings"
+    id: "tab-about"
 - tapOn: "Sign in"
 - extendedWaitUntil:
     visible:

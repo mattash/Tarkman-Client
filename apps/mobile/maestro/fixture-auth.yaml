@@ -1,5 +1,5 @@
-# The fixture operator signs in from Settings, lands on My services with their
-# account and the fixture session listed, and signs out again. The account is
+# The fixture operator signs in from the About tab, lands on My services with
+# their account and the fixture session listed, and signs out again. The account is
 # synthetic and only exists on the loopback fixture
 # (qa/design-system/mock-reader-server.cjs). Leaves the app signed out.
 appId: app.tarkman
