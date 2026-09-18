@@ -1,0 +1,38 @@
+# Helper, not a standalone check: signs in as the fixture operator and lands on
+# My services (safeReturnTo's default). Performs no cleanup, so callers that need
+# a signed-in session can continue; standalone flows must sign out themselves. Requires the app to run
+# against qa/design-system/mock-reader-server.cjs, whose operator account is
+# synthetic and only serves that loopback process.
+appId: app.tarkman
+---
+- runFlow: launch.yaml
+- tapOn:
+    id: "tab-about"
+# A stopped earlier run (or the helper executed standalone) can leave the app
+# signed in, which replaces this row with "Sign out". Sign out first so the
+# signed-out About row is always what the next tap finds.
+- tapOn:
+    text: "Sign out"
+    optional: true
+- tapOn:
+    id: "about-sign-in"
+- extendedWaitUntil:
+    visible:
+      id: "sign-in-email"
+    timeout: 15000
+- tapOn:
+    id: "sign-in-email"
+- inputText: "operator@example.test"
+- tapOn:
+    id: "sign-in-password"
+- inputText: "fixture-only-password"
+- tapOn:
+    id: "sign-in-submit"
+# iOS may offer to save the synthetic fixture password; dismiss it so the
+# signed-in landing below stays reachable.
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "Signed in as Fixture operator"
+    timeout: 30000

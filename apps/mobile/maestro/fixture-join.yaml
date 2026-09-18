@@ -1,0 +1,14 @@
+# A reader joins the fixture's live service from the Today screen with one tap.
+# Signed out and read-only, against qa/design-system/mock-reader-server.cjs.
+appId: app.tarkman
+name: Join the live service from Today
+---
+- runFlow: launch.yaml
+- extendedWaitUntil:
+    visible: "Sample Divine Liturgy · Lord’s Prayer"
+    timeout: 30000
+- tapOn: "Read along"
+- extendedWaitUntil:
+    visible: "All services"
+    timeout: 30000
+- assertVisible: "(?s)Our Father.*"
