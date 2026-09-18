@@ -1,8 +1,8 @@
-import { benchmarkMark, benchmarkContext, beginRecovery, benchmarkCable, inheritRecovery } from '../observability/latencyBenchmark'
+import { benchmarkMark, benchmarkContext, beginRecovery, benchmarkCable, inheritRecovery, type BenchmarkContext } from '../observability/latencyBenchmark'
 import type { SavedServiceInput } from '../offline/savedService'
 import type { ReaderApi } from './api'
 import type { CableClient } from './cable'
-import { currentPart, parseEvent, type LivePart, type LiveSession } from './contracts'
+import { currentPart, parseEvent, sessionWithState, type SessionState, type LivePart, type LiveSession } from './contracts'
 import { initialState, readerReducer, type ReaderAction } from './state'
 import { t } from '../i18n'
 const FULL_REFRESH_MS = 30000
@@ -17,6 +17,8 @@ export interface ReaderCache {
 // is generation-scoped and abortable; event bursts schedule at most one rerun.
 export function createReaderController(api: ReaderApi, cable: CableClient, cableUrl: string, lifecycle: Lifecycle, id: number | null, cache?: ReaderCache, loadExplanations = true) {
   let state = { ...initialState }, alive = false, active = true, online = true, epoch = 0, queued = false
+  let manifestContext: string | null = null, stateSupported: boolean | null = null
+  let observedRevision = 0
   let invalidations = 0, queuedFull = false, partsFetchedAt: number | null = null
   let request: AbortController | null = null, unsubscribe: (() => void) | null = null
   let polling: ReturnType<typeof setInterval> | null = null
@@ -54,9 +56,11 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
       // Older servers can omit ownership. Verify those responses in the background;
       // a reading transition never waits for explanations or this compatibility check.
       if (result.some(explanation => explanation.liturgyPartId === null)) {
-        const after = await api.session(session.id, abort.signal)
+        const compact = session.revision != null && api.state ? await api.state(session.id, abort.signal) : null
+        const unchanged = compact ? compact.id === session.id && compact.revision === session.revision && compact.contentContext === session.contentContext
+          : JSON.stringify(session) === JSON.stringify(await api.session(session.id, abort.signal))
         if (!isCurrent()) return
-        if (JSON.stringify(session) !== JSON.stringify(after)) {
+        if (!unchanged) {
           dispatch({ type: 'stale' }); void recover('explanation_context', 'navigation'); return
         }
       }
@@ -72,6 +76,75 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
       if (explanationRequest === abort) explanationRequest = null
     }
   }
+  function accept(session: LiveSession, parts: LivePart[], services: LiveSession[], generation: number, signal: AbortSignal, trace?: BenchmarkContext) {
+    const part = currentPart(session, parts)
+    benchmarkMark('recovery.accepted', { part_id: session.currentPartId, part_key: part?.key, position: session.currentPosition }, trace)
+    dispatch({ type: 'recovered', now: Date.now(), explanationsLoading: loadExplanations && !!part,
+      snapshot: { services, session, parts, explanations: [], explanationError: false, listed: services.some(s => s.id === id) } })
+    if (alive && epoch === generation && !queued) {
+      save({ session, parts, explanations: undefined })
+      void refreshExplanations(session, parts, generation, signal)
+    }
+  }
+  async function recoverRevisioned(abort: AbortController, generation: number, mode: RecoveryMode, trace?: BenchmarkContext): Promise<boolean> {
+    if (id === null || !api.state || (stateSupported === false && mode !== 'full')) return false
+    const beforeVersion = invalidations
+    const before = await api.state(id, abort.signal)
+    if (!before) { stateSupported = false; manifestContext = null; return false }
+    stateSupported = true
+    if (before.id !== id) throw new Error(t('errors.unexpectedSession'))
+    if (!alive || epoch !== generation || abort.signal.aborted) return true
+    const base = state.session
+    const initial = base === null
+    let parts = state.parts
+    const knownCursor = before.cursor === null || (base && currentPart(sessionWithState(base, before, parts), parts))
+    const fetchMetadata = initial || mode === 'full' || manifestContext !== before.contentContext
+    const fetchParts = initial || manifestContext !== before.contentContext || !knownCursor
+    const [metadata, services, loaded] = await Promise.all([
+      fetchMetadata ? api.session(id, abort.signal) : Promise.resolve(base),
+      initial || mode === 'full' ? api.services(abort.signal) : Promise.resolve(state.services),
+      fetchParts ? api.parts(id, abort.signal) : Promise.resolve(parts),
+    ])
+    parts = loaded
+    // Metadata and the manifest have no token of their own. Bracket their fetches
+    // with state reads; cursor movement is safe, but content must remain unchanged.
+    const verifyContent = fetchParts || fetchMetadata
+    const verifying = verifyContent ? invalidations : beforeVersion
+    const after = verifyContent ? await api.state(id, abort.signal) : before
+    if (!alive || epoch !== generation || abort.signal.aborted) return true
+    if (!metadata || metadata.id !== id || !after || after.id !== id) throw new Error(t('errors.unexpectedSession'))
+    if (before.contentContext !== after.contentContext || verifying !== invalidations) {
+      queued = true; queuedFull ||= before.contentContext !== after.contentContext
+      dispatch({ type: 'stale' }); return true
+    }
+    // A replica/protocol error must not regress the accepted state or create an unbounded retry loop.
+    if (after.revision < observedRevision || (base?.revision != null && after.revision < base.revision)) throw new Error(t('errors.unexpectedSession'))
+    const session = sessionWithState(metadata, after, parts)
+    if (after.cursor !== null && !currentPart(session, parts)) throw new Error(t('errors.unexpectedParts'))
+    manifestContext = after.contentContext
+    if (fetchParts) partsFetchedAt = Date.now()
+    queued = false; queuedFull = false
+    accept(session, parts, services, generation, abort.signal, trace)
+    return true
+  }
+  /** Returns true for applied or already accepted publications. Never guess through a gap. */
+  function applyPublication(update: SessionState): boolean {
+    if (!alive || !active || !online || update.id !== id) return false
+    observedRevision = Math.max(observedRevision, update.revision)
+    const base = state.session
+    if (!base || base.revision == null || state.stale || request) return false
+    if (update.revision < base.revision) return true
+    if (update.contentContext !== manifestContext) return false
+    if (update.revision === base.revision) return true
+    if (update.revision !== base.revision + 1) return false
+    const session = sessionWithState(base, update, state.parts)
+    if (update.cursor !== null && !currentPart(session, state.parts)) return false
+    cancelExplanations()
+    const signal = new AbortController().signal, trace = beginRecovery(id, signal, 'publication')
+    accept(session, state.parts, state.services, epoch, signal, trace)
+    benchmarkMark('recovery.end', {}, trace)
+    return true
+  }
   async function recover(reason = 'retry', mode: RecoveryMode = 'full') {
     if (!alive || !active || !online) return
     cancelExplanations()
@@ -85,6 +158,8 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     const timeout = setTimeout(() => abort.abort(), 12000)
     requestTimeout = timeout
     try {
+      if (api.state && await recoverRevisioned(abort, generation, mode, trace)) return
+      if (!alive || epoch !== generation || abort.signal.aborted) return
       const age = partsFetchedAt === null ? Infinity : Date.now() - partsFetchedAt
       const reuse = mode === 'navigation' && state.session?.partsContext != null && state.parts.length > 0 && age >= 0 && age < FULL_REFRESH_MS
       const servicesPromise = reuse ? Promise.resolve(state.services) : api.services(abort.signal)
@@ -149,13 +224,20 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     if (!alive || !active || !online || polling) return
     polling = setInterval(() => { void recover('poll') }, FULL_REFRESH_MS)
     if (id !== null) unsubscribe = cable.subscribe(cableUrl, id, {
-      connected: () => { dispatch({ type: 'connection', connected: true }); benchmarkMark('cable.connected', {}, benchmarkContext(id)); void recover('connected') },
-      disconnected: () => { dispatch({ type: 'connection', connected: false }); benchmarkMark('cable.disconnected', {}, benchmarkContext(id)); void recover('disconnected') },
+      connected: () => { dispatch({ type: 'connection', connected: true }); benchmarkMark('cable.connected', {}, benchmarkContext(id)); void recover('connected', stateSupported ? 'navigation' : 'full') },
+      disconnected: () => { dispatch({ type: 'connection', connected: false }); benchmarkMark('cable.disconnected', {}, benchmarkContext(id)); void recover('disconnected', stateSupported ? 'navigation' : 'full') },
       received: value => {
         const event = parseEvent(value)
         if (event?.sessionId === id) {
-          benchmarkCable(value, id); dispatch({ type: 'stale' })
-          void recover('cable', event.event === 'part_change' ? 'navigation' : 'full')
+          benchmarkCable(value, id)
+          if (event.state && applyPublication(event.state)) return
+          if (event.event === 'explanation_updated' && stateSupported && state.session && !request && !state.stale) {
+            cancelExplanations()
+            void refreshExplanations(state.session, state.parts, epoch, new AbortController().signal)
+            return
+          }
+          dispatch({ type: 'stale' })
+          void recover('cable', stateSupported || event.event === 'part_change' ? 'navigation' : 'full')
         }
       },
     })
@@ -169,9 +251,10 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
       if (id !== null && !state.connected) { stopResources(); startResources() }
       else void recover()
     },
-    refreshAfterCommand: () => {
+    refreshAfterCommand: (update?: SessionState | void) => {
+      if (update && applyPublication(update)) return
       if (id !== null && !state.connected) { stopResources(); startResources() }
-      else void recover('command', 'navigation')
+      else { dispatch({ type: 'stale' }); void recover('command', 'navigation') }
     },
     start() {
       if (alive) return () => {}

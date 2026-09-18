@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 import { capitalized } from '../../components/PartHeading'
 import { useAuth } from '../auth/AuthProvider'
 import { readerConfig } from '../live/config'
-import { currentPart, type LivePart } from '../live/contracts'
+import { currentPart, type LivePart, type SessionState } from '../live/contracts'
 import type { ReaderState } from '../live/state'
 import { useReader } from '../live/useReader'
 import { createServiceControls, type ServiceControls } from './controls'
@@ -29,7 +29,7 @@ export interface ServiceControlValue {
   /** The part this device is showing, sent so the server can refuse a move that is already out of date. */
   expected: number | null
   /** Runs one command; resolves true only when the server accepted it. */
-  run(name: string, command: () => Promise<void>): Promise<boolean>
+  run(name: string, command: () => Promise<SessionState | void>): Promise<boolean>
   /** Spinner for the pressed control; 56% for every other one while a command runs or the device is offline. */
   holds(name: string): { sending: boolean; held: boolean }
   /** The failure message, naming where the service is once a refused stale move has resynced. */
@@ -61,7 +61,7 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
     sessionId,
     invalid: !config.endpoints ? config.error ?? t('control.cannotOpen') : valid ? null : t('common.serviceLinkInvalid'),
     state, retry, controls,
-    commands: createServiceControls(authorizedFetch),
+    commands: createServiceControls(authorizedFetch, state.session?.revision),
     part, index,
     nextPart: index >= 0 ? state.parts[index + 1] : undefined,
     previousPart: index > 0 ? state.parts[index - 1] : undefined,

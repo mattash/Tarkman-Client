@@ -15,7 +15,7 @@ describe('latency benchmark isolation and correlation', () => {
   })
 
   it('does not send diagnostic headers or marks when disabled or controlling another session', async () => {
-    const request = jest.fn<typeof fetch>().mockResolvedValue({ ok: true, status: 200 } as Response)
+    const request = jest.fn<typeof fetch>().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as Response)
     await createServiceControls(request).next(123, 1)
     expect(request.mock.calls[0][1]?.headers).toEqual({ 'Content-Type': 'application/json' })
     expect(globalThis.__TARKMAN_BENCHMARK__!.emit).not.toHaveBeenCalled()
@@ -61,7 +61,7 @@ describe('latency benchmark isolation and correlation', () => {
   it('never turns telemetry failure into a failed command', async () => {
     globalThis.__TARKMAN_BENCHMARK__!.emit = () => { throw new Error('collector unavailable') }
     expect(() => benchmarkMark('control.tap', {}, benchmarkContext(4008))).not.toThrow()
-    const request = jest.fn<typeof fetch>().mockResolvedValue({ ok: true, status: 200 } as Response)
+    const request = jest.fn<typeof fetch>().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) } as Response)
     await expect(createServiceControls(request).next(4008, 1)).resolves.toBeUndefined()
     expect(request).toHaveBeenCalledTimes(1)
   })

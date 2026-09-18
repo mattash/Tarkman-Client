@@ -377,3 +377,14 @@ it('arranges control languages from their sheet and remembers them', async () =>
   await rerender(<ControlLanguagesSheet />)
   expect(screen.getByRole('button', { name: 'Add Russian' })).not.toBeDisabled()
 })
+
+it('sends the displayed revision and forwards the confirmed command state to the reader', async () => {
+  const publication = { revision: 6, content_context: 'manifest', session_status: 'active', status_message: null,
+    posture: 'stand', date: '2026-09-17', cursor: { part_id: 2, liturgy_part_id: 22, liturgy_id: 20, position: 2 } }
+  jest.mocked(useReader).mockReturnValue(reader({ session: { ...session, revision: 5 } }))
+  mockAuthorizedFetch.mockResolvedValue(respond(200, { status: 'Advanced to next part', ...publication }))
+  await render(<Control />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Next part' }))
+  await waitFor(() => expect(retry).toHaveBeenCalledWith(expect.objectContaining({ id: 9, revision: 6, cursor: expect.objectContaining({ liturgyPartId: 22 }) })))
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ expected_part_id: 1, expected_revision: 5 })
+})

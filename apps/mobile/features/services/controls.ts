@@ -1,14 +1,14 @@
 import { benchmarkContext, benchmarkHeaders, benchmarkMark } from '../observability/latencyBenchmark'
 import type { KnownSessionStatus } from '@tarkman/core'
-import { record } from '../live/contracts'
+import { record, parsePublication, type SessionState } from '../live/contracts'
 import type { AuthContextValue } from '../auth/AuthProvider'
 import { t } from '../i18n'
 
 export interface ServiceControls {
-  next(id: number, expectedPartId: number | null): Promise<void>
-  previous(id: number, expectedPartId: number | null): Promise<void>
-  goToPart(id: number, partId: number, expectedPartId: number | null): Promise<void>
-  setStatus(id: number, status: KnownSessionStatus, message?: string): Promise<void>
+  next(id: number, expectedPartId: number | null): Promise<SessionState | void>
+  previous(id: number, expectedPartId: number | null): Promise<SessionState | void>
+  goToPart(id: number, partId: number, expectedPartId: number | null): Promise<SessionState | void>
+  setStatus(id: number, status: KnownSessionStatus, message?: string): Promise<SessionState | void>
 }
 
 const STALE = 'StalePartError'
@@ -23,13 +23,13 @@ export function isControlForbidden(error: unknown): boolean {
 }
 
 /** Live control commands. Each call is sent once: nothing here retries or queues, so a stale move can never replay. */
-export function createServiceControls(authorizedFetch: AuthContextValue['authorizedFetch']): ServiceControls {
-  async function command(path: string, method: 'POST' | 'PATCH', body: Record<string, unknown>): Promise<void> {
+export function createServiceControls(authorizedFetch: AuthContextValue['authorizedFetch'], expectedRevision?: number | null): ServiceControls {
+  async function command(path: string, method: 'POST' | 'PATCH', body: Record<string, unknown>): Promise<SessionState | void> {
     const trace = benchmarkContext(Number(path.split('/')[2]))
     benchmarkMark('command.start', { path }, trace)
-    const response = await authorizedFetch(path, { method, headers: { 'Content-Type': 'application/json', ...benchmarkHeaders(trace) }, body: JSON.stringify(body) })
+    const response = await authorizedFetch(path, { method, headers: { 'Content-Type': 'application/json', ...benchmarkHeaders(trace) }, body: JSON.stringify({ ...body, ...(expectedRevision != null ? { expected_revision: expectedRevision } : {}) }) })
     benchmarkMark('command.response', { status: response.status }, trace)
-    if (response.ok) return
+    if (response.ok) return parsePublication(await response.json().catch(() => null), Number(path.split('/')[2])) ?? undefined
     const failure = new Error(await failureMessage(response))
     if (response.status === 409) failure.name = STALE
     if (response.status === 403) failure.name = FORBIDDEN

@@ -66,3 +66,19 @@ it('preserves manual reading through authoritative recovery and supports Return 
   expect(readerReducer(recovered, { type: 'follow' }).following).toBe(true)
   expect(readerReducer(recovered, { type: 'failure', message: 'offline' }).session?.id).toBe(7)
 })
+
+describe('revisioned publication boundaries', () => {
+  const publication = { session: 7, revision: 0, content_context: 'manifest', session_status: 'active', status_message: null,
+    posture: 'stand', date: '2026-09-17', cursor: { part_id: 2, liturgy_part_id: 22, liturgy_id: 20, position: 1 } }
+  it('retains a complete server-confirmed state and occurrence identity', () => {
+    expect(parseEvent({ event: 'part_change', data: publication })?.state).toMatchObject({ id: 7, revision: 0,
+      cursor: { partId: 2, liturgyPartId: 22, liturgyId: 20, position: 1 }, status: 'active', posture: 'stand' })
+  })
+  it.each([
+    { revision: -1 }, { revision: '1' }, { revision: 0.5 }, { revision: Number.MAX_SAFE_INTEGER + 1 },
+    { content_context: '' }, { cursor: undefined }, { cursor: { part_id: 2 } },
+    { status_message: undefined }, { posture: undefined }, { date: undefined },
+  ])('treats a malformed publication as an invalidation: %j', invalid => {
+    expect(parseEvent({ event: 'part_change', data: { ...publication, ...invalid } })).toEqual({ event: 'part_change', sessionId: 7 })
+  })
+})
