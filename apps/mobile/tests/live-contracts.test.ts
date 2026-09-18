@@ -30,6 +30,16 @@ describe('public Rails boundaries', () => {
     expect(normalizeParts({ parts: [] })).toEqual([])
     expect(() => normalizeParts({ parts: [{}] })).toThrow()
   })
+  it('uses the canonical occurrence cursor when the same Part appears twice in one liturgy', () => {
+    const parts = normalizeParts({ parts: [
+      { part: { id: 2, liturgy_id: 20, liturgy_part_id: 21, position: 1 } },
+      { part: { id: 2, liturgy_id: 20, liturgy_part_id: 22, position: 2 } },
+    ] })
+    const canonical = normalizeSession({ session: { ...session.session, revision: 8, current_liturgy_part_id: 22 } })
+    expect(canonical.revision).toBe(8)
+    expect(currentPart(canonical, parts)?.key).toBe('lp:22')
+    expect(currentPart({ ...canonical, currentLiturgyPartId: 999 }, parts)).toBeUndefined()
+  })
   it('normalizes public explanation wrappers and rejects invalid shapes', () => {
     expect(normalizeExplanations({ explanations: [{ explanation: { id: 4, description: 'Text' } }] })[0].description).toBe('Text')
     expect(() => normalizeExplanations([])).toThrow()

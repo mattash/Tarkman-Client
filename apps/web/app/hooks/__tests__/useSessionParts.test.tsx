@@ -3,6 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useSessionParts } from '../useSessionParts'
+import { resolveReadingKey } from '../sessionOccurrence'
+import type { PartsResponse } from '../../types/part'
 
 // ---------------------------------------------------------------------------
 // Mock dependencies
@@ -35,7 +37,7 @@ import { smoothScrollToPart } from '../smoothScrollToPart'
 // Test data helpers
 // ---------------------------------------------------------------------------
 
-function makeSessionData(overrides: Record<string, unknown> = {}) {
+function makeSessionData(overrides: Record<string, unknown> = {}): PartsResponse {
   return {
     parts: [
       {
@@ -283,4 +285,38 @@ describe('useSessionParts hook (integration)', () => {
       expect.any(Object),
     )
   })
+  it('scrolls once per occurrence and ignores duplicate, older and stale cached updates', async () => {
+    const initial = makeSessionData()
+    initial.parts = [
+      { part: { ...initial.parts[0].part, liturgy_part_id: 11, position: 1 } },
+      { part: { ...initial.parts[0].part, liturgy_part_id: 12, position: 2 } },
+    ]
+    Object.assign(initial.sessionData.session, { revision: 0, current_liturgy_part_id: 11 })
+    vi.mocked(fetchSessionParts).mockResolvedValue(initial)
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+    const { result, rerender } = renderHook(() => useSessionParts('test'), { wrapper: createWrapper(qc) })
+    await waitFor(() => expect(result.current.currentPartKey).toBe('lp:11'))
+    const secondElement = document.createElement('div')
+    result.current.partsRef.current['lp:12'] = secondElement
+    const event = { part: 123, revision: 1, cursor: { part_id: 123, liturgy_part_id: 12, liturgy_id: 1, position: 2 } }
+    vi.mocked(useActionCable).mockReturnValue(event)
+    rerender()
+    await waitFor(() => expect(result.current.currentPartKey).toBe('lp:12'))
+    expect(smoothScrollToPart).toHaveBeenCalledWith(secondElement, expect.any(Object))
+    vi.mocked(smoothScrollToPart).mockClear()
+    vi.mocked(useActionCable).mockReturnValue({ ...event })
+    rerender()
+    vi.mocked(useActionCable).mockReturnValue({ ...event, revision: 0, cursor: { ...event.cursor, liturgy_part_id: 11, position: 1 } })
+    rerender()
+    await qc.invalidateQueries({ queryKey: ['sessions', 'session', 'test', 'parts'], exact: true })
+    expect(result.current.currentPartKey).toBe('lp:12')
+    expect(smoothScrollToPart).not.toHaveBeenCalled()
+  })
+
+})
+
+it('does not substitute the first repeated Part for an unknown exact occurrence', () => {
+  const { parts } = makeSessionData({ liturgy_part_id: 11 })
+  expect(resolveReadingKey(parts, { partId: '123', occurrenceId: 12 })).toBeNull()
+  expect(resolveReadingKey(parts, { partId: '123' })).toBe('lp:11')
 })

@@ -7,6 +7,8 @@ interface ActionCableEnvelope {
 }
 
 interface ActionCableMessage {
+  revision?: number
+  cursor?: { part_id: number; liturgy_part_id: number; liturgy_id: number; position: number } | null
   part?: string | number
   status?: string
   status_message?: string | null

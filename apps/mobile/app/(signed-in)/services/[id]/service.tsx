@@ -76,7 +76,7 @@ export default function ServiceSheet() {
       {offline && <Notice tone="neutral">{t('control.offline')}</Notice>}
       {page === 'parts' ? state.parts.map(item => <PartRow key={item.key} item={item} current={item.key === part?.key} language={controlLanguages[0]} selected={controlLanguages}
         failure={failureUnder([item.key])} {...holds(item.key)}
-        onPress={async () => { if (await run(item.key, () => commands.goToPart(sessionId, item.id, expected))) close() }} />) : <>
+        onPress={async () => { if (await run(item.key, () => commands.goToPart(sessionId, item.id, expected, item.liturgyPartId))) close() }} />) : <>
         <SheetSection label={t('serviceSheet.congregationSees')}>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {DOING.map(item => <StatusButton key={item} status={item} height={52} selected={status === item} {...holds(item)} onPress={() => { void setStatus(item) }} />)}

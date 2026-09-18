@@ -15,7 +15,7 @@ export interface LiveSession {
   latitude: number | null; longitude: number | null
   /** Content-related session fields, not a server revision. Reuse is bounded by a full-refresh interval. */
   partsContext: string | null
-  /** Present only after a revisioned state response has been reconciled with its manifest. */
+  /** Revision/occurrence may come from canonical JSON; contentContext comes from reconciled state. */
   revision?: number | null; contentContext?: string | null; currentLiturgyPartId?: number | null; posture?: string | null
 }
 export interface LivePart {
@@ -41,6 +41,8 @@ function text(value: unknown): string | null { return typeof value === 'string' 
 export function normalizeSession(value: unknown): LiveSession {
   const s = record(record(value).session)
   return { id: requiredId(s.id), title: text(s.liturgy) || t('fallbacks.service'), church: text(s.church_name) || t('fallbacks.churchService'),
+    revision: typeof s.revision === 'number' && Number.isSafeInteger(s.revision) && s.revision >= 0 ? s.revision : null,
+    currentLiturgyPartId: positiveId(s.current_liturgy_part_id),
     currentPartId: positiveId(s.current_part_id), currentLiturgyId: positiveId(s.current_liturgy_id),
     currentPosition: positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
     date: text(s.date), currentRole: text(s.current_part_role)?.trim() || null,

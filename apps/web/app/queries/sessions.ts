@@ -79,31 +79,33 @@ interface SessionPartResponse {
  * The part this client believes the service is on. The server refuses the move with 409 when it
  * no longer matches, so a duplicated or replayed command cannot advance the service twice.
  */
-function expectedPart(expectedPartId?: number | null) {
-  return expectedPartId == null ? {} : { expected_part_id: expectedPartId }
+function expectedPart(expectedPartId?: number | null, expectedRevision?: number) {
+  return { ...(expectedPartId == null ? {} : { expected_part_id: expectedPartId }),
+    ...(expectedRevision == null ? {} : { expected_revision: expectedRevision }) }
 }
 
-export async function setPart(sessionId: string, partId: number, transitionedAt?: string, expectedPartId?: number | null): Promise<SessionPartResponse> {
+export async function setPart(sessionId: string, partId: number, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number, liturgyPartId?: number): Promise<SessionPartResponse> {
   const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/set_part.json`, {
     part_id: partId,
+    ...(liturgyPartId == null ? {} : { liturgy_part_id: liturgyPartId }),
     transitioned_at: transitionedAt,
-    ...expectedPart(expectedPartId)
+    ...expectedPart(expectedPartId, expectedRevision)
   })
   return data
 }
 
-export async function prevPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null): Promise<SessionPartResponse> {
+export async function prevPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number): Promise<SessionPartResponse> {
   const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`, {
     transitioned_at: transitionedAt,
-    ...expectedPart(expectedPartId)
+    ...expectedPart(expectedPartId, expectedRevision)
   })
   return data
 }
 
-export async function nextPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null): Promise<SessionPartResponse> {
+export async function nextPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number): Promise<SessionPartResponse> {
   const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`, {
     transitioned_at: transitionedAt,
-    ...expectedPart(expectedPartId)
+    ...expectedPart(expectedPartId, expectedRevision)
   })
   return data
 }

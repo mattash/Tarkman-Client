@@ -11,6 +11,9 @@ export interface SessionData {
     num_of_parts: number
     current_part_position: number
     current_part_id: number
+    current_liturgy_part_id?: number | null
+    revision?: number
+    cursor?: { part_id: number; liturgy_part_id: number; liturgy_id: number; position: number } | null
     current_liturgy_id?: number
     liturgies?: {
       id: number

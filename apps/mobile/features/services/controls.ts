@@ -7,7 +7,7 @@ import { t } from '../i18n'
 export interface ServiceControls {
   next(id: number, expectedPartId: number | null): Promise<SessionState | void>
   previous(id: number, expectedPartId: number | null): Promise<SessionState | void>
-  goToPart(id: number, partId: number, expectedPartId: number | null): Promise<SessionState | void>
+  goToPart(id: number, partId: number, expectedPartId: number | null, liturgyPartId?: number | null): Promise<SessionState | void>
   setStatus(id: number, status: KnownSessionStatus, message?: string): Promise<SessionState | void>
 }
 
@@ -42,7 +42,7 @@ export function createServiceControls(authorizedFetch: AuthContextValue['authori
   return {
     next: (id, expectedPartId) => command(`/s/${id}/next.json`, 'POST', { transitioned_at: now(), ...move(expectedPartId) }),
     previous: (id, expectedPartId) => command(`/s/${id}/prev.json`, 'POST', { transitioned_at: now(), ...move(expectedPartId) }),
-    goToPart: (id, partId, expectedPartId) => command(`/s/${id}/set_part.json`, 'POST', { part_id: partId, transitioned_at: now(), ...move(expectedPartId) }),
+    goToPart: (id, partId, expectedPartId, liturgyPartId) => command(`/s/${id}/set_part.json`, 'POST', { part_id: partId, ...(liturgyPartId != null ? { liturgy_part_id: liturgyPartId } : {}), transitioned_at: now(), ...move(expectedPartId) }),
     setStatus: (id, status, message) => command(`/s/${id}/update_status.json`, 'PATCH', { status, status_message: message }),
   }
 }
