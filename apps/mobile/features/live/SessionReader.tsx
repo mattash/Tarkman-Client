@@ -168,7 +168,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           : savedExplanations.map(explanation => <View key={explanation.id} style={{ gap: spacing.sm }}>
             <AppText variant="heading">{explanation.title}</AppText><LiturgyText variant="explanation" text={explanation.description} blocks />
           </View>)
-          : state.loading ? <StatusPill label={t('reader.loadingExplanation')} tone="info" busy />
+          : state.loading || state.explanationsLoading ? <StatusPill label={t('reader.loadingExplanation')} tone="info" busy />
           : state.stale ? <StatusPill label={t('common.reconnecting')} tone="info" message={t('reader.explanationsRefresh')} />
           : state.explanationError ? <><StatusPill label={t('reader.couldNotLoadExplanations')} tone="danger" /><AppButton loading={state.refreshing} onPress={retry}>{t('reader.retryExplanations')}</AppButton></>
           : state.explanations.length === 0 ? <AppText variant="explanation">{t('common.noPartExplanation')}</AppText>

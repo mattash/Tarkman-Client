@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
-import { AccessibilityInfo, Platform, Pressable, useWindowDimensions, View } from 'react-native'
+import { Platform, Pressable, useWindowDimensions, View } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import type { Language } from '@tarkman/core'
 import { AppText } from '../../components/AppText'
@@ -22,11 +22,9 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
 }) {
   const { fontScale } = useWindowDimensions()
   const [frameWidth, setFrameWidth] = useState(0)
-  const [reduceMotion, setReduceMotion] = useState(true)
   const list = useRef<FlashListRef<LivePart>>(null)
   const manualOffset = useRef(0)
   const previousLanguage = useRef(language)
-  const previousKey = useRef(currentKey)
   const page = fontScale > 2 ? spacing.md : spacing.page
   // Measure the actual safe-area-constrained list, including reading-size choice. The reading measure stops at
   // READING_WIDTH; wider screens centre it with a gutter on each row, so the whole width still scrolls.
@@ -47,12 +45,7 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
   const selectedKey = selectedLanguages.join(',')
   const alternativesFrom = useMemo(() => selectedKey.split(',') as Language[], [selectedKey])
   const index = parts.findIndex(p => p.key === currentKey)
-  useEffect(() => {
-    let active = true
-    AccessibilityInfo.isReduceMotionEnabled().then(value => { if (active) setReduceMotion(value) })
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion)
-    return () => { active = false; subscription.remove() }
-  }, [])
+
 
   // Rows are memoized and recycled; they reach the latest callbacks through this ref instead of new functions each render.
   const actions = useRef({ manual, open, switchLanguage })
@@ -64,24 +57,20 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
 
   // FlashList measures rows as it goes and corrects its own scroll, so one request lands even on a part hundreds of rows
   // down. The first part scrolls to the very top instead, so the service details above it are shown.
-  const target = useCallback((animated = false) => {
+  const target = useCallback(() => {
     if (!following || index < 0) return
-    if (index === 0 && !compact) list.current?.scrollToOffset({ offset: 0, animated })
-    else void list.current?.scrollToIndex({ index, animated, viewPosition: 0 })
+    if (index === 0 && !compact) list.current?.scrollToOffset({ offset: 0, animated: false })
+    else void list.current?.scrollToIndex({ index, animated: false, viewPosition: 0 })
   }, [following, index, compact])
   // A change of columns, size or language reflows every row, so a following reader is put back on the live part.
   const layoutKey = `${visibleKey}:${readingSize}:${columnWidth}`
-  const previousLayout = useRef(layoutKey)
   useEffect(() => {
     const languageChanged = previousLanguage.current !== language
-    const advanced = previousKey.current !== undefined && previousKey.current !== currentKey
-    const reflowed = previousLayout.current !== layoutKey
     previousLanguage.current = language
-    previousKey.current = currentKey
-    previousLayout.current = layoutKey
-    if (following) target(advanced && !reduceMotion && !reflowed)
+    // Live following puts the accepted reading on screen immediately, including long jumps.
+    if (following) target()
     else if (languageChanged) list.current?.scrollToOffset({ offset: manualOffset.current, animated: false })
-  }, [target, language, following, currentKey, reduceMotion, layoutKey])
+  }, [target, language, following, layoutKey])
 
   return <View testID="reading-frame" style={{ flex: 1 }} onLayout={event => setFrameWidth(event.nativeEvent.layout.width)}
     {...(Platform.OS === 'web' ? { onWheel: stopFollowing, onTouchMove: stopFollowing,

@@ -1,0 +1,13 @@
+{
+  "name": "tarkman-latency-benchmark",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "run": "node run.mjs",
+    "report": "node report.mjs",
+    "fixture": "node fixture.mjs",
+    "serve": "node serve.mjs",
+    "test": "node --test *.test.mjs"
+  },
+  "dependencies": { "playwright": "1.63.0", "ws": "8.21.3" }
+}

@@ -251,3 +251,21 @@ it.each([
   expect(screen.queryByRole('button', { name: /, current part/ })).toBeNull()
   expect(jest.mocked(PartList).mock.calls.at(-1)?.[0]).toMatchObject({ following: false, currentKey: undefined })
 })
+
+it('keeps the live reading usable while the explanation sheet loads independently', async () => {
+  api.parts.mockResolvedValue(parts('Live prayer'))
+  let resolve!: (value: ReturnType<typeof normalizeExplanations>) => void
+  api.explanations.mockImplementation(() => new Promise(r => { resolve = r }))
+  await mount()
+  expect(screen.getByText('Live prayer')).toBeOnTheScreen()
+  expect(screen.queryByText('Loading service…')).toBeNull()
+  await fireEvent.press(screen.getByRole('button', { name: 'Explain current part' }))
+  expect(screen.getByText('Loading the explanation…')).toBeOnTheScreen()
+  expect(screen.queryByText('No explanation is available for this part.')).toBeNull()
+  await act(async () => { resolve(normalizeExplanations({ explanations: [{ explanation: {
+    id: 1, title: 'Live explanation', description: 'Live meaning', liturgy_part_id: 11,
+  } }] })) })
+  await flush()
+  expect(screen.getByText('Live meaning')).toBeOnTheScreen()
+  expect(screen.queryByText('Loading the explanation…')).toBeNull()
+})

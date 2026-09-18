@@ -8,6 +8,7 @@ coverage
 
 # Production
 dist
+/apps/mobile/dist-*/
 build
 
 # Misc

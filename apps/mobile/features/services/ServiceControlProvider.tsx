@@ -1,8 +1,9 @@
+import { benchmarkMark, benchmarkContext } from '../observability/latencyBenchmark'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { capitalized } from '../../components/PartHeading'
 import { useAuth } from '../auth/AuthProvider'
 import { readerConfig } from '../live/config'
-import { currentPart, type LivePart } from '../live/contracts'
+import { currentPart, type LivePart, type SessionState } from '../live/contracts'
 import type { ReaderState } from '../live/state'
 import { useReader } from '../live/useReader'
 import { createServiceControls, type ServiceControls } from './controls'
@@ -28,7 +29,7 @@ export interface ServiceControlValue {
   /** The part this device is showing, sent so the server can refuse a move that is already out of date. */
   expected: number | null
   /** Runs one command; resolves true only when the server accepted it. */
-  run(name: string, command: () => Promise<void>): Promise<boolean>
+  run(name: string, command: () => Promise<SessionState | void>): Promise<boolean>
   /** Spinner for the pressed control; 56% for every other one while a command runs or the device is offline. */
   holds(name: string): { sending: boolean; held: boolean }
   /** The failure message, naming where the service is once a refused stale move has resynced. */
@@ -47,8 +48,8 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
   const { authorizedFetch } = useAuth()
   const config = readerConfig()
   const valid = Number.isInteger(sessionId) && sessionId > 0
-  const { state, retry } = useReader(config.endpoints ?? { api: '', cable: '' }, valid ? sessionId : null)
-  const controls = useControls(retry)
+  const { state, retry, refreshAfterCommand } = useReader(config.endpoints ?? { api: '', cable: '' }, valid ? sessionId : null, false)
+  const controls = useControls(refreshAfterCommand)
   const [sheetOpen, setSheetOpen] = useState(false)
   // The snapshot a command was sent against, so a refused move names where the service is only once the screen has caught up.
   const [sentAgainst, setSentAgainst] = useState<number | null>(null)
@@ -60,7 +61,7 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
     sessionId,
     invalid: !config.endpoints ? config.error ?? t('control.cannotOpen') : valid ? null : t('common.serviceLinkInvalid'),
     state, retry, controls,
-    commands: createServiceControls(authorizedFetch),
+    commands: createServiceControls(authorizedFetch, state.session?.revision),
     part, index,
     nextPart: index >= 0 ? state.parts[index + 1] : undefined,
     previousPart: index > 0 ? state.parts[index - 1] : undefined,
@@ -68,6 +69,7 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
     announcing: state.session?.status === 'showing_custom',
     expected: part?.id ?? null,
     run: (name, command) => {
+      benchmarkMark('control.tap', { direction: name, expected_part_id: part?.id }, benchmarkContext(sessionId))
       setSentAgainst(state.updatedAt)
       return controls.run(name, command)
     },

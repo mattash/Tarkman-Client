@@ -59,3 +59,19 @@ it('marks refused permission apart from other failures, and does not ask the ope
   expect(isControlForbidden(stale)).toBe(false)
   expect((stale as Error).message).toBe('The service already moved on, so nothing was changed.')
 })
+it('sends revision CAS for navigation and status commands, and returns the committed state rather than optimistic inputs', async () => {
+  const publication = { revision: 9, content_context: 'manifest', session_status: 'active', status_message: null,
+    posture: 'stand', date: '2026-09-17', cursor: { part_id: 52, liturgy_part_id: 152, liturgy_id: 20, position: 3 } }
+  const authorizedFetch = jest.fn<() => Promise<Response>>().mockImplementation(async () => respond(200, {
+    status: 'Advanced to next part', current_part_id: 52, ...publication,
+  }))
+  const commands = createServiceControls(authorizedFetch, 8)
+  await expect(commands.next(9, 1)).resolves.toMatchObject({ id: 9, revision: 9, status: 'active', cursor: { liturgyPartId: 152 } })
+  await commands.setStatus(9, 'showing_custom', 'Welcome')
+  for (const call of authorizedFetch.mock.calls as unknown as [string, { body: string }][]) {
+    expect(JSON.parse(call[1].body).expected_revision).toBe(8)
+  }
+})
+it('accepts old successful command responses and lets the reader recover authoritative state', async () => {
+  await expect(controls(respond(200, { status: 'Advanced to next part' })).commands.next(9, 1)).resolves.toBeUndefined()
+})

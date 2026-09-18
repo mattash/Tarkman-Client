@@ -25,5 +25,5 @@ test('saved storage is only read by the reader hook and only cleared from Settin
   expect(hook).toContain('id === null ? undefined : { save: saveSavedService }')
   expect(hook).not.toMatch(/loadSavedService|readSavedService/)
   expect(hook).toContain('const saved = useSavedService(id)')
-  expect(hook).toContain('return { saved, state, retry: controller.retry, dispatch: controller.dispatch }')
+  expect(hook).toContain('return { saved, state, retry: controller.retry, refreshAfterCommand: controller.refreshAfterCommand, dispatch: controller.dispatch }')
 })

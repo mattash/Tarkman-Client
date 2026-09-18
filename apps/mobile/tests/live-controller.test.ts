@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, jest } from '@jest/globals'
 import { createReaderController, type Lifecycle } from '../features/live/controller'
 import type { ReaderApi } from '../features/live/api'
 import type { CableCallbacks, CableClient } from '../features/live/cable'
-import { normalizeSession } from '../features/live/contracts'
+import { normalizeSession, normalizeParts } from '../features/live/contracts'
 const session = normalizeSession({ session: { id: 7, current_part_id: 1 } })
 let api: jest.Mocked<ReaderApi>, callbacks: CableCallbacks, lifecycleEvent: (active: boolean, online: boolean) => void
 let unsubscribe: ReturnType<typeof jest.fn>, unlisten: ReturnType<typeof jest.fn>, cable: CableClient, lifecycle: Lifecycle
@@ -62,6 +62,7 @@ it('does not publish a snapshot when the part changes while requests are in flig
   stop()
 })
 it('keeps readings on failure, separates explanation failure, and reports service leaving live discovery', async () => {
+  api.parts.mockResolvedValue(normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11, position: 1, en: 'Reading' } }] }))
   const { controller, stop } = setup(); await flush()
   api.explanations.mockRejectedValueOnce(new Error('down'))
   api.services.mockResolvedValue([])

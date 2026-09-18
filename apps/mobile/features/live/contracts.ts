@@ -13,6 +13,10 @@ export interface LiveSession {
   currentRole: string | null
   /** Published by the API for churches that have been geocoded; absent otherwise. */
   latitude: number | null; longitude: number | null
+  /** Content-related session fields, not a server revision. Reuse is bounded by a full-refresh interval. */
+  partsContext: string | null
+  /** Present only after a revisioned state response has been reconciled with its manifest. */
+  revision?: number | null; contentContext?: string | null; currentLiturgyPartId?: number | null; posture?: string | null
 }
 export interface LivePart {
   id: number; key: string; liturgyId: number | null; liturgyPartId: number | null
@@ -40,7 +44,16 @@ export function normalizeSession(value: unknown): LiveSession {
     currentPartId: positiveId(s.current_part_id), currentLiturgyId: positiveId(s.current_liturgy_id),
     currentPosition: positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
     date: text(s.date), currentRole: text(s.current_part_role)?.trim() || null,
-    latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180) }
+    latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180), partsContext: partsContext(s) }
+}
+function partsContext(session: Record<string, unknown>): string | null {
+  // Older/incomplete API responses cannot establish that the loaded manifest still belongs to this session.
+  if (!Array.isArray(session.liturgies) || !session.liturgies.length ||
+      !Number.isSafeInteger(session.num_of_parts) || Number(session.num_of_parts) < 1) return null
+  // Compare content inputs, not unrelated metadata: church_avatar is a signed URL that changes between reads.
+  // This is deliberately not an arbitrary snapshot hash or a substitute for a server content revision.
+  return JSON.stringify([session.id, session.date, session.liturgy_id, session.liturgies, session.num_of_parts,
+    session.readings, session.options, session.status, session.status_message])
 }
 /** Only a real, in-range number counts; anything else means the church has no published position. */
 function coordinate(value: unknown, limit: number): number | null {
@@ -80,18 +93,55 @@ export function normalizeExplanations(value: unknown): LiveExplanation[] {
   })
 }
 export function currentPart(session: LiveSession, parts: LivePart[]): LivePart | undefined {
+  if (session.currentLiturgyPartId != null) return parts.find(p => p.liturgyPartId === session.currentLiturgyPartId &&
+    p.id === session.currentPartId && p.liturgyId === session.currentLiturgyId)
   const matches = parts.filter(p => p.id === session.currentPartId && (session.currentLiturgyId === null || p.liturgyId === session.currentLiturgyId))
   return matches.length === 1 ? matches[0] : matches.find(p => p.position === session.currentPosition)
 }
-export type SessionEvent = { event: 'part_change' | 'status_change' | 'explanation_updated'; sessionId: number }
+export interface SessionCursor { partId: number; liturgyPartId: number; liturgyId: number; position: number }
+export interface SessionState {
+  id: number; revision: number; contentContext: string; cursor: SessionCursor | null
+  status: string; message: string | null; posture: string | null; date: string | null
+}
+function revision(value: unknown): number | null {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null
+}
+function nullableText(value: unknown): value is string | null { return value === null || typeof value === 'string' }
+/** Fail closed: partial/legacy publications trigger a state read rather than an optimistic patch. */
+export function parsePublication(value: unknown, id: number): SessionState | null {
+  try {
+    const s = record(value), rev = revision(s.revision), status = s.session_status ?? s.status
+    if (rev === null || typeof s.content_context !== 'string' || !s.content_context || typeof status !== 'string' ||
+        !nullableText(s.status_message) || !nullableText(s.posture) || !nullableText(s.date)) return null
+    const cursor = s.cursor === null ? null : record(s.cursor)
+    return { id, revision: rev, contentContext: s.content_context, status, message: s.status_message,
+      posture: s.posture, date: s.date, cursor: cursor === null ? null : {
+        partId: requiredId(cursor.part_id), liturgyPartId: requiredId(cursor.liturgy_part_id),
+        liturgyId: requiredId(cursor.liturgy_id), position: requiredId(cursor.position),
+      } }
+  } catch { return null }
+}
+export function normalizeState(value: unknown): SessionState {
+  const data = record(record(value).session), id = requiredId(data.id), state = parsePublication(data, id)
+  if (!state) throw new Error(t('errors.unexpectedFormat'))
+  return state
+}
+export function sessionWithState(session: LiveSession, update: SessionState, parts: LivePart[]): LiveSession {
+  const cursor = update.cursor
+  return { ...session, revision: update.revision, contentContext: update.contentContext,
+    currentPartId: cursor?.partId ?? null, currentLiturgyPartId: cursor?.liturgyPartId ?? null,
+    currentLiturgyId: cursor?.liturgyId ?? null, currentPosition: cursor?.position ?? null,
+    currentRole: parts.find(p => p.liturgyPartId === cursor?.liturgyPartId)?.role ?? null,
+    status: update.status, message: update.message, posture: update.posture, date: update.date }
+}
+export type SessionEvent = { event: 'part_change' | 'status_change' | 'explanation_updated'; sessionId: number; state?: SessionState }
 export function parseEvent(value: unknown): SessionEvent | null {
   try {
     const e = record(value), data = record(e.data)
     if (e.event !== 'part_change' && e.event !== 'status_change' && e.event !== 'explanation_updated') return null
     const id = positiveId(e.event === 'part_change' ? data.session : data.session_id)
     if (!id) return null
-    // Event content is deliberately not patched into state: these payloads are
-    // partial, unordered, and part IDs alone cannot identify repeated readings.
-    return { event: e.event, sessionId: id }
+    const state = e.event === 'explanation_updated' ? null : parsePublication(data, id)
+    return { event: e.event, sessionId: id, ...(state ? { state } : {}) }
   } catch { return null }
 }

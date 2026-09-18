@@ -252,22 +252,39 @@ The cable adapter implements Rails `actioncable-v1-json`: welcome, subscription
 confirmation, pings, messages, rejection, disconnect and bounded reconnection.
 The identifier is exactly `{ channel: "SessionChannel", id: sessionId }`.
 
-Connect/reconnect, `part_change`, `status_change`, `explanation_updated`, network
-restoration and foreground return refetch all reader data. A 30-second foreground
-poll catches missed events and service-list changes. A canonical session recheck
-detects transitions during the parallel reads; invalidated responses are discarded
-and coalesced into one rerun. Requests time out after 12 seconds. Backgrounding,
-network loss, route exit and session changes dispose sockets/timers and abort
-requests. Explanation failures remain separate from readable parts; stale
-explanations are hidden until recovery. No content survives process exit.
+With the revisioned backend contract (Tarkman #436), startup reads
+`/s/:id/state.json`, loads metadata and the parts manifest, then checks state
+again. Content tokens must agree across the manifest fetch. The cursor is
+resolved by `liturgy_part_id`; its position is the backend's deduplicated reading
+position, which must not be used as an index into the full occurrence manifest.
 
-Rails discovery currently means sessions on the client's date, not a guaranteed
-in-progress service. There is no authoritative ended timestamp in this contract.
-A service leaving discovery is labeled “no longer listed live”; its readings
-remain available. Server status messages are displayed as text, without projector
-or control behavior. The APIs have no atomic snapshot/version contract, so the
-session recheck plus periodic recovery reduces, but cannot eliminate, every
-cross-request race.
+Complete `part_change`, `status_change`, and command acknowledgements carry
+`revision`, `cursor`, `content_context`, `session_status`, `status_message`,
+`posture`, and `date`. A contiguous newer revision with the same content token
+is applied immediately without a verification GET. Older/duplicate publications
+are ignored. Gaps, incomplete publications, changed content, unknown occurrences,
+and reconnects recover through the small state endpoint. Changed content is
+reloaded and bracketed by state reads again. Commands include `expected_revision`
+as well as the existing expected part and are never automatically retried.
+
+A 30-second foreground poll catches missed events, content edits and service-list
+changes; it reuses the manifest while its content token is unchanged. Backgrounding,
+network loss, route exit and session changes dispose sockets/timers and abort
+requests. Requests time out after 12 seconds. Explanation work runs after the
+reading is accepted; its failures never block the reading. Manual reading mode
+survives updates and recovery. Saved copies never establish a live revision.
+
+A missing state endpoint (404/405) retains the legacy canonical session recheck
+and bounded manifest reuse; the next full poll checks for the new contract again.
+Other errors remain visible failures. Partial publication payloads use state
+recovery, so backend and mobile deployment order remains compatible. The fast
+path requires the complete publication contract; deploying only the backend does
+not update an already installed mobile bundle.
+
+Rails discovery means sessions on the client's date, not a guaranteed in-progress
+service. A service leaving discovery remains readable. Server status messages are
+displayed as text. Repeated-occurrence navigation semantics remain tracked in
+Tarkman #435; this client does not infer a different server navigation order.
 
 Run the local build with the already configured development client:
 
