@@ -58,6 +58,8 @@ export const en = {
     invalidLink: 'Invalid or expired display link.',
     couldNotLoad: 'Could not load the display configuration.',
     loading: 'Loading the display',
+    projectionUnavailable: 'This service is not available right now.',
+    projectionNoText: 'No text is available in the selected language.',
   },
   days: {
     today: 'Today',

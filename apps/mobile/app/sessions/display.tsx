@@ -5,7 +5,12 @@ import { spacing } from '../../design/tokens'
 import { readerConfig } from '../../features/live/config'
 import { DisplayLinkScreen } from '../../features/displayLinks/DisplayLinkScreen'
 
-export default function DisplayRoute() {
+/**
+ * Current-session display route at `/sessions/display?token=...`, mirroring the
+ * web's canonical shape. The full "always follow live" resolver lands in PR4;
+ * this PR renders the configuration placeholder so the route exists.
+ */
+export default function DisplayCurrentRoute() {
   const { token } = useLocalSearchParams<{ token?: string }>()
   const config = readerConfig()
   if (!config.endpoints) {

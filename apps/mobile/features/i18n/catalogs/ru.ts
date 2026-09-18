@@ -60,6 +60,8 @@ export const ru: Catalog = {
     invalidLink: 'Недействительная или просроченная ссылка для экрана.',
     couldNotLoad: 'Не удалось загрузить настройки экрана.',
     loading: 'Загрузка экрана',
+    projectionUnavailable: 'Сейчас эта служба недоступна.',
+    projectionNoText: 'Текст на выбранном языке отсутствует.',
   },
   days: {
     today: 'Сегодня',
