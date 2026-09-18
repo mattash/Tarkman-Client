@@ -116,7 +116,7 @@ describe('SessionControls', () => {
     await user.click(prevButton)
 
     await waitFor(() => {
-      expect(prevPart).toHaveBeenCalledWith('123', expect.any(String), 1)
+      expect(prevPart).toHaveBeenCalledWith('123', expect.any(String), 1, undefined)
     })
   })
 
@@ -135,7 +135,7 @@ describe('SessionControls', () => {
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(nextPart).toHaveBeenCalledWith('123', expect.any(String), 1)
+      expect(nextPart).toHaveBeenCalledWith('123', expect.any(String), 1, undefined)
     })
   })
 
@@ -256,7 +256,7 @@ describe('SessionControls', () => {
     await user.click(nextButton)
 
     await waitFor(() => {
-      expect(nextPart).toHaveBeenCalledWith('456', expect.any(String), expect.anything())
+      expect(nextPart).toHaveBeenCalledWith('456', expect.any(String), expect.anything(), undefined)
     })
   })
 
@@ -338,4 +338,20 @@ describe('SessionControls', () => {
 
     expect(await screen.findByText('This is the last part. There is nothing after it.')).toBeInTheDocument()
   })
+  it('uses occurrence identity for boundaries and revision for stale commands', async () => {
+    const repeated = [
+      { part: { ...mockParts[0].part, liturgy_part_id: 11, position: 1 } },
+      { part: { ...mockParts[0].part, liturgy_part_id: 12, position: 2 } },
+    ]
+    const atLast = { ...mockSession, session: { ...mockSession.session,
+      current_part_id: repeated[0].part.id, current_liturgy_part_id: 12, current_part_position: 2, revision: 8 } }
+    vi.mocked(fetchSession).mockResolvedValue(atLast)
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: repeated, sessionData: atLast })
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+    await waitFor(() => expect(screen.getByLabelText('Next part')).toBeDisabled())
+    expect(screen.getByLabelText('Previous part')).toBeEnabled()
+    await userEvent.click(screen.getByLabelText('Previous part'))
+    expect(prevPart).toHaveBeenCalledWith('123', expect.any(String), repeated[0].part.id, 8)
+  })
+
 })

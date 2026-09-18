@@ -1,3 +1,4 @@
+import { readingKey } from '../hooks/sessionOccurrence'
 import ReactMarkdown from 'react-markdown'
 import { useSessionParts } from '../hooks/useSessionParts'
 import { LANG_FIELD_MAP } from './SessionPartsSingle'
@@ -17,7 +18,7 @@ export function SessionPartsParallel({
   lang2 = 'en',
   sessionData,
 }: SessionPartsParallelProps) {
-  const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId, { sessionData })
+  const { partsRef, currentPartKey, isLoading, error, data } = useSessionParts(sessionId, { sessionData })
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading parts</div>
@@ -29,7 +30,8 @@ export function SessionPartsParallel({
   return (
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
       {(data?.parts ?? []).map(({ part }) => {
-        const isCurrentPart = part.id === Number(currentPartId)
+        const key = readingKey(part)
+        const isCurrentPart = key === currentPartKey
         const text1 = getPartTextField(part, field1)
         const text2 = getPartTextField(part, field2)
         const hide1 = shouldHideSessionPartText(text1)
@@ -38,11 +40,15 @@ export function SessionPartsParallel({
         return (
           <div
             className={`grid ${hide1 || hide2 ? 'grid-cols-1' : 'grid-cols-2'} gap-5 mb-5`}
-            key={part.liturgy_part_id ?? part.id}
+            key={key}
             data-duration-ms={part.effective_duration_ms}
+            data-reading-key={key}
+            data-current={isCurrentPart}
             ref={(el) => {
               if (el) {
-                partsRef.current[part.id] = el
+                partsRef.current[key] = el
+              } else {
+                delete partsRef.current[key]
               }
             }}
           >

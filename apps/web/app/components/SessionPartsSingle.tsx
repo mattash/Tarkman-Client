@@ -1,3 +1,4 @@
+import { readingKey } from '../hooks/sessionOccurrence'
 import ReactMarkdown from 'react-markdown'
 import { useSessionParts } from '../hooks/useSessionParts'
 import { PartTextField, getPartTextField, shouldHideSessionPartText } from './sessionPartsUtils'
@@ -21,7 +22,7 @@ export function SessionPartsSingle({
   lang1 = 'translit',
   sessionData,
 }: SessionPartsSingleProps) {
-  const { partsRef, currentPartId, isLoading, error, data } = useSessionParts(sessionId, { sessionData })
+  const { partsRef, currentPartKey, isLoading, error, data } = useSessionParts(sessionId, { sessionData })
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading parts</div>
@@ -32,7 +33,8 @@ export function SessionPartsSingle({
   return (
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
       {(data?.parts ?? []).map(({ part }) => {
-        const isCurrentPart = part.id === Number(currentPartId)
+        const key = readingKey(part)
+        const isCurrentPart = key === currentPartKey
         const text = getPartTextField(part, field)
         const hide = shouldHideSessionPartText(text)
 
@@ -41,11 +43,15 @@ export function SessionPartsSingle({
         return (
           <div
             className="mb-5"
-            key={part.id}
+            key={key}
             data-duration-ms={part.effective_duration_ms}
+            data-reading-key={key}
+            data-current={isCurrentPart}
             ref={(el) => {
               if (el) {
-                partsRef.current[part.id] = el
+                partsRef.current[key] = el
+              } else {
+                delete partsRef.current[key]
               }
             }}
           >

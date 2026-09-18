@@ -75,3 +75,9 @@ it('sends revision CAS for navigation and status commands, and returns the commi
 it('accepts old successful command responses and lets the reader recover authoritative state', async () => {
   await expect(controls(respond(200, { status: 'Advanced to next part' })).commands.next(9, 1)).resolves.toBeUndefined()
 })
+
+it('selects the requested occurrence when a Part is reused', async () => {
+  const { authorizedFetch, commands } = controls(respond(200, { status: 'ok' }))
+  await commands.goToPart(9, 52, 52, 152)
+  expect(JSON.parse(String(authorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ part_id: 52, liturgy_part_id: 152, expected_part_id: 52 })
+})

@@ -1,3 +1,4 @@
+import { readingKey, resolveReadingKey } from '../hooks/sessionOccurrence'
 import * as React from 'react'
 import { useIsMutating, useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import {
@@ -48,8 +49,11 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
   // A move past either end of the service can never succeed, so its control is not offered. While the
   // parts list is still unknown the controls keep their enabled behaviour instead of guessing.
   const parts = partsData?.parts ?? []
-  const currentPartIndex =
-    currentPartId == null ? -1 : parts.findIndex(({ part }) => part.id === currentPartId)
+  const currentKey = currentPartId == null ? null : resolveReadingKey(parts, {
+    partId: String(currentPartId), occurrenceId: sessionData?.session.current_liturgy_part_id,
+    position: sessionData?.session.current_part_position, liturgyId: sessionData?.session.current_liturgy_id,
+  })
+  const currentPartIndex = currentKey == null ? -1 : parts.findIndex(({ part }) => readingKey(part) === currentKey)
   const atFirstPart = currentPartIndex === 0
   const atLastPart = currentPartIndex >= 0 && currentPartIndex === parts.length - 1
   const refreshFromServer = () => Promise.all([
@@ -62,8 +66,8 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
     mutationFn: (direction: 'previous' | 'next') => {
       const transitionedAt = new Date().toISOString()
       return direction === 'previous'
-        ? prevPart(sessionIdString, transitionedAt, currentPartId)
-        : nextPart(sessionIdString, transitionedAt, currentPartId)
+        ? prevPart(sessionIdString, transitionedAt, currentPartId, sessionData?.session.revision)
+        : nextPart(sessionIdString, transitionedAt, currentPartId, sessionData?.session.revision)
     },
     onMutate: () => setCommandError(null),
     onSuccess: async () => {

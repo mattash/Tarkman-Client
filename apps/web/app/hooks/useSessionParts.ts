@@ -3,152 +3,93 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useActionCable } from './useActionCable'
 import { fetchSession, fetchSessionParts, sessionsKeys } from '../queries/sessions'
 import { PartsResponse } from '../types/part'
-import type { SessionWrapper } from '../types/session'
+import type { SessionData, SessionWrapper } from '../types/session'
 import { smoothScrollToPart } from './smoothScrollToPart'
+import { resolveReadingKey, type ReadingCursor } from './sessionOccurrence'
 
 interface UseSessionPartsOptions {
-  /** Called when the current part changes (via ActionCable or initial data). */
   onPartChange?: (partId: string) => void
-  /** Session data already loaded by a parent route. */
   sessionData?: SessionWrapper
 }
 
+function sessionCursor(session: SessionData): ReadingCursor | null {
+  if (session.current_part_id == null) return null
+  return { partId: String(session.current_part_id), occurrenceId: session.current_liturgy_part_id ?? session.cursor?.liturgy_part_id,
+    position: session.current_part_position, liturgyId: session.current_liturgy_id, revision: session.revision }
+}
+
 export function useSessionParts(sessionId: string, options?: UseSessionPartsOptions) {
-  const partsRef = React.useRef<Record<string, HTMLElement>>({})
-  const lastNotifiedPartIdRef = React.useRef<string | null>(null)
-  const hasHandledInitialDataRef = React.useRef(false)
-  const receivedLivePartBeforeInitialDataRef = React.useRef(false)
-  const latestLivePartIdRef = React.useRef<string | null>(null)
+  const partsRef = React.useMemo(() => ({ current: {} as Record<string, HTMLElement> }), [sessionId])
+  const [selected, setSelected] = React.useState<(ReadingCursor & { sessionId: string }) | null>(null)
+  const accepted = React.useRef<{ sessionId: string; cursor: ReadingCursor; live: boolean } | null>(null)
+  const lastScroll = React.useRef<{ sessionId: string; key: string; element: HTMLElement } | null>(null)
   const scrollAnimationRef = React.useRef<number | null>(null)
   const scrollTimeoutRef = React.useRef<number | null>(null)
-  const [currentPartState, setCurrentPartState] = React.useState<{
-    sessionId: string
-    partId: string | null
-  }>({ sessionId, partId: null })
   const queryClient = useQueryClient()
-  const currentPartId = currentPartState.sessionId === sessionId
-    ? currentPartState.partId
-    : null
-
-  // Destructure onPartChange so the ActionCable effect does not depend on the
-  // whole options object (avoids re-scroll on rerender when an inline
-  // object literal is passed).
   const onPartChange = options?.onPartChange
   const knownSessionData = options?.sessionData
-
-  const actionCableEvents = React.useMemo(() => ['part_change', 'status_change'], [])
-  const subscriptionData = useActionCable(`channel_${sessionId}`, actionCableEvents)
-
-  const handleScroll = React.useCallback(
-    (element: HTMLElement) => {
-      smoothScrollToPart(element, {
-        animation: scrollAnimationRef,
-        timeout: scrollTimeoutRef,
-      })
-    },
-    []
-  )
-
-  const {
-    data,
-    isLoading,
-    error,
-  } = useQuery<PartsResponse>({
+  const events = React.useMemo(() => ['part_change', 'status_change'], [])
+  const subscriptionData = useActionCable(`channel_${sessionId}`, events)
+  const { data, isLoading, error } = useQuery<PartsResponse>({
     queryKey: sessionsKeys.sessionParts(sessionId),
     queryFn: async () => {
       const sessionData = knownSessionData ?? await queryClient.fetchQuery({
-        queryKey: sessionsKeys.session(sessionId),
-        queryFn: () => fetchSession(sessionId),
-        staleTime: 1000,
+        queryKey: sessionsKeys.session(sessionId), queryFn: () => fetchSession(sessionId), staleTime: 1000,
       })
       return fetchSessionParts(sessionId, sessionData)
     },
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 0, refetchOnMount: true,
   })
 
-  // Scroll to current part on initial data load.
-  // Use != null so that a part with id 0 is not ignored.
-  React.useEffect(() => {
-    lastNotifiedPartIdRef.current = null
-    hasHandledInitialDataRef.current = false
-    receivedLivePartBeforeInitialDataRef.current = false
-    latestLivePartIdRef.current = null
-    partsRef.current = {}
-    setCurrentPartState({ sessionId, partId: null })
+  const accept = React.useCallback((cursor: ReadingCursor | null, live: boolean) => {
+    if (!cursor) return
+    const previous = accepted.current?.sessionId === sessionId ? accepted.current : null
+    if (previous) {
+      if (previous.cursor.revision != null && (cursor.revision == null || cursor.revision < previous.cursor.revision)) return
+      // An unversioned snapshot embedded in cached text must not rewind a live update.
+      if (!live && previous.live && cursor.revision == null) return
+      if (previous.cursor.revision === cursor.revision && previous.cursor.partId === cursor.partId &&
+          previous.cursor.occurrenceId === cursor.occurrenceId && previous.cursor.position === cursor.position) return
+    }
+    accepted.current = { sessionId, cursor, live }
+    setSelected({ sessionId, ...cursor })
   }, [sessionId])
 
   React.useEffect(() => {
-    if (data?.sessionData.session.current_part_id != null) {
-      const isInitialData = !hasHandledInitialDataRef.current
-      hasHandledInitialDataRef.current = true
-      if (isInitialData && receivedLivePartBeforeInitialDataRef.current) {
-        const livePartId = latestLivePartIdRef.current
-        const livePartElement = livePartId ? partsRef.current[livePartId] : undefined
-        if (livePartElement) {
-          handleScroll(livePartElement)
-        }
-        return
-      }
-
-      const currentId = data.sessionData.session.current_part_id
-      const partId = String(currentId)
-      setCurrentPartState({ sessionId, partId })
-      if (lastNotifiedPartIdRef.current !== partId) {
-        lastNotifiedPartIdRef.current = partId
-        onPartChange?.(partId)
-      }
-      const currentPartElement = partsRef.current[currentId]
-      if (currentPartElement) {
-        handleScroll(currentPartElement)
-      }
-    }
-  }, [data, handleScroll, onPartChange, sessionId])
-
-  // Handle ActionCable part changes.
+    if (data) accept(sessionCursor(data.sessionData.session), false)
+  }, [data, accept])
   React.useEffect(() => {
-    if (subscriptionData?.part !== undefined) {
-      if (!hasHandledInitialDataRef.current) {
-        receivedLivePartBeforeInitialDataRef.current = true
-      }
-      const partId = String(subscriptionData.part)
-      latestLivePartIdRef.current = partId
-      setCurrentPartState({ sessionId, partId })
-      if (lastNotifiedPartIdRef.current !== partId) {
-        lastNotifiedPartIdRef.current = partId
-        onPartChange?.(partId)
-      }
-      const currentPartElement = partsRef.current[subscriptionData.part]
-      if (currentPartElement) {
-        handleScroll(currentPartElement)
-      }
+    if (knownSessionData) accept(sessionCursor(knownSessionData.session), false)
+  }, [knownSessionData, accept])
+  React.useEffect(() => {
+    if (subscriptionData?.part != null || subscriptionData?.cursor) {
+      const cursor = subscriptionData.cursor
+      accept({ partId: String(cursor?.part_id ?? subscriptionData.part), occurrenceId: cursor?.liturgy_part_id,
+        position: cursor?.position, liturgyId: cursor?.liturgy_id, revision: subscriptionData.revision }, true)
     }
     if (subscriptionData?.status) {
-      queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
-      queryClient.invalidateQueries({ queryKey: ['currentSession'] })
-      queryClient.invalidateQueries({ queryKey: ['userCurrentSession'] })
+      void queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
+      void queryClient.invalidateQueries({ queryKey: ['currentSession'] })
+      void queryClient.invalidateQueries({ queryKey: ['userCurrentSession'] })
     }
-  }, [subscriptionData, handleScroll, queryClient, sessionId, onPartChange])
+  }, [subscriptionData, accept, queryClient, sessionId])
 
-  // Cleanup scroll animations on unmount.
+  const current = selected?.sessionId === sessionId ? selected : null
+  const currentPartKey = current && data ? resolveReadingKey(data.parts, current) : null
   React.useEffect(() => {
-    return () => {
-      if (scrollAnimationRef.current !== null) {
-        cancelAnimationFrame(scrollAnimationRef.current)
-        scrollAnimationRef.current = null
-      }
-      if (scrollTimeoutRef.current !== null) {
-        clearTimeout(scrollTimeoutRef.current)
-        scrollTimeoutRef.current = null
-      }
-    }
-  }, [])
+    const element = currentPartKey ? partsRef.current[currentPartKey] : undefined
+    if (!element || !currentPartKey || !current) return
+    if (lastScroll.current?.sessionId === sessionId && lastScroll.current.key === currentPartKey &&
+        lastScroll.current.element === element) return
+    lastScroll.current = { sessionId, key: currentPartKey, element }
+    onPartChange?.(current.partId)
+    smoothScrollToPart(element, { animation: scrollAnimationRef, timeout: scrollTimeoutRef })
+  }, [current, currentPartKey, data, partsRef, onPartChange, sessionId])
 
-  return {
-    partsRef,
-    currentPartId,
-    isLoading,
-    error,
-    data,
-  }
+  React.useEffect(() => () => {
+    if (scrollAnimationRef.current !== null) cancelAnimationFrame(scrollAnimationRef.current)
+    if (scrollTimeoutRef.current !== null) clearTimeout(scrollTimeoutRef.current)
+  }, [sessionId])
+
+  return { partsRef, currentPartId: current?.partId ?? null, currentPartKey, isLoading, error, data }
 }
