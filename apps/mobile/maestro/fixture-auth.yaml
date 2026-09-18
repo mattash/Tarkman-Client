@@ -1,0 +1,16 @@
+# The fixture operator signs in from Settings, lands on My services with their
+# account and the fixture session listed, and signs out again. The account is
+# synthetic and only exists on the loopback fixture
+# (qa/design-system/mock-reader-server.cjs). Leaves the app signed out.
+appId: app.tarkman
+name: Sign in and out as the fixture operator
+---
+- runFlow: fixture-sign-in.yaml
+- assertVisible: "Your services"
+- assertVisible: "Signed in as Fixture operator"
+- assertVisible: "Sample Divine Liturgy"
+- tapOn: "Sign out"
+# The signed-in guard sends a signed-out visitor to the sign-in screen.
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 15000

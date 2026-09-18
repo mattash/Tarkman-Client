@@ -65,16 +65,16 @@ export default function SignInScreen() {
         {state.expired && <AppText accessibilityRole="alert">{t('signIn.expired')}</AppText>}
         {error && <Notice tone="danger" accessibilityRole="alert">{error}</Notice>}
         <View style={{ gap: spacing.md }}>
-          <TextField label={t('signIn.email')} value={email} onChangeText={setEmail} editable={!pending} autoCapitalize="none" autoCorrect={false}
+          <TextField testID="sign-in-email" label={t('signIn.email')} value={email} onChangeText={setEmail} editable={!pending} autoCapitalize="none" autoCorrect={false}
             autoComplete="email" textContentType="username" keyboardType="email-address" inputMode="email"
             returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => passwordField.current?.focus()} />
-          <TextField ref={passwordField} label={t('signIn.password')} value={password} onChangeText={setPassword} editable={!pending} secureTextEntry={!revealed}
+          <TextField ref={passwordField} testID="sign-in-password" label={t('signIn.password')} value={password} onChangeText={setPassword} editable={!pending} secureTextEntry={!revealed}
             autoCapitalize="none" autoCorrect={false} autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={submit}
             trailing={<Pressable accessibilityRole="button" accessibilityLabel={revealed ? t('signIn.hidePassword') : t('signIn.showPassword')} onPress={() => setRevealed(value => !value)}
               style={{ minHeight: touchTarget, minWidth: touchTarget, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' }}>
               <AppText variant="label" tone="accent">{revealed ? t('signIn.hide') : t('signIn.show')}</AppText>
             </Pressable>} />
-          <AppButton size="form" loading={pending} onPress={submit}>{t('common.signIn')}</AppButton>
+          <AppButton testID="sign-in-submit" size="form" loading={pending} onPress={submit}>{t('common.signIn')}</AppButton>
         </View>
         <Notice tone="neutral">{t('signIn.accountsNote')}</Notice>
       </View>

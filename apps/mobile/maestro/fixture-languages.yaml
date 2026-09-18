@@ -1,0 +1,26 @@
+# A reader switches the fixture service between English and Classical Armenian
+# and back; the reading text follows the choice. Signed out and read-only,
+# against qa/design-system/mock-reader-server.cjs.
+appId: app.tarkman
+name: Switch reading languages
+---
+- runFlow: fixture-open-service.yaml
+- assertVisible: "Our Father"
+- tapOn:
+    id: "reader-language"
+- extendedWaitUntil:
+    visible: "Reading language"
+    timeout: 15000
+- tapOn: "Գրաբար"
+- extendedWaitUntil:
+    visible: "Հայր մեր"
+    timeout: 15000
+- tapOn:
+    id: "reader-language"
+- extendedWaitUntil:
+    visible: "Reading language"
+    timeout: 15000
+- tapOn: "English"
+- extendedWaitUntil:
+    visible: "Our Father"
+    timeout: 15000

@@ -1,0 +1,21 @@
+# Helper, not a standalone check: launches the app and opens the fixture's
+# service 9001 in the reader through the scanner's manual-ID fallback. Requires
+# the app to run against qa/design-system/mock-reader-server.cjs (see README).
+# Session ID entry is the scanner's fallback; a simulator has no camera to scan with.
+appId: app.tarkman
+---
+- runFlow: launch.yaml
+- tapOn:
+    id: "today-scan"
+- tapOn:
+    id: "scan-session-id"
+- tapOn:
+    id: "session-id"
+- inputText: "9001"
+# The numeric keypad covers the button, so submit with its Go key, which is what the
+# field's return key is configured to do.
+- tapOn: "Go"
+- extendedWaitUntil:
+    visible: "All services"
+    timeout: 30000
+- waitForAnimationToEnd

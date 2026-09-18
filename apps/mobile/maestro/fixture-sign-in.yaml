@@ -1,0 +1,26 @@
+# Helper, not a standalone check: signs in as the fixture operator and lands on
+# My services (safeReturnTo's default). Performs no cleanup, so callers that need
+# a signed-in session can continue; standalone flows must sign out themselves. Requires the app to run
+# against qa/design-system/mock-reader-server.cjs, whose operator account is
+# synthetic and only serves that loopback process.
+appId: app.tarkman
+---
+- runFlow: launch.yaml
+- tapOn:
+    id: "tab-settings"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible:
+      id: "sign-in-email"
+    timeout: 15000
+- tapOn:
+    id: "sign-in-email"
+- inputText: "operator@example.test"
+- tapOn:
+    id: "sign-in-password"
+- inputText: "fixture-only-password"
+- tapOn:
+    id: "sign-in-submit"
+- extendedWaitUntil:
+    visible: "Signed in as Fixture operator"
+    timeout: 30000
