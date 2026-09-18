@@ -8,7 +8,7 @@ name: Sign in and out as the fixture operator
 - runFlow: fixture-sign-in.yaml
 - assertVisible: "Your services"
 - assertVisible: "Signed in as Fixture operator"
-- assertVisible: "Sample Divine Liturgy"
+- assertVisible: "Sample Divine Liturgy · Lord’s Prayer"
 - tapOn: "Sign out"
 # The signed-in guard sends a signed-out visitor to the sign-in screen.
 - extendedWaitUntil:

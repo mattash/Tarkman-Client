@@ -5,10 +5,10 @@ name: Join the live service from Today
 ---
 - runFlow: launch.yaml
 - extendedWaitUntil:
-    visible: "Sample Divine Liturgy"
+    visible: "Sample Divine Liturgy · Lord’s Prayer"
     timeout: 30000
 - tapOn: "Read along"
 - extendedWaitUntil:
     visible: "All services"
     timeout: 30000
-- assertVisible: "Our Father"
+- assertVisible: "(?s)Our Father.*"

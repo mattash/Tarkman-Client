@@ -8,7 +8,14 @@ appId: app.tarkman
 - runFlow: launch.yaml
 - tapOn:
     id: "tab-about"
-- tapOn: "Sign in"
+# A stopped earlier run (or the helper executed standalone) can leave the app
+# signed in, which replaces this row with "Sign out". Sign out first so the
+# signed-out About row is always what the next tap finds.
+- tapOn:
+    text: "Sign out"
+    optional: true
+- tapOn:
+    id: "about-sign-in"
 - extendedWaitUntil:
     visible:
       id: "sign-in-email"
@@ -21,6 +28,11 @@ appId: app.tarkman
 - inputText: "fixture-only-password"
 - tapOn:
     id: "sign-in-submit"
+# iOS may offer to save the synthetic fixture password; dismiss it so the
+# signed-in landing below stays reachable.
+- tapOn:
+    text: "Not Now"
+    optional: true
 - extendedWaitUntil:
     visible: "Signed in as Fixture operator"
     timeout: 30000

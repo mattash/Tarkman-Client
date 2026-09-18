@@ -5,7 +5,7 @@ appId: app.tarkman
 name: Switch reading languages
 ---
 - runFlow: fixture-open-service.yaml
-- assertVisible: "Our Father"
+- assertVisible: "(?s)Our Father.*"
 - tapOn:
     id: "reader-language"
 - extendedWaitUntil:
@@ -13,7 +13,7 @@ name: Switch reading languages
     timeout: 15000
 - tapOn: "Գրաբար"
 - extendedWaitUntil:
-    visible: "Հայր մեր"
+    visible: "(?s)Հայր մեր.*"
     timeout: 15000
 - tapOn:
     id: "reader-language"
@@ -22,5 +22,5 @@ name: Switch reading languages
     timeout: 15000
 - tapOn: "English"
 - extendedWaitUntil:
-    visible: "Our Father"
+    visible: "(?s)Our Father.*"
     timeout: 15000

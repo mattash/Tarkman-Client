@@ -12,21 +12,21 @@ name: Move the fixture service forward and back
 - extendedWaitUntil:
     visible: "Your services"
     timeout: 15000
-- assertVisible: "Sample Divine Liturgy"
-- tapOn: "Open controls"
+- assertVisible: "Sample Divine Liturgy · Lord’s Prayer"
+- tapOn: "Open controls.*"
 - extendedWaitUntil:
     visible: "ON NOW"
     timeout: 30000
-- assertVisible: "1 of 3"
+- assertVisible: "Part 1 of 3"
 - tapOn:
     id: "control-next"
 - extendedWaitUntil:
-    visible: "2 of 3"
+    visible: "Part 2 of 3"
     timeout: 15000
 - tapOn:
     id: "control-previous"
 - extendedWaitUntil:
-    visible: "1 of 3"
+    visible: "Part 1 of 3"
     timeout: 15000
 # Cleanup: leave the app signed out so the next flow starts signed out. The
 # control header's back button returns to My services, whose footer signs out.

@@ -11,8 +11,8 @@ name: Read the current part's explanation
     visible: "Explanation"
     timeout: 15000
 - assertVisible: "Sample explanation · Lord’s Prayer"
-- assertVisible: "Sample fixture explanation"
-- tapOn: "Done"
+- assertVisible: "Sample fixture explanation.*"
+- tapOn: "Close Explanation"
 - extendedWaitUntil:
     visible: "All services"
     timeout: 15000

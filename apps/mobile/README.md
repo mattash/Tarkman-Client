@@ -597,11 +597,21 @@ node apps/mobile/qa/design-system/mock-reader-server.cjs
 EXPO_PUBLIC_API_URL=http://127.0.0.1:8100 \
 EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8100/cable \
 npm run mobile
-maestro test apps/mobile/maestro/fixture-join.yaml \
+maestro test -s 1 apps/mobile/maestro/fixture-join.yaml \
   apps/mobile/maestro/fixture-languages.yaml \
   apps/mobile/maestro/fixture-explanations.yaml \
   apps/mobile/maestro/fixture-auth.yaml \
   apps/mobile/maestro/fixture-controls.yaml
+```
+
+`-s 1` runs the flows serially on one shard. Without it Maestro runs them in
+parallel, and the signed-in flows race each other over the single app instance.
+Grant the simulator camera before the first run (the scan fallback in
+`fixture-open-service.yaml` needs the scanner to open without the permission
+prompt covering it):
+
+```sh
+xcrun simctl privacy booted grant camera app.tarkman
 ```
 
 List the flows explicitly: `maestro test maestro/` would also pick up the
