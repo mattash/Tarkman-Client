@@ -36,3 +36,13 @@ it('shows as many chosen languages side by side as fit, rather than falling back
   // Three columns would leave under 300pt each at 744pt; two still fit.
   expect(widths(parts[0].key)).toEqual([['en', 340], ['grabar', 340]])
 })
+
+it('uses the row accent alone for the active comparison row', async () => {
+  await layout(['en', 'grabar'], 744)
+  const activeColumns = widths(parts[0].key)
+    .map(([language]) => screen.getByTestId(`reading-column-${parts[0].key}-${language}`))
+  expect(activeColumns.map(node => [node.props.style].flat().find((style: { borderLeftWidth?: number }) => style?.borderLeftWidth !== undefined)?.borderLeftWidth)).toEqual([0, 1])
+  const pastColumns = widths(parts[1].key)
+    .map(([language]) => screen.getByTestId(`reading-column-${parts[1].key}-${language}`))
+  expect(pastColumns.map(node => [node.props.style].flat().find((style: { borderLeftWidth?: number }) => style?.borderLeftWidth !== undefined)?.borderLeftWidth)).toEqual([3, 1])
+})
