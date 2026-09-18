@@ -7,12 +7,14 @@ import { ServicesProvider } from '../features/home/ServicesProvider'
 import { Today } from '../features/home/Today'
 import { ServicesList } from '../features/home/ServicesList'
 import { Settings } from '../features/home/Settings'
+import { About } from '../features/home/About'
 import { I18nProvider, setActiveInterfaceLanguage } from '../features/i18n'
 import { TabBar } from '../components/TabBar'
 import { normalizeServices } from '../features/live/contracts'
 import { initialState } from '../features/live/state'
 import { useReader } from '../features/live/useReader'
 import { LAST_READING_KEY } from '../features/progress/lastReading'
+import { recentlyControlledKey } from '../features/progress/recentlyControlled'
 import TabsLayout from '../app/(tabs)/_layout'
 
 const mockPush = jest.fn(), mockNavigate = jest.fn()
@@ -153,16 +155,45 @@ it('lists every service on the Services tab', async () => {
   expect(retry).toHaveBeenCalled()
 })
 
-it('keeps sign-in inside Settings, and My services only when signed in', async () => {
-  await render(<Settings />, { wrapper })
+it('keeps sign-in on the About tab, and My services only when signed in', async () => {
+  await render(<About />, { wrapper })
+  expect(screen.getByText(/developed by Fr\. Mesrop Ash and St\. John Armenian Church/)).toBeOnTheScreen()
   expect(screen.queryByRole('button', { name: /My services/ })).toBeNull()
   await fireEvent.press(screen.getByRole('button', { name: /^Sign in/ }))
   expect(mockPush).toHaveBeenCalledWith('/sign-in')
-  mockAuth.current = { status: 'signedIn', user: { name: 'Deacon', email: 'deacon@example.test' } }
-  await render(<Settings />, { wrapper })
+  mockAuth.current = { status: 'signedIn', user: { id: 7, name: 'Deacon', email: 'deacon@example.test' } }
+  await render(<About />, { wrapper })
   expect(screen.getByText('Signed in as Deacon')).toBeOnTheScreen()
   await fireEvent.press(screen.getByRole('button', { name: /^My services/ }))
   expect(mockPush).toHaveBeenCalledWith('/services')
+})
+
+it('keeps Settings to reading choices now that the account lives on About', async () => {
+  mockAuth.current = { status: 'signedIn', user: { id: 7, name: 'Deacon', email: 'deacon@example.test' } }
+  await render(<Settings />, { wrapper })
+  expect(screen.queryByText('Account')).toBeNull()
+  expect(screen.queryByRole('button', { name: /^Sign in/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /^My services/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
+})
+
+it('shows recently controlled services to the signed-in operator, straight to controls', async () => {
+  mockAuth.current = { status: 'signedIn', user: { id: 7, name: 'Deacon', email: 'deacon@example.test' } }
+  mockStored[recentlyControlledKey(7)] = JSON.stringify([{ sessionId: 4006, title: 'Divine Liturgy', church: 'St. John Armenian Church', date: '2026-09-17', controlledAt: 1 }])
+  await render(<Today />, { wrapper })
+  const row = await screen.findByTestId('controlled-4006')
+  expect(within(row).getByText('Divine Liturgy')).toBeOnTheScreen()
+  await fireEvent.press(row)
+  expect(mockPush).toHaveBeenCalledWith('/services/4006')
+})
+
+it('never shows another account’s or a signed-out reader’s controlled services', async () => {
+  mockStored[recentlyControlledKey(8)] = JSON.stringify([{ sessionId: 4006, title: 'Divine Liturgy', church: 'St. John Armenian Church', date: null, controlledAt: 1 }])
+  await render(<Today />, { wrapper })
+  expect(screen.queryByText('Recently controlled')).toBeNull()
+  mockAuth.current = { status: 'signedIn', user: { id: 7, name: 'Deacon', email: 'deacon@example.test' } }
+  await render(<Today />, { wrapper })
+  expect(screen.queryByText('Recently controlled')).toBeNull()
 })
 
 it('keeps at least one reading language in Settings', async () => {

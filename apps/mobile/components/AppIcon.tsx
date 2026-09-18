@@ -14,6 +14,7 @@ const names = {
   'tab-today': 'radio-outline', 'tab-today-selected': 'radio',
   'tab-services': 'book-outline', 'tab-services-selected': 'book',
   'tab-settings': 'options-outline', 'tab-settings-selected': 'options',
+  'tab-about': 'information-circle-outline', 'tab-about-selected': 'information-circle',
 } as const
 export type IconName = keyof typeof names
 

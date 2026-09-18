@@ -47,7 +47,12 @@ export const en = {
     today: 'Today',
     services: 'Services',
     settings: 'Settings',
+    about: 'About',
     notConfiguredTitle: 'Follow the service.',
+  },
+  about: {
+    creditsTitle: 'A worship aid',
+    credits: 'Tarkman is developed by Fr. Mesrop Ash and St. John Armenian Church as a worship aid. Any parish or group is welcome to adopt it for liturgical worship or prayer guidance.',
   },
   days: {
     today: 'Today',
@@ -157,6 +162,7 @@ export const en = {
     rowLiveLabel: '{title}, {church}, live now',
     nothingLive: 'No service is live right now.',
     continueReading: 'Continue reading',
+    recentlyControlled: 'Recently controlled',
     stoppedAt: 'stopped at {role}',
     nowReading: 'NOW READING',
     readAlongHintLive: 'Opens {title}, live now at {church}.',
