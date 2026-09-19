@@ -1,0 +1,18 @@
+# A reader opens the explanation sheet for the fixture service's current part,
+# which carries one fixture explanation, and dismisses it. Signed out and
+# read-only, against qa/design-system/mock-reader-server.cjs.
+appId: app.tarkman
+name: Read the current part's explanation
+---
+- runFlow: fixture-open-service.yaml
+- tapOn:
+    id: "reader-explain"
+- extendedWaitUntil:
+    visible: "Explanation"
+    timeout: 15000
+- assertVisible: "Sample explanation · Lord’s Prayer"
+- assertVisible: "Sample fixture explanation.*"
+- tapOn: "Close Explanation"
+- extendedWaitUntil:
+    visible: "All services"
+    timeout: 15000

@@ -558,11 +558,11 @@ camera, so scanning can only be confirmed on a physical iPhone.
 
 `maestro/` holds Maestro flows that drive the app on a simulator. Install the CLI
 with `curl -fsSL "https://get.maestro.mobile.dev" | bash` — note that Homebrew's
-plain `maestro` cask is an unrelated product — then run them all:
-
-```sh
-maestro test maestro/
-```
+plain `maestro` cask is an unrelated product. Do not run the whole directory at
+once: the unprefixed flows (`read-a-service.yaml`, `part-link.yaml`) target
+production session 4006 and need a production-configured build, while the
+`fixture-*.yaml` flows need the local fixture documented below and fail against
+production. Run one family or the other, never `maestro test maestro/`.
 
 `launch.yaml` loads the app and is reused by the others through `runFlow`. In
 development it points the development client at Metro on port 8081; a standalone
@@ -580,6 +580,48 @@ credentials or production state. A scheduled fixture-backed Maestro job belongs
 to a separate PR; this compile gate does not run those flows or contact that
 service. Read-only production flows are still unsuitable as deterministic CI
 tests. macOS also has materially higher runner cost than Linux.
+
+### Fixture-backed flows
+
+The `fixture-*.yaml` flows cover the release-check matrix against the
+deterministic [mock-reader fixture](qa/design-system/mock-reader-server.cjs)
+instead of production: joining from Today (`fixture-join`), language switching
+(`fixture-languages`), explanations (`fixture-explanations`), authentication
+(`fixture-auth`), and core controls (`fixture-controls`).
+`fixture-open-service.yaml` and `fixture-sign-in.yaml` are shared helpers
+included through `runFlow`, not standalone checks. Run them with the app pointed
+at the fixture — from the repository root, in three terminals:
+
+```sh
+node apps/mobile/qa/design-system/mock-reader-server.cjs
+EXPO_PUBLIC_API_URL=http://127.0.0.1:8100 \
+EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8100/cable \
+npm run mobile
+maestro test -s 1 apps/mobile/maestro/fixture-join.yaml \
+  apps/mobile/maestro/fixture-languages.yaml \
+  apps/mobile/maestro/fixture-explanations.yaml \
+  apps/mobile/maestro/fixture-auth.yaml \
+  apps/mobile/maestro/fixture-controls.yaml
+```
+
+`-s 1` runs the flows serially on one shard. Without it Maestro runs them in
+parallel, and the signed-in flows race each other over the single app instance.
+Grant the simulator camera before the first run (the scan fallback in
+`fixture-open-service.yaml` needs the scanner to open without the permission
+prompt covering it):
+
+```sh
+xcrun simctl privacy booted grant camera app.tarkman
+```
+
+List the flows explicitly: `maestro test maestro/` would also pick up the
+production-targeting `read-a-service.yaml` and `part-link.yaml`, which fail
+against the fixture. The fixture's operator account is synthetic and only
+serves the loopback process. Signed-in flows sign out at the end, so each flow
+starts signed out; if a run stops mid-flow, sign out manually before rerunning.
+The fixture confirms the ActionCable subscription but never broadcasts, so
+these flows do not exercise live-following updates — that remains manual or
+production QA.
 
 ### Known gaps
 

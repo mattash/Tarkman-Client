@@ -1,0 +1,37 @@
+# The signed-in fixture operator opens their service's controls from My
+# services, moves the service to the next part and back, and signs out.
+# Exercises the fixture's control endpoints
+# (qa/design-system/mock-reader-server.cjs); the fixture service is synthetic, so
+# nothing live can be disturbed. Leaves the app signed out.
+appId: app.tarkman
+name: Move the fixture service forward and back
+---
+- runFlow: fixture-sign-in.yaml
+# Sign-in lands on My services (safeReturnTo's default), where the fixture
+# session is already listed.
+- extendedWaitUntil:
+    visible: "Your services"
+    timeout: 15000
+- assertVisible: "Sample Divine Liturgy · Lord’s Prayer"
+- tapOn: "Open controls.*"
+- extendedWaitUntil:
+    visible: "ON NOW"
+    timeout: 30000
+- assertVisible: "Part 1 of 3"
+- tapOn:
+    id: "control-next"
+- extendedWaitUntil:
+    visible: "Part 2 of 3"
+    timeout: 15000
+- tapOn:
+    id: "control-previous"
+- extendedWaitUntil:
+    visible: "Part 1 of 3"
+    timeout: 15000
+# Cleanup: leave the app signed out so the next flow starts signed out. The
+# control header's back button returns to My services, whose footer signs out.
+- tapOn: "My services"
+- tapOn: "Sign out"
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 15000
