@@ -11,7 +11,7 @@ export function useScreenKeepAwake(tag: string, appState: KeepAwakeAppState = Ap
     const setAwake = (next: boolean) => {
       if (awake === next) return
       awake = next
-      if (next) void activateKeepAwakeAsync(tag)
+      if (next) void activateKeepAwakeAsync(tag).catch(() => { /* Browser wake locks are best effort (HTTPS and device support). */ })
       else void deactivateKeepAwake(tag)
     }
     const change = (next: AppStateStatus) => setAwake(next === 'active')

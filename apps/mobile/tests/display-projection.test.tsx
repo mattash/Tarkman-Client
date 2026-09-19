@@ -6,7 +6,7 @@ import { DisplayProjection } from '../features/displayLinks/DisplayProjection'
 import { useReader } from '../features/live/useReader'
 import { initialState } from '../features/live/state'
 import type { DisplayLinkConfig } from '../features/displayLinks/config'
-import type { LivePart, LiveSession } from '../features/live/contracts'
+import { normalizeSession, normalizeParts, type LivePart, type LiveSession } from '../features/live/contracts'
 
 // Silence the animated sync arrow; it spins a timer this test cannot unmount cleanly.
 jest.mock('../features/live/ConnectionStatus', () => ({ ControlConnectionStatus: () => null }))
@@ -85,4 +85,33 @@ it('shows a clear unavailable message when the session fails to load', async () 
   renderProjection()
   await waitFor(() => expect(screen.getByTestId('display-projection-unavailable')).toBeOnTheScreen())
   expect(screen.getByText('This service is not available right now.')).toBeOnTheScreen()
+})
+
+it('renders two languages, explanations and congregation status together', async () => {
+  const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_id: 10, current_liturgy_part_id: 11, page: 24, posture: 'stand' } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_id: 10, liturgy_part_id: 11, en: 'Peace unto all.', grabar: 'Խաղաղութիւն ամենեցուն։' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts,
+    explanations: [{ id: 1, title: 'Peace', description: null, liturgyPartId: 11 }] }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection({ config: { ...config, lang2: 'grabar', show_explanations: true } })
+  expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
+  expect(screen.getByText('Խաղաղութիւն ամենեցուն։')).toBeOnTheScreen()
+  expect(screen.getByText('Explanation available')).toBeOnTheScreen()
+  expect(screen.getByText('Page 24')).toBeOnTheScreen()
+  expect(screen.getByText('Stand')).toBeOnTheScreen()
+})
+it.each(['full', 'pages_only', 'posture_only'] as const)('renders minimal status %s without reading text', async status_view => {
+  const session = normalizeSession({ session: { id: 42, page: 123, posture: 'kneel' } })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection({ statusOnly: true, config: { ...config, status_view } })
+  expect(screen.getByTestId('display-status')).toBeOnTheScreen()
+  expect(screen.queryByTestId('display-projection-text')).toBeNull()
+  expect(screen.queryByText('123') !== null).toBe(status_view !== 'posture_only')
+  expect(screen.queryByText('Kneel') !== null).toBe(status_view !== 'pages_only')
+  expect(jest.mocked(useReader).mock.calls.at(-1)?.[2]).toBe(false)
+})
+it('hides explanation availability when recovery makes the current occurrence uncertain', async () => {
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session: normalizeSession({ session: { id: 42 } }),
+    explanations: [{ id: 1, title: 'Old', description: null, liturgyPartId: null }] }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection({ config: { ...config, show_explanations: true } })
+  expect(screen.queryByTestId('display-explanations')).toBeNull()
 })

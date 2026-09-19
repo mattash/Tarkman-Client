@@ -30,10 +30,17 @@ export function normalizeOverrides(value: unknown): DisplayLinkOverrides {
   if (isDisplayLanguage(raw.lang1)) result.lang1 = raw.lang1
   if (raw.lang2 === null) result.lang2 = null
   else if (isDisplayLanguage(raw.lang2)) result.lang2 = raw.lang2
-  if (typeof raw.show_explanations === 'boolean') result.show_explanations = raw.show_explanations
-  if (typeof raw.show_notifications === 'boolean') result.show_notifications = raw.show_notifications
+  const explanations = booleanParameter(raw.show_explanations), notifications = booleanParameter(raw.show_notifications)
+  if (explanations !== undefined) result.show_explanations = explanations
+  if (notifications !== undefined) result.show_notifications = notifications
   if (isDisplayStatusView(raw.status_view)) result.status_view = raw.status_view
   return result
+}
+
+function booleanParameter(value: unknown): boolean | undefined {
+  if (value === true || value === 'true' || value === '1' || value === 1) return true
+  if (value === false || value === 'false' || value === '0' || value === 0) return false
+  return undefined
 }
 
 /** The token's configuration is authoritative; URL parameters can supplement, never override, its preferences. */
@@ -63,7 +70,7 @@ export function normalizeConfig(value: unknown): DisplayLinkConfig | null {
   const raw = value as Record<string, unknown>
   if (typeof raw.token !== 'string' || raw.token === '') return null
   const userId = raw.user_id
-  if (typeof userId !== 'number' || !Number.isSafeInteger(userId)) return null
+  if (typeof userId !== 'number' || !Number.isSafeInteger(userId) || userId <= 0) return null
   const partial: Pick<DisplayLinkConfig, 'token' | 'user_id'> & Partial<DisplayLinkConfig> = {
     token: raw.token, user_id: userId,
   }
