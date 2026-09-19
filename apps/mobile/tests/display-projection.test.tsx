@@ -49,7 +49,7 @@ it('reserves the service screen for reading text and one speaker label', async (
     state: { ...initialState, loading: false, stale: false, connected: true, session, parts: [part] },
     retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn(),
   })
-  renderProjection()
+  await renderProjection()
   await waitFor(() => expect(screen.getByTestId('display-speaker')).toHaveTextContent('priest'))
   expect(screen.queryByText('St. John Armenian Church')).toBeNull()
   expect(screen.queryByText('Divine Liturgy')).toBeNull()
@@ -72,7 +72,7 @@ it('falls back to a no-text message when the selected language is missing on the
     state: { ...initialState, loading: false, stale: false, connected: true, session, parts: [part] },
     retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn(),
   })
-  renderProjection()
+  await renderProjection()
   await waitFor(() => expect(screen.getByText('No text is available in the selected language.')).toBeOnTheScreen())
 })
 
@@ -82,7 +82,7 @@ it('shows a clear unavailable message when the session fails to load', async () 
     state: { ...initialState, loading: false, error: 'Not found', session: null, parts: [] },
     retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn(),
   })
-  renderProjection()
+  await renderProjection()
   await waitFor(() => expect(screen.getByTestId('display-projection-unavailable')).toBeOnTheScreen())
   expect(screen.getByText('This service is not available right now.')).toBeOnTheScreen()
 })

@@ -23,8 +23,8 @@ not the legacy display's outdated zero-based farewell calculation.
 - `npm run lint --prefix apps/mobile` — passed.
 - `npm run check:i18n --prefix apps/mobile` — passed.
 - `npm run check:ui --prefix apps/mobile` — passed.
-- `npm test --prefix apps/mobile -- --coverage` — **532 tests, 44 suites passed**;
-  96.84% line coverage for `features/displayLinks`. The existing full-suite Jest
+- `npm test --prefix apps/mobile -- --coverage` — **545 tests, 46 suites passed**;
+  98.37% line coverage for `features/displayLinks`. The existing full-suite Jest
   open-handle advisory remains; the focused display suites exit normally.
 - `npm run export:web --prefix apps/mobile` — passed (compile check with secure
   API/cable configuration; the exported build was not deployed).
@@ -39,13 +39,41 @@ rechecked at these sizes, including all three posture pictograms and minimal mod
 Verified public tokenless single-language links, token precedence, parallel
 Armenian/English, page-only, posture-only, combined status, unavailable translation,
 invalid links, live announcement replacement, service end/wait/start/switch and
-automatic overflow advancement (measured scroll positions changed from 0 to 1080).
+duration-based overflow scrolling (both translations reached the same normalized
+reading progress despite different text heights). Pause/resume retained progress,
+resizing retained progress, and completed text stayed at the bottom.
 
 The fixture deliberately repeats a reusable part at a different occurrence and
 includes a long reading. Its controls allow every operator status and connection
 loss to be reviewed. Regression tests cover all interrupts, notification suppression,
 occurrence boundary messages, page/posture publications, projection recovery
 notices, expiry, late responses, configuration timeouts and automatic retries.
+
+## Duration-based scrolling review
+
+The legacy algorithm held the initial visible fraction, then reached the bottom
+only as the estimated duration ended. The new calculation follows the estimated
+spoken line near the center of each viewport. It preserves a dwell at the start,
+reveals the last lines before the expected finish, and holds the final screen.
+Both translations share an occurrence clock and duration, while their scroll
+distances follow their individual measured text heights. It never advances the
+service itself or loops back to the start.
+
+`effective_duration_ms` now survives live part normalization and saved snapshots.
+Missing/invalid values use a 160-word/minute estimate of the longest selected
+translation (3-second minimum). Operator messages get a separate estimate.
+Reduced-motion mode uses timed overlapping pages. Timers and animation frames
+cancel when paused, hidden, finished, or unmounted. Occurrence identity resets
+timing; poll revisions, font/layout changes and viewport resizing do not.
+
+Tests cover timing endpoints, differing translation heights, resize remapping,
+fallbacks and old saved records, delayed frames, cleanup, reduced-motion pages,
+shared language clocks, repeated-part identity, pauses, recovery and backgrounding.
+The synthetic long-reading fixture uses an accelerated 30-second duration.
+
+The API exposes no occurrence-start timestamp. New displays start timing when
+they receive a part; this is estimated pacing, not synchronization to a speaker.
+A backend timestamp would be needed for reliable joining mid-part across devices.
 
 ## Captured screens
 
@@ -54,7 +82,9 @@ These captures contain **synthetic review content**, not live church content.
 [Projector reading](evidence/projector.png) ·
 [Portrait tablet reading](evidence/tablet-portrait.png) ·
 [Projector status](evidence/status-projector.png) ·
-[Announcement](evidence/announcement.png)
+[Announcement](evidence/announcement.png) ·
+[Final screen of a long reading](evidence/duration-scroll.png) ·
+[Measured scroll positions](evidence/scroll-timing.json)
 
 ## Review boundaries
 

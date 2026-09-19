@@ -15,6 +15,7 @@ const prayer = { en: 'Our Father, who art in heaven,\nhallowed be thy name.\n\nT
 const parts = [0, 1, 2, 3].map(i => ({ part: {
   id: i === 3 ? 902 : 901 + i, liturgy_id: 99, liturgy_part_id: 9901 + i, position: i + 1,
   role: i === 2 ? 'priest' : 'choir', page: [1, 24, 108, 24][i], posture: ['stand', 'stand', 'sit', 'kneel'][i],
+  effective_duration_ms: i === 2 ? 30000 : 60000,
   ...Object.fromEntries(Object.entries(prayer).map(([language, text]) => [language, i === 2 ? Array(6).fill(text).join('\n\n') : text])), ru: null,
 } }))
 function state(id) {

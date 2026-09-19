@@ -22,6 +22,8 @@ export interface LiveSession {
 }
 export interface LivePart {
   page?: number | null
+  /** Estimated duration of this occurrence's text, published by the public parts API. */
+  effectiveDurationMs?: number | null
   id: number; key: string; liturgyId: number | null; liturgyPartId: number | null
   position: number; role: string; text: Record<Language, string | null>
   /** What the congregation does during this part ("stand"), when the service publishes one. */
@@ -89,7 +91,7 @@ export function normalizeParts(value: unknown): LivePart[] {
     const key = liturgyPartId ? `lp:${liturgyPartId}` : `part:${id}:liturgy:${liturgyId}:position:${position}`
     if (keys.has(key)) throw new Error(t('errors.duplicatePart'))
     keys.add(key)
-    return { id, key, liturgyId, liturgyPartId, position, page: positiveId(p.page), role: text(p.role) || t('fallbacks.reading'),
+    return { id, key, liturgyId, liturgyPartId, position, page: positiveId(p.page), effectiveDurationMs: positiveId(p.effective_duration_ms), role: text(p.role) || t('fallbacks.reading'),
       text: { en: text(p.en), ru: text(p.ru), grabar: text(p.grabar), translit: text(p.translit) }, posture: text(p.posture)?.trim() || null }
   }).sort((a, b) => a.position - b.position)
 }

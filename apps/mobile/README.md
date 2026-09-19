@@ -766,9 +766,26 @@ viewport-scaled text, narrow outer margins, and one large speaker label. Church,
 service, language and footer labels are omitted for distance viewing. Parallel
 languages remain side by side on tablets and
 projectors; narrow screens stack two independently advancing reading regions.
-Long text advances every 14 seconds with two lines of overlap, loops, and resets
-when the occurrence, text, or viewport changes. This preserves large type and
-makes the whole text available without touching the display. Operator messages
+Long readings use the API's `effective_duration_ms`, carried through the shared
+part model and saved snapshots. A single monotonic clock drives both language
+columns. The estimated reading position follows the center of each viewport,
+leaving reading time at both the opening and the end. Scrolling stops at the
+bottom and never loops or advances the service itself. Resizing, font loading,
+and duplicate live/poll updates remeasure without restarting the clock. A new
+occurrence (including a repeated reusable part) starts from the top. Pauses,
+operator messages, recovery notices, and backgrounding suspend the reading clock;
+returning to the same occurrence resumes its progress.
+
+Missing or malformed duration data falls back to an estimate of 160 words/minute
+for the longest selected translation, with a 3-second minimum. Operator messages
+use that estimate independently of the underlying part. Reduced-motion settings
+use duration-based pages with up to two lines of overlap; continuous motion uses
+an animation frame loop and cancels when paused, finished, or unmounted.
+
+The public API supplies an estimated duration but no occurrence-start timestamp.
+A newly opened display therefore begins at the start of the received part, not
+at an inferred position based on a poll revision or session update timestamp.
+The duration is a pacing estimate, not synchronization to the actual speaker. Operator messages
 replace the reading while active. Welcome/farewell use the first/last occurrence
 of the current one-based manifest (also accepting a legacy zero-position welcome).
 Status screens fill the viewport with the page number and the same standing,

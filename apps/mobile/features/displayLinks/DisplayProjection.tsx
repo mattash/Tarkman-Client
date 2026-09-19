@@ -11,6 +11,8 @@ import { DisplayNotice } from './DisplayFrame'
 import { PostureIcon } from './PostureIcon'
 import { ProjectionText } from './ProjectionText'
 import { projectionMessage, projectionText } from './presentation'
+import { projectionDuration } from './projectionTiming'
+import { useProjectionClock } from './useProjectionClock'
 
 export interface DisplayProjectionProps {
   apiBase: string; cableBase: string; config: DisplayPreferences; sessionId: number
@@ -29,6 +31,14 @@ export function DisplayProjection({ apiBase, cableBase, config, sessionId, statu
   const padding = Math.max(spacing.md, Math.min(spacing.xl, width / 60))
   const posture = session?.posture ?? part?.posture
   const page = session?.page ?? part?.page
+  const message = session ? projectionMessage(session, state.parts, config) : null
+  const languages: DisplayLanguage[] = [...new Set(config.mode === 'parallel' && config.lang2 ? [config.lang1, config.lang2] : [config.lang1])]
+  const texts = languages.map(language => language === 'hyw' ? null : projectionText(part?.text[language]))
+  const duration = projectionDuration(part?.effectiveDurationMs, texts)
+  const available = !minimal && !discoveryError && !state.error
+  const readingClock = useProjectionClock(`${sessionId}/${part?.key}`, available && !!part && !message && session?.status === 'active')
+  const messageText = message?.body ?? message?.title ?? null
+  const messageClock = useProjectionClock(`${sessionId}/${part?.key}/${message?.title}/${messageText}`, available && !!message)
 
   if (!session) return <DisplayNotice testID={state.error ? 'display-projection-unavailable' : 'display-projection-loading'}
     busy={!state.error} title={t(state.error ? 'display.projectionUnavailable' : 'display.loading')}
@@ -59,20 +69,19 @@ export function DisplayProjection({ apiBase, cableBase, config, sessionId, statu
     </View>
   }
 
-  const message = projectionMessage(session, state.parts, config)
-  const languages: DisplayLanguage[] = [...new Set(config.mode === 'parallel' && config.lang2 ? [config.lang1, config.lang2] : [config.lang1])]
   const stacked = width / fontScale < 640
   const fontSize = Math.max(32, Math.min(width / (languages.length > 1 ? 26 : 20), height / (stacked && languages.length > 1 ? 18 : 10)))
   const roleSize = Math.max(24, fontSize * 0.6)
   return <View testID="display-projection" style={[styles.screen, { padding, gap: spacing.md }]}>
-    {message ? <ProjectionText key={`${message.title}/${message.body}`} text={message.body ?? message.title} fontSize={fontSize * 1.2} centered />
+    {message ? <ProjectionText key={`${message.title}/${message.body}`} text={messageText} fontSize={fontSize * 1.2} centered
+      clock={messageClock} durationMs={projectionDuration(null, [messageText])} />
       : part ? <>
         {part.role && <AppText testID="display-speaker" style={{ fontSize: roleSize, lineHeight: roleSize * 1.25, fontWeight: '600', textTransform: 'capitalize' }}>{part.role}</AppText>}
         <View testID="display-projection-text" style={[styles.body, { flexDirection: stacked ? 'column' : 'row', gap: padding }]}>
           {languages.map((language, index) => <View key={language} testID={`display-column-${language}`} style={[styles.column,
             index > 0 ? { borderColor: colors.divider, borderLeftWidth: stacked ? 0 : 1, borderTopWidth: stacked ? 1 : 0, paddingLeft: stacked ? 0 : padding, paddingTop: stacked ? spacing.md : 0 } : undefined]}>
-            <ProjectionText key={`${session.id}/${part.key}/${language}`} text={language === 'hyw' ? null : projectionText(part.text[language])}
-              language={language === 'hyw' ? 'en' : language} fontSize={fontSize} />
+            <ProjectionText key={`${session.id}/${part.key}/${language}`} text={texts[index]}
+              language={language === 'hyw' ? 'en' : language} fontSize={fontSize} clock={readingClock} durationMs={duration} />
           </View>)}
         </View>
       </> : <DisplayNotice title={t('display.waitingForPart')} />}

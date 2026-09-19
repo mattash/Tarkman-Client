@@ -1,0 +1,163 @@
+{
+  "fixture": "Synthetic loopback service 9001; long part duration 30000 ms",
+  "samples": [
+    {
+      "label": "during",
+      "at": 1789844955807,
+      "views": [
+        {
+          "content": 2746,
+          "progress": 0.5630007283321194,
+          "top": 1195.5,
+          "viewport": 701
+        },
+        {
+          "content": 2467,
+          "progress": 0.5630320226996351,
+          "top": 1038.5,
+          "viewport": 701
+        }
+      ],
+      "visibility": "visible"
+    },
+    {
+      "label": "resumed after pause",
+      "at": 1789845000035,
+      "views": [
+        {
+          "content": 2746,
+          "progress": 0.872177713037145,
+          "top": 2044.5,
+          "viewport": 701
+        },
+        {
+          "content": 2467,
+          "progress": 0.8579246047831374,
+          "top": 1766,
+          "viewport": 701
+        }
+      ],
+      "visibility": "visible"
+    },
+    {
+      "label": "resized without restart",
+      "at": 1789845000087,
+      "views": [
+        {
+          "content": 2746,
+          "progress": 0.8275673707210488,
+          "top": 1799.5,
+          "viewport": 946
+        },
+        {
+          "content": 2467,
+          "progress": 0.8082691528171869,
+          "top": 1521,
+          "viewport": 946
+        }
+      ],
+      "visibility": "visible"
+    },
+    {
+      "label": "end held without looping",
+      "at": 1789845057515,
+      "views": [
+        {
+          "content": 2746,
+          "progress": 0.8275673707210488,
+          "top": 1799.5,
+          "viewport": 946
+        },
+        {
+          "content": 2467,
+          "progress": 0.8082691528171869,
+          "top": 1521,
+          "viewport": 946
+        }
+      ],
+      "visibility": "visible"
+    },
+    {
+      "label": "new occurrence starts at top",
+      "at": 1789845064423,
+      "views": [
+        {
+          "content": 946,
+          "progress": 0.5,
+          "top": 0,
+          "viewport": 946
+        },
+        {
+          "content": 946,
+          "progress": 0.5,
+          "top": 0,
+          "viewport": 946
+        }
+      ],
+      "visibility": "visible"
+    },
+    {
+      "label": "return to long occurrence starts at top",
+      "at": 1789845069854,
+      "views": [
+        {
+          "content": 2746,
+          "progress": 0.1722505462490896,
+          "top": 0,
+          "viewport": 946
+        },
+        {
+          "content": 2467,
+          "progress": 0.1917308471828131,
+          "top": 0,
+          "viewport": 946
+        }
+      ],
+      "visibility": "visible"
+    },
+    {
+      "label": "second run progressed",
+      "at": 1789845106220,
+      "views": [
+        {
+          "content": 2746,
+          "progress": 0.8275673707210488,
+          "top": 1799.5,
+          "viewport": 946
+        },
+        {
+          "content": 2467,
+          "progress": 0.8082691528171869,
+          "top": 1521,
+          "viewport": 946
+        }
+      ],
+      "visibility": "visible"
+    },
+    {
+      "label": "final build begins at top",
+      "at": 1789845204413,
+      "views": [],
+      "visibility": "visible"
+    },
+    {
+      "label": "final build scrolling",
+      "at": 1789845229511,
+      "views": [
+        {
+          "content": 2746,
+          "progress": 0.8357611070648215,
+          "top": 1944.5,
+          "viewport": 701
+        },
+        {
+          "content": 2467,
+          "progress": 0.8356303202269963,
+          "top": 1711,
+          "viewport": 701
+        }
+      ],
+      "visibility": "visible"
+    }
+  ]
+}
