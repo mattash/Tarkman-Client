@@ -11,7 +11,9 @@ posture and display-message fields that it previously omitted.
 
 The completed implementation covers named/current service projection, status
 projection, all five operator interrupt states, welcome/farewell boundaries,
-explanation availability, direct/token preferences and automatic recovery. It uses
+direct/token preferences and automatic recovery. Service projection reserves the
+canvas for the reading and one speaker label. Status projection uses the original
+web posture pictograms and a viewport-sized page number, without small labels. It uses
 current one-based occurrence identity confirmed against the adjacent Rails source,
 not the legacy display's outdated zero-based farewell calculation.
 
@@ -22,7 +24,7 @@ not the legacy display's outdated zero-based farewell calculation.
 - `npm run check:i18n --prefix apps/mobile` — passed.
 - `npm run check:ui --prefix apps/mobile` — passed.
 - `npm test --prefix apps/mobile -- --coverage` — **532 tests, 44 suites passed**;
-  96.75% line coverage for `features/displayLinks`. The existing full-suite Jest
+  96.84% line coverage for `features/displayLinks`. The existing full-suite Jest
   open-handle advisory remains; the focused display suites exit normally.
 - `npm run export:web --prefix apps/mobile` — passed (compile check with secure
   API/cable configuration; the exported build was not deployed).
@@ -32,7 +34,8 @@ not the legacy display's outdated zero-based farewell calculation.
 
 Browser verification used Expo web at port **8082** and the synthetic loopback
 fixture at **8101**, with no signed-in account or live church service. Checked
-1920×1080, 1024×768, 768×1024 and 390×844. No browser errors were reported.
+1920×1080, 1024×768, 768×1024 and 390×844. The distance-viewing revision was
+rechecked at these sizes, including all three posture pictograms and minimal modes. No browser errors were reported.
 Verified public tokenless single-language links, token precedence, parallel
 Armenian/English, page-only, posture-only, combined status, unavailable translation,
 invalid links, live announcement replacement, service end/wait/start/switch and
@@ -41,8 +44,8 @@ automatic overflow advancement (measured scroll positions changed from 0 to 1080
 The fixture deliberately repeats a reusable part at a different occurrence and
 includes a long reading. Its controls allow every operator status and connection
 loss to be reviewed. Regression tests cover all interrupts, notification suppression,
-occurrence boundary messages, page/posture publications, stale explanation
-suppression, expiry, late responses, configuration timeouts and automatic retries.
+occurrence boundary messages, page/posture publications, projection recovery
+notices, expiry, late responses, configuration timeouts and automatic retries.
 
 ## Captured screens
 

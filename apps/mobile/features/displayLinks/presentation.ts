@@ -36,11 +36,14 @@ export function projectionMessage(session: LiveSession, parts: LivePart[], prefe
   if (last && projectionText(messages?.after)) return { title: t('display.farewell'), body: projectionText(messages?.after) }
   return null
 }
-export function displayPosture(value: string | null | undefined): string | null {
-  if (!value) return null
-  const posture = value.trim().toLowerCase()
-  if (posture === 'stand' || posture === 'standing') return t('display.stand')
-  if (posture === 'sit' || posture === 'sitting') return t('display.sit')
-  if (posture === 'kneel' || posture === 'kneeling') return t('display.kneel')
+export function postureKey(value: string | null | undefined): 'stand' | 'sit' | 'kneel' | null {
+  const posture = value?.trim().toLowerCase()
+  if (posture === 'stand' || posture === 'standing') return 'stand'
+  if (posture === 'sit' || posture === 'sitting') return 'sit'
+  if (posture === 'kneel' || posture === 'kneeling') return 'kneel'
   return null
+}
+export function displayPosture(value: string | null | undefined): string | null {
+  const key = postureKey(value)
+  return key ? t(`display.${key}`) : null
 }

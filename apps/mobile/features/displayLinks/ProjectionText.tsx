@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet, View } from 'react-native'
 import type { Language } from '@tarkman/core'
 import { AppText } from '../../components/AppText'
 import { LiturgyText } from '../../components/LiturgyText'
-import { useTheme } from '../../design/ThemeProvider'
 import { spacing } from '../../design/tokens'
 import { useI18n } from '../i18n'
 
@@ -16,7 +15,6 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
   const scroll = useRef<ScrollView>(null)
   const [viewport, setViewport] = useState(0)
   const [content, setContent] = useState(0)
-  const { colors } = useTheme()
   const { t } = useI18n()
   const lineHeight = fontSize * 1.45
   const overflowing = content > viewport + 2 && viewport > 0
@@ -39,7 +37,6 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
       {text ? <LiturgyText text={text} language={language} style={{ fontSize, lineHeight, textAlign: centered ? 'center' : 'left' }} />
         : <AppText tone="muted" style={{ fontSize, lineHeight }}>{t('display.projectionNoText')}</AppText>}
     </ScrollView>
-    {overflowing && <AppText variant="caption" style={{ color: colors.muted, paddingTop: spacing.sm }}>{t('display.autoAdvance')}</AppText>}
   </View>
 }
 const styles = StyleSheet.create({ column: { flex: 1, minHeight: 0, minWidth: 0 } })

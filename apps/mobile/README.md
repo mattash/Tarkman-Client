@@ -745,8 +745,9 @@ Without a token, direct preferences are `mode=parallel|single`,
 `show_explanations=true|false|1|0`, and
 `status_view=full|pages_only|posture_only|none`. Invalid values use defaults:
 parallel transliteration/English, notifications on, explanations off, full display.
-`none` keeps reading text and optional explanation availability, hiding messages
-and page/posture. `pages_only` and `posture_only` select minimal screens even on a
+`none` keeps reading text while hiding operator messages. Service projection
+shows only the reading and speaker role; `show_explanations` remains accepted for
+link compatibility but does not load or display explanations on a projector. `pages_only` and `posture_only` select minimal screens even on a
 text-display route. `hyw` remains an explicit missing-translation state because
 the shared reading model does not yet include Western Armenian.
 
@@ -755,21 +756,27 @@ every 5 seconds, includes the viewer's time zone, and switches automatically to
 the next service. Tokenless links accept `?user_id=...`; otherwise
 `EXPO_PUBLIC_DEFAULT_CHURCH_ID` selects the owner (default `2`, as on legacy web).
 A token's stored owner is authoritative. An inactive response clears the old
-service and waits. A temporary discovery failure retains the last service with
-a visible warning. Requests pause in the background/offline and resume when the
+service and waits. A temporary discovery failure retains the last service in memory and shows
+a large recovery notice until updates resume. Requests pause in the background/offline and resume when the
 screen returns. Named-service live updates retain the shared occurrence-aware
 ActionCable controller, its 30-second recovery polling, and revision checks.
 
 Displays use the existing dark reading palette and bundled literary fonts, with
-viewport-scaled text. Parallel languages remain side by side on tablets and
+viewport-scaled text, narrow outer margins, and one large speaker label. Church,
+service, language and footer labels are omitted for distance viewing. Parallel
+languages remain side by side on tablets and
 projectors; narrow screens stack two independently advancing reading regions.
 Long text advances every 14 seconds with two lines of overlap, loops, and resets
 when the occurrence, text, or viewport changes. This preserves large type and
 makes the whole text available without touching the display. Operator messages
 replace the reading while active. Welcome/farewell use the first/last occurrence
 of the current one-based manifest (also accepting a legacy zero-position welcome).
-The explanations indicator shows only confirmed explanations for the current
-occurrence. Page and posture update from the same accepted live state.
+Status screens fill the viewport with the page number and the same standing,
+sitting and kneeling pictograms as the Vite web display, without small captions.
+The Expo web pictograms have accessible posture names; native routes retain a
+large text fallback. Page and posture update from the same accepted live state.
+Routine reconnecting labels are omitted while recovery polling continues; failed
+updates show a large recovery notice and restore the display automatically.
 
 The screen requests a wake lock while active. Browser support, HTTPS, device sleep
 settings and browser fullscreen/kiosk configuration still govern unattended use;

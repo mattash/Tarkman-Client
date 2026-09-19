@@ -33,7 +33,7 @@ function renderProjection(overrides: Partial<Parameters<typeof DisplayProjection
   )
 }
 
-it('shows the church and service title once the session loads', async () => {
+it('reserves the service screen for reading text and one speaker label', async () => {
   const session: LiveSession = {
     id: 42, title: 'Divine Liturgy', church: 'St. John Armenian Church',
     currentPartId: 1, currentLiturgyPartId: 11, currentLiturgyId: 1, currentPosition: 1,
@@ -50,9 +50,9 @@ it('shows the church and service title once the session loads', async () => {
     retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn(),
   })
   renderProjection()
-  await waitFor(() => expect(screen.getByTestId('display-projection-header')).toBeOnTheScreen())
-  expect(screen.getByText('St. John Armenian Church')).toBeOnTheScreen()
-  expect(screen.getByText('Divine Liturgy')).toBeOnTheScreen()
+  await waitFor(() => expect(screen.getByTestId('display-speaker')).toHaveTextContent('priest'))
+  expect(screen.queryByText('St. John Armenian Church')).toBeNull()
+  expect(screen.queryByText('Divine Liturgy')).toBeNull()
   expect(screen.getByText('Our Father...')).toBeOnTheScreen()
 })
 
@@ -87,7 +87,7 @@ it('shows a clear unavailable message when the session fails to load', async () 
   expect(screen.getByText('This service is not available right now.')).toBeOnTheScreen()
 })
 
-it('renders two languages, explanations and congregation status together', async () => {
+it('renders both languages without ancillary projection labels', async () => {
   const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_id: 10, current_liturgy_part_id: 11, page: 24, posture: 'stand' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_id: 10, liturgy_part_id: 11, en: 'Peace unto all.', grabar: 'Խաղաղութիւն ամենեցուն։' } }] })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts,
@@ -95,9 +95,10 @@ it('renders two languages, explanations and congregation status together', async
   await renderProjection({ config: { ...config, lang2: 'grabar', show_explanations: true } })
   expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
   expect(screen.getByText('Խաղաղութիւն ամենեցուն։')).toBeOnTheScreen()
-  expect(screen.getByText('Explanation available')).toBeOnTheScreen()
-  expect(screen.getByText('Page 24')).toBeOnTheScreen()
-  expect(screen.getByText('Stand')).toBeOnTheScreen()
+  expect(screen.queryByText('Explanation available')).toBeNull()
+  expect(screen.queryByText('Page 24')).toBeNull()
+  expect(screen.queryByText('Stand')).toBeNull()
+  expect(jest.mocked(useReader).mock.calls.at(-1)?.[2]).toBe(false)
 })
 it.each(['full', 'pages_only', 'posture_only'] as const)('renders minimal status %s without reading text', async status_view => {
   const session = normalizeSession({ session: { id: 42, page: 123, posture: 'kneel' } })
@@ -106,12 +107,21 @@ it.each(['full', 'pages_only', 'posture_only'] as const)('renders minimal status
   expect(screen.getByTestId('display-status')).toBeOnTheScreen()
   expect(screen.queryByTestId('display-projection-text')).toBeNull()
   expect(screen.queryByText('123') !== null).toBe(status_view !== 'posture_only')
-  expect(screen.queryByText('Kneel') !== null).toBe(status_view !== 'pages_only')
+  expect(screen.queryByLabelText('Kneel') !== null).toBe(status_view !== 'pages_only')
+  expect(screen.queryByText('Hymnal page')).toBeNull()
   expect(jest.mocked(useReader).mock.calls.at(-1)?.[2]).toBe(false)
 })
-it('hides explanation availability when recovery makes the current occurrence uncertain', async () => {
-  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session: normalizeSession({ session: { id: 42 } }),
-    explanations: [{ id: 1, title: 'Old', description: null, liturgyPartId: null }] }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
-  await renderProjection({ config: { ...config, show_explanations: true } })
-  expect(screen.queryByTestId('display-explanations')).toBeNull()
+it('replaces an unreadable recovery badge with a notice and restores the reading after recovery', async () => {
+  const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_part_id: 11 } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11, en: 'Peace unto all.' } }] })
+  const reader = { saved: null, state: { ...initialState, loading: false, error: 'Network unavailable', session, parts },
+    retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() }
+  jest.mocked(useReader).mockReturnValue(reader)
+  const view = await renderProjection()
+  expect(screen.getByTestId('display-connection')).toBeOnTheScreen()
+  expect(screen.queryByText('Peace unto all.')).toBeNull()
+  jest.mocked(useReader).mockReturnValue({ ...reader, state: { ...reader.state, error: null } })
+  await view.rerender(<ThemeProvider><I18nProvider><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={config} sessionId={42} /></I18nProvider></ThemeProvider>)
+  expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
+  expect(screen.queryByTestId('display-connection')).toBeNull()
 })

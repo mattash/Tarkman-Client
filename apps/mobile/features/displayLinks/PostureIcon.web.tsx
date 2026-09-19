@@ -1,0 +1,55 @@
+import { useTheme } from '../../design/ThemeProvider'
+import { useI18n } from '../i18n'
+import type { PostureIconProps } from './PostureIcon'
+import { displayPosture, postureKey } from './presentation'
+
+// Same silhouettes as apps/web/app/components/Posture.tsx, with empty margins cropped.
+const postureShapes = {
+  sit: (
+    <>
+      <path fill="currentColor" d="M44.7,46.3c-2.1-13.7,17.6-17.8,20.8-3.9l5.4,26.8l20.1,0c5.8,0,8.9,4.7,8.9,9v36.4c0,8.9-12.6,8.8-12.6-0.2V86.2H61.6
+        c-6,0-9.7-4.1-10.6-8.8L44.7,46.3z"/>
+      <path fill="currentColor" d="M54.1,30.3c6.5,0,11.8-5.2,11.9-11.8C66,12,60.7,6.7,54.1,6.7c-6.5,0-11.8,5.2-11.8,11.7C42.3,25,47.5,30.3,54.1,30.3"/>
+      <path fill="currentColor" d="M28.4,60.6c-1.4-7.6,8.6-9.4,10-1.8l4.4,23.9c1,5,4.6,9.2,9.8,10.8c1.6,0.5,3.3,0.5,4.8,0.6l14.5,0.1
+        c7.7,0,7.7,10.1-0.1,10.1l-15.2-0.1c-2.3,0-4.7-0.3-7-1c-9-2.7-15.3-10.1-16.9-18.7L28.4,60.6z"/>
+    </>
+  ),
+  stand: (
+    <>
+      <g>
+        <circle fill="currentColor" cx="26.686" cy="4.507" r="4.507"/>
+        <path fill="currentColor" d="M28.256,11.163c-1.123-0.228-2.344-0.218-3.447,0.042c-7.493,0.878-9.926,9.551-9.239,16.164
+          c0.298,2.859,4.805,2.889,4.504,0c-0.25-2.41-0.143-6.047,1.138-8.632c0,3.142,0,6.284,0,9.425c0,0.111,0.011,0.215,0.016,0.322
+          c-0.003,0.051-0.015,0.094-0.015,0.146c0,7.479-0.013,14.955-0.322,22.428c-0.137,3.322,5.014,3.309,5.15,0
+          c0.242-5.857,0.303-11.717,0.317-17.578c0.244,0.016,0.488,0.016,0.732,0.002c0.015,5.861,0.074,11.721,0.314,17.576
+          c0.137,3.309,5.288,3.322,5.15,0c-0.309-7.473-0.32-14.949-0.32-22.428c0-0.232-0.031-0.443-0.078-0.646
+          c-0.007-3.247-0.131-6.497-0.093-9.742c1.534,2.597,1.674,6.558,1.408,9.125c-0.302,2.887,4.206,2.858,4.504,0
+          C38.678,20.617,36.128,11.719,28.256,11.163z"/>
+      </g>
+    </>
+  ),
+  kneel: (
+    <>
+      <g>
+        <path fill="currentColor" d="M79.6,29c-3.1-2-7.2-1.2-9.2,1.9l-6.2,9.3l-15.8-9.1c-2.5-1.4-5.5-1.7-8.2-0.7c-2.7,1-4.8,3.1-5.8,5.8l-9.1,24.1
+          c-1.6,4.2-0.6,9,2.5,12.2l10.1,10.2H24.8c-4.1,0-7.4,3.3-7.4,7.4s3.3,7.4,7.4,7.4h30.8c3,0,5.7-1.8,6.8-4.5
+          c1.1-2.7,0.5-5.9-1.6-8L47.4,71.5l7.7-21.2l7.9,4.5c3,1.7,6.9,0.8,8.9-2.1l9.6-14.5C83.5,35.2,82.7,31,79.6,29z"/>
+        <ellipse fill="currentColor" transform="matrix(0.4965 -0.868 0.868 0.4965 15.0823 58.3296)" cx="57.8" cy="16.2" rx="13.7" ry="13.7"/>
+      </g>
+    </>
+  ),
+} as const
+
+const viewBoxes = { sit: '26 5 76 119', stand: '14 0 26 54', kneel: '16 1 68 98' } as const
+
+export function PostureIcon({ posture }: PostureIconProps) {
+  const { colors } = useTheme()
+  const { t } = useI18n()
+  const key = postureKey(posture)
+  const label = displayPosture(posture) ?? t('display.postureUnavailable')
+  return <svg data-testid="display-posture" role="img" aria-label={label}
+    viewBox={key ? viewBoxes[key] : '0 0 100 100'} width="100%" height="100%"
+    style={{ display: 'block', color: colors.foreground }}>
+    {key ? postureShapes[key] : <path fill="currentColor" d="M15 46h70v8H15z" />}
+  </svg>
+}
