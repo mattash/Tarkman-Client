@@ -29,8 +29,8 @@ export function createProjectionClock(now = () => performance.now()): Projection
   }
 }
 
-interface ScrollGeometry { content: number; viewport: number; lineHeight: number; duration: number; reducedMotion: boolean }
-export function projectionPosition({ content, viewport, lineHeight, duration, reducedMotion }: ScrollGeometry, elapsed: number) {
+interface ScrollGeometry { content: number; viewport: number; lineHeight: number; duration: number; reducedMotion: boolean; pageCount?: number }
+export function projectionPosition({ content, viewport, lineHeight, duration, reducedMotion, pageCount }: ScrollGeometry, elapsed: number) {
   const maximum = Math.max(0, content - viewport)
   if (maximum <= 2 || content <= 0 || viewport <= 0 || duration <= 0) return { y: 0, done: true, nextIn: 0 }
   const progress = Math.min(1, Math.max(0, elapsed / duration))
@@ -40,6 +40,11 @@ export function projectionPosition({ content, viewport, lineHeight, duration, re
   if (!reducedMotion) {
     const y = Math.min(maximum, Math.max(0, readingPosition - viewport / 2))
     return { y, done: y >= maximum, nextIn: Math.max(0, viewport / 2 / content * duration - elapsed) }
+  }
+  if (pageCount && pageCount > 1) {
+    const page = Math.min(pageCount - 1, Math.floor(progress * pageCount))
+    return { y: maximum * page / (pageCount - 1), done: page === pageCount - 1,
+      nextIn: Math.max(1, (page + 1) * duration / pageCount - elapsed) }
   }
   // Reduced motion uses discrete pages with up to two lines of overlap, on the same clock.
   const step = Math.max(1, viewport - Math.min(lineHeight * 2, viewport / 2))

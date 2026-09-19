@@ -1,3 +1,4 @@
+import { normalizeCustomization, type DisplayCustomization } from './customization'
 import {
   DEFAULT_DISPLAY_CONFIG,
   isDisplayLanguage,
@@ -9,7 +10,7 @@ import {
   type DisplayStatusView,
 } from './config'
 
-export interface DisplayLinkOverrides {
+export interface DisplayLinkOverrides extends Partial<DisplayCustomization> {
   mode?: DisplayMode
   lang1?: DisplayLanguage
   lang2?: DisplayLanguage | null
@@ -25,7 +26,7 @@ export interface DisplayLinkOverrides {
 export function normalizeOverrides(value: unknown): DisplayLinkOverrides {
   if (!value || typeof value !== 'object') return {}
   const raw = value as Record<string, unknown>
-  const result: DisplayLinkOverrides = {}
+  const result: DisplayLinkOverrides = normalizeCustomization(raw, true)
   if (isDisplayMode(raw.mode)) result.mode = raw.mode
   if (isDisplayLanguage(raw.lang1)) result.lang1 = raw.lang1
   if (raw.lang2 === null) result.lang2 = null
@@ -72,7 +73,7 @@ export function normalizeConfig(value: unknown): DisplayLinkConfig | null {
   const userId = raw.user_id
   if (typeof userId !== 'number' || !Number.isSafeInteger(userId) || userId <= 0) return null
   const partial: Pick<DisplayLinkConfig, 'token' | 'user_id'> & Partial<DisplayLinkConfig> = {
-    token: raw.token, user_id: userId,
+    token: raw.token, user_id: userId, ...normalizeCustomization(raw),
   }
   if (typeof raw.title === 'string') partial.title = raw.title
   if (isDisplayMode(raw.mode)) partial.mode = raw.mode

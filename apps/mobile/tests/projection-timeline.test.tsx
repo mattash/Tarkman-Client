@@ -4,7 +4,7 @@ import { AppState } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { I18nProvider } from '../features/i18n'
 import { DisplayProjection } from '../features/displayLinks/DisplayProjection'
-import { DEFAULT_DISPLAY_CONFIG } from '../features/displayLinks/config'
+import { DEFAULT_DISPLAY_CONFIG, type DisplayPreferences } from '../features/displayLinks/config'
 import type { ProjectionText } from '../features/displayLinks/ProjectionText'
 import { useReader } from '../features/live/useReader'
 import { initialState } from '../features/live/state'
@@ -24,8 +24,8 @@ function state(overrides = {}) {
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session, parts, ...overrides },
     retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
 }
-const view = () => <ThemeProvider><I18nProvider><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable"
-  config={{ ...DEFAULT_DISPLAY_CONFIG, lang1: 'grabar', lang2: 'en' }} sessionId={42} /></I18nProvider></ThemeProvider>
+const view = (preferences: Partial<DisplayPreferences> = {}) => <ThemeProvider><I18nProvider><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable"
+  config={{ ...DEFAULT_DISPLAY_CONFIG, lang1: 'grabar', lang2: 'en', ...preferences }} sessionId={42} /></I18nProvider></ThemeProvider>
 beforeEach(() => {
   now = 0; mockColumns.clear(); appListeners.clear()
   jest.spyOn(performance, 'now').mockImplementation(() => now)
@@ -67,4 +67,25 @@ it.each(['message', 'failure', 'background'])('suspends for %s and resumes the s
   expect(mockColumns.get('en')!.clock).toBe(clock)
   now = 25000
   expect(clock.elapsed()).toBe(15000)
+})
+it('preserves independent manual positions through an announcement and resets them for a new occurrence', async () => {
+  const preferences = { text_movement: 'manual', language_sync: 'independent' } as const
+  const rendered = await render(view(preferences))
+  const english = mockColumns.get('en')!.manualPosition!
+  const armenian = mockColumns.get('grabar')!.manualPosition!
+  expect(english).not.toBe(armenian)
+  english.set(0.4)
+  armenian.set(0.7)
+  state({ session: { ...session, status: 'paused', message: 'Please wait.' } })
+  await rendered.rerender(view(preferences))
+  state()
+  await rendered.rerender(view(preferences))
+  expect(mockColumns.get('en')!.manualPosition).toBe(english)
+  expect(mockColumns.get('grabar')!.manualPosition).toBe(armenian)
+  expect(english.get()).toBe(0.4)
+  expect(armenian.get()).toBe(0.7)
+  state({ session: { ...session, currentLiturgyPartId: 12 } })
+  await rendered.rerender(view(preferences))
+  expect(mockColumns.get('en')!.manualPosition!.get()).toBe(0)
+  expect(mockColumns.get('grabar')!.manualPosition!.get()).toBe(0)
 })

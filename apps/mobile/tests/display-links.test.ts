@@ -1,3 +1,4 @@
+import { DEFAULT_CUSTOMIZATION } from '../features/displayLinks/customization'
 import { expect, it } from '@jest/globals'
 import { isDisplayLanguage, isDisplayMode, isDisplayStatusView } from '../features/displayLinks/config'
 import { mergeDisplayConfig, normalizeConfig, normalizeOverrides, withDefaults } from '../features/displayLinks/normalize'
@@ -55,6 +56,7 @@ it('drops unrecoverable configurations and falls back on invalid field values', 
     show_explanations: 'yes', show_notifications: false, status_view: 'minimal',
   })
   expect(config).toEqual({
+    ...DEFAULT_CUSTOMIZATION,
     token: 'abc', user_id: 7,
     mode: 'parallel', lang1: 'translit',
     lang2: 'en', show_explanations: false, show_notifications: false, status_view: 'full',
@@ -71,7 +73,7 @@ function fakeFetch(handlers: Record<string, () => Promise<Response>>): typeof fe
 
 it('returns the configuration on a successful fetch', async () => {
   const request = fakeFetch({ '/display_links/abc': async () => new Response(JSON.stringify(validConfig), { status: 200, headers: { 'Content-Type': 'application/json' } }) })
-  await expect(fetchDisplayLink('https://api.test', 'abc', request)).resolves.toEqual(validConfig)
+  await expect(fetchDisplayLink('https://api.test', 'abc', request)).resolves.toEqual({ ...DEFAULT_CUSTOMIZATION, ...validConfig })
 })
 
 it('rejects with the invalid-link message on 404', async () => {
