@@ -1,83 +1,60 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, View } from 'react-native'
-import { AppText } from '../../components/AppText'
-import { spacing } from '../../design/tokens'
+import { useCallback } from 'react'
 import { useI18n } from '../i18n'
-import { fetchDisplayLink } from './api'
-import type { DisplayLinkConfig } from './config'
+import type { Endpoints } from '../live/config'
+import { fetchCurrentDisplaySession, fetchDisplayLink, InvalidDisplayLinkError } from './api'
+import { DEFAULT_DISPLAY_CONFIG, type DisplayPreferences } from './config'
+import { normalizeOverrides } from './normalize'
+import { DisplayFrame, DisplayNotice } from './DisplayFrame'
+import { DisplayProjection } from './DisplayProjection'
+import { useDisplayResource } from './useDisplayResource'
 
-export interface DisplayLinkScreenProps {
-  /** API base URL (already validated, no trailing slash). */
-  apiBase: string
-  /** Display-link token from the URL path. */
-  token: string
-  /** Override the fetch for tests; defaults to global fetch. */
-  request?: typeof fetch
+export type DisplayParams = Record<string, string | string[] | undefined>
+export function displayId(value: unknown): number | null {
+  if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return null
+  const id = Number(value)
+  return Number.isSafeInteger(id) ? id : null
 }
-
-type Result =
-  | { kind: 'invalid'; message: string }
-  | { kind: 'loaded'; config: DisplayLinkConfig }
-
-function displayKey(apiBase: string, token: string, request: typeof fetch | undefined): string {
-  return `${apiBase}\u0000${token}\u0000${request ? 'custom' : 'global'}`
-}
-
-/**
- * The shell of the display mode: fetches the token's configuration and renders a
- * clear message on invalid/expired links instead of a blank screen. Projection UI
- * lands in follow-up PRs (#158).
- *
- * The result map is keyed by the display identity so token swaps during a session
- * never show a stale configuration and the loading hint can be derived without
- * synchronous setState in the effect body.
- */
-export function DisplayLinkScreen({ apiBase, token, request }: DisplayLinkScreenProps) {
+export function DisplayLinkScreen({ endpoints, params, named = false, statusOnly = false, request = fetch }: {
+  endpoints: Endpoints; params: DisplayParams; named?: boolean; statusOnly?: boolean; request?: typeof fetch
+}) {
   const { t } = useI18n()
-  const [results, setResults] = useState<Map<string, Result>>(new Map())
-  const key = displayKey(apiBase, token, request)
-  const current = results.get(key)
-
-  const store = useCallback((next: Result) => {
-    setResults(previous => {
-      if (previous.get(key) === next) return previous
-      const updated = new Map(previous)
-      updated.set(key, next)
-      return updated
-    })
-  }, [key])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    // Setter calls happen in async callbacks only; the empty-token branch defers
-    // via queueMicrotask to keep the effect body free of synchronous setState.
-    if (token === '') {
-      queueMicrotask(() => { if (!controller.signal.aborted) store({ kind: 'invalid', message: t('display.invalidLink') }) })
-      return () => controller.abort()
-    }
-    fetchDisplayLink(apiBase, token, request, controller.signal)
-      .then(config => { if (!controller.signal.aborted) store({ kind: 'loaded', config }) })
-      .catch(failure => {
-        if (controller.signal.aborted) return
-        store({ kind: 'invalid', message: failure instanceof Error ? failure.message : t('display.couldNotLoad') })
-      })
-    return () => controller.abort()
-  }, [apiBase, token, request, t, store])
-
-  if (current === undefined) {
-    return <View testID="display-loading" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg }}>
-      <ActivityIndicator accessibilityLabel={t('display.loading')} />
-    </View>
-  }
-  if (current.kind === 'invalid') {
-    return <View testID="display-invalid" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.sm }}>
-      <AppText variant="title">{t('display.invalidLink')}</AppText>
-      {current.message !== t('display.invalidLink') && <AppText tone="muted">{current.message}</AppText>}
-    </View>
-  }
-  // The projection UI lands in #158 PR2+; this PR renders a placeholder so the route exists end-to-end.
-  return <View testID="display-loaded" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.sm }}>
-    <AppText variant="eyebrow" tone="muted">{current.config.church_name ?? ''}</AppText>
-    <AppText variant="title">{current.config.title ?? ''}</AppText>
-  </View>
+  const id = named ? displayId(params.id) : null
+  const token = typeof params.token === 'string' ? params.token.trim() : undefined
+  const invalid = (named && id === null) || (params.token !== undefined && !token) ||
+    (!named && !token && params.user_id !== undefined && displayId(params.user_id) === null)
+  return <DisplayFrame>{invalid ? <DisplayNotice testID="display-invalid" title={t('display.invalidLink')} detail={t('display.replaceLink')} />
+    : token ? <TokenDisplay key={`${endpoints.api}/${token}/${id}/${statusOnly}`} endpoints={endpoints} token={token} sessionId={id} statusOnly={statusOnly} request={request} />
+    : <ResolvedDisplay endpoints={endpoints} sessionId={id} statusOnly={statusOnly}
+      preferences={{ ...DEFAULT_DISPLAY_CONFIG, ...normalizeOverrides(params) }}
+      userId={displayId(params.user_id) ?? displayId(process.env.EXPO_PUBLIC_DEFAULT_CHURCH_ID) ?? 2} request={request} />}
+  </DisplayFrame>
+}
+function TokenDisplay({ endpoints, token, sessionId, statusOnly, request }: {
+  endpoints: Endpoints; token: string; sessionId: number | null; statusOnly: boolean; request: typeof fetch
+}) {
+  const { t } = useI18n()
+  const load = useCallback((signal: AbortSignal) => fetchDisplayLink(endpoints.api, token, request, signal), [endpoints.api, token, request])
+  const result = useDisplayResource(token, load, 10000)
+  if (result.error instanceof InvalidDisplayLinkError) return <DisplayNotice testID="display-invalid" title={t('display.invalidLink')} detail={t('display.replaceLink')} />
+  if (!result.data) return <DisplayNotice testID="display-loading" busy={!result.error} title={t(result.error ? 'display.couldNotLoad' : 'display.loading')} detail={result.error ? t('display.retrying') : undefined} />
+  // The normalized stored preferences are authoritative, including defaults for malformed values.
+  return <ResolvedDisplay endpoints={endpoints} preferences={result.data} userId={result.data.user_id} sessionId={sessionId} statusOnly={statusOnly} request={request} />
+}
+function ResolvedDisplay({ endpoints, preferences, userId, sessionId, statusOnly, request }: {
+  endpoints: Endpoints; preferences: DisplayPreferences; userId: number; sessionId: number | null; statusOnly: boolean; request: typeof fetch
+}) {
+  if (sessionId !== null) return <DisplayProjection key={sessionId} apiBase={endpoints.api} cableBase={endpoints.cable} config={preferences} sessionId={sessionId} statusOnly={statusOnly} />
+  return <CurrentDisplay key={`${endpoints.api}/${userId}`} endpoints={endpoints} preferences={preferences} userId={userId} statusOnly={statusOnly} request={request} />
+}
+function CurrentDisplay({ endpoints, preferences, userId, statusOnly, request }: {
+  endpoints: Endpoints; preferences: DisplayPreferences; userId: number; statusOnly: boolean; request: typeof fetch
+}) {
+  const { t } = useI18n()
+  const load = useCallback((signal: AbortSignal) => fetchCurrentDisplaySession(endpoints.api, userId, signal, request), [endpoints.api, userId, request])
+  const result = useDisplayResource(`${endpoints.api}/${userId}`, load, 5000)
+  if (!result.data) return <DisplayNotice testID="display-waiting" busy={result.data === undefined && !result.error}
+    title={t(result.error ? 'display.discoveryUnavailable' : result.data === null ? 'display.waiting' : 'display.loading')}
+    detail={t(result.error ? 'display.retrying' : 'display.startsAutomatically')} />
+  return <DisplayProjection key={result.data.id} apiBase={endpoints.api} cableBase={endpoints.cable} config={preferences}
+    sessionId={result.data.id} statusOnly={statusOnly} discoveryError={!!result.error} />
 }

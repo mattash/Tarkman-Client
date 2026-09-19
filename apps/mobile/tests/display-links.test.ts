@@ -4,7 +4,7 @@ import { mergeDisplayConfig, normalizeConfig, normalizeOverrides, withDefaults }
 import { fetchDisplayLink } from '../features/displayLinks/api'
 
 const validConfig = {
-  token: 'abc', user_id: 7, mode: 'parallel' as const, lang1: 'translit' as const,
+  token: 'abc', user_id: 7, mode: 'parallel' as const, lang1: 'translit' as const, lang2: 'en' as const,
   show_explanations: false, show_notifications: true, status_view: 'full' as const,
 }
 
@@ -57,7 +57,7 @@ it('drops unrecoverable configurations and falls back on invalid field values', 
   expect(config).toEqual({
     token: 'abc', user_id: 7,
     mode: 'parallel', lang1: 'translit',
-    lang2: undefined, show_explanations: false, show_notifications: false, status_view: 'full',
+    lang2: 'en', show_explanations: false, show_notifications: false, status_view: 'full',
   })
 })
 

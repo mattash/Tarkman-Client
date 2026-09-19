@@ -3,7 +3,9 @@ import { t } from '../i18n'
 
 // Narrow public read models: the core's full Session/Explanation require fields
 // Rails does not always return. No authentication or mutation model belongs here.
+export interface DisplayMessages { gospel: string | null; epistle: string | null; before: string | null; after: string | null }
 export interface LiveSession {
+  page?: number | null; totalParts?: number | null; displayMessages?: DisplayMessages
   id: number; title: string; church: string; currentPartId: number | null
   currentLiturgyId: number | null; currentPosition: number | null
   status: string; message: string | null
@@ -19,6 +21,9 @@ export interface LiveSession {
   revision?: number | null; contentContext?: string | null; currentLiturgyPartId?: number | null; posture?: string | null
 }
 export interface LivePart {
+  page?: number | null
+  /** Estimated duration of this occurrence's text, published by the public parts API. */
+  effectiveDurationMs?: number | null
   id: number; key: string; liturgyId: number | null; liturgyPartId: number | null
   position: number; role: string; text: Record<Language, string | null>
   /** What the congregation does during this part ("stand"), when the service publishes one. */
@@ -40,11 +45,14 @@ export function requiredId(value: unknown): number {
 function text(value: unknown): string | null { return typeof value === 'string' ? value : null }
 export function normalizeSession(value: unknown): LiveSession {
   const s = record(record(value).session)
+  const options = s.options && typeof s.options === 'object' && !Array.isArray(s.options) ? s.options as Record<string, unknown> : {}
   return { id: requiredId(s.id), title: text(s.liturgy) || t('fallbacks.service'), church: text(s.church_name) || t('fallbacks.churchService'),
     revision: typeof s.revision === 'number' && Number.isSafeInteger(s.revision) && s.revision >= 0 ? s.revision : null,
     currentLiturgyPartId: positiveId(s.current_liturgy_part_id),
     currentPartId: positiveId(s.current_part_id), currentLiturgyId: positiveId(s.current_liturgy_id),
-    currentPosition: positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
+    currentPosition: s.current_part_position === 0 ? 0 : positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
+    page: positiveId(s.page), posture: text(s.posture)?.trim() || null, totalParts: positiveId(s.num_of_parts),
+    displayMessages: { gospel: text(options.gospel), epistle: text(options.epistle), before: text(options.before_message), after: text(options.after_message) },
     date: text(s.date), currentRole: text(s.current_part_role)?.trim() || null,
     latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180), partsContext: partsContext(s) }
 }
@@ -83,7 +91,7 @@ export function normalizeParts(value: unknown): LivePart[] {
     const key = liturgyPartId ? `lp:${liturgyPartId}` : `part:${id}:liturgy:${liturgyId}:position:${position}`
     if (keys.has(key)) throw new Error(t('errors.duplicatePart'))
     keys.add(key)
-    return { id, key, liturgyId, liturgyPartId, position, role: text(p.role) || t('fallbacks.reading'),
+    return { id, key, liturgyId, liturgyPartId, position, page: positiveId(p.page), effectiveDurationMs: positiveId(p.effective_duration_ms), role: text(p.role) || t('fallbacks.reading'),
       text: { en: text(p.en), ru: text(p.ru), grabar: text(p.grabar), translit: text(p.translit) }, posture: text(p.posture)?.trim() || null }
   }).sort((a, b) => a.position - b.position)
 }
@@ -130,10 +138,11 @@ export function normalizeState(value: unknown): SessionState {
 }
 export function sessionWithState(session: LiveSession, update: SessionState, parts: LivePart[]): LiveSession {
   const cursor = update.cursor
+  const part = parts.find(p => p.liturgyPartId === cursor?.liturgyPartId)
   return { ...session, revision: update.revision, contentContext: update.contentContext,
     currentPartId: cursor?.partId ?? null, currentLiturgyPartId: cursor?.liturgyPartId ?? null,
     currentLiturgyId: cursor?.liturgyId ?? null, currentPosition: cursor?.position ?? null,
-    currentRole: parts.find(p => p.liturgyPartId === cursor?.liturgyPartId)?.role ?? null,
+    currentRole: part?.role ?? null, page: part?.page ?? null,
     status: update.status, message: update.message, posture: update.posture, date: update.date }
 }
 export type SessionEvent = { event: 'part_change' | 'status_change' | 'explanation_updated'; sessionId: number; state?: SessionState }

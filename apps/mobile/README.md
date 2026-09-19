@@ -722,3 +722,99 @@ point, also add `ios.infoPlist.CFBundleLocalizations` (`en`, `ru`) so iOS offers
 setting, and localize the camera and location permission prompts through `expo.locales`. Both are left out while
 the draft could be shown to readers of a production build.
 
+
+### Unattended Expo web displays (#158)
+
+Public routes open without sign-in:
+
+| Route | Screen |
+| --- | --- |
+| `/sessions/:id/display` | Follow a named service |
+| `/sessions/display` | Follow the current service for a church/user |
+| `/sessions/status/display` | Current service's hymnal page and posture |
+| `/sessions/:id/status/display` | Named service's hymnal page and posture |
+
+Add `?token=...` to resolve stored display preferences. Stored preferences win over
+all URL preferences, including defaults for malformed stored values. Links are
+revalidated every 10 seconds, so changed preferences and expired/revoked links
+reach a screen left open. Invalid/expired links have a clear replacement-link
+message; temporary failures retry automatically with a bounded 12-second request.
+
+Without a token, direct preferences are `mode=parallel|single`,
+`lang1=translit|en|grabar|hyw`, `lang2=...`, `show_notifications=true|false|1|0`,
+`show_explanations=true|false|1|0`, and
+`status_view=full|pages_only|posture_only|none`. Invalid values use defaults:
+parallel transliteration/English, notifications on, explanations off, full display.
+`none` keeps reading text while hiding operator messages. Service projection
+shows only the reading and speaker role; `show_explanations` remains accepted for
+link compatibility but does not load or display explanations on a projector. `pages_only` and `posture_only` select minimal screens even on a
+text-display route. `hyw` remains an explicit missing-translation state because
+the shared reading model does not yet include Western Armenian.
+
+Current-service discovery checks the public `/s/:user_id/current.json` endpoint
+every 5 seconds, includes the viewer's time zone, and switches automatically to
+the next service. Tokenless links accept `?user_id=...`; otherwise
+`EXPO_PUBLIC_DEFAULT_CHURCH_ID` selects the owner (default `2`, as on legacy web).
+A token's stored owner is authoritative. An inactive response clears the old
+service and waits. A temporary discovery failure retains the last service in memory and shows
+a large recovery notice until updates resume. Requests pause in the background/offline and resume when the
+screen returns. Named-service live updates retain the shared occurrence-aware
+ActionCable controller, its 30-second recovery polling, and revision checks.
+
+Displays use the existing dark reading palette and bundled literary fonts, with
+viewport-scaled text, narrow outer margins, and one large speaker label. Church,
+service, language and footer labels are omitted for distance viewing. Parallel
+languages remain side by side on tablets and
+projectors; narrow screens stack two independently advancing reading regions.
+Long readings use the API's `effective_duration_ms`, carried through the shared
+part model and saved snapshots. A single monotonic clock drives both language
+columns. The estimated reading position follows the center of each viewport,
+leaving reading time at both the opening and the end. Scrolling stops at the
+bottom and never loops or advances the service itself. Resizing, font loading,
+and duplicate live/poll updates remeasure without restarting the clock. A new
+occurrence (including a repeated reusable part) starts from the top. Pauses,
+operator messages, recovery notices, and backgrounding suspend the reading clock;
+returning to the same occurrence resumes its progress.
+
+Missing or malformed duration data falls back to an estimate of 160 words/minute
+for the longest selected translation, with a 3-second minimum. Operator messages
+use that estimate independently of the underlying part. Reduced-motion settings
+use duration-based pages with up to two lines of overlap; continuous motion uses
+an animation frame loop and cancels when paused, finished, or unmounted.
+
+The public API supplies an estimated duration but no occurrence-start timestamp.
+A newly opened display therefore begins at the start of the received part, not
+at an inferred position based on a poll revision or session update timestamp.
+The duration is a pacing estimate, not synchronization to the actual speaker. Operator messages
+replace the reading while active. Welcome/farewell use the first/last occurrence
+of the current one-based manifest (also accepting a legacy zero-position welcome).
+Status screens fill the viewport with the page number and the same standing,
+sitting and kneeling pictograms as the Vite web display, without small captions.
+The Expo web pictograms have accessible posture names; native routes retain a
+large text fallback. Page and posture update from the same accepted live state.
+Routine reconnecting labels are omitted while recovery polling continues; failed
+updates show a large recovery notice and restore the display automatically.
+
+The screen requests a wake lock while active. Browser support, HTTPS, device sleep
+settings and browser fullscreen/kiosk configuration still govern unattended use;
+fullscreen is not forced because browsers require a user gesture. No new packages,
+authentication, EAS configuration or Vercel routing changes are required. These
+routes ship with the Expo web build; the existing Vercel app remains the Vite app.
+
+#### Local display review
+
+The fixture is synthetic and binds only to loopback. From the repository root:
+
+```sh
+node apps/mobile/qa/display/server.cjs
+EXPO_PUBLIC_API_URL=http://127.0.0.1:8101 \
+EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
+EXPO_PUBLIC_DEFAULT_CHURCH_ID=7 \
+npm run web --prefix apps/mobile -- --port 8082
+```
+
+Open `http://127.0.0.1:8101` for links and controls. Leave a display open in a second
+tab; try the long reading, every operator message, service end/start, switching
+services, link expiry/recovery and connection loss. The two named fixture service
+IDs are **9001** (Divine Liturgy) and **9002** (Evening Prayer). If Expo uses another
+port, open the fixture with `?app=http://localhost:PORT`.

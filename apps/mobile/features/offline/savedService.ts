@@ -43,6 +43,8 @@ export function validateSavedService(value: unknown, now: number): SavedServiceV
     if (!nullableText(en) || !nullableText(ru) || !nullableText(grabar) || !nullableText(translit)) return null
     keys.add(p.key)
     parts.push({ id: p.id, key: p.key, liturgyId: p.liturgyId, liturgyPartId: p.liturgyPartId,
+      ...(p.page === undefined ? {} : { page: id(p.page) ? p.page : null }),
+      ...(p.effectiveDurationMs === undefined ? {} : { effectiveDurationMs: id(p.effectiveDurationMs) ? p.effectiveDurationMs : null }),
       position: p.position, role: p.role, posture: p.posture, text: { en, ru, grabar, translit } })
   }
   let explanations: SavedServiceV1['explanations'] = null
