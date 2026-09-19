@@ -51,5 +51,7 @@ manual scrolling reached ~0.4/0.4; independent mode reached ~0.4/0. Linked paged
 columns changed together at 0.067 and 0.133 normalized progress. Stationary
 long-text samples showed overflow warnings. Browser error reports were empty.
 
-Captures are local review artifacts under `output/playwright/` in this worktree.
+Committed synthetic display captures: [projector](evidence/customization/projector.png),
+[tablet](evidence/customization/tablet.png), and [phone](evidence/customization/phone.png).
+Additional local review artifacts are under `output/playwright/` in this worktree.
 Physical display distance and native device rendering remain unverified.
