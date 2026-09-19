@@ -1,3 +1,5 @@
+import { DEFAULT_CUSTOMIZATION, type DisplayCustomization } from './customization'
+
 /**
  * A display-link token resolves to this configuration. Mirrors the backend contract
  * (`GET /display_links/{token}`); a token is a public capability, not user auth.
@@ -6,7 +8,7 @@ export type DisplayMode = 'parallel' | 'single'
 export type DisplayLanguage = 'translit' | 'en' | 'hyw' | 'grabar'
 export type DisplayStatusView = 'full' | 'pages_only' | 'posture_only' | 'none'
 
-export interface DisplayPreferences {
+export interface DisplayPreferences extends Partial<DisplayCustomization> {
   title?: string
   mode: DisplayMode
   lang1: DisplayLanguage
@@ -28,6 +30,7 @@ export const DISPLAY_MODES: readonly DisplayMode[] = ['parallel', 'single']
 export const DISPLAY_STATUS_VIEWS: readonly DisplayStatusView[] = ['full', 'pages_only', 'posture_only', 'none']
 
 export const DEFAULT_DISPLAY_CONFIG: DisplayPreferences = {
+  ...DEFAULT_CUSTOMIZATION,
   mode: 'parallel',
   lang1: 'translit',
   lang2: 'en',

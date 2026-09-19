@@ -13,22 +13,39 @@ import { ProjectionText } from './ProjectionText'
 import { projectionMessage, projectionText } from './presentation'
 import { projectionDuration } from './projectionTiming'
 import { useProjectionClock } from './useProjectionClock'
+import { customization, projectionLayout, independentDuration, createManualPosition, createPageGroup } from './customization'
 
 export interface DisplayProjectionProps {
   apiBase: string; cableBase: string; config: DisplayPreferences; sessionId: number
   statusOnly?: boolean; discoveryError?: boolean
 }
 export function DisplayProjection({ apiBase, cableBase, config, sessionId, statusOnly = false, discoveryError = false }: DisplayProjectionProps) {
+  const endpoints = useMemo(() => ({ api: apiBase, cable: cableBase }), [apiBase, cableBase])
+  const { state } = useReader(endpoints, sessionId, false)
+  return <DisplayPresentation state={state} config={config} sessionId={sessionId} statusOnly={statusOnly} discoveryError={discoveryError} />
+}
+
+/** Also used by the setup preview with synthetic data; no requests or service mutations. */
+export function DisplayPresentation({ state, config, sessionId, statusOnly = false, discoveryError = false, preview = false }: {
+  state: ReturnType<typeof useReader>['state']; config: DisplayPreferences; sessionId: number
+  statusOnly?: boolean; discoveryError?: boolean; preview?: boolean
+}) {
   const { t } = useI18n()
   const { colors } = useTheme()
   const { width, height, fontScale } = useWindowDimensions()
-  const endpoints = useMemo(() => ({ api: apiBase, cable: cableBase }), [apiBase, cableBase])
+  const settings = customization(config)
   const minimal = statusOnly || config.status_view === 'pages_only' || config.status_view === 'posture_only'
-  // Projection reserves the canvas for the reading and speaker; explanations belong in the reader.
-  const { state } = useReader(endpoints, sessionId, false)
   const session = state.session
   const part = session ? currentPart(session, state.parts) : undefined
   const padding = Math.max(spacing.md, Math.min(spacing.xl, width / 60))
+  const layout = projectionLayout(settings, width, height, padding)
+  const screenPadding = { paddingHorizontal: layout.paddingHorizontal, paddingVertical: layout.paddingVertical }
+  const manualPositions = useMemo(() => ({
+    occurrence: `${sessionId}/${part?.key}`,
+    linked: createManualPosition(),
+    independent: { en: createManualPosition(), grabar: createManualPosition(), translit: createManualPosition(), hyw: createManualPosition() },
+  }), [sessionId, part?.key])
+  const pageGroup = useMemo(() => ({ occurrence: `${sessionId}/${part?.key}`, ...createPageGroup() }), [sessionId, part?.key])
   const posture = session?.posture ?? part?.posture
   const page = session?.page ?? part?.page
   const message = session ? projectionMessage(session, state.parts, config) : null
@@ -53,14 +70,14 @@ export function DisplayProjection({ apiBase, cableBase, config, sessionId, statu
     const showPage = config.status_view !== 'posture_only', showPosture = config.status_view !== 'pages_only'
     const compact = height > width || width / fontScale < 700
     const both = showPage && showPosture
-    const pageWidth = (width - padding * 2) * (both && !compact ? 0.65 : 1)
-    const itemHeight = (height - padding * 2) / (both && compact ? 2 : 1)
+    const pageWidth = (width - layout.paddingHorizontal * 2) * (both && !compact ? 0.65 : 1)
+    const itemHeight = (height - layout.paddingVertical * 2) / (both && compact ? 2 : 1)
     const pageText = page != null && page > 0 ? String(page) : '—'
     const numberSize = Math.min(itemHeight * 0.85, pageWidth / (pageText.length * 0.65)) / fontScale
-    return <View testID="display-status" style={[styles.screen, { padding }]}>
+    return <View testID="display-status" style={[styles.screen, screenPadding]}>
       <View style={[styles.statusContent, { flexDirection: compact ? 'column' : 'row' }]}>
         {showPage && <View style={[styles.statusItem, { flex: both && !compact ? 0.65 : 1 }]}>
-          <AppText testID="display-page" style={{ fontSize: numberSize, lineHeight: numberSize * 1.1, fontWeight: '600', textAlign: 'center', fontVariant: ['tabular-nums'] }}>{pageText}</AppText>
+          <AppText testID="display-page" style={{ fontSize: numberSize * Math.min(1, layout.textScale), lineHeight: numberSize * Math.min(1, layout.textScale) * 1.1, fontWeight: '600', textAlign: 'center', fontVariant: ['tabular-nums'] }}>{pageText}</AppText>
         </View>}
         {showPosture && <View style={[styles.statusItem, { flex: both && !compact ? 0.35 : 1 }]}>
           <PostureIcon posture={posture} />
@@ -70,18 +87,22 @@ export function DisplayProjection({ apiBase, cableBase, config, sessionId, statu
   }
 
   const stacked = width / fontScale < 640
-  const fontSize = Math.max(32, Math.min(width / (languages.length > 1 ? 26 : 20), height / (stacked && languages.length > 1 ? 18 : 10)))
+  const fontSize = Math.max(32, Math.min(width / (languages.length > 1 ? 26 : 20), height / (stacked && languages.length > 1 ? 18 : 10))) * layout.textScale
   const roleSize = Math.max(24, fontSize * 0.6)
-  return <View testID="display-projection" style={[styles.screen, { padding, gap: spacing.md }]}>
+  return <View testID="display-projection" style={[styles.screen, screenPadding, { gap: spacing.md }]}>
     {message ? <ProjectionText key={`${message.title}/${message.body}`} text={messageText} fontSize={fontSize * 1.2} centered
-      clock={messageClock} durationMs={projectionDuration(null, [messageText])} />
+      clock={messageClock} durationMs={projectionDuration(null, [messageText])} movement={settings.text_movement} preview={preview} />
       : part ? <>
         {part.role && <AppText testID="display-speaker" style={{ fontSize: roleSize, lineHeight: roleSize * 1.25, fontWeight: '600', textTransform: 'capitalize' }}>{part.role}</AppText>}
         <View testID="display-projection-text" style={[styles.body, { flexDirection: stacked ? 'column' : 'row', gap: padding }]}>
           {languages.map((language, index) => <View key={language} testID={`display-column-${language}`} style={[styles.column,
             index > 0 ? { borderColor: colors.divider, borderLeftWidth: stacked ? 0 : 1, borderTopWidth: stacked ? 1 : 0, paddingLeft: stacked ? 0 : padding, paddingTop: stacked ? spacing.md : 0 } : undefined]}>
             <ProjectionText key={`${session.id}/${part.key}/${language}`} text={texts[index]}
-              language={language === 'hyw' ? 'en' : language} fontSize={fontSize} clock={readingClock} durationMs={duration} />
+              language={language === 'hyw' ? 'en' : language} fontSize={fontSize} clock={readingClock}
+              durationMs={settings.language_sync === 'independent' ? independentDuration(duration, texts[index], texts) : duration}
+              movement={settings.text_movement} preview={preview}
+              pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
+              manualPosition={settings.language_sync === 'linked' ? manualPositions.linked : manualPositions.independent[language]} />
           </View>)}
         </View>
       </> : <DisplayNotice title={t('display.waitingForPart')} />}
