@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals'
 import { AccessibilityInfo, AppState, Linking, Platform, type AppStateStatus } from 'react-native'
-import { act, fireEvent, render, screen } from '@testing-library/react-native'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import ScanScreen, { NOT_A_CODE_MS } from '../app/scan'
 
@@ -108,7 +108,12 @@ beforeEach(() => {
   mockCamera.unmounts = 0
 })
 
-afterEach(() => { jest.restoreAllMocks(); jest.useRealTimers() })
+afterEach(async () => {
+  // Finish effect cleanup before restoring lifecycle mocks and their subscriptions.
+  await cleanup()
+  jest.restoreAllMocks()
+  jest.useRealTimers()
+})
 
 it('names the target and puts close first and session ID entry right after the instruction', async () => {
   await render(<ScanScreen />, { wrapper })
@@ -130,7 +135,7 @@ it('confirms the service a scanned code points at before entering it', async () 
   expect(mockSession).toHaveBeenCalledTimes(1)
   expect(mockReplace).not.toHaveBeenCalled()
   expect(announce).toHaveBeenCalledWith('Found Divine Liturgy at St. John Armenian Church, live')
-  await fireEvent.press(screen.getByRole('button', { name: 'Pray along' }))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Pray along' }))
   expect(mockReplace).toHaveBeenCalledWith('/sessions/4006/parts')
 })
 
@@ -209,13 +214,13 @@ it.each(['success', 'failure'] as const)('preserves manual entry after a cancell
   await scan(code)
   const signal = mockSession.mock.calls[0][1]
   expect(signal.aborted).toBe(false)
-  await fireEvent.press(screen.getByTestId('scan-session-id'))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Enter a session ID instead' }))
   expect(signal.aborted).toBe(true)
   await fireEvent.changeText(screen.getByLabelText('Session ID'), '123')
   await act(() => { bufferedHandler({ data: code }) })
   await settle(pending, outcome)
   expect(screen.getByLabelText('Session ID')).toHaveProp('value', '123')
-  expect(screen.queryByTestId('scan-found')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Pray along' })).toBeNull()
   expect(screen.queryByRole('alert')).toBeNull()
   expect(mockSession).toHaveBeenCalledTimes(1)
   expect(mockReplace).not.toHaveBeenCalled()
@@ -229,19 +234,19 @@ it.each(['success', 'failure'] as const)('ignores an older %s while a new scan i
   const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility')
   await render(<ScanScreen />, { wrapper })
   await scan(code)
-  await fireEvent.press(screen.getByTestId('scan-session-id'))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Enter a session ID instead' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Back to scanning' }))
   await scan('https://www.tarkman.app/s/7/explain')
   const nextSignal = mockSession.mock.calls[1][1]
   await settle(old, outcome)
-  expect(screen.queryByTestId('scan-found')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Pray along' })).toBeNull()
   expect(screen.queryByRole('alert')).toBeNull()
   expect(nextSignal.aborted).toBe(false)
   expect(announce).not.toHaveBeenCalled()
   await settle(next, 'success', { ...stJohn, id: 7, title: 'Evening Prayer' })
   expect(screen.getByText('Evening Prayer')).toBeOnTheScreen()
   expect(announce).toHaveBeenCalledTimes(1)
-  await fireEvent.press(screen.getByRole('button', { name: 'Pray along' }))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Pray along' }))
   expect(mockReplace).toHaveBeenCalledWith('/sessions/7/parts')
 })
 
@@ -258,7 +263,7 @@ it.each(['success', 'failure'] as const)('cancels immediately on Close and ignor
   expect(mockBack).toHaveBeenCalledTimes(1)
   await act(() => { bufferedHandler({ data: code }) })
   await settle(pending, outcome)
-  expect(screen.queryByTestId('scan-found')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Pray along' })).toBeNull()
   expect(screen.queryByRole('alert')).toBeNull()
   expect(announce).not.toHaveBeenCalled()
   expect(mockReplace).not.toHaveBeenCalled()
@@ -334,7 +339,7 @@ it('keeps one iOS camera mount and activates it only when scanning', async () =>
   expect(mockCamera.active).toBe(false)
   await fireEvent.press(screen.getByRole('button', { name: 'Scan a different code' }))
   expect(mockCamera.active).toBe(true)
-  await fireEvent.press(screen.getByTestId('scan-session-id'))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Enter a session ID instead' }))
   expect(mockCamera.active).toBe(false)
   await fireEvent.press(screen.getByRole('button', { name: 'Back to scanning' }))
   expect(mockCamera.active).toBe(true)
@@ -352,7 +357,7 @@ it.each(['android', 'web'] as const)('unmounts the idle camera on %s where activ
   jest.replaceProperty(Platform, 'OS', platform)
   await render(<ScanScreen />, { wrapper })
   expect(mockCamera.mounts).toBe(1)
-  await fireEvent.press(screen.getByTestId('scan-session-id'))
+  await fireEvent.press(await screen.findByRole('button', { name: 'Enter a session ID instead' }))
   expect(mockCamera.unmounts).toBe(1)
   await fireEvent.press(screen.getByRole('button', { name: 'Back to scanning' }))
   expect(mockCamera.mounts).toBe(2)
