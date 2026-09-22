@@ -13,8 +13,7 @@ export type MessageKey = MessagePath<typeof en>
  */
 export const INTERFACE_CATALOGS = {
   en: { catalog: en as Catalog, nativeName: 'English', reviewed: true },
-  // Machine-drafted; set reviewed to true once a fluent reader has confirmed the wording on a device.
-  ru: { catalog: ru, nativeName: 'Русский', reviewed: false },
+  ru: { catalog: ru, nativeName: 'Русский', reviewed: true },
 } satisfies Record<string, { catalog: Catalog; nativeName: string; reviewed: boolean }>
 
 export type InterfaceLanguage = keyof typeof INTERFACE_CATALOGS
