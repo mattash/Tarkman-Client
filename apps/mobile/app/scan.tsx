@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AccessibilityInfo, ActivityIndicator, Animated, Easing, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AccessibilityInfo, ActivityIndicator, Animated, AppState, Easing, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, View } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppButton } from '../components/AppButton'
@@ -39,19 +39,64 @@ export default function ScanScreen() {
   const { t } = useI18n()
   const [permission, requestPermission] = useCameraPermissions()
   const [phase, setPhase] = useState<Phase>({ kind: 'scanning' })
+  // Native barcode callbacks can arrive twice before React commits a new handler.
+  const phaseRef = useRef<Phase>({ kind: 'scanning' })
+  const lookup = useRef<AbortController | null>(null)
+  const focusedRef = useRef(false)
+  const [focused, setFocused] = useState(false)
+  const [foreground, setForeground] = useState(AppState.currentState !== 'background' && AppState.currentState !== 'inactive')
+  const foregroundRef = useRef(foreground)
   const [notCode, setNotCode] = useState(false)
   const asked = useRef(false)
   const lastBadRead = useRef(0)
   const config = readerConfig()
   const api = useMemo(() => config.endpoints ? createApi(config.endpoints.api) : null, [config.endpoints])
 
-  // The camera is asked for when the scanner opens, never at launch.
+  const cancelLookup = useCallback(() => {
+    const previous = lookup.current
+    // Invalidate ownership before aborting: a transport may still settle after cancellation.
+    lookup.current = null
+    previous?.abort()
+  }, [])
+
+  const changePhase = useCallback((next: Phase) => {
+    cancelLookup()
+    phaseRef.current = next
+    setPhase(next)
+  }, [cancelLookup])
+
+  const suspend = useCallback(() => {
+    cancelLookup()
+    // A cancelled lookup must not leave a returning reader stuck on "Checking".
+    if (phaseRef.current.kind === 'checking') changePhase({ kind: 'scanning' })
+  }, [cancelLookup, changePhase])
+
+  useFocusEffect(useCallback(() => {
+    focusedRef.current = true
+    setFocused(true)
+    return () => {
+      focusedRef.current = false
+      setFocused(false)
+      suspend()
+    }
+  }, [suspend]))
+
   useEffect(() => {
-    if (permission && !permission.granted && permission.canAskAgain && !asked.current) {
+    const subscription = AppState.addEventListener('change', state => {
+      foregroundRef.current = state === 'active'
+      setForeground(state === 'active')
+      if (state !== 'active') suspend()
+    })
+    return () => subscription.remove()
+  }, [suspend])
+
+  // The camera is asked for when the scanner opens, never at launch or while unfocused.
+  useEffect(() => {
+    if (focused && foreground && permission && !permission.granted && permission.canAskAgain && !asked.current) {
       asked.current = true
       void requestPermission()
     }
-  }, [permission, requestPermission])
+  }, [focused, foreground, permission, requestPermission])
 
   useEffect(() => {
     if (!notCode) return
@@ -59,10 +104,16 @@ export default function ScanScreen() {
     return () => clearInterval(timer)
   }, [notCode])
 
-  const leave = () => { if (router.canGoBack()) { router.back() } else { router.replace('/') } }
+  function stop() {
+    focusedRef.current = false
+    setFocused(false)
+    suspend()
+  }
+  const leave = () => { stop(); if (router.canGoBack()) { router.back() } else { router.replace('/') } }
+  const open = (path: string) => { stop(); router.replace(path) }
 
   function scanned(value: string) {
-    if (phase.kind !== 'scanning') return
+    if (!focusedRef.current || !foregroundRef.current || phaseRef.current.kind !== 'scanning') return
     const link = readScannedLink(value)
     if (link.kind === 'unknown') {
       // Never open what was scanned: a code in a public place can be replaced by anyone.
@@ -71,20 +122,31 @@ export default function ScanScreen() {
       return
     }
     setNotCode(false)
-    setPhase({ kind: 'checking', link })
-    if (!api) { router.replace(link.path); return }
-    api.session(link.sessionId, new AbortController().signal).then(session => {
-      setPhase({ kind: 'found', link, session })
+    changePhase({ kind: 'checking', link })
+    if (!api) { open(link.path); return }
+    const controller = new AbortController()
+    lookup.current = controller
+    api.session(link.sessionId, controller.signal).then(session => {
+      if (lookup.current !== controller || controller.signal.aborted) return
+      lookup.current = null
+      changePhase({ kind: 'found', link, session })
       AccessibilityInfo.announceForAccessibility(t(session.status === 'active' ? 'scan.foundLive' : 'scan.found', { title: session.title, church: session.church }))
-    }, () => setPhase({ kind: 'unavailable' }))
+    }, () => {
+      if (lookup.current !== controller || controller.signal.aborted) return
+      lookup.current = null
+      changePhase({ kind: 'unavailable' })
+    })
   }
 
   const refused = !!permission && !permission.granted && !permission.canAskAgain
-  const scanning = phase.kind === 'scanning' && !!permission?.granted
+  const scanning = focused && foreground && phase.kind === 'scanning' && !!permission?.granted
+  // active is iOS-only. Keep that native view mounted across phase/background changes to avoid
+  // extra Fabric mounts (#164); unmount on blur. Other platforms release the camera when idle.
+  const showCamera = !!permission?.granted && focused && (Platform.OS === 'ios' || scanning)
 
   return <View style={{ flex: 1, backgroundColor: scanner.canvas }}>
     <StatusBar style="light" />
-    {permission?.granted && <CameraView testID="camera" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} facing="back"
+    {showCamera && <CameraView testID="camera" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} facing="back" active={scanning}
       barcodeScannerSettings={{ barcodeTypes: ['qr'] }} onBarcodeScanned={scanning ? ({ data }) => scanned(data) : undefined} />}
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.md), paddingLeft: insets.left, paddingRight: insets.right }}>
@@ -102,12 +164,12 @@ export default function ScanScreen() {
             {phase.kind !== 'manual' && <Frame />}
           </View>
           <View style={{ gap: 14, alignItems: 'center' }}>
-            {phase.kind === 'manual' ? <SessionIdEntry cancel={() => setPhase({ kind: 'scanning' })} />
+            {phase.kind === 'manual' ? <SessionIdEntry cancel={() => changePhase({ kind: 'scanning' })} open={id => open(`/sessions/${id}/parts`)} />
               : refused ? <ResultCard>
                 <AppText style={{ fontSize: 15, lineHeight: 23 }}>{t('scan.cameraNeeded')}</AppText>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                   <AppButton size="card" onPress={() => { void Linking.openSettings() }}>{t('scan.openSettings')}</AppButton>
-                  <AppButton size="card" variant="secondary" onPress={() => router.replace('/')}>{t('scan.backToToday')}</AppButton>
+                  <AppButton size="card" variant="secondary" onPress={() => open('/')}>{t('scan.backToToday')}</AppButton>
                 </View>
               </ResultCard>
               : phase.kind === 'found' ? <ResultCard testID="scan-found">
@@ -118,19 +180,19 @@ export default function ScanScreen() {
                     <AppText variant="caption" tone="muted">{phase.session.church}</AppText>
                   </View>
                 </View>
-                <AppButton size="card" onPress={() => router.replace(phase.link.path)}
+                <AppButton size="card" onPress={() => open(phase.link.path)}
                   accessibilityHint={t('scan.readAlongHint', { title: phase.session.title, church: phase.session.church })}>{t('common.readAlong')}</AppButton>
-                <AppButton variant="quiet" onPress={() => setPhase({ kind: 'scanning' })}>{t('scan.scanDifferent')}</AppButton>
+                <AppButton variant="quiet" onPress={() => changePhase({ kind: 'scanning' })}>{t('scan.scanDifferent')}</AppButton>
               </ResultCard>
               : phase.kind === 'unavailable' ? <ResultCard>
                 <Notice tone="danger" accessibilityRole="alert">{t('scan.unavailable')}</Notice>
-                <AppButton size="card" variant="secondary" onPress={() => setPhase({ kind: 'scanning' })}>{t('scan.scanAgain')}</AppButton>
+                <AppButton size="card" variant="secondary" onPress={() => changePhase({ kind: 'scanning' })}>{t('scan.scanAgain')}</AppButton>
               </ResultCard>
               : notCode ? <ResultCard testID="scan-not-a-code">
                 <Notice tone="danger" accessibilityRole="alert">{t('scan.notACode')}</Notice>
               </ResultCard>
               : permission?.granted ? <LookingChip checking={phase.kind === 'checking'} /> : null}
-            {phase.kind !== 'manual' && <Pressable testID="scan-session-id" accessibilityRole="button" onPress={() => { setNotCode(false); setPhase({ kind: 'manual' }) }}
+            {phase.kind !== 'manual' && <Pressable testID="scan-session-id" accessibilityRole="button" onPress={() => { setNotCode(false); changePhase({ kind: 'manual' }) }}
               style={{ minHeight: touchTarget, paddingHorizontal: 20, justifyContent: 'center', borderRadius: touchTarget / 2, backgroundColor: scanner.scrim, marginTop: 24 }}>
               <AppText variant="label" style={{ color: scanner.foreground, textAlign: 'center' }}>{t('scan.enterIdInstead')}</AppText>
             </Pressable>}
@@ -193,14 +255,14 @@ function ResultCard({ children, testID }: { children: React.ReactNode; testID?: 
   </View>
 }
 
-function SessionIdEntry({ cancel }: { cancel(): void }) {
+function SessionIdEntry({ cancel, open }: { cancel(): void; open(id: number): void }) {
   const [input, setInput] = useState(''), [error, setError] = useState<string>()
   const { t } = useI18n()
   function submit() {
     const id = Number(input)
     if (!/^\d+$/.test(input) || !Number.isSafeInteger(id) || id <= 0) { setError(t('scan.invalidId')); return }
     Keyboard.dismiss()
-    router.replace(`/sessions/${id}/parts`)
+    open(id)
   }
   return <ResultCard testID="scan-manual">
     <AppText variant="rowTitle">{t('scan.openById')}</AppText>
