@@ -12,6 +12,7 @@ const mockSession = jest.fn<(id: number, signal: AbortSignal) => Promise<unknown
 const mockFocus: { effect?: () => void | (() => void); cleanup?: () => void } = {}
 const mockCamera = { active: undefined as boolean | undefined, mounts: 0, unmounts: 0 }
 const mockAppStateListeners = new Set<(state: AppStateStatus) => void>()
+const originalAppStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState')!
 
 jest.mock('expo-router', () => ({
   router: { push: (path: string) => mockPush(path), replace: (path: string) => mockReplace(path), back: () => mockBack(), canGoBack: () => true },
@@ -94,7 +95,12 @@ beforeEach(() => {
   jest.clearAllMocks()
   jest.useRealTimers()
   jest.replaceProperty(Platform, 'OS', 'ios')
-  jest.replaceProperty(AppState, 'currentState', 'active')
+  // The RN preset uses a jest.fn(); production exposes a nullable state value.
+  Object.defineProperty(AppState, 'currentState', {
+    configurable: true,
+    writable: true,
+    value: 'active',
+  })
   mockAppStateListeners.clear()
   jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
     mockAppStateListeners.add(listener)
@@ -112,6 +118,7 @@ afterEach(async () => {
   // Finish effect cleanup before restoring lifecycle mocks and their subscriptions.
   await cleanup()
   jest.restoreAllMocks()
+  Object.defineProperty(AppState, 'currentState', originalAppStateDescriptor)
   jest.useRealTimers()
 })
 
