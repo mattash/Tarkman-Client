@@ -75,6 +75,11 @@ export function normalizeConfig(value: unknown): DisplayLinkConfig | null {
   const partial: Pick<DisplayLinkConfig, 'token' | 'user_id'> & Partial<DisplayLinkConfig> = {
     token: raw.token, user_id: userId, ...normalizeCustomization(raw),
   }
+  if (typeof raw.config_version === 'number' && Number.isSafeInteger(raw.config_version) && raw.config_version >= 0) partial.config_version = raw.config_version
+  for (const field of ['created_at', 'updated_at', 'display_url'] as const) {
+    if (typeof raw[field] === 'string') partial[field] = raw[field]
+  }
+  if (raw.expires_at === null || (typeof raw.expires_at === 'string' && Number.isFinite(Date.parse(raw.expires_at)))) partial.expires_at = raw.expires_at
   if (typeof raw.title === 'string') partial.title = raw.title
   if (isDisplayMode(raw.mode)) partial.mode = raw.mode
   if (isDisplayLanguage(raw.lang1)) partial.lang1 = raw.lang1

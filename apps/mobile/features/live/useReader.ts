@@ -9,7 +9,8 @@ import type { Endpoints } from './config'
 import { createReaderController } from './controller'
 import { lifecycle } from './lifecycle'
 export function useReader(endpoints: Endpoints, id: number | null, loadExplanations = true) {
-  const controller = useMemo(() => createReaderController(createApi(endpoints.api), createCable(), endpoints.cable, lifecycle, id, id === null ? undefined : { save: saveSavedService }, loadExplanations), [endpoints.api, endpoints.cable, id, loadExplanations])
+  const controller = useMemo(() => createReaderController(createApi(endpoints.api), createCable(), endpoints.cable, lifecycle, id, id === null ? undefined : { save: saveSavedService }, false), [endpoints.api, endpoints.cable, id])
+  useEffect(() => controller.setLoadExplanations(loadExplanations), [controller, loadExplanations])
   useEffect(() => controller.start(), [controller])
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot)
   useLayoutEffect(() => {

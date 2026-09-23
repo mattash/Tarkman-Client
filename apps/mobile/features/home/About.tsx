@@ -30,6 +30,7 @@ export function About() {
         {state.status === 'signedIn' ? <>
           <AppText variant="caption" tone="muted">{t('common.signedInAs', { name: state.user.name || state.user.email })}</AppText>
           <ServiceRow title={t('common.myServices')} subtitle={t('settings.myServicesSubtitle')} onPress={() => router.push('/services')} />
+          <ServiceRow title={t('links.title')} subtitle={t('links.accountSubtitle')} onPress={() => router.push('/display-links')} />
           <View style={{ alignSelf: 'flex-start' }}><AppButton variant="secondary" size="card" onPress={signOut}>{t('common.signOut')}</AppButton></View>
         </> : <ServiceRow testID="about-sign-in" title={t('common.signIn')} subtitle={t('settings.signInSubtitle')} onPress={() => router.push('/sign-in')} />}
       </View>}

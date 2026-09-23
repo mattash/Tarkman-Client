@@ -118,6 +118,18 @@ test('accepted commands emit one publication and websocket lifecycle is auditabl
   socket.close()
 })
 
+test('review state controls update the fixture and emit the current publication', async () => {
+  const result = await post('/review/state', { index: 2, status: 'paused' })
+  assert.equal(result.response.status, 200)
+  assert.equal(result.data.index, 2)
+  assert.equal(result.data.status, 'paused')
+  assert.equal(result.data.emitted.revision, 2)
+  assert.equal(result.data.emitted.cursor.position, 3)
+  const publications = (await events()).filter(entry => entry.kind === 'publication')
+  assert.equal(publications.length, 1)
+  assert.equal(publications[0].envelope.cursor.position, 3)
+})
+
 test('fixture remains bound to loopback and reset restores deterministic defaults', async () => {
   await post('/qa/config', { stateMode: 'legacy404', commandMode: 'refuse409' })
   const reset = await post('/qa/reset')

@@ -1,3 +1,4 @@
+import type { DisplayLinkConfig as CoreDisplayLinkConfig } from '@tarkman/core'
 import { DEFAULT_CUSTOMIZATION, type DisplayCustomization } from './customization'
 
 /**
@@ -9,6 +10,8 @@ export type DisplayLanguage = 'translit' | 'en' | 'hyw' | 'grabar'
 export type DisplayStatusView = 'full' | 'pages_only' | 'posture_only' | 'none'
 
 export interface DisplayPreferences extends Partial<DisplayCustomization> {
+  /** Runtime only; never sent to the API or persisted as a reader preference. */
+  tokenProjection?: boolean
   title?: string
   mode: DisplayMode
   lang1: DisplayLanguage
@@ -20,10 +23,7 @@ export interface DisplayPreferences extends Partial<DisplayCustomization> {
   church_avatar_url?: string | null
 }
 
-export interface DisplayLinkConfig extends DisplayPreferences {
-  token: string
-  user_id: number
-}
+export interface DisplayLinkConfig extends CoreDisplayLinkConfig, DisplayPreferences {}
 
 export const DISPLAY_LANGUAGES: readonly DisplayLanguage[] = ['translit', 'en', 'hyw', 'grabar']
 export const DISPLAY_MODES: readonly DisplayMode[] = ['parallel', 'single']
