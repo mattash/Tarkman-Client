@@ -133,3 +133,32 @@ normal contiguous state changes. The fixture was extended without changing web o
 legacy state modes, refused-command no-publication behavior, metadata-before-parts ordering, accepted command
 publication, WebSocket logging, deterministic reset, and loopback startup. This is QA fixture capability only;
 no application runtime behavior, backend, auth policy, production configuration, or content changed.
+
+## Final Lens status-command recovery and QA target correction
+
+Lens found one remaining application defect at head `50a9306bd8544d94fac98f3de77fd280b5672840`:
+`SessionStatusControl` sent an `expected_revision` precondition, but a refused stale/409 status mutation only set
+its error copy. Navigation controls already reconciled exact metadata followed by the sibling manifest; status
+controls left the control screen's revision, cursor, and manifest stale.
+
+Application commit `d49ebe63d4499802ba244ddd5efbdef224a28712` makes the status mutation classify its error once,
+preserve the existing visible message, and only for `failure.kind === "stale"` await
+`recoverRejectedCommand(queryClient, sessionId)`. It never retries or replays
+the mutation. The focused regression proves one status command, the stale alert, exact metadata invalidation and
+refetch followed strictly by exact sibling-parts invalidation and refetch. A separate network-error regression
+proves non-stale failures do not reconcile. Before the fix, the stale regression failed with zero parts refetches.
+
+The same QA review also used the wrong frontend: it started Expo from `apps/mobile` on port 8082, while issue #156
+and this PR modify `apps/web`. Those gap/context/unknown and scroll observations are not evidence about the target
+application. Fixture links and runbooks now consistently start Vite with `VITE_*` variables on
+`127.0.0.1:3000`. They require one isolated recovery scenario at a time, synthetic localStorage auth for the real
+`/sessions/9001/parts` control UI, and `window.scrollTo`/RAF instrumentation (the apps/web live reader does not
+use `scrollIntoView`).
+
+Recovery coverage was rechecked independently:
+
+- duplicate/out-of-order publications cause no recovery read;
+- a revision gap causes one lightweight state read and no manifest read;
+- a malformed publication causes one lightweight state read and no metadata/manifest read;
+- content-context mismatch performs bounded bracketed state reads and one manifest refresh;
+- unknown exact occurrence performs one manifest refresh and resolves by `liturgy_part_id`.

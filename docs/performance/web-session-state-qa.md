@@ -3,7 +3,7 @@
 Issue: Tarkman-Client #156
 Date: 2026-09-23
 Source branch: `openclaw/16fa4a69-6bd0-4e96-8ffd-9d9729e09b79`
-Application SHA: `847e9b74b9cbfd4de3a182673a7cd1146c2108c3`
+Application SHA: `d49ebe63d4499802ba244ddd5efbdef224a28712`
 Fixture capability SHA: `d6f9e2a0742d640394a101a7cf874343d7ce92b2`
 
 ## Automated proof
@@ -14,6 +14,7 @@ Fixture capability SHA: `d6f9e2a0742d640394a101a7cf874343d7ce92b2`
 - `docs/validation-web-session-state-integration.log` — integration attempt; live explanation requests fail because test credentials/API configuration are absent and `VITE_API_URL` is stubbed to `example.test`. Session/part integration cases are skipped by their existing credential guards.
 - `docs/validation-web-session-state-audit.json` — production-dependency audit baseline; no dependency changes are included in this issue.
 - `docs/validation-display-fixture.log` — Node contract tests for the loopback-only QA controls and ordered log.
+- `docs/validation-mobile-fixture-lint.log` — mobile-tree lint proof for fixture UI/runbook changes.
 
 ## Reproducible browser fixture
 
@@ -36,7 +37,9 @@ VITE_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
 npm run dev --prefix apps/web -- --host 127.0.0.1 --port 3000
 ```
 
-Open the fixture controls at `http://127.0.0.1:8101` and these display routes in separate tabs:
+Open the fixture controls at `http://127.0.0.1:8101`. For request-count evidence, keep exactly **one** display
+route open at a time; multiple display tabs each own a 30-second safety poll and make an aggregate network log
+ambiguous. Review these routes sequentially:
 
 - Parallel: `http://127.0.0.1:3000/sessions/9001/display?mode=parallel&lang1=grabar&lang2=en`
 - Single: `http://127.0.0.1:3000/sessions/9001/display?mode=single&lang1=en`
@@ -44,6 +47,36 @@ Open the fixture controls at `http://127.0.0.1:8101` and these display routes in
 - Posture only: `http://127.0.0.1:3000/sessions/9001/display?mode=single&status_view=posture_only`
 
 Use browser DevTools Network with **Preserve log** enabled and filter successively by `state.json`, `parts.json`, and `/s/9001.json`.
+
+### Scenario isolation
+
+Reset and run **one recovery scenario at a time**. Wait for initial load or the preceding recovery to settle,
+then clear the target tab's Network log before publishing the next scenario. Do not send gap, malformed,
+context-mismatch, and unknown-occurrence publications back-to-back within a few seconds: that tests intentional
+recovery coalescing, not the bounded request behavior of each individual scenario.
+
+### Browser control UI
+
+To render the real apps/web navigation and status controls, seed synthetic auth on the loopback Vite origin and
+reload the parts route. The fixture ignores the Authorization value; these are not production credentials:
+
+```js
+localStorage.setItem('token', 'local-fixture-only')
+localStorage.setItem('user', JSON.stringify({
+  id: 7, email: 'fixture@example.test', name: 'Fixture Operator', roles: ['admin']
+}))
+location.assign('/sessions/9001/parts')
+```
+
+Use the actual status/navigation controls there for accepted and refused/409 proof. After a refusal, verify one
+command attempt and ordered `session` then `parts` events in `/qa/log`; never use a production account or token.
+
+### Scroll observability
+
+The apps/web live reader's `smoothScrollToPart` uses `window.scrollTo` for the initial snap and a
+`requestAnimationFrame` chain for long-reading movement. It does **not** use `scrollIntoView`. Monkeypatch or
+count `window.scrollTo`, `requestAnimationFrame`, and `cancelAnimationFrame` before the duplicate/long-reading
+scenario. A duplicate must not add a second snap call or restart the existing RAF chain.
 
 ## Namespaced QA control contract
 
