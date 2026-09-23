@@ -46,3 +46,15 @@ it('does not let pings hide a subscription that was never confirmed', async () =
   for (let i = 0; i < 4; i++) { frame({ type: 'ping', message: 123 }); await jest.advanceTimersByTimeAsync(3000) }
   expect(sockets).toHaveLength(2); stop()
 })
+it('supports typed token subscriptions with the same framing, confirmation and disposal', () => {
+  const socket: Socket = { readyState: 1, protocol: 'actioncable-v1-json', send: jest.fn(), close: jest.fn(), onopen: null, onclose: null, onerror: null, onmessage: null }
+  const callbacks = { connected: jest.fn(), disconnected: jest.fn(), received: jest.fn() }
+  const identifier = JSON.stringify({ channel: 'DisplayLinkChannel', token: 'token-A' })
+  const stop = createCable(() => socket).subscribe('wss://example.test/cable', { channel: 'DisplayLinkChannel', token: 'token-A' }, callbacks)
+  frame({ type: 'welcome' }, socket)
+  expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ command: 'subscribe', identifier }))
+  frame({ type: 'confirm_subscription', identifier }, socket)
+  frame({ identifier, message: { event: 'display_link.updated' } }, socket)
+  expect(callbacks.connected).toHaveBeenCalledTimes(1); expect(callbacks.received).toHaveBeenCalledTimes(1)
+  stop(); expect(socket.close).toHaveBeenCalledTimes(1); expect(jest.getTimerCount()).toBe(0)
+})

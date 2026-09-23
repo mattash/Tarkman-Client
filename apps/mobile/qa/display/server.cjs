@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global console, process, Buffer, setInterval, clearInterval, URL, __dirname */
+/* global console, process, Buffer, setInterval, clearInterval, setTimeout, URL, __dirname */
 // Synthetic, loopback-only review fixture. No real service or account is read or changed.
 const http = require('node:http')
 const fs = require('node:fs')
@@ -7,8 +7,47 @@ const path = require('node:path')
 const ws = require('ws')
 const WebSocketServer = ws.WebSocketServer || ws.Server
 const port = Number(process.env.DISPLAY_FIXTURE_PORT || 8101)
-const LOOPBACK_ORIGINS = new Set(['http://127.0.0.1:3000', 'http://localhost:3000'])
+const LOOPBACK_ORIGINS = new Set(['http://127.0.0.1:3000', 'http://localhost:3000', 'http://127.0.0.1:8081', 'http://localhost:8081', 'http://127.0.0.1:8082', 'http://localhost:8082'])
 const clients = new Map()
+let dropConfigEvents = false, rejectConfigChannel = false, failConfigReads = false, mutationStatus = 0, delayMutation = 0
+let nextLinkId = 20
+const links = new Map()
+const editable = ['title', 'device_type', 'mode', 'lang1', 'lang2', 'font_scale', 'status_view', 'show_notifications', 'show_explanations', 'text_movement', 'language_sync', 'margin_percent', 'expires_at']
+function newLink(token, id, user_id = 7) {
+  return { id, token, user_id, title: token === 'token-A' ? 'Sanctuary A' : token === 'token-B' ? 'Hall B' : `Sample ${id}`,
+    config_version: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), expires_at: null,
+    display_url: `${process.env.DISPLAY_FIXTURE_SHARE_ORIGIN || 'https://localhost:8082'}/sessions/display?token=${encodeURIComponent(token)}`,
+    mode: 'parallel', lang1: 'translit', lang2: 'en', device_type: 'auto', font_scale: 100,
+    text_movement: 'continuous', language_sync: 'linked', margin_percent: null,
+    show_notifications: true, show_explanations: false, status_view: 'full', church_name: 'Sample parish · review fixture' }
+}
+for (const [index, token] of ['token-A', 'token-B', 'parallel', 'single', 'pages', 'posture', 'plain', 'missing', 'quiet'].entries()) {
+  const link = newLink(token, index + 1)
+  if (token === 'single') { link.mode = 'single'; link.lang2 = null }
+  if (token === 'missing') link.lang1 = 'hyw'
+  if (token === 'quiet') link.show_notifications = false
+  link.status_view = ({ pages: 'pages_only', posture: 'posture_only', plain: 'none' })[token] || 'full'
+  links.set(token, link)
+}
+links.set('other-owner', newLink('other-owner', 19, 8))
+function isExpired(link) { return expired || (link.expires_at && Date.parse(link.expires_at) <= Date.now()) }
+function publishLink(link, reason) {
+  if (dropConfigEvents) return
+  const message = reason ? { event: 'display_link.invalidated', data: { token: link.token, config_version: link.config_version, reason } }
+    : { event: 'display_link.updated', data: link }
+  for (const [socket, identifiers] of clients) for (const identifier of identifiers) {
+    const subscription = JSON.parse(identifier)
+    if (subscription.channel === 'DisplayLinkChannel' && subscription.token === link.token && socket.readyState === 1) socket.send(JSON.stringify({ identifier, message }))
+  }
+}
+async function body(req) { const chunks = []; for await (const chunk of req) chunks.push(chunk); return JSON.parse(Buffer.concat(chunks).toString() || '{}') }
+function updateLink(link, fields) {
+  Object.assign(link, Object.fromEntries(editable.filter(key => Object.hasOwn(fields, key)).map(key => [key, fields[key]])))
+  if (link.mode === 'single') link.lang2 = null
+  if (!link.title.trim()) link.title = `Sample display ${link.id}`
+  link.config_version++; link.updated_at = new Date().toISOString()
+  publishLink(link, isExpired(link) ? 'expired' : undefined)
+}
 const requestLog = []
 let sequence = 0
 let revision, live, sessionId, index, status, expired, disconnected, contentContext, extraPart
@@ -50,13 +89,15 @@ function session(id) {
       gospel: 'The Holy Gospel according to John.\nGlory to You, O Lord our God.', epistle: 'A reading from the letter of Saint Paul to the Romans.' } } }
 }
 function json(res, value, code = 200) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Access-Control-Allow-Headers': 'Content-Type, Accept, X-Polling-Client, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS', 'Cache-Control': 'no-store' })
+  res.writeHead(code, { 'Content-Type': 'application/json', 'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization, X-Polling-Client', 'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS, HEAD', 'Cache-Control': 'no-store' })
   res.end(JSON.stringify(value))
 }
-async function body(req) { const chunks = []; for await (const chunk of req) chunks.push(chunk); return JSON.parse(Buffer.concat(chunks).toString() || '{}') }
+
 function cableEnvelope(identifierId, overrides = {}) { return { ...state(String(identifierId)), session: String(identifierId), part: currentPart().id, ...overrides } }
 function broadcastEnvelope(envelope, event = 'part_change') {
   for (const [socket, identifiers] of clients) for (const identifier of identifiers) {
+    const subscription = JSON.parse(identifier)
+    if (subscription.channel !== 'SessionChannel' || Number(subscription.id) !== Number(envelope.session)) continue
     if (socket.readyState === 1) socket.send(JSON.stringify({ identifier, message: { event, data: envelope } }))
   }
   log('publication', { event, envelope })
@@ -64,7 +105,9 @@ function broadcastEnvelope(envelope, event = 'part_change') {
 function broadcastCurrent() {
   let emitted = null
   for (const [socket, identifiers] of clients) for (const identifier of identifiers) {
-    const envelope = cableEnvelope(JSON.parse(identifier).id)
+    const subscription = JSON.parse(identifier)
+    if (subscription.channel !== 'SessionChannel') continue
+    const envelope = cableEnvelope(subscription.id)
     emitted ||= envelope
     if (socket.readyState === 1) socket.send(JSON.stringify({ identifier, message: { event: 'part_change', data: envelope } }))
   }
@@ -108,6 +151,46 @@ const server = http.createServer(async (req, res) => {
     const entry = log('qa.reset')
     return json(res, { ok: true, entry, fixture: { revision, sessionId, index, status, contentContext, stateMode, commandMode } })
   }
+  if (url.pathname === '/users/sign_in' && req.method === 'POST') {
+    const data = await body(req)
+    if (data.user?.email !== 'operator@display.test' || data.user?.password !== 'fixture') return json(res, { error: 'Fixture credentials required' }, 401)
+    return json(res, { token: 'display-fixture-account', user: { id: 7, name: 'Display reviewer', email: 'operator@display.test', roles: ['admin'] } })
+  }
+  if (url.pathname === '/users/sign_out') return json(res, {})
+  if (url.pathname === '/review/config' && req.method === 'POST') {
+    const data = await body(req), link = links.get(data.token || 'token-A')
+    if (typeof data.dropEvents === 'boolean') dropConfigEvents = data.dropEvents
+    if (typeof data.rejectChannel === 'boolean') rejectConfigChannel = data.rejectChannel
+    if (typeof data.failReads === 'boolean') failConfigReads = data.failReads
+    mutationStatus = data.mutationStatus ?? mutationStatus
+    delayMutation = data.delayMutation ?? delayMutation
+    if (link && data.fields) updateLink(link, data.fields)
+    if (link && data.delete) { link.config_version++; publishLink(link, 'deleted'); links.delete(link.token) }
+    return json(res, { ok: true })
+  }
+  if (url.pathname === '/display_links' && req.method === 'GET') {
+    if (req.headers.authorization !== 'Bearer display-fixture-account') return json(res, {}, 401)
+    if (url.searchParams.get('scope') !== 'mine') return json(res, { error: 'scope=mine required' }, 400)
+    return json(res, [...links.values()].filter(link => link.user_id === 7).reverse())
+  }
+  if ((url.pathname === '/display_links' && req.method === 'POST') || (url.pathname.startsWith('/display_links/') && req.method === 'PATCH')) {
+    if (req.headers.authorization !== 'Bearer display-fixture-account') return json(res, {}, 401)
+    const data = await body(req), fields = data.display_link || {}, creating = req.method === 'POST'
+    const link = creating ? newLink(`created-${nextLinkId}`, nextLinkId++) : links.get(decodeURIComponent(url.pathname.split('/').pop()))
+    if (!link) return json(res, {}, 404)
+    if (link.user_id !== 7) return json(res, {}, 403)
+    if (mutationStatus) return json(res, {}, mutationStatus)
+    if (!creating && data.expected_config_version !== link.config_version) return json(res, { error: 'stale_display_link', current_config_version: link.config_version, display_link: link }, 409)
+    const errors = {}
+    if (fields.font_scale !== undefined && (!Number.isInteger(fields.font_scale) || fields.font_scale < 50 || fields.font_scale > 200)) errors.font_scale = ['Use 50–200 percent.']
+    if (fields.margin_percent !== undefined && fields.margin_percent !== null && (!Number.isInteger(fields.margin_percent) || fields.margin_percent < 0 || fields.margin_percent > 15)) errors.margin_percent = ['Use 0–15 percent or automatic.']
+    if ((fields.mode || link.mode) === 'parallel' && (Object.hasOwn(fields, 'lang2') ? fields.lang2 : link.lang2) === null) errors.lang2 = ['Choose a second language.']
+    if (Object.keys(errors).length) return json(res, { errors: Object.values(errors).flat(), errors_by_field: errors }, 422)
+    if (creating) link.config_version = 0
+    updateLink(link, fields); links.set(link.token, link)
+    if (delayMutation) await new Promise(resolve => setTimeout(resolve, delayMutation))
+    return json(res, link, creating ? 201 : 200)
+  }
   if (url.pathname === '/qa/log' && req.method === 'GET') return json(res, { events: requestLog })
   if (url.pathname === '/qa/status' && req.method === 'GET') return json(res, { revision, sessionId, index, status, contentContext, stateMode, commandMode, disconnected, clients: clients.size })
   if (url.pathname === '/qa/config' && req.method === 'POST') {
@@ -132,19 +215,23 @@ const server = http.createServer(async (req, res) => {
     broadcastEnvelope(emitted, request.event || 'part_change')
     return json(res, { scenario, emitted, revision, content_context: contentContext })
   }
-
   if (url.pathname === '/review/state' && req.method === 'POST') {
-    const change = await body(req); applyReviewChange(change); revision++
+    const change = await body(req)
+    applyReviewChange(change)
+    if (typeof change.expired === 'boolean') {
+      for (const link of links.values()) { link.config_version++; publishLink(link, expired ? 'expired' : undefined) }
+    }
+    revision++
     const emitted = broadcastCurrent()
     if (disconnected) for (const socket of clients.keys()) socket.close()
     return json(res, { live, sessionId, index, status, revision, expired, disconnected, emitted })
   }
   if (url.pathname.startsWith('/display_links/')) {
-    const token = url.pathname.split('/').pop()
-    if (expired || token === 'invalid') return json(res, {}, 410)
-    const views = { pages: 'pages_only', posture: 'posture_only', plain: 'none' }
-    return json(res, { token, user_id: 7, mode: token === 'single' ? 'single' : 'parallel', lang1: token === 'missing' ? 'hyw' : 'grabar', lang2: token === 'single' ? null : 'en',
-      show_explanations: true, show_notifications: token !== 'quiet', status_view: views[token] || 'full', church_name: 'Sample parish · review fixture' })
+    if (failConfigReads) return json(res, {}, 503)
+    const link = links.get(decodeURIComponent(url.pathname.split('/').pop()))
+    if (!link) return json(res, {}, 404)
+    if (isExpired(link)) return json(res, {}, 410)
+    return json(res, link)
   }
   if (/^\/s\/\d+\/current.json$/.test(url.pathname)) return json(res, live ? session(sessionId) : { status: 'inactive' })
   if (url.pathname === '/services.json') return json(res, live ? [session(sessionId)] : { message: 'No current services' })
@@ -196,8 +283,21 @@ cable.on('connection', socket => {
   socket.on('message', raw => {
     try {
       const frame = JSON.parse(String(raw))
-      if (frame.command === 'subscribe') { clients.get(socket).add(frame.identifier); log('websocket.subscribe', { identifier: JSON.parse(frame.identifier) }); socket.send(JSON.stringify({ type: 'confirm_subscription', identifier: frame.identifier })) }
-      if (frame.command === 'unsubscribe') { clients.get(socket).delete(frame.identifier); log('websocket.unsubscribe', { identifier: JSON.parse(frame.identifier) }) }
+      if (frame.command === 'subscribe') {
+        const subscription = JSON.parse(frame.identifier)
+        if (subscription.channel === 'DisplayLinkChannel') {
+          const link = links.get(subscription.token)
+          if (rejectConfigChannel || !link || isExpired(link)) { socket.send(JSON.stringify({ type: 'reject_subscription', identifier: frame.identifier })); return }
+        }
+        clients.get(socket).add(frame.identifier)
+        log('websocket.subscribe', { identifier: subscription })
+        socket.send(JSON.stringify({ type: 'confirm_subscription', identifier: frame.identifier }))
+      }
+      if (frame.command === 'unsubscribe') {
+        const subscription = JSON.parse(frame.identifier)
+        clients.get(socket).delete(frame.identifier)
+        log('websocket.unsubscribe', { identifier: subscription })
+      }
     } catch (error) { log('websocket.invalid', { error: String(error) }) }
   })
 })

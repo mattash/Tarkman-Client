@@ -244,6 +244,15 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     void recover('start')
   }
   return {
+    setLoadExplanations(enabled: boolean) {
+      if (enabled === loadExplanations) return
+      loadExplanations = enabled
+      cancelExplanations()
+      dispatch({ type: 'explanations', explanations: [], failed: false })
+      if (enabled && alive && active && online && state.session && !state.stale) {
+        void refreshExplanations(state.session, state.parts, epoch, new AbortController().signal)
+      }
+    },
     getSnapshot: () => state,
     subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } },
     dispatch,

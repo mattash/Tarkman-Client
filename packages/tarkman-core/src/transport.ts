@@ -31,3 +31,7 @@ export interface RawSessionEventData extends Record<string, unknown> {
   status?: string
   status_message?: string | null
 }
+
+export type CableSubscriptionIdentifier =
+  | { channel: 'SessionChannel'; id: number }
+  | { channel: 'DisplayLinkChannel'; token: string }

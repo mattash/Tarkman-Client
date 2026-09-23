@@ -729,7 +729,7 @@ Public routes open without sign-in:
 | `/sessions/:id/status/display` | Named service's hymnal page and posture |
 
 Add `?token=...` to resolve stored display preferences. Stored preferences win over
-all URL preferences, including defaults for malformed stored values. Links are
+all URL preferences, including defaults for malformed stored values. Revisioned updates arrive through token-scoped DisplayLinkChannel subscriptions, with canonical reads on confirmation/recovery. Links are
 revalidated every 10 seconds, so changed preferences and expired/revoked links
 reach a screen left open. Invalid/expired links have a clear replacement-link
 message; temporary failures retry automatically with a bounded 12-second request.
@@ -740,8 +740,7 @@ Without a token, direct preferences are `mode=parallel|single`,
 `status_view=full|pages_only|posture_only|none`. Invalid values use defaults:
 parallel transliteration/English, notifications on, explanations off, full display.
 `none` keeps reading text while hiding operator messages. Service projection
-shows only the reading and speaker role; `show_explanations` remains accepted for
-link compatibility but does not load or display explanations on a projector. `pages_only` and `posture_only` select minimal screens even on a
+shows only the reading and speaker role; `show_explanations` loads the existing current-occurrence explanations only for token projections and shows an availability indicator when content exists. Direct tokenless projections keep their prior behavior. `pages_only` and `posture_only` select minimal screens even on a
 text-display route. `hyw` remains an explicit missing-translation state because
 the shared reading model does not yet include Western Armenian.
 
@@ -808,7 +807,13 @@ VITE_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
 npm run dev --prefix apps/web -- --host 127.0.0.1 --port 3000
 ```
 
-Open `http://127.0.0.1:8101` for links and controls. Exact scenario isolation, browser-control authentication,
-scroll instrumentation, publication overrides, fallback modes, and ordered-log instructions are in
-`qa/display/REVIEW.md` and `../../docs/performance/web-session-state-qa.md`. The two fixture service IDs are
-**9001** (Divine Liturgy) and **9002** (Evening Prayer).
+Open `http://127.0.0.1:8101` for links and controls. Leave a display open in a second tab; try the long reading, every operator message, service end/start, switching services, link expiry/recovery and connection loss. The two named fixture service IDs are **9001** (Divine Liturgy) and **9002** (Evening Prayer). If Expo uses another port, open the fixture with `?app=http://localhost:PORT`.
+
+The active Vite display review adds exact scenario isolation, browser-control authentication, scroll instrumentation, publication overrides, fallback modes, and ordered-log instructions in `qa/display/REVIEW.md` and `../../docs/performance/web-session-state-qa.md`.
+The standalone fixture page's **My display links** link targets the Expo web app on port 8082 (`?expo=http://localhost:PORT` overrides it); the Vite display links target port 3000 (`?app=http://127.0.0.1:PORT` overrides that base).
+
+### My display links (#173)
+
+About → Account → My display links opens the authenticated mine collection, including expired links. List/new/edit routes use the existing signed-in layout. Local drafts have an explicit Create/Save, versioned partial PATCH, inline synthetic preview, conflict review and unsaved-navigation guard. Unknown mutation outcomes require canonical reconciliation; uncertain POSTs are never automatically retried. State is scoped to API environment and signed-in identity and fenced on navigation. Display preferences never enter personal reader preferences or saved-service storage.
+
+Sharing uses only the persisted HTTPS `display_url`. iOS uses anchored RN Share; web invokes Web Share directly from the tap, with Copy/manual-copy fallback. Expo Clipboard is the only added native dependency and requires a rebuilt client. [Fixture, Expo-web scenario and physical share checklist](qa/display/README.md) describe the review matrix. Backend #446 and physical-device behavior still require parent validation; no device recording is claimed by the source implementation.

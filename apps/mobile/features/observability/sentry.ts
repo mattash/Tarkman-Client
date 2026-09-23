@@ -1,3 +1,4 @@
+import { redactDisplayCapabilities } from '../displayLinks/privacy'
 import * as Sentry from '@sentry/react-native'
 import type { Breadcrumb, ErrorEvent } from '@sentry/react-native'
 
@@ -29,9 +30,9 @@ export function scrubBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
   if (breadcrumb.data && 'Authorization' in breadcrumb.data) {
     const data = { ...breadcrumb.data }
     delete data.Authorization
-    return { ...breadcrumb, data }
+    return redactDisplayCapabilities({ ...breadcrumb, data })
   }
-  return breadcrumb
+  return redactDisplayCapabilities(breadcrumb)
 }
 
 /** Never send who the reader is or what their device sent; an error report only needs the failure. */
@@ -39,7 +40,7 @@ export function scrubEvent(event: ErrorEvent): ErrorEvent {
   const scrubbed = { ...event }
   delete scrubbed.user
   delete scrubbed.request
-  return scrubbed
+  return redactDisplayCapabilities(scrubbed)
 }
 
 export function startObservability(config = observabilityConfig()): boolean {
@@ -54,6 +55,7 @@ export function startObservability(config = observabilityConfig()): boolean {
     enableCaptureFailedRequests: false,
     beforeBreadcrumb: scrubBreadcrumb,
     beforeSend: scrubEvent,
+    beforeSendTransaction: event => redactDisplayCapabilities(event),
   })
   return true
 }

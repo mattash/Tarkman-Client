@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { StyleSheet, View, useWindowDimensions } from 'react-native'
+import { StatusPill } from '../../components/StatusPill'
 import { AppText } from '../../components/AppText'
 import { useTheme } from '../../design/ThemeProvider'
 import { spacing } from '../../design/tokens'
@@ -21,7 +22,7 @@ export interface DisplayProjectionProps {
 }
 export function DisplayProjection({ apiBase, cableBase, config, sessionId, statusOnly = false, discoveryError = false }: DisplayProjectionProps) {
   const endpoints = useMemo(() => ({ api: apiBase, cable: cableBase }), [apiBase, cableBase])
-  const { state } = useReader(endpoints, sessionId, false)
+  const { state } = useReader(endpoints, sessionId, !!config.tokenProjection && config.show_explanations)
   return <DisplayPresentation state={state} config={config} sessionId={sessionId} statusOnly={statusOnly} discoveryError={discoveryError} />
 }
 
@@ -90,6 +91,7 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
   const fontSize = Math.max(32, Math.min(width / (languages.length > 1 ? 26 : 20), height / (stacked && languages.length > 1 ? 18 : 10))) * layout.textScale
   const roleSize = Math.max(24, fontSize * 0.6)
   return <View testID="display-projection" style={[styles.screen, screenPadding, { gap: spacing.md }]}>
+    {config.tokenProjection && config.show_explanations && !state.stale && !state.explanationError && state.explanations.length > 0 && <StatusPill label={t('links.explanationAvailable')} tone="info" />}
     {message ? <ProjectionText key={`${message.title}/${message.body}`} text={messageText} fontSize={fontSize * 1.2} centered
       clock={messageClock} durationMs={projectionDuration(null, [messageText])} movement={settings.text_movement} preview={preview} />
       : part ? <>
