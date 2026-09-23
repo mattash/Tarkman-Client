@@ -3,7 +3,7 @@
 Issue: Tarkman-Client #156
 Date: 2026-09-23
 Source branch: `openclaw/16fa4a69-6bd0-4e96-8ffd-9d9729e09b79`
-Source SHA: `0f418a95343adf40152369244e85636bbc1b0e73`
+Application SHA: `43d86f16a306445960f522991839e107a6d9d821`
 
 ## Automated proof
 
@@ -15,7 +15,9 @@ Source SHA: `0f418a95343adf40152369244e85636bbc1b0e73`
 
 ## Reproducible browser fixture
 
-The existing synthetic fixture is loopback-only and performs no production writes.
+The existing synthetic fixture is loopback-only and performs no production writes. It reflects only the
+credentialed loopback origins used below (`127.0.0.1:3000` or `localhost:3000`) instead of using wildcard
+CORS, so the application's credentialed API requests are accepted by browsers.
 
 From the repository root:
 
@@ -53,4 +55,9 @@ Use browser DevTools Network with **Preserve log** enabled and filter successive
 8. **Safety poll:** leave the tab idle for at least 30 seconds. Expect a small `state.json` request, not one full `/s/:id.json` request every second.
 9. **Layouts and boundaries:** repeat normal advance in single and parallel modes and verify first/last controller boundaries remain disabled appropriately.
 
-Rendered QA was not executed in the managed worker because no browser driver/binary was available. The fixture and Vite server were started successfully and their display/state endpoints returned HTTP 200; PM/UI Operator should capture screenshots and Network counts using the procedure above.
+The first authorized rendered-QA pass against head `1a4fe710eb6fbbd558e2e1df69e20f200d0f32d3`
+returned **CHANGES REQUIRED**: a contiguous publication moved the display immediately but was followed by an
+unexpected `state.json` request within about one second. Application commit
+`43d86f16a306445960f522991839e107a6d9d821` removes that routine verification while retaining the 30-second
+safety poll. Fresh independent browser evidence is required against the corrected head; this document does
+not claim that rerun complete.
