@@ -37,7 +37,7 @@ export function configReducer(state: ConfigState, action: ConfigAction): ConfigS
 export function completeConfig(value: unknown): PublicDisplayLink | null {
   const raw = record(value), normalized = normalizeConfig(raw)
   if (!normalized || !Number.isSafeInteger(raw.config_version) || Number(raw.config_version) < 0 ||
-    typeof raw.title !== 'string' || !isDisplayMode(raw.mode) || !isDisplayLanguage(raw.lang1) ||
+    !(raw.title === null || typeof raw.title === 'string') || !isDisplayMode(raw.mode) || !isDisplayLanguage(raw.lang1) ||
     !(raw.lang2 === null || isDisplayLanguage(raw.lang2)) || (raw.mode === 'parallel' && raw.lang2 === null) ||
     typeof raw.show_notifications !== 'boolean' || typeof raw.show_explanations !== 'boolean' ||
     !isDisplayStatusView(raw.status_view) || Object.keys(normalizeCustomization(raw)).length !== 5 ||

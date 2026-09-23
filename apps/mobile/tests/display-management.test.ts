@@ -176,3 +176,14 @@ it('retains expiration input through reconciliation only when explicitly selecte
   await controller.reconcile(); controller.review([])
   expect(controller.getSnapshot()).toMatchObject({ expirationInput: undefined, expirationInvalid: false })
 })
+
+it('lists links the backend left untitled, which production returns as a null title', async () => {
+  // Production returns `"title": null` for links the operator has not named; one such
+  // row previously rejected the whole collection and surfaced "could not load display links".
+  const untitled = { ...link, id: 5, token: 'mp01umqpa4yc', title: null }
+  const request = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValue(response([untitled, link]))
+  const api = createManagementApi(request)
+  const listed = await api.list(new AbortController().signal)
+  expect(listed.map(row => row.token)).toEqual(['mp01umqpa4yc', 'token-A'])
+  expect(listed[0].title).toBeUndefined()
+})
