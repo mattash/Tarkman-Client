@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { ActivityIndicator, Platform, ScrollView, View, useWindowDimensions } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { AccessibilityInfo, ActivityIndicator, Platform, ScrollView, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../../../components/AppButton'
 import { AppText } from '../../../../components/AppText'
@@ -20,6 +20,8 @@ import { useI18n } from '../../../../features/i18n'
 const TWO_PANE_WIDTH = 700
 const RAIL_WIDTH = 296
 const COMING_UP = 6
+/** How long Go here waits under an upcoming part before the row settles back. */
+const ARMED_MS = 8000
 /** Narrowest column, in points at the standard 24pt reading size, before columns give way to a stack. */
 const MIN_COLUMN = 220
 const mono = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })
@@ -37,6 +39,21 @@ export default function ServiceControlScreen() {
   // The operator is the position: a new part replaces the text from its top, however far they had scrolled.
   const partKey = part?.key
   useEffect(() => { reading.current?.scrollTo({ y: 0, animated: false }) }, [partKey])
+
+  // One upcoming part at a time shows Go here. It settles back on its own unless a screen reader is on, whose user needs
+  // time to reach the button, and whenever the service moves, since the list it was chosen from has changed.
+  const [arming, setArming] = useState<{ key: string; at: string | undefined } | null>(null)
+  const armed = arming !== null && arming.at === partKey ? arming.key : null
+  const setArmed = (key: string | null) => setArming(key === null ? null : { key, at: partKey })
+  useEffect(() => {
+    if (armed === null) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let cancelled = false
+    void AccessibilityInfo.isScreenReaderEnabled().catch(() => false).then(reading => {
+      if (!cancelled && !reading) timer = setTimeout(() => setArming(null), ARMED_MS)
+    })
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [armed])
 
   if (invalid) {
     return <View style={{ flex: 1, padding: spacing.lg, gap: spacing.lg }}>
@@ -138,9 +155,11 @@ export default function ServiceControlScreen() {
       <View testID="control-rail" style={{ width: RAIL_WIDTH, borderLeftWidth: 1, borderLeftColor: colors.divider, backgroundColor: colors.surface }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
           <AppText variant="eyebrow" tone="muted">{t('control.comingUp')}</AppText>
-          {part && nextPart && !controls.forbidden && <AppText variant="caption" tone="muted">{t('control.holdToJump')}</AppText>}
+          {part && nextPart && !controls.forbidden && <AppText variant="caption" tone="muted">{t('control.tapToJump')}</AppText>}
           {state.parts.slice(index + 1, index + 1 + COMING_UP).map(item => <ComingUpRow key={item.key} item={item} language={first} selected={languages}
-            {...holds(item.key)} readOnly={controls.forbidden} onJump={() => { void run(item.key, () => commands.goToPart(sessionId, item.id, expected, item.liturgyPartId)) }} />)}
+            armed={armed === item.key} {...holds(item.key)} readOnly={controls.forbidden}
+            onArm={() => setArmed(armed === item.key ? null : item.key)}
+            onJump={async () => { if (await run(item.key, () => commands.goToPart(sessionId, item.id, expected, item.liturgyPartId))) setArmed(null) }} />)}
           {part && !nextPart && <AppText variant="caption" tone="muted">{t('common.lastPart')}</AppText>}
         </ScrollView>
         <View testID="control-deck" style={{ padding: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.divider }}>

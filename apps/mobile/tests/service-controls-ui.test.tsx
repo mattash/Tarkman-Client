@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, jest } from '@jest/globals'
 import { useEffect, useState } from 'react'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { normalizeParts, normalizeSession } from '../features/live/contracts'
 import { initialState, type ReaderState } from '../features/live/state'
@@ -316,38 +316,68 @@ it('lists six parts coming up on a tablet, each with its posture where set', asy
   expect(screen.getByTestId(`coming-up-${many[1].key}`)).toHaveTextContent(/Part 2/)
 })
 
-it('jumps to an upcoming part when it is held on a tablet, never on a tap', async () => {
+it('jumps to an upcoming part on a tablet only once Go here confirms it', async () => {
   mockWindow = { width: 1024, height: 768, scale: 2, fontScale: 1 }
   const many = normalizeParts({ parts: Array.from({ length: 5 }, (_, offset) => ({ part: { id: offset + 1, position: offset + 1,
     role: 'Choir', en: `Part ${offset + 1}` } })) })
   jest.mocked(useReader).mockReturnValue(reader({ parts: many }))
-  await render(<Control />, { wrapper })
-  expect(screen.getByText('Hold a part to go straight to it.')).toBeOnTheScreen()
-  const row = screen.getByRole('button', { name: 'Go to part 4 · Choir' })
-  expect(row.props.accessibilityHint).toBe('Hold to move the service here.')
-  // A tap or a brush against the rail must not move the projector.
+  const view = await render(<Control />, { wrapper })
+  expect(screen.getByText('Tap a part to go straight to it.')).toBeOnTheScreen()
+  const row = screen.getByRole('button', { name: '4 · Choir' })
+  expect(row.props.accessibilityHint).toBe('Shows Go here for this part.')
+  expect(screen.queryByRole('button', { name: /^Go to part/ })).toBeNull()
+  // A tap only shows the confirmation; the projector has not moved.
   await fireEvent.press(row)
   expect(mockAuthorizedFetch).not.toHaveBeenCalled()
-  await fireEvent(row, 'longPress')
+  expect(screen.getByRole('button', { name: '4 · Choir' })).toBeExpanded()
+  // Tapping it again puts it back; tapping another part moves the confirmation there.
+  await fireEvent.press(screen.getByRole('button', { name: '4 · Choir' }))
+  expect(screen.queryByRole('button', { name: 'Go to part 4' })).toBeNull()
+  await fireEvent.press(screen.getByRole('button', { name: '3 · Choir' }))
+  await fireEvent.press(screen.getByRole('button', { name: '4 · Choir' }))
+  expect(screen.queryByRole('button', { name: 'Go to part 3' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Go to part 4' }).props.accessibilityHint).toBe('Moves the service to Choir.')
+  await fireEvent.press(screen.getByRole('button', { name: 'Go to part 4' }))
   await waitFor(() => expect(retry).toHaveBeenCalled())
   expect(sent()).toEqual(['POST /s/9/set_part.json'])
   expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ part_id: 4, expected_part_id: 1 })
-  // Assistive technology activates the row directly rather than asking for a timed hold.
-  await fireEvent(screen.getByRole('button', { name: 'Go to part 3 · Choir' }), 'accessibilityAction', { nativeEvent: { actionName: 'activate' } })
-  await waitFor(() => expect(sent()).toHaveLength(2))
-  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[1][1]?.body))).toMatchObject({ part_id: 3 })
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Go to part 4' })).toBeNull())
+
+  // A confirmation left open is cleared when the service moves, since the list it was chosen from has changed.
+  await fireEvent.press(screen.getByRole('button', { name: '5 · Choir' }))
+  expect(screen.getByRole('button', { name: 'Go to part 5' })).toBeOnTheScreen()
+  const moved = normalizeSession({ session: { id: 9, liturgy: 'Divine Liturgy', church_name: 'St. John', status: 'active', current_part_id: 2 } })
+  jest.mocked(useReader).mockReturnValue(reader({ parts: many, session: moved }))
+  await view.rerender(<Control />)
+  expect(screen.queryByRole('button', { name: 'Go to part 5' })).toBeNull()
 })
 
-it('shows upcoming parts without the jump gesture once control is refused', async () => {
+it('settles an unconfirmed upcoming part back after a few seconds', async () => {
+  jest.useFakeTimers()
+  try {
+    mockWindow = { width: 1024, height: 768, scale: 2, fontScale: 1 }
+    await render(<Control />, { wrapper })
+    await fireEvent.press(screen.getByRole('button', { name: '2 · Deacon' }))
+    expect(screen.getByRole('button', { name: 'Go to part 2' })).toBeOnTheScreen()
+    await act(async () => { await jest.advanceTimersByTimeAsync(8000) })
+    expect(screen.queryByRole('button', { name: 'Go to part 2' })).toBeNull()
+    expect(mockAuthorizedFetch).not.toHaveBeenCalled()
+  } finally {
+    jest.useRealTimers()
+  }
+})
+
+it('shows upcoming parts without Go here once control is refused', async () => {
   mockWindow = { width: 1024, height: 768, scale: 2, fontScale: 1 }
   mockAuthorizedFetch.mockResolvedValue(respond(403, {}))
   await render(<Control />, { wrapper })
   await fireEvent.press(screen.getByRole('button', { name: 'Next part' }))
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Next part' })).toBeNull())
   expect(screen.getByTestId(`coming-up-${parts[1].key}`)).toHaveTextContent(/Deacon/)
-  expect(screen.queryByRole('button', { name: 'Go to part 2 · Deacon' })).toBeNull()
-  expect(screen.queryByText('Hold a part to go straight to it.')).toBeNull()
-  await fireEvent(screen.getByTestId(`coming-up-${parts[1].key}`), 'longPress')
+  expect(screen.queryByRole('button', { name: '2 · Deacon' })).toBeNull()
+  expect(screen.queryByText('Tap a part to go straight to it.')).toBeNull()
+  await fireEvent.press(screen.getByText('Deacon'))
+  expect(screen.queryByRole('button', { name: 'Go to part 2' })).toBeNull()
   expect(mockAuthorizedFetch).toHaveBeenCalledTimes(1)
 })
 
