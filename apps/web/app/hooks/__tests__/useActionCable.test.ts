@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
-import { useActionCable } from '../useActionCable'
+import { useActionCable, useActionCableState } from '../useActionCable'
 import { createConsumer } from '@rails/actioncable'
 import type { MockActionCableEnvelope } from '@/__tests__/utils/actioncable-mock'
 
 interface CapturedSubscription {
   identifier: unknown
   handler: ((e: MockActionCableEnvelope) => void) | null
+  connected: (() => void) | null
+  disconnected: (() => void) | null
   unsubscribe: ReturnType<typeof vi.fn>
 }
 
@@ -17,10 +19,12 @@ const disconnect = vi.fn()
 vi.mock('@rails/actioncable', () => ({
   createConsumer: vi.fn(() => ({
     subscriptions: {
-      create: (identifier: unknown, handlers: { received?: (e: MockActionCableEnvelope) => void }) => {
+      create: (identifier: unknown, handlers: { received?: (e: MockActionCableEnvelope) => void; connected?: () => void; disconnected?: () => void }) => {
         const subscription = {
           identifier,
           handler: handlers.received ?? null,
+          connected: handlers.connected ?? null,
+          disconnected: handlers.disconnected ?? null,
           unsubscribe: vi.fn(),
         }
         capturedSubscriptions.push(subscription)
@@ -47,6 +51,16 @@ describe('useActionCable', () => {
       useActionCable('channel_123', 'part_change')
     )
     expect(result.current).toBeNull()
+  })
+
+  it('exposes connected and disconnected callbacks', async () => {
+    const { result } = renderHook(() => useActionCableState('channel_connection', 'part_change'))
+    await waitFor(() => expect(capturedSubscriptions).toHaveLength(1))
+    expect(result.current.connected).toBe(false)
+    act(() => capturedSubscriptions[0].connected?.())
+    expect(result.current.connected).toBe(true)
+    act(() => capturedSubscriptions[0].disconnected?.())
+    expect(result.current.connected).toBe(false)
   })
 
   it('should subscribe to SessionChannel on mount', async () => {

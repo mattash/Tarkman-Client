@@ -41,7 +41,7 @@ export function useUserSessionPolling(userId: string | null) {
       if (!query.state.data) {
         return 10000
       }
-      return 1000
+      return 30000
     },
     refetchOnWindowFocus: true,
     refetchIntervalInBackground: false,

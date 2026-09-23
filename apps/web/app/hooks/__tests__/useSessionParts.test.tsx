@@ -21,7 +21,7 @@ vi.mock('../../queries/sessions', () => ({
     all: ['sessions'] as const,
     list: () => ['sessions', 'list'] as const,
     session: (id: string) => ['sessions', 'session', id] as const,
-    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'] as const,
+    sessionParts: (id: string) => ['sessions', 'sessionParts', id] as const,
   },
 }))
 
@@ -308,7 +308,7 @@ describe('useSessionParts hook (integration)', () => {
     rerender()
     vi.mocked(useActionCable).mockReturnValue({ ...event, revision: 0, cursor: { ...event.cursor, liturgy_part_id: 11, position: 1 } })
     rerender()
-    await qc.invalidateQueries({ queryKey: ['sessions', 'session', 'test', 'parts'], exact: true })
+    await qc.invalidateQueries({ queryKey: ['sessions', 'sessionParts', 'test'], exact: true })
     expect(result.current.currentPartKey).toBe('lp:12')
     expect(smoothScrollToPart).not.toHaveBeenCalled()
   })

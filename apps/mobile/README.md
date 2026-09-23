@@ -795,20 +795,20 @@ fullscreen is not forced because browsers require a user gesture. No new package
 authentication, EAS configuration or Vercel routing changes are required. These
 routes ship with the Expo web build; the existing Vercel app remains the Vite app.
 
-#### Local display review
+#### Local apps/web display review
 
-The fixture is synthetic and binds only to loopback. From the repository root:
+The shared fixture is synthetic and binds only to loopback. The active PR #171 runbook targets the Vite client
+in `apps/web`, not Expo web. From the repository root:
 
 ```sh
-node apps/mobile/qa/display/server.cjs
-EXPO_PUBLIC_API_URL=http://127.0.0.1:8101 \
-EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
-EXPO_PUBLIC_DEFAULT_CHURCH_ID=7 \
-npm run web --prefix apps/mobile -- --port 8082
+npm ci --prefix apps/web
+NODE_PATH="$PWD/apps/web/node_modules" node apps/mobile/qa/display/server.cjs
+VITE_API_URL=http://127.0.0.1:8101 \
+VITE_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
+npm run dev --prefix apps/web -- --host 127.0.0.1 --port 3000
 ```
 
-Open `http://127.0.0.1:8101` for links and controls. Leave a display open in a second
-tab; try the long reading, every operator message, service end/start, switching
-services, link expiry/recovery and connection loss. The two named fixture service
-IDs are **9001** (Divine Liturgy) and **9002** (Evening Prayer). If Expo uses another
-port, open the fixture with `?app=http://localhost:PORT`.
+Open `http://127.0.0.1:8101` for links and controls. Exact scenario isolation, browser-control authentication,
+scroll instrumentation, publication overrides, fallback modes, and ordered-log instructions are in
+`qa/display/REVIEW.md` and `../../docs/performance/web-session-state-qa.md`. The two fixture service IDs are
+**9001** (Divine Liturgy) and **9002** (Evening Prayer).

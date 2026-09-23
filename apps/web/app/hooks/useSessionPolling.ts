@@ -46,8 +46,8 @@ export function useSessionPolling(options?: { enabled?: boolean }) {
         // When no active session, poll every 10 seconds
         return 10000
       }
-      // When there is an active session, poll every 1 second
-      return 1000
+      // Revisioned state and ActionCable handle live movement; discovery remains a safety net.
+      return 30000
     },
     refetchOnWindowFocus: true,
     // Add some jitter to prevent thundering herd

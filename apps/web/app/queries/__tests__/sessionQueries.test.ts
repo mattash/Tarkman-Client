@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchSessions, fetchSession, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus, classifyControlFailure, controlFailureMessage } from '../sessions'
+import { fetchSessions, fetchSession, fetchSessionParts, setPart, prevPart, nextPart, updateSessionStatus, classifyControlFailure, controlFailureMessage, sessionsKeys } from '../sessions'
 import { api } from '@/api'
 
 // Mock api
@@ -58,6 +58,12 @@ const mockPartsResponse = {
 }
 
 describe('sessionQueries', () => {
+  it('keeps live state, metadata and manifests on sibling cache keys', () => {
+    expect(sessionsKeys.session('7')).toEqual(['sessions', 'session', '7'])
+    expect(sessionsKeys.sessionParts('7')).toEqual(['sessions', 'sessionParts', '7'])
+    expect(sessionsKeys.state('7')).toEqual(['sessions', 'sessionState', '7'])
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
   })

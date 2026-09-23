@@ -9,12 +9,19 @@ export type SessionStatus =
 export interface StatusUpdateRequest {
   status: SessionStatus
   status_message?: string
+  expected_revision?: number
 }
 
 export interface StatusUpdateResponse {
   status: string
   current_status: SessionStatus
   status_message?: string | null
+  revision?: number
+  cursor?: { part_id: number; liturgy_part_id: number; liturgy_id: number; position: number } | null
+  content_context?: string
+  session_status?: SessionStatus
+  posture?: string | null
+  date?: string | null
 }
 
 export interface StatusChangeEvent {

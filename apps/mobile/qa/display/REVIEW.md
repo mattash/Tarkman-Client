@@ -1,96 +1,73 @@
-# Issue 158 review — Expo web service displays
+# apps/web session-display review fixture
 
-## Review of the starting branch
+This directory contains a synthetic, loopback-only backend/control page used to review the Vite client in
+`apps/web`. It does not connect to a real account or church service. Do not use the Expo web application for
+Tarkman-Client issue #156 or PR #171 verification.
 
-The named-service slice in PR #163 was retained for its canonical routes and use
-of the established live reader. Its presentation needed replacement: it rendered
-only one language at ordinary reader size, required tokens on public named-service
-links, and left current-service discovery as a placeholder. The token shell and
-normalizer were extended rather than discarded. The live model also needed page,
-posture and display-message fields that it previously omitted.
+## Start the target application
 
-The completed implementation covers named/current service projection, status
-projection, all five operator interrupt states, welcome/farewell boundaries,
-direct/token preferences and automatic recovery. Service projection reserves the
-canvas for the reading and one speaker label. Status projection uses the original
-web posture pictograms and a viewport-sized page number, without small labels. It uses
-current one-based occurrence identity confirmed against the adjacent Rails source,
-not the legacy display's outdated zero-based farewell calculation.
+From the repository root:
 
-## Validation on September 19, 2026
+```sh
+npm ci --prefix apps/web
+NODE_PATH="$PWD/apps/web/node_modules" node apps/mobile/qa/display/server.cjs
+```
 
-- `npm run typecheck --prefix apps/mobile` — passed.
-- `npm run lint --prefix apps/mobile` — passed.
-- `npm run check:i18n --prefix apps/mobile` — passed.
-- `npm run check:ui --prefix apps/mobile` — passed.
-- `npm test --prefix apps/mobile -- --coverage` — **545 tests, 46 suites passed**;
-  98.37% line coverage for `features/displayLinks`. The existing full-suite Jest
-  open-handle advisory remains; the focused display suites exit normally.
-- `npm run export:web --prefix apps/mobile` — passed (compile check with secure
-  API/cable configuration; the exported build was not deployed).
-- `npm test -- --run` — **359 web tests, 40 suites passed**.
-- `npm run build` — existing Vite production build passed.
-- `git diff --check` — passed.
+In a second terminal:
 
-Browser verification used Expo web at port **8082** and the synthetic loopback
-fixture at **8101**, with no signed-in account or live church service. Checked
-1920×1080, 1024×768, 768×1024 and 390×844. The distance-viewing revision was
-rechecked at these sizes, including all three posture pictograms and minimal modes. No browser errors were reported.
-Verified public tokenless single-language links, token precedence, parallel
-Armenian/English, page-only, posture-only, combined status, unavailable translation,
-invalid links, live announcement replacement, service end/wait/start/switch and
-duration-based overflow scrolling (both translations reached the same normalized
-reading progress despite different text heights). Pause/resume retained progress,
-resizing retained progress, and completed text stayed at the bottom.
+```sh
+VITE_API_URL=http://127.0.0.1:8101 \
+VITE_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
+npm run dev --prefix apps/web -- --host 127.0.0.1 --port 3000
+```
 
-The fixture deliberately repeats a reusable part at a different occurrence and
-includes a long reading. Its controls allow every operator status and connection
-loss to be reviewed. Regression tests cover all interrupts, notification suppression,
-occurrence boundary messages, page/posture publications, projection recovery
-notices, expiry, late responses, configuration timeouts and automatic retries.
+Open the fixture controls at `http://127.0.0.1:8101`. Its links target
+`http://127.0.0.1:3000` by default. The primary routes are:
 
-## Duration-based scrolling review
+- `http://127.0.0.1:3000/sessions/9001/display?mode=parallel&lang1=grabar&lang2=en`
+- `http://127.0.0.1:3000/sessions/9001/display?mode=single&lang1=en`
+- `http://127.0.0.1:3000/sessions/9001/parts`
 
-The legacy algorithm held the initial visible fraction, then reached the bottom
-only as the estimated duration ended. The new calculation follows the estimated
-spoken line near the center of each viewport. It preserves a dwell at the start,
-reveals the last lines before the expected finish, and holds the final screen.
-Both translations share an occurrence clock and duration, while their scroll
-distances follow their individual measured text heights. It never advances the
-service itself or loops back to the start.
+## Scenario discipline
 
-`effective_duration_ms` now survives live part normalization and saved snapshots.
-Missing/invalid values use a 160-word/minute estimate of the longest selected
-translation (3-second minimum). Operator messages get a separate estimate.
-Reduced-motion mode uses timed overlapping pages. Timers and animation frames
-cancel when paused, hidden, finished, or unmounted. Occurrence identity resets
-timing; poll revisions, font/layout changes and viewport resizing do not.
+Reset and run **one recovery scenario at a time**. Wait for initial metadata, manifest, state recovery, scrolling,
+and explanation requests to settle before clearing the network log and starting the next scenario. Do not batch
+`gap`, `malformed`, `context_mismatch`, and `unknown_occurrence` publications within a few seconds; doing so
+only tests recovery coalescing and makes per-scenario request evidence invalid.
 
-Tests cover timing endpoints, differing translation heights, resize remapping,
-fallbacks and old saved records, delayed frames, cleanup, reduced-motion pages,
-shared language clocks, repeated-part identity, pauses, recovery and backgrounding.
-The synthetic long-reading fixture uses an accelerated 30-second duration.
+Use `POST /qa/reset` before each scenario and `GET /qa/log` afterward. The complete publication, fallback,
+command, and ordered-log contract is documented in `docs/performance/web-session-state-qa.md`.
 
-The API exposes no occurrence-start timestamp. New displays start timing when
-they receive a part; this is estimated pacing, not synchronization to a speaker.
-A backend timestamp would be needed for reliable joining mid-part across devices.
+## Browser control UI
 
-## Captured screens
+The fixture ignores Authorization values, but the apps/web `AuthProvider` requires local state before it renders
+operator controls. On the **loopback apps/web origin** (`http://127.0.0.1:3000`), run this in DevTools and reload:
 
-These captures contain **synthetic review content**, not live church content.
+```js
+localStorage.setItem('token', 'local-fixture-only')
+localStorage.setItem('user', JSON.stringify({
+  id: 7,
+  email: 'fixture@example.test',
+  name: 'Fixture Operator',
+  roles: ['admin']
+}))
+location.assign('/sessions/9001/parts')
+```
 
-[Projector reading](evidence/projector.png) ·
-[Portrait tablet reading](evidence/tablet-portrait.png) ·
-[Projector status](evidence/status-projector.png) ·
-[Announcement](evidence/announcement.png) ·
-[Final screen of a long reading](evidence/duration-scroll.png) ·
-[Measured scroll positions](evidence/scroll-timing.json)
+These values are synthetic and accepted only because the local fixture does not authenticate requests. Never
+use or request production credentials. Use the real status and navigation controls on `/sessions/9001/parts`
+to verify accepted acknowledgments and refused/409 behavior, then inspect `/qa/log` for one command attempt and
+ordered metadata-before-parts reconciliation.
 
-## Review boundaries
+## Scroll evidence
 
-This is Expo web implementation and browser evidence. Physical projector viewing
-distance, native iOS/Android rendering, device wake-lock behavior and fluent-reader
-review of the draft Russian interface copy were not verified. Western Armenian
-text remains the explicitly agreed unavailable state (`hyw`), not another language
-silently substituted. The standard Vercel preview still serves `apps/web`; use the
-local fixture instructions in the mobile README to review these Expo screens.
+The apps/web live display uses `smoothScrollToPart`, which calls `window.scrollTo` and schedules long-reading
+movement through `requestAnimationFrame`; it does **not** call `scrollIntoView`. Instrument `window.scrollTo`
+and RAF before publishing a duplicate or long reading. Duplicate publications must not restart the RAF chain or
+add another snap-scroll call.
+
+## Boundaries
+
+The fixture server is hard-bound to `127.0.0.1`; credentialed CORS is limited to the documented loopback Vite
+origins. It contains only synthetic liturgy text and IDs. No production write, deployment, backend setting,
+mobile runtime, Expo configuration, or authentication bypass is part of this review flow.
