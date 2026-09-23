@@ -1,9 +1,12 @@
 import { t } from '../i18n'
 import { normalizeSession, record, type LiveSession } from '../live/contracts'
 import type { DisplayLinkConfig } from './config'
+import { completeConfig } from './configState'
 import { normalizeConfig } from './normalize'
 
-export class InvalidDisplayLinkError extends Error {}
+export class InvalidDisplayLinkError extends Error {
+  constructor(message: string, readonly expired = false) { super(message) }
+}
 
 /** Fetches a display-link configuration. The endpoint is unauthenticated; the token is its own capability. */
 export async function fetchDisplayLink(
@@ -19,11 +22,11 @@ export async function fetchDisplayLink(
     redirect: 'error',
     headers: { Accept: 'application/json' },
   })
-  if ([404, 410, 403].includes(response.status)) throw new InvalidDisplayLinkError(t('display.invalidLink'))
+  if ([404, 410, 403].includes(response.status)) throw new InvalidDisplayLinkError(t('display.invalidLink'), response.status === 410)
   if (!response.ok) throw new Error(t('display.couldNotLoad'))
   const data = (await response.json()) as unknown
-  const config = normalizeConfig(data)
-  if (!config) throw new InvalidDisplayLinkError(t('display.couldNotLoad'))
+  const config = record(data).config_version !== undefined ? completeConfig(data) : normalizeConfig(data)
+  if (!config || config.token !== token) throw new Error(t('display.couldNotLoad'))
   return config
 }
 

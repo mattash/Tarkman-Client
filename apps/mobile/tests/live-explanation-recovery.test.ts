@@ -112,3 +112,14 @@ it('discards untagged explanations if the current occurrence changed without a c
   expect(controller.getSnapshot()).toMatchObject({ session: next, explanations: [], stale: false })
   expect(save.mock.calls.some(([input]) => input.explanations?.items.some(item => item.id === explanation.id))).toBe(false)
 })
+it('changes explanation loading without resetting manual mode, occurrence or the manifest', async () => {
+  const controller = setup(false); await flush()
+  controller.dispatch({ type: 'manual' })
+  const before = controller.getSnapshot(), partsReads = api.parts.mock.calls.length, sessionReads = api.session.mock.calls.length
+  controller.setLoadExplanations(true); await flush()
+  expect(api.explanations).toHaveBeenCalledTimes(1)
+  expect(controller.getSnapshot()).toMatchObject({ following: false, session: before.session, parts: before.parts, explanations: [explanation] })
+  controller.setLoadExplanations(false); await flush()
+  expect(controller.getSnapshot().explanations).toEqual([])
+  expect(api.parts).toHaveBeenCalledTimes(partsReads); expect(api.session).toHaveBeenCalledTimes(sessionReads)
+})

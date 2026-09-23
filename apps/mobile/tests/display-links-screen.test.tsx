@@ -4,6 +4,7 @@ import { DisplayLinkScreen } from '../features/displayLinks/DisplayLinkScreen'
 import type { DisplayLinkConfig } from '../features/displayLinks/config'
 
 jest.mock('../features/keepAwake/useScreenKeepAwake', () => ({ useScreenKeepAwake: jest.fn() }))
+jest.mock('../features/live/cable', () => ({ createCable: () => ({ subscribe: () => () => {} }) }))
 jest.mock('../features/live/lifecycle', () => ({ lifecycle: { listen: (callback: (active: boolean, online: boolean) => void) => { callback(true, true); return () => {} } } }))
 jest.mock('../features/displayLinks/DisplayProjection', () => ({ DisplayProjection: (props: unknown) => {
   const { Text } = jest.requireActual<typeof import('react-native')>('react-native')

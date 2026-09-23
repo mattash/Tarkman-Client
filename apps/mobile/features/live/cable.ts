@@ -1,6 +1,7 @@
+import type { CableSubscriptionIdentifier } from '@tarkman/core'
 import { record } from './contracts'
 export interface CableCallbacks { connected(): void; disconnected(): void; received(value: unknown): void }
-export interface CableClient { subscribe(url: string, sessionId: number, callbacks: CableCallbacks): () => void }
+export interface CableClient { subscribe(url: string, sessionId: number | CableSubscriptionIdentifier, callbacks: CableCallbacks): () => void }
 export interface Socket {
   readyState: number; protocol: string; send(data: string): void; close(): void
   onopen: WebSocket['onopen']; onclose: WebSocket['onclose']; onerror: WebSocket['onerror']
@@ -8,11 +9,11 @@ export interface Socket {
 }
 export type SocketFactory = (url: string, protocols: string[]) => Socket
 // Rails' public actioncable-v1-json protocol, using RN's supported WebSocket.
-// No DOM globals, auth headers, tokens, or global monkey patches. The adapter
+// No DOM globals, bearer auth headers, or global monkey patches. The adapter
 // owns one watchdog/retry timer; its disposer closes every owned resource.
 export function createCable(factory: SocketFactory = (url, protocols) => new WebSocket(url, protocols)): CableClient {
   return { subscribe(url, sessionId, callbacks) {
-    const identifier = JSON.stringify({ channel: 'SessionChannel', id: sessionId })
+    const identifier = JSON.stringify(typeof sessionId === 'number' ? { channel: 'SessionChannel', id: sessionId } : sessionId)
     let socket: Socket | null = null, disposed = false, blocked = false, confirmed = false
     let lastMessage = 0, openedAt = 0, retryAt = 0, attempts = 0
     function close() {
