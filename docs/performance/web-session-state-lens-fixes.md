@@ -109,3 +109,27 @@ Latest validation:
 - Full web suite: **44 files, 397 tests passed**.
 - Typecheck and production build passed; build transformed 2,353 modules.
 - Fresh independent Lens and rendered QA remain required against the final pushed head.
+
+## Final rendered-QA fixture capability
+
+Rendered QA at application head `c509dfcee9dcd635245cc2dee5f6be19304dbf6c` passed the publication parser fix but
+could not complete the remaining recovery/fallback matrix because the original synthetic fixture exposed only
+normal contiguous state changes. The fixture was extended without changing web or mobile runtime code:
+
+- `/qa/publications` emits deterministic contiguous, duplicate, gap, malformed, content-context mismatch,
+  unknown-occurrence, or exact raw envelopes and returns the emitted payload/revision;
+- `/qa/config` selects normal, reconciliation, legacy 404, or legacy 405 state responses and accepted or refused
+  (409) command behavior;
+- the exact application command routes record attempts and accepted publications while refused commands never
+  publish;
+- `/qa/log` exposes ordered state, session, parts, command, publication, and WebSocket lifecycle events with
+  monotonic sequence numbers and ISO timestamps;
+- `/qa/reset` restores deterministic defaults and clears the log;
+- unknown occurrence recovery includes `liturgy_part_id: 9999` in the subsequently fetched manifest;
+- the server remains hard-bound to `127.0.0.1`, with credentialed CORS limited to the documented loopback Vite
+  origins.
+
+`apps/mobile/qa/display/server.test.cjs` exercises the control contract, exact emitted envelopes, modern and
+legacy state modes, refused-command no-publication behavior, metadata-before-parts ordering, accepted command
+publication, WebSocket logging, deterministic reset, and loopback startup. This is QA fixture capability only;
+no application runtime behavior, backend, auth policy, production configuration, or content changed.

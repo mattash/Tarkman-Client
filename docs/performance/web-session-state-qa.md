@@ -4,6 +4,7 @@ Issue: Tarkman-Client #156
 Date: 2026-09-23
 Source branch: `openclaw/16fa4a69-6bd0-4e96-8ffd-9d9729e09b79`
 Application SHA: `847e9b74b9cbfd4de3a182673a7cd1146c2108c3`
+Fixture capability SHA: `d6f9e2a0742d640394a101a7cf874343d7ce92b2`
 
 ## Automated proof
 
@@ -12,6 +13,7 @@ Application SHA: `847e9b74b9cbfd4de3a182673a7cd1146c2108c3`
 - `docs/validation-web-session-state-typecheck.log` — standalone TypeScript check.
 - `docs/validation-web-session-state-integration.log` — integration attempt; live explanation requests fail because test credentials/API configuration are absent and `VITE_API_URL` is stubbed to `example.test`. Session/part integration cases are skipped by their existing credential guards.
 - `docs/validation-web-session-state-audit.json` — production-dependency audit baseline; no dependency changes are included in this issue.
+- `docs/validation-display-fixture.log` — Node contract tests for the loopback-only QA controls and ordered log.
 
 ## Reproducible browser fixture
 
@@ -43,6 +45,82 @@ Open the fixture controls at `http://127.0.0.1:8101` and these display routes in
 
 Use browser DevTools Network with **Preserve log** enabled and filter successively by `state.json`, `parts.json`, and `/s/9001.json`.
 
+## Namespaced QA control contract
+
+All advanced controls are synthetic, bind only through the loopback fixture, and live under `/qa/*`.
+Reset before each scenario and inspect the monotonic event log afterward:
+
+```sh
+curl -sS -X POST http://127.0.0.1:8101/qa/reset -H 'Content-Type: application/json' -d '{}'
+curl -sS http://127.0.0.1:8101/qa/log
+```
+
+The fixture control page exposes buttons for the standard scenarios. For an exact raw envelope, run from a
+terminal or the already-open display tab's DevTools console:
+
+```js
+await fetch('http://127.0.0.1:8101/qa/publications', {
+  method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ scenario: 'raw', envelope: {
+    id: '9001', session: '9001', revision: 42,
+    content_context: 'display-review-v1', cursor: null,
+    session_status: 'active', status_message: null, posture: null, date: '2026-09-19'
+  } })
+}).then(response => response.json())
+```
+
+Publication scenarios return the exact `emitted` envelope and resulting revision:
+
+```sh
+for scenario in contiguous duplicate gap malformed context_mismatch unknown_occurrence; do
+  curl -sS -X POST http://127.0.0.1:8101/qa/publications \
+    -H 'Content-Type: application/json' -d "{\"scenario\":\"$scenario\"}"
+done
+```
+
+- `contiguous` — revision +1, current context/cursor, string ActionCable session ID.
+- `duplicate` — repeats the canonical revision exactly.
+- `gap` — advances canonical state by two revisions before broadcasting.
+- `malformed` — omits context/status fields so malformed-publication recovery can be observed.
+- `context_mismatch` — advances revision and changes the canonical content context.
+- `unknown_occurrence` — broadcasts `liturgy_part_id: 9999`; the subsequently fetched manifest contains that
+  exact occurrence, allowing deterministic recovery.
+- `raw` — broadcasts the provided envelope without alteration.
+
+Configure modern/reconciliation/legacy state behavior and command acceptance independently:
+
+```sh
+# Reconciliation state payload (overrides are merged into the canonical state response)
+curl -sS -X POST http://127.0.0.1:8101/qa/config -H 'Content-Type: application/json' \
+  -d '{"stateMode":"reconciliation","reconciliation":{"revision":77,"content_context":"qa-reconcile","cursor":null}}'
+
+# Legacy endpoint fallback; use legacy405 instead to test 405
+curl -sS -X POST http://127.0.0.1:8101/qa/config -H 'Content-Type: application/json' \
+  -d '{"stateMode":"legacy404"}'
+
+# Refuse the next control command with 409; switch back with commandMode=accept
+curl -sS -X POST http://127.0.0.1:8101/qa/config -H 'Content-Type: application/json' \
+  -d '{"commandMode":"refuse409"}'
+```
+
+The fixture implements the application's exact command routes:
+
+- `POST /s/9001/next.json`
+- `POST /s/9001/prev.json`
+- `POST /s/9001/set_part.json`
+- `PATCH /s/9001/update_status.json`
+
+Each attempt is logged once. Refused commands emit no publication. After a 409, `/qa/log` must show `command`,
+then `session`, then `parts` when the control UI performs canonical recovery; no second `command` may appear.
+Accepted commands log `command` then one `publication`. State, parts, full-session, publication, command, and
+WebSocket connect/disconnect/subscribe events all carry monotonic `sequence` values and ISO timestamps.
+
+Run the fixture contract tests directly:
+
+```sh
+NODE_PATH="$PWD/apps/web/node_modules" node --test apps/mobile/qa/display/server.test.cjs
+```
+
 ## Scenarios and expected evidence
 
 1. **Initial load:** one deliberate manifest load is expected. The highlighted row and scroll target use `data-reading-key="lp:9902"`.
@@ -54,6 +132,12 @@ Use browser DevTools Network with **Preserve log** enabled and filter successive
 7. **Repeated identity:** readings with repeated reusable `part_id` values must still highlight and scroll to the exact `liturgy_part_id` occurrence.
 8. **Safety poll:** leave the tab idle for at least 30 seconds. Expect a small `state.json` request, not one full `/s/:id.json` request every second.
 9. **Layouts and boundaries:** repeat normal advance in single and parallel modes and verify first/last controller boundaries remain disabled appropriately.
+10. **Recovery matrix:** reset between scenarios, issue each `/qa/publications` scenario, and compare display state,
+    request counts, and `/qa/log` ordering with the contracts above.
+11. **Accepted/refused controls:** drive the browser control UI once in each command mode. Confirm accepted acks
+    avoid canonical/manifest refetch and refused 409 commands are not replayed while metadata precedes parts.
+12. **Legacy fallback:** set `legacy404`, then `legacy405`; each must fall back to full session/parts without
+    breaking the display. Restore `stateMode: normal` afterward.
 
 Instrumentation of the exact one-tab loopback route proved the immediate state request was the documented
 malformed-publication fallback: the fixture publishes string-valued ActionCable `id`/`session` fields (for
