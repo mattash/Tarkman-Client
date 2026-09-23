@@ -10,7 +10,7 @@ vi.mock('@/queries/sessions', async () => ({
   ...(await vi.importActual<typeof import('@/queries/sessions')>('@/queries/sessions')),
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
-    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+    sessionParts: (id: string) => ['sessions', 'sessionParts', id],
   },
   sessionMutationKeys: {
     controls: (id: string) => ['sessionControls', id],

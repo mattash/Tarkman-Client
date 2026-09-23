@@ -8,7 +8,8 @@ vi.mock('@/queries/sessions', async () => ({
   ...(await vi.importActual<typeof import('@/queries/sessions')>('@/queries/sessions')),
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
-    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+    sessionParts: (id: string) => ['sessions', 'sessionParts', id],
+    state: (id: string) => ['sessions', 'sessionState', id],
   },
   sessionMutationKeys: {
     controls: (id: string) => ['sessionControls', id],
@@ -63,6 +64,14 @@ describe('SessionStatusControl', () => {
     expect(screen.getByText('Epistle Reading')).toBeInTheDocument()
     expect(screen.getByText('Welcome Message')).toBeInTheDocument()
     expect(screen.getByText('Custom Announcement')).toBeInTheDocument()
+  })
+
+  it('sends the current revision precondition with a status command', async () => {
+    vi.mocked(updateSessionStatus).mockResolvedValueOnce({ status: 'Session status updated', current_status: 'paused', status_message: null })
+    render(<SessionStatusControl sessionId={123} currentStatus="active" currentRevision={8} />, { wrapper: createWrapper() })
+    await userEvent.click(screen.getByLabelText('Change session status'))
+    await userEvent.click(screen.getByText('Paused'))
+    await waitFor(() => expect(updateSessionStatus).toHaveBeenCalledWith('123', { status: 'paused', expected_revision: 8 }))
   })
 
   it('should update status when option selected', async () => {

@@ -3,13 +3,15 @@ import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-quer
 import { updateSessionStatus, sessionsKeys, sessionMutationKeys, classifyControlFailure, controlFailureMessage } from '@/queries/sessions'
 import { SessionStatus, STATUS_LABELS } from '@/types/status'
 import { CustomMessageModal } from './CustomMessageModal'
+import { acceptCommandPublication } from '@/queries/sessionState'
 
 interface SessionStatusControlProps {
   sessionId: number
   currentStatus?: SessionStatus
+  currentRevision?: number
 }
 
-export function SessionStatusControl({ sessionId, currentStatus = 'active' }: SessionStatusControlProps) {
+export function SessionStatusControl({ sessionId, currentStatus = 'active', currentRevision }: SessionStatusControlProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [customMessageModalOpen, setCustomMessageModalOpen] = React.useState(false)
   const [commandError, setCommandError] = React.useState<string | null>(null)
@@ -23,13 +25,12 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active' }: Se
   const statusMutation = useMutation({
     mutationKey,
     mutationFn: (request: { status: SessionStatus; status_message?: string }) =>
-      updateSessionStatus(sessionIdString, request),
+      updateSessionStatus(sessionIdString, { ...request, ...(currentRevision == null ? {} : { expected_revision: currentRevision }) }),
     onMutate: () => setCommandError(null),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
-        queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionIdString) }),
-      ])
+    onSuccess: async (response) => {
+      if (!acceptCommandPublication(queryClient, sessionIdString, response)) {
+        await queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString), exact: true })
+      }
       setIsOpen(false)
       setCustomMessageModalOpen(false)
     },

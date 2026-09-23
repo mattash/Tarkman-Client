@@ -43,6 +43,13 @@ vi.mock('@/components/StatusOverlay', () => ({
   StatusOverlay: () => null,
 }))
 
+vi.mock('@/hooks/useLiveSession', () => ({
+  useLiveSession: (_id: string, initialSession: ReturnType<typeof createMockSession>) => ({
+    sessionData: initialSession, parts: [], partsRef: { current: {} }, currentPartId: null, currentPartKey: null,
+    isLoading: false, error: null, connectionState: 'connected',
+  }),
+}))
+
 // Mock the MinimalStatusView component
 vi.mock('@/components/MinimalStatusView', () => ({
   MinimalStatusView: ({ statusView, page, posture }: { statusView: string; page?: number; posture?: string }) => (

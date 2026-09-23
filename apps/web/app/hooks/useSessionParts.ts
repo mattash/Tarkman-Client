@@ -15,7 +15,7 @@ interface UseSessionPartsOptions {
 function sessionCursor(session: SessionData): ReadingCursor | null {
   if (session.current_part_id == null) return null
   return { partId: String(session.current_part_id), occurrenceId: session.current_liturgy_part_id ?? session.cursor?.liturgy_part_id,
-    position: session.current_part_position, liturgyId: session.current_liturgy_id, revision: session.revision }
+    position: session.current_part_position ?? undefined, liturgyId: session.current_liturgy_id, revision: session.revision }
 }
 
 export function useSessionParts(sessionId: string, options?: UseSessionPartsOptions) {
@@ -68,7 +68,7 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
         position: cursor?.position, liturgyId: cursor?.liturgy_id, revision: subscriptionData.revision }, true)
     }
     if (subscriptionData?.status) {
-      void queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) })
+      void queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId), exact: true })
       void queryClient.invalidateQueries({ queryKey: ['currentSession'] })
       void queryClient.invalidateQueries({ queryKey: ['userCurrentSession'] })
     }

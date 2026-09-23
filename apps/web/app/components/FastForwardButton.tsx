@@ -10,6 +10,7 @@ import {
   controlFailureMessage,
 } from '@/queries/sessions'
 import { SessionWrapper } from '@/types/session'
+import { acceptCommandPublication } from '@/queries/sessionState'
 
 interface FastForwardButtonProps {
   sessionId: string
@@ -32,15 +33,14 @@ export function FastForwardButton({ sessionId, partId }: FastForwardButtonProps)
 
   const refreshFromServer = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) }),
-    queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionId) }),
   ])
 
   const setPartMutation = useMutation({
     mutationKey,
-    mutationFn: () => setPart(sessionId, partId, new Date().toISOString(), sessionData?.session?.current_part_id ?? null),
+    mutationFn: () => setPart(sessionId, partId, new Date().toISOString(), sessionData?.session?.current_part_id ?? null, sessionData?.session?.revision),
     onMutate: () => setCommandError(null),
-    onSuccess: async () => {
-      await refreshFromServer()
+    onSuccess: async (response) => {
+      if (!acceptCommandPublication(queryClient, sessionId, response)) await refreshFromServer()
     },
     onError: async (error) => {
       const failure = classifyControlFailure(error)

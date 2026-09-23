@@ -37,6 +37,13 @@ vi.mock('@/components/StatusOverlay', () => ({
   StatusOverlay: () => null,
 }))
 
+vi.mock('@/hooks/useLiveSession', () => ({
+  useLiveSession: (_id: string, initialSession: ReturnType<typeof createMockSession>) => ({
+    sessionData: initialSession, parts: [], partsRef: { current: {} }, currentPartId: null, currentPartKey: null,
+    isLoading: false, error: null, connectionState: 'connected',
+  }),
+}))
+
 vi.mock('@/queries/sessions', () => ({
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],

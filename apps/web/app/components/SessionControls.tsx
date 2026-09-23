@@ -14,6 +14,7 @@ import {
 import { SessionWrapper } from '@/types/session'
 import { PartsResponse } from '@/types/part'
 import { SessionStatusControl } from './SessionStatusControl'
+import { acceptCommandPublication } from '@/queries/sessionState'
 
 interface SessionControlsProps {
   sessionId: number
@@ -51,14 +52,13 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
   const parts = partsData?.parts ?? []
   const currentKey = currentPartId == null ? null : resolveReadingKey(parts, {
     partId: String(currentPartId), occurrenceId: sessionData?.session.current_liturgy_part_id,
-    position: sessionData?.session.current_part_position, liturgyId: sessionData?.session.current_liturgy_id,
+    position: sessionData?.session.current_part_position ?? undefined, liturgyId: sessionData?.session.current_liturgy_id,
   })
   const currentPartIndex = currentKey == null ? -1 : parts.findIndex(({ part }) => readingKey(part) === currentKey)
   const atFirstPart = currentPartIndex === 0
   const atLastPart = currentPartIndex >= 0 && currentPartIndex === parts.length - 1
   const refreshFromServer = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
-    queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionIdString) }),
   ])
 
   const partMutation = useMutation({
@@ -70,8 +70,8 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
         : nextPart(sessionIdString, transitionedAt, currentPartId, sessionData?.session.revision)
     },
     onMutate: () => setCommandError(null),
-    onSuccess: async () => {
-      await refreshFromServer()
+    onSuccess: async (response) => {
+      if (!acceptCommandPublication(queryClient, sessionIdString, response)) await refreshFromServer()
     },
     onError: async (error) => {
       const failure = classifyControlFailure(error)
@@ -135,6 +135,7 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
       <SessionStatusControl
         sessionId={sessionId}
         currentStatus={sessionData?.session?.status}
+        currentRevision={sessionData?.session?.revision}
       />
       {commandError && (
         <p role="alert" className="text-sm font-medium text-red-700">
