@@ -100,6 +100,9 @@ export function useLiveSession(
   const scrollTimeoutRef = React.useRef<number | null>(null)
   const events = React.useMemo(() => ['part_change', 'status_change'], [])
   const cable = useActionCableState(`channel_${sessionId}`, events)
+  const previousConnected = React.useRef(cable.connected)
+  const hasConnected = React.useRef(cable.connected)
+  const reconnectSatisfiedRevision = React.useRef<number | null>(null)
 
   React.useEffect(() => {
     snapshotRef.current = snapshot
@@ -225,10 +228,14 @@ export function useLiveSession(
     // invalidate that response but do not schedule routine verification of the publication.
     if (recoveringNow) invalidations.current += 1
     const session = sessionWithState(current.session, update, current.parts)
+    // ActionCable can batch subscription confirmation and the first publication after reconnect.
+    // That publication is processed before the connection effect below. A contiguous update proves
+    // that this reconnect missed no revision, so the connection effect need not verify it again.
+    if (cable.connected && !previousConnected.current) reconnectSatisfiedRevision.current = update.revision
     queryClient.setQueryData(sessionsKeys.session(sessionId), session)
     queryClient.setQueryData(sessionsKeys.state(sessionId), update)
     acceptSnapshot({ ...current, session })
-  }, [acceptSnapshot, queryClient, recover, sessionId])
+  }, [acceptSnapshot, cable.connected, queryClient, recover, sessionId])
 
   React.useEffect(() => {
     generation.current += 1
@@ -257,10 +264,13 @@ export function useLiveSession(
     }
   }, [applyPublication, cable.message, recover, sessionId])
 
-  const previousConnected = React.useRef(cable.connected)
-  const hasConnected = React.useRef(cable.connected)
   React.useEffect(() => {
-    if (cable.connected && !previousConnected.current && hasConnected.current) void recover(false)
+    if (cable.connected && !previousConnected.current && hasConnected.current) {
+      const reconnectAlreadyCanonical = reconnectSatisfiedRevision.current === snapshotRef.current.session.session.revision
+      reconnectSatisfiedRevision.current = null
+      if (!reconnectAlreadyCanonical && !recovery.current) void recover(false)
+    }
+    if (!cable.connected) reconnectSatisfiedRevision.current = null
     if (cable.connected) hasConnected.current = true
     previousConnected.current = cable.connected
   }, [cable.connected, recover])
