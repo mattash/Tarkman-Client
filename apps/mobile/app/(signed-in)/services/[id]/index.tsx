@@ -9,6 +9,7 @@ import { capitalized } from '../../../../components/PartHeading'
 import { useTheme } from '../../../../design/ThemeProvider'
 import { radii, readingSizes, spacing } from '../../../../design/tokens'
 import { resolveControlLanguages, usePreferences } from '../../../../features/preferences/PreferencesProvider'
+import { ComingUpRow } from '../../../../features/services/ComingUpRow'
 import { ControlButton } from '../../../../features/services/ControlButton'
 import { ControlConnectionRecovery, ControlConnectionStatus } from '../../../../features/live/ConnectionStatus'
 import { OpeningLine } from '../../../../features/services/OpeningLine'
@@ -137,17 +138,9 @@ export default function ServiceControlScreen() {
       <View testID="control-rail" style={{ width: RAIL_WIDTH, borderLeftWidth: 1, borderLeftColor: colors.divider, backgroundColor: colors.surface }}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
           <AppText variant="eyebrow" tone="muted">{t('control.comingUp')}</AppText>
-          {/* Posture travels with upcoming parts: an operator wants a second's warning before telling a congregation to move. */}
-          {state.parts.slice(index + 1, index + 1 + COMING_UP).map(item => <View key={item.key} testID={`coming-up-${item.key}`}
-            style={{ gap: 2, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.divider }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: spacing.sm }}>
-              <AppText variant="label" tone="muted" style={{ fontFamily: mono, minWidth: 28 }}>{String(item.position)}</AppText>
-              <AppText variant="label" style={{ flex: 1 }}>{capitalized(item.role)}</AppText>
-              {item.posture && <AppText variant="eyebrow" tone="muted" style={{ textTransform: 'uppercase' }}>{item.posture}</AppText>}
-            </View>
-            {/* A role alone does not tell an operator where the service is going; the opening words do. */}
-            <OpeningLine part={item} language={first} selected={languages} numberOfLines={2} />
-          </View>)}
+          {part && nextPart && !controls.forbidden && <AppText variant="caption" tone="muted">{t('control.holdToJump')}</AppText>}
+          {state.parts.slice(index + 1, index + 1 + COMING_UP).map(item => <ComingUpRow key={item.key} item={item} language={first} selected={languages}
+            {...holds(item.key)} readOnly={controls.forbidden} onJump={() => { void run(item.key, () => commands.goToPart(sessionId, item.id, expected, item.liturgyPartId)) }} />)}
           {part && !nextPart && <AppText variant="caption" tone="muted">{t('common.lastPart')}</AppText>}
         </ScrollView>
         <View testID="control-deck" style={{ padding: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.divider }}>

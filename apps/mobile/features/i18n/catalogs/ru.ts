@@ -340,6 +340,9 @@ export const ru: Catalog = {
     firstPartBoundary: 'Это первая часть. Перед ней ничего нет.',
     lastPartBoundary: 'Это последняя часть. После неё ничего нет.',
     comingUp: 'ДАЛЕЕ',
+    holdToJump: 'Удерживайте часть, чтобы сразу перейти к ней.',
+    jumpLabel: 'Перейти к части {position} · {role}',
+    jumpHint: 'Удерживайте, чтобы перевести службу сюда.',
     nextUp: 'Далее · {role}',
   },
   serviceSheet: {

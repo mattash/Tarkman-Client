@@ -316,6 +316,41 @@ it('lists six parts coming up on a tablet, each with its posture where set', asy
   expect(screen.getByTestId(`coming-up-${many[1].key}`)).toHaveTextContent(/Part 2/)
 })
 
+it('jumps to an upcoming part when it is held on a tablet, never on a tap', async () => {
+  mockWindow = { width: 1024, height: 768, scale: 2, fontScale: 1 }
+  const many = normalizeParts({ parts: Array.from({ length: 5 }, (_, offset) => ({ part: { id: offset + 1, position: offset + 1,
+    role: 'Choir', en: `Part ${offset + 1}` } })) })
+  jest.mocked(useReader).mockReturnValue(reader({ parts: many }))
+  await render(<Control />, { wrapper })
+  expect(screen.getByText('Hold a part to go straight to it.')).toBeOnTheScreen()
+  const row = screen.getByRole('button', { name: 'Go to part 4 · Choir' })
+  expect(row.props.accessibilityHint).toBe('Hold to move the service here.')
+  // A tap or a brush against the rail must not move the projector.
+  await fireEvent.press(row)
+  expect(mockAuthorizedFetch).not.toHaveBeenCalled()
+  await fireEvent(row, 'longPress')
+  await waitFor(() => expect(retry).toHaveBeenCalled())
+  expect(sent()).toEqual(['POST /s/9/set_part.json'])
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ part_id: 4, expected_part_id: 1 })
+  // Assistive technology activates the row directly rather than asking for a timed hold.
+  await fireEvent(screen.getByRole('button', { name: 'Go to part 3 · Choir' }), 'accessibilityAction', { nativeEvent: { actionName: 'activate' } })
+  await waitFor(() => expect(sent()).toHaveLength(2))
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[1][1]?.body))).toMatchObject({ part_id: 3 })
+})
+
+it('shows upcoming parts without the jump gesture once control is refused', async () => {
+  mockWindow = { width: 1024, height: 768, scale: 2, fontScale: 1 }
+  mockAuthorizedFetch.mockResolvedValue(respond(403, {}))
+  await render(<Control />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Next part' }))
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Next part' })).toBeNull())
+  expect(screen.getByTestId(`coming-up-${parts[1].key}`)).toHaveTextContent(/Deacon/)
+  expect(screen.queryByRole('button', { name: 'Go to part 2 · Deacon' })).toBeNull()
+  expect(screen.queryByText('Hold a part to go straight to it.')).toBeNull()
+  await fireEvent(screen.getByTestId(`coming-up-${parts[1].key}`), 'longPress')
+  expect(mockAuthorizedFetch).toHaveBeenCalledTimes(1)
+})
+
 it('does not pop the control screen when a command returns after the sheet was swiped away', async () => {
   const slow = deferred<Response>()
   mockAuthorizedFetch.mockReturnValueOnce(slow.promise)
