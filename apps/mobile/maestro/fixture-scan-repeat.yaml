@@ -1,0 +1,18 @@
+# Reopen the scanner in one client session to exercise the second native view
+# mount that previously crashed. A simulator has no camera image to decode.
+appId: app.tarkman
+name: Reopen the scanner
+---
+- runFlow: launch.yaml
+- tapOn:
+    id: "today-scan"
+- assertVisible: "Scan a code"
+- tapOn:
+    id: "scan-close"
+- assertVisible: "Today"
+- tapOn:
+    id: "today-scan"
+- assertVisible: "Scan a code"
+- tapOn:
+    id: "scan-close"
+- assertVisible: "Today"

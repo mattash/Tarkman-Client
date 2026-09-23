@@ -1,0 +1,20 @@
+diff --git a/node_modules/expo-sqlite/ios/ExpoSQLite.h b/node_modules/expo-sqlite/ios/ExpoSQLite.h
+new file mode 100644
+index 0000000..cf8a571
+--- /dev/null
++++ b/node_modules/expo-sqlite/ios/ExpoSQLite.h
+@@ -0,0 +1,2 @@
++// Ensure Swift imports the vendored SQLite declarations, not the system sqlite3.h.
++#import "sqlite3.h"
+diff --git a/node_modules/expo-sqlite/ios/ExpoSQLite.podspec b/node_modules/expo-sqlite/ios/ExpoSQLite.podspec
+index 4633866..4912c0d 100644
+--- a/node_modules/expo-sqlite/ios/ExpoSQLite.podspec
++++ b/node_modules/expo-sqlite/ios/ExpoSQLite.podspec
+@@ -69,6 +69,7 @@ Pod::Spec.new do |s|
+     'OTHER_CFLAGS' => '$(inherited) ' + sqlite_cflags,
+     'OTHER_SWIFT_FLAGS' => '$(inherited) ' + swift_flags,
+   }
++  s.public_header_files = "ExpoSQLite.h"
+   s.source_files = "**/*.{c,h,m,swift}"
+ 
+   vendored_frameworks = []

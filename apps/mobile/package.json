@@ -6,7 +6,15 @@
   "engines": {
     "node": ">=22.13.0"
   },
+  "expo": {
+    "autolinking": {
+      "ios": {
+        "buildFromSource": ["expo-modules-core", "expo-camera"]
+      }
+    }
+  },
   "scripts": {
+    "postinstall": "patch-package --error-on-fail",
     "start": "expo start",
     "ios": "expo start --ios",
     "android": "expo start --android",
@@ -43,6 +51,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.3",
     "nativewind": "^4.2.6",
+    "patch-package": "^8.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",

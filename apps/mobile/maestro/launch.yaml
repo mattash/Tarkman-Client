@@ -5,7 +5,8 @@ appId: app.tarkman
 - launchApp:
     clearState: false
 - openLink:
-    link: exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
+    # The development-client Tools button overlaps Today's scan control on iPhone.
+    link: exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081&disableFab=1
 - tapOn:
     text: "Open"
     optional: true

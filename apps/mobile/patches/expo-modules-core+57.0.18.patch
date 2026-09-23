@@ -1,0 +1,89 @@
+diff --git a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift
+index 8f6a1bc..5a04662 100644
+--- a/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift
++++ b/node_modules/expo-modules-core/ios/Fabric/ExpoFabricView.swift
+@@ -1,5 +1,30 @@
+ // Copyright 2022-present 650 Industries. All rights reserved.
+ 
++import Foundation
++
++// Fabric retains dynamically allocated view classes across React runtime reloads. Their initializer
++// must retain a holder that can move to the new AppContext without replacing an IMP still in use.
++private final class ExpoFabricAppContextHolder {
++  private let lock = NSLock()
++  private var context: AppContext
++
++  init(_ context: AppContext) {
++    self.context = context
++  }
++
++  func update(_ context: AppContext) {
++    lock.lock()
++    self.context = context
++    lock.unlock()
++  }
++
++  func current() -> AppContext {
++    lock.lock()
++    defer { lock.unlock() }
++    return context
++  }
++}
++
+ /// - Warning: The ObjC name `ExpoFabricView` and the selector
+ ///   `makeViewClassForAppContext:moduleName:viewName:className:` are resolved at runtime via
+ ///   `NSClassFromString` / `NSSelectorFromString` from `ExpoFabricViewObjC.mm`.
+@@ -155,7 +180,9 @@ open class ExpoFabricView: ExpoFabricViewObjC, AnyExpoView {
+     return false
+   }
+ 
++  private static let viewClassesLock = NSLock()
+   internal static var viewClassesRegistry = [String: AnyClass]()
++  private static var appContextHolders = [String: ExpoFabricAppContextHolder]()
+ 
+   /**
+    Dynamically creates a subclass of the `ExpoFabricView` class with injected app context and name of the associated module.
+@@ -165,18 +192,26 @@ open class ExpoFabricView: ExpoFabricViewObjC, AnyExpoView {
+    */
+   @objc
+   public static func makeViewClass(forAppContext appContext: AppContext, moduleName: String, viewName: String, className: String) -> AnyClass? {
++    viewClassesLock.lock()
++    defer { viewClassesLock.unlock() }
++
+     if let viewClass = viewClassesRegistry[className] {
+       inject(appContext: appContext)
+-      injectInitializer(appContext: appContext, moduleName: moduleName, viewName: viewName, toViewClass: viewClass)
++      guard let holder = appContextHolders[className] else {
++        fatalError("Missing AppContext holder for Fabric view class '\(className)'")
++      }
++      holder.update(appContext)
+       return viewClass
+     }
+     guard let viewClass = objc_allocateClassPair(ExpoFabricView.self, className, 0) else {
+       fatalError("Cannot allocate a Fabric view class for '\(className)'")
+     }
++    let holder = ExpoFabricAppContextHolder(appContext)
+     inject(appContext: appContext)
+-    injectInitializer(appContext: appContext, moduleName: moduleName, viewName: viewName, toViewClass: viewClass)
++    injectInitializer(holder: holder, moduleName: moduleName, viewName: viewName, toViewClass: viewClass)
+ 
+     // Save the allocated view class in the registry for the later use (e.g. when the app is reloaded).
++    appContextHolders[className] = holder
+     viewClassesRegistry[className] = viewClass
+ 
+     return viewClass
+@@ -190,10 +225,11 @@ open class ExpoFabricView: ExpoFabricViewObjC, AnyExpoView {
+     class_replaceMethod(object_getClass(ExpoFabricView.self), #selector(appContextFromClass), appContextBlockImp, "@@:")
+   }
+ 
+-  internal static func injectInitializer(appContext: AppContext, moduleName: String, viewName: String, toViewClass viewClass: AnyClass) {
++  private static func injectInitializer(holder: ExpoFabricAppContextHolder, moduleName: String, viewName: String, toViewClass viewClass: AnyClass) {
+     // The default initializer for native views. It will be called by Fabric.
+-    let newBlock: @convention(block) () -> Any = {[weak appContext] in
+-      guard let appContext, let moduleHolder = appContext.moduleRegistry.get(moduleHolderForName: moduleName) else {
++    let newBlock: @convention(block) () -> Any = {
++      let appContext = holder.current()
++      guard let moduleHolder = appContext.moduleRegistry.get(moduleHolderForName: moduleName) else {
+         fatalError(Exceptions.AppContextLost().reason)
+       }
+       guard let view = moduleHolder.definition.views[viewName]?.createView(appContext: appContext) else {

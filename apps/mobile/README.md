@@ -530,6 +530,22 @@ For a device build, set a development team in Xcode or build through EAS with th
 hides entitlement changes: `expo run:ios` reuses it without re-applying config
 plugins, so a new entitlement only appears after `expo prebuild --clean`.
 
+### Expo Fabric reload crash workaround
+
+`npm ci` applies the patches in `patches/`. The ExpoModulesCore patch keeps a
+reloadable AppContext holder for each Fabric view class so a reused native
+initializer does not retain a dead context (issues #164 and #165, upstream
+[expo/expo#48575](https://github.com/expo/expo/issues/48575)). The
+`expo.autolinking.ios.buildFromSource` setting builds that patched pod and
+Expo Camera from source; the precompiled barcode framework cannot link against
+the source Camera pod. A second patch makes ExpoSQLite's generated umbrella
+header import its bundled SQLite declarations when building with Xcode 27.
+
+Rebuild and reinstall the native development client after changing either patch;
+Metro reloads cannot replace compiled native code. Remove the workaround after
+an Expo release fixes the upstream crash and the serial fixture flows pass on a
+fresh build.
+
 ### Scanning a service code
 
 `app/scan.tsx` is a full-screen, always-dark modal that reads a QR code with
@@ -537,7 +553,7 @@ plugins, so a new entitlement only appears after `expo prebuild --clean`.
 `https://www.tarkman.app/s/:id/explain`, the web projector display shows
 `https://web.tarkman.app/sessions/:id/explanations`, and reading links on
 `web.tarkman.app` work too. A found code is never entered silently: the scanner
-loads the service and waits for **Read along**, because a camera can pick up a
+loads the service and waits for **Pray along**, because a camera can pick up a
 code from across the room or from last week's slide.
 
 A scanned code is untrusted input, because a sticker in a public place can be
@@ -567,6 +583,8 @@ production. Run one family or the other, never `maestro test maestro/`.
 `launch.yaml` loads the app and is reused by the others through `runFlow`. In
 development it points the development client at Metro on port 8081; a standalone
 build ignores that link and simply launches, so the same flows run against both.
+`fixture-scan-repeat.yaml` reopens the scanner in one session to guard its
+second native mount; it cannot verify barcode decoding in a simulator.
 `read-a-service.yaml` opens a service by ID, changes language, opens a part and
 comes back. `part-link.yaml` opens a part straight from a link. Both are signed
 out and read-only, so no flow can change a live service and none needs
