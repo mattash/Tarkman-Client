@@ -23,7 +23,9 @@ export function editable(value: Partial<DisplayLinkFields>): Partial<DisplayLink
 async function decode(response: Response): Promise<unknown> {
   const data = await response.json().catch(() => null)
   if (response.ok) return data
-  const raw = record(data), fields = record(raw.errors_by_field)
+  const raw = data && typeof data === 'object' && !Array.isArray(data) ? record(data) : {}
+  const errors = raw.errors_by_field
+  const fields = errors && typeof errors === 'object' && !Array.isArray(errors) ? record(errors) : {}
   let current: ManagedDisplayLink | undefined
   try { if (raw.display_link) current = managedLink(raw.display_link) } catch { /* Refetch collection for incomplete conflicts. */ }
   throw new ManagementError(response.status, Object.fromEntries(editableFields.flatMap(key =>
@@ -36,6 +38,9 @@ export function createManagementApi(request: AuthContextValue['authorizedFetch']
       const rows = Array.isArray(data) ? data : record(data).display_links
       if (!Array.isArray(rows)) throw new Error(t('links.loadFailed'))
       return rows.map(row => managedLink(record(row).display_link ?? row))
+    },
+    async revoke(token: string, signal: AbortSignal): Promise<void> {
+      await decode(await request(`/display_links/${encodeURIComponent(token)}`, { method: 'DELETE', signal }))
     },
     async save(draft: Partial<DisplayLinkFields>, signal: AbortSignal, baseline?: ManagedDisplayLink): Promise<ManagedDisplayLink> {
       const data = await decode(await request(baseline ? `/display_links/${encodeURIComponent(baseline.token)}` : '/display_links', {

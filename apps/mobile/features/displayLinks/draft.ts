@@ -27,10 +27,10 @@ export function localExpiration(value: string | null): string {
   const date = new Date(value), pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
-export function parseExpiration(value: string): string | null {
+export function parseExpiration(value: string): string | null | undefined {
   if (!value.trim()) return null
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return 'invalid'
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return undefined
   const date = new Date(value)
-  if (!Number.isFinite(date.getTime()) || localExpiration(date.toISOString()) !== value) return 'invalid'
+  if (!Number.isFinite(date.getTime()) || localExpiration(date.toISOString()) !== value) return undefined
   return date.toISOString()
 }

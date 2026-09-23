@@ -12,7 +12,7 @@ import { spacing } from '../../design/tokens'
 import { useI18n, type MessageKey } from '../i18n'
 import { DEVICE_TYPES, TEXT_MOVEMENTS, LANGUAGE_SYNCS } from './customization'
 import { DISPLAY_MODES, DISPLAY_STATUS_VIEWS } from './config'
-import { CREATE_DEFAULTS, changedFields, localExpiration, parseExpiration } from './draft'
+import { CREATE_DEFAULTS, changedFields, localExpiration } from './draft'
 import { DisplayPresentation } from './DisplayProjection'
 import { previewState } from './DisplayPreview'
 import { LinkActions } from './LinkActions'
@@ -23,14 +23,15 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
   const { t } = useI18n(), navigation = useNavigation()
   const { draft, baseline } = state
   const [advanced, setAdvanced] = useState(false), [long, setLong] = useState(false)
-  const [expirationInput, setExpirationInput] = useState<{ baseline: typeof baseline; value: string }>()
-  const expiration = expirationInput && expirationInput.baseline === baseline ? expirationInput.value : localExpiration(draft.expires_at)
+  const expiration = state.expirationInput ?? localExpiration(draft.expires_at)
+  const [confirmRevoke, setConfirmRevoke] = useState(false)
+  const revokeRef = useRef<View>(null)
   const [reviewSelection, setReviewSelection] = useState<{ conflict: typeof state.conflict; fields: (keyof DisplayLinkFields)[] }>()
   const selected = reviewSelection?.conflict === state.conflict ? reviewSelection?.fields ?? [] : []
   const [pending, setPending] = useState<NavigationAction | null>(null), [discard, setDiscard] = useState(false)
   const cancelRef = useRef<View>(null)
-  const changes = changedFields(baseline ?? CREATE_DEFAULTS, draft), dirty = Object.keys(changes).length > 0
-  const guarded = dirty || state.saving || state.uncertain
+  const changes = changedFields(baseline ?? CREATE_DEFAULTS, draft), dirty = Object.keys(changes).length > 0 || state.expirationInvalid
+  const guarded = !state.revoked && (dirty || state.saving || state.uncertain)
   const disabled = state.loading || state.saving || state.unavailable || !state.loaded
   const sample = useMemo(() => previewState(long), [long])
   usePreventRemove(guarded && !discard, ({ data }) => setPending(data.action))
@@ -84,6 +85,7 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
           {editableFields.filter(field => state.fields[field]).map(field => <AppText key={field} accessibilityRole="alert">{t(`links.${field}`)}: {state.fields[field]}</AppText>)}
           {!state.loaded && <AppButton onPress={controller.refresh}>{t('common.retry')}</AppButton>}
         </Card>}
+        {state.revoked && <AppText accessibilityRole="alert">{t('links.revoked')}</AppText>}
         {state.unavailable ? <AppButton onPress={leave}>{t('links.backToList')}</AppButton> : <>
           <Card>
             <AppText variant="heading">{t('links.basics')}</AppText>
@@ -118,7 +120,7 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
               <AppButton variant="secondary" disabled={disabled || draft.margin_percent === 15} onPress={() => controller.edit({ margin_percent: Math.min(15, (draft.margin_percent ?? -1) + 1) })}>{t('links.moreMargin')}</AppButton>
             </View>
             <TextField label={t('links.expires_at')} value={expiration} editable={!disabled} autoCapitalize="none" autoCorrect={false} placeholder={t('links.expiryFormat')}
-              error={state.fields.expires_at} onChangeText={value => { setExpirationInput({ baseline, value }); controller.edit({ expires_at: parseExpiration(value) }) }} />
+              error={state.fields.expires_at} onChangeText={controller.editExpiration} />
             <AppText tone="muted">{t('links.expiryHelp', { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</AppText>
           </Card>}
           <Card><AppText variant="heading">{t('links.preview')}</AppText><AppText tone="muted">{t('links.previewHelp')}</AppText>
@@ -130,25 +132,31 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
             {editableFields.map(field => <View key={field} style={{ gap: spacing.xs }}>
               <AppText variant="label">{t(`links.${field}`)}</AppText>
               <AppText>{t('links.currentValue', { value: fieldValue(field, state.conflict![field]) })}</AppText>
-              {draft[field] !== state.conflict![field] && <>
-                <AppText>{t('links.draftValue', { value: fieldValue(field, draft[field]) })}</AppText>
+              {(draft[field] !== state.conflict![field] || field === 'expires_at' && state.expirationInput !== undefined) && <>
+                <AppText>{t('links.draftValue', { value: field === 'expires_at' && state.expirationInput !== undefined ? state.expirationInput : fieldValue(field, draft[field]) })}</AppText>
                 <AppButton variant="secondary" selected={selected.includes(field)} onPress={() => setReviewSelection({ conflict: state.conflict, fields: selected.includes(field) ? selected.filter(key => key !== field) : [...selected, field] })}>{t('links.keepChange')}</AppButton>
               </>}
             </View>)}
             <AppButton onPress={() => controller.review(selected)}>{t('links.applyReview')}</AppButton>
           </Card>}
-          {state.uncertain && <Card><AppText accessibilityRole="alert">{t('links.uncertain')}</AppText>
+          {state.uncertain && <Card><AppText accessibilityRole="alert">{t(state.revokePending ? 'links.revokeUncertain' : 'links.uncertain')}</AppText>
             <AppButton loading={state.loading} onPress={controller.reconcile}>{t('links.reconcile')}</AppButton>
             {state.reconciled && !baseline && <><AppText>{t('links.creationReview')}</AppText>
               {state.links.map(link => <AppText key={link.token}>{link.title} · {new Date(link.created_at).toLocaleString()}</AppText>)}
               <AppButton onPress={leave}>{t('links.backToList')}</AppButton></>}
           </Card>}
           <AppButton loading={state.saving} disabled={disabled || !!state.conflict || state.uncertain || (!!baseline && !dirty)} onPress={controller.save}>{t(baseline ? 'links.save' : 'links.create')}</AppButton>
+          {baseline && <AppButton ref={revokeRef} variant="destructive" disabled={disabled || state.uncertain || !!state.conflict} onPress={() => setConfirmRevoke(true)}>{t('links.revoke')}</AppButton>}
           {state.saved && <AppText accessibilityLiveRegion="polite">{t('links.saved')}</AppText>}
           {baseline && <><LinkActions link={baseline} disabled={dirty || state.saving || state.uncertain || !!state.conflict} /><AppText tone="muted">{t('links.privacy')}</AppText></>}
         </>}
       </View>
     </ScrollView>
+    <AppModal visible={confirmRevoke} onDismiss={() => setConfirmRevoke(false)} title={t('links.revoke')} openerRef={revokeRef}>
+      <AppText>{t('links.revokeHelp')}</AppText>
+      <AppButton variant="destructive" disabled={disabled || state.uncertain || !!state.conflict} onPress={() => { setConfirmRevoke(false); void controller.revoke() }}>{t('links.confirmRevoke')}</AppButton>
+      <AppButton variant="secondary" onPress={() => setConfirmRevoke(false)}>{t('common.cancel')}</AppButton>
+    </AppModal>
     <AppModal visible={!!pending && !discard} onDismiss={() => setPending(null)} title={t('links.unsaved')} openerRef={cancelRef}>
       <AppText>{t('links.discardHelp')}</AppText>
       <AppButton variant="destructive" onPress={() => setDiscard(true)}>{t('links.discard')}</AppButton>

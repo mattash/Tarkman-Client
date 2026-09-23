@@ -2,7 +2,7 @@
 export function redactDisplayCapabilities<T>(value: T): T {
   function visit(item: unknown, depth: number): unknown {
     if (depth > 20) return undefined
-    if (typeof item === 'string') return /(?:display[_-]links\/[^\s/?#]+|[?&]token=)/i.test(item) ? '[display link redacted]' : item
+    if (typeof item === 'string') return /(?:display[_-]links\/[^\s/?#]+|[?&]token=|\\*"token\\*"\s*:\s*\\*")/i.test(item) ? '[display link redacted]' : item
     if (Array.isArray(item)) return item.map(child => visit(child, depth + 1))
     if (item && typeof item === 'object') return Object.fromEntries(Object.entries(item).filter(([key]) =>
       !['token', 'display_url'].includes(key.toLowerCase())).map(([key, child]) => [key, visit(child, depth + 1)]))

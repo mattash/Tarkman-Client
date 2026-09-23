@@ -96,3 +96,23 @@ it('sends no Authorization header; the token is its own capability', async () =>
   expect(seen?.credentials).toBe('omit')
   expect((seen?.headers as Record<string, string> | undefined)?.Authorization).toBeUndefined()
 })
+
+it('accepts incomplete additive versioned GET payloads with tolerant presentation defaults', async () => {
+  const data = { ...validConfig, config_version: 4, font_scale: 'bad', expires_at: '2020-01-01T00:00:00Z' }
+  const request = fakeFetch({ '/display_links/abc': async () => new Response(JSON.stringify(data)) })
+  await expect(fetchDisplayLink('https://api.test', 'abc', request)).resolves.toMatchObject({
+    ...validConfig, config_version: 4, font_scale: 100, expires_at: data.expires_at,
+  })
+})
+it.each([
+  null, {}, { token: 'other', user_id: 7 }, { token: 'abc', user_id: 0 },
+  { ...validConfig, config_version: -1 }, { ...validConfig, config_version: '4' },
+  { ...validConfig, expires_at: 'invalid' }, { ...validConfig, expires_at: false },
+])('refuses unrecoverable GET payloads without defaulting identity or expiration: %j', async data => {
+  const request = fakeFetch({ '/display_links/abc': async () => new Response(JSON.stringify(data)) })
+  await expect(fetchDisplayLink('https://api.test', 'abc', request)).rejects.toThrow()
+})
+it.each([403, 404, 410])('preserves terminal HTTP status %s even with a valid payload', async status => {
+  const request = fakeFetch({ '/display_links/abc': async () => new Response(JSON.stringify(validConfig), { status }) })
+  await expect(fetchDisplayLink('https://api.test', 'abc', request)).rejects.toThrow('Invalid or expired display link.')
+})

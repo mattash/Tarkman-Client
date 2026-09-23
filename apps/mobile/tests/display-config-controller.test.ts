@@ -6,7 +6,7 @@ import type { CableCallbacks } from '../features/live/cable'
 import type { DisplayLinkConfig } from '../features/displayLinks/config'
 import { link, deferred, flush } from './fixtures/displayLink'
 let callbacks: CableCallbacks, lifecycle: (active: boolean, online: boolean) => void, stop: () => void
-beforeEach(() => jest.useFakeTimers())
+beforeEach(() => { jest.useFakeTimers() })
 afterEach(() => { stop?.(); jest.useRealTimers() })
 function setup(load = jest.fn<(signal: AbortSignal) => Promise<DisplayLinkConfig>>().mockResolvedValue(link)) {
   const close = jest.fn(), subscribe = jest.fn((_url: string, _id: unknown, cb: CableCallbacks) => { callbacks = cb; return close })
@@ -91,4 +91,18 @@ it('confirmed 404 cannot be undone by later socket snapshots', async () => {
   const { controller, load } = setup(); await flush()
   load.mockRejectedValueOnce(new InvalidDisplayLinkError('missing')); callbacks.connected(); await flush()
   callbacks.received(event(9)); expect(controller.getSnapshot().terminal).toBe('unavailable')
+})
+
+it('refuses incomplete additive cable snapshots and malformed or older terminal events', async () => {
+  const { controller } = setup(); await flush()
+  callbacks.received({ event: 'display_link.updated', data: { token: link.token, user_id: link.user_id, config_version: 99 } })
+  await flush(); expect(controller.getSnapshot().version).toBe(1)
+  for (const data of [
+    { token: link.token, config_version: 0, reason: 'deleted' },
+    { token: link.token, config_version: '9', reason: 'deleted' },
+    { token: link.token, config_version: 9, reason: 'unknown' },
+    { config_version: 9, reason: 'deleted' },
+  ]) callbacks.received({ event: 'display_link.invalidated', data })
+  expect(controller.getSnapshot().terminal).toBeUndefined()
+  expect(controller.getSnapshot().data).toEqual(link)
 })

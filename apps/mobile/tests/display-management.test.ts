@@ -1,15 +1,16 @@
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals'
+import { redactDisplayCapabilities } from '../features/displayLinks/privacy'
 import { createManagementApi, ManagementError } from '../features/displayLinks/managementApi'
 import { createManagementController } from '../features/displayLinks/managementController'
 import { CREATE_DEFAULTS, changedFields, fieldsOf, parseExpiration, validateDraft } from '../features/displayLinks/draft'
 import type { AuthContextValue } from '../features/auth/AuthProvider'
 import { link, deferred, flush } from './fixtures/displayLink'
 let stop: (() => void) | undefined
-beforeEach(() => jest.useFakeTimers())
+beforeEach(() => { jest.useFakeTimers() })
 afterEach(() => { stop?.(); stop = undefined; jest.useRealTimers() })
 const response = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status })
 function setup(token: string | null = link.token) {
-  const api = { list: jest.fn<ReturnType<typeof createManagementApi>['list']>().mockResolvedValue([link]),
+  const api = { revoke: jest.fn<ReturnType<typeof createManagementApi>['revoke']>().mockResolvedValue(undefined), list: jest.fn<ReturnType<typeof createManagementApi>['list']>().mockResolvedValue([link]),
     save: jest.fn<ReturnType<typeof createManagementApi>['save']>().mockResolvedValue({ ...link, config_version: 2, font_scale: 130 }) }
   const controller = createManagementController(api, token); stop = controller.start()
   return { api, controller }
@@ -36,7 +37,7 @@ it('creates with every explicit default and preserves null/zero/legacy hyw on un
   expect(changedFields(saved, { ...fieldsOf(saved), title: 'Hall' })).toEqual({ title: 'Hall' })
   expect(validateDraft({ ...CREATE_DEFAULTS, font_scale: 50, margin_percent: 0 })).toEqual({})
   expect(validateDraft({ ...CREATE_DEFAULTS, font_scale: 201 })).toHaveProperty('font_scale')
-  expect(parseExpiration('')).toBeNull(); expect(parseExpiration('2026-02-30T12:00')).toBe('invalid')
+  expect(parseExpiration('')).toBeNull(); expect(parseExpiration('2026-02-30T12:00')).toBeUndefined()
 })
 it('keeps drafts on 409 and requires explicit selected-field reapplication before saving', async () => {
   const { api, controller } = setup(); await flush()
@@ -79,8 +80,99 @@ it('does not blindly retry an uncertain creation after reconciliation', async ()
   expect(api.save).toHaveBeenCalledTimes(1)
 })
 it('redacts capability URLs and tokens in automatic telemetry metadata', async () => {
-  const { redactDisplayCapabilities } = await import('../features/displayLinks/privacy')
   const scrubbed = redactDisplayCapabilities({ message: 'GET https://api.test/display_links/token-A',
     data: { token: 'token-A', display_url: link.display_url, nested: [link.display_url] } })
   expect(JSON.stringify(scrubbed)).not.toContain('token-A')
+})
+
+it('deletes with the authenticated API and accepts an empty 204 response', async () => {
+  const request = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValue(new Response(null, { status: 204 }))
+  const signal = new AbortController().signal
+  await createManagementApi(request).revoke('token/A', signal)
+  expect(request).toHaveBeenCalledWith('/display_links/token%2FA', { method: 'DELETE', signal })
+})
+it('revokes once, removes the link, and blocks later writes', async () => {
+  const { api, controller } = setup(); await flush()
+  const pending = deferred<void>(); api.revoke.mockReturnValueOnce(pending.promise)
+  const first = controller.revoke(); await controller.revoke(); await controller.save()
+  expect(api.revoke).toHaveBeenCalledTimes(1); expect(api.save).not.toHaveBeenCalled()
+  pending.resolve(); await first
+  expect(controller.getSnapshot()).toMatchObject({ revoked: true, unavailable: true, saving: false, links: [] })
+  await controller.revoke(); expect(api.revoke).toHaveBeenCalledTimes(1)
+})
+it.each([401, 403, 404])('retains the draft and prevents revoke replay after %s', async status => {
+  const { api, controller } = setup(); await flush(); controller.edit({ title: 'Draft' })
+  api.revoke.mockRejectedValueOnce(new ManagementError(status)); await controller.revoke()
+  expect(controller.getSnapshot()).toMatchObject({ unavailable: true, revoked: false, saving: false, draft: { title: 'Draft' } })
+  await controller.revoke(); expect(api.revoke).toHaveBeenCalledTimes(1)
+})
+it('handles the auth provider 401 signal without retry', async () => {
+  const { api, controller } = setup(); await flush()
+  api.revoke.mockRejectedValueOnce(Object.assign(new Error(), { name: 'UnauthorizedError' }))
+  await controller.revoke(); await controller.revoke()
+  expect(controller.getSnapshot().unavailable).toBe(true); expect(api.revoke).toHaveBeenCalledTimes(1)
+})
+it.each([true, false])('reconciles uncertain revoke without replay (deleted=%s)', async deleted => {
+  const { api, controller } = setup(); await flush(); controller.edit({ title: 'Draft' })
+  api.revoke.mockRejectedValueOnce(new Error('network')); await controller.revoke(); await controller.revoke()
+  expect(controller.getSnapshot()).toMatchObject({ uncertain: true, revokePending: true, draft: { title: 'Draft' } })
+  api.list.mockResolvedValueOnce(deleted ? [] : [link]); await controller.reconcile()
+  expect(api.revoke).toHaveBeenCalledTimes(1)
+  if (deleted) expect(controller.getSnapshot()).toMatchObject({ revoked: true, uncertain: false })
+  else {
+    expect(controller.getSnapshot().conflict).toEqual(link)
+    controller.review(['title']); expect(controller.getSnapshot()).toMatchObject({ uncertain: false, draft: { title: 'Draft' } })
+    await controller.revoke(); expect(api.revoke).toHaveBeenCalledTimes(2)
+  }
+})
+it('bounds stalled revoke and fences completion after leaving', async () => {
+  const { api, controller } = setup(); await flush()
+  const pending = deferred<void>(); api.revoke.mockReturnValueOnce(pending.promise)
+  const first = controller.revoke(); await jest.advanceTimersByTimeAsync(12000); await first
+  expect(api.revoke.mock.calls[0][1].aborted).toBe(true)
+  expect(controller.getSnapshot().uncertain).toBe(true)
+  stop!(); pending.resolve(); await flush()
+  expect(controller.getSnapshot().revoked).toBe(false)
+})
+it('clears stale errors on edits while retaining invalid expiration separately', async () => {
+  const { api, controller } = setup(); await flush()
+  controller.editExpiration('2026-02-30T12:00'); await controller.save()
+  expect(controller.getSnapshot()).toMatchObject({ expirationInvalid: true, expirationInput: '2026-02-30T12:00', draft: { expires_at: null } })
+  expect(controller.getSnapshot().fields.expires_at).toBeDefined(); expect(api.save).not.toHaveBeenCalled()
+  controller.edit({ title: 'Draft' }); expect(controller.getSnapshot().error).toBeUndefined()
+  await controller.save(); expect(controller.getSnapshot().fields.expires_at).toBeDefined()
+  controller.editExpiration(''); api.save.mockRejectedValueOnce(new ManagementError(422, { title: 'Invalid' })); await controller.save()
+  expect(controller.getSnapshot().error).toBeDefined()
+  controller.edit({ title: 'Fixed' }); expect(controller.getSnapshot()).toMatchObject({ error: undefined, fields: {}, expirationInvalid: false })
+  await controller.save(); expect(api.save.mock.calls[1][0]).toEqual({ title: 'Fixed' })
+})
+it('redacts plain and multiply stringified cable identifiers without redacting unrelated prose or keys', async () => {
+  const identifier = JSON.stringify({ channel: 'DisplayLinkChannel', token: 'capability-value' })
+  for (const message of [identifier, JSON.stringify({ identifier }), JSON.stringify(JSON.stringify({ identifier }))]) {
+    expect(redactDisplayCapabilities(message)).not.toContain('capability-value')
+  }
+  for (const text of ['A token is required', '{"token_count":42}', '{"other_token":"example"}', 'DisplayLinkChannel connected']) {
+    expect(redactDisplayCapabilities(text)).toBe(text)
+  }
+})
+it.each([401, 403, 404, 500])('keeps DELETE status %s even when its error body is empty or malformed', async status => {
+  for (const body of ['', 'not JSON', '{"errors_by_field":"unexpected"}']) {
+    const request = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValue(new Response(body, { status }))
+    await expect(createManagementApi(request).revoke(link.token, new AbortController().signal)).rejects.toMatchObject({ status })
+  }
+})
+it('aborts a pending revoke on navigation and ignores its late success', async () => {
+  const { api, controller } = setup(); await flush()
+  const pending = deferred<void>(); api.revoke.mockReturnValueOnce(pending.promise)
+  const first = controller.revoke(); stop!()
+  expect(api.revoke.mock.calls[0][1].aborted).toBe(true)
+  pending.resolve(); await first
+  expect(controller.getSnapshot()).toMatchObject({ revoked: false, uncertain: true, revokePending: true })
+})
+it('retains expiration input through reconciliation only when explicitly selected', async () => {
+  const { controller } = setup(); await flush()
+  controller.editExpiration('bad date'); await controller.reconcile(); controller.review(['expires_at'])
+  expect(controller.getSnapshot()).toMatchObject({ expirationInput: 'bad date', expirationInvalid: true, draft: { expires_at: null } })
+  await controller.reconcile(); controller.review([])
+  expect(controller.getSnapshot()).toMatchObject({ expirationInput: undefined, expirationInvalid: false })
 })
