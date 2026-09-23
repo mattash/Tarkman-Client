@@ -3,7 +3,7 @@
 Issue: Tarkman-Client #156
 Date: 2026-09-23
 Source branch: `openclaw/16fa4a69-6bd0-4e96-8ffd-9d9729e09b79`
-Application SHA: `43d86f16a306445960f522991839e107a6d9d821`
+Application SHA: `a49bb788f962e3084a56f0fe86303dec70a02c40`
 
 ## Automated proof
 
@@ -55,9 +55,10 @@ Use browser DevTools Network with **Preserve log** enabled and filter successive
 8. **Safety poll:** leave the tab idle for at least 30 seconds. Expect a small `state.json` request, not one full `/s/:id.json` request every second.
 9. **Layouts and boundaries:** repeat normal advance in single and parallel modes and verify first/last controller boundaries remain disabled appropriately.
 
-The first authorized rendered-QA pass against head `1a4fe710eb6fbbd558e2e1df69e20f200d0f32d3`
-returned **CHANGES REQUIRED**: a contiguous publication moved the display immediately but was followed by an
-unexpected `state.json` request within about one second. Application commit
-`43d86f16a306445960f522991839e107a6d9d821` removes that routine verification while retaining the 30-second
-safety poll. Fresh independent browser evidence is required against the corrected head; this document does
-not claim that rerun complete.
+Rendered QA against `b7f064e797c4db9c4ded7498f9745251a31a21b1` isolated a browser-only shared
+ActionCable lifecycle race: reconnect confirmation and its first contiguous publication can be React-batched.
+The publication effect establishes canonical state, then the connection effect previously issued a redundant
+`state.json` recovery. Application commit `a49bb788f962e3084a56f0fe86303dec70a02c40`
+lets that same-batch contiguous publication satisfy reconnect while preserving recovery when reconnect has no
+publication, or when its publication has a gap, context mismatch, or unknown cursor. Fresh independent browser
+evidence is required against the corrected head; this document does not claim that rerun complete.

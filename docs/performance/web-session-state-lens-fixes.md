@@ -50,3 +50,31 @@ Post-fix validation:
 - `git diff --check origin/main...HEAD` passed.
 
 Fresh independent Lens and browser reruns remain required; the PR remains draft and no rendered acceptance is claimed.
+
+## Shared ActionCable reconnect/publication race
+
+A timing-separated rendered probe against `b7f064e797c4db9c4ded7498f9745251a31a21b1`
+showed no focus event and a contiguous publication followed 29 ms later by an unexpected `state.json` GET.
+The root cause was effect ordering during a real shared ActionCable reconnect: React can batch subscription
+confirmation with the first publication. `useLiveSession` processes its message effect first and correctly
+accepts the contiguous, resolvable revision, but its following connection effect still treated the same render
+as an unsatisfied reconnect and started recovery.
+
+Application commit `a49bb788f962e3084a56f0fe86303dec70a02c40` records the revision only when a
+contiguous publication is accepted while a previously established connection is becoming connected again.
+The subsequent connection effect skips recovery only when that exact revision is already canonical. Reconnect
+without a publication still recovers; duplicate, gap, content-context mismatch, and unknown-cursor publications
+do not satisfy reconnect and retain their existing recovery paths. Focus and 30-second safety recovery are
+unchanged, and the independent explanation subscriber still invalidates its query normally.
+
+`useLiveSession.actioncable.test.tsx` uses the real shared `useActionCable` implementation with both live-session
+and explanation subscribers. It batches reconnect confirmation and a contiguous `part_change` exactly as React
+does in the browser. The test fails on the prior implementation with one `fetchSessionState("7")` call and passes
+after the fix with zero state, metadata, or manifest reads and one expected explanation refresh.
+
+Latest validation:
+
+- Focused shared-cable/live-session/explanation suites: **4 files, 34 tests passed**.
+- Full web suite: **44 files, 394 tests passed**.
+- Typecheck and production build passed; build transformed 2,353 modules.
+- Fresh rendered QA remains required against the new head.
