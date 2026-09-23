@@ -1,6 +1,6 @@
 import { act, render, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { StrictMode, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionWrapper } from '@/types/session'
 import type { SessionState } from '@/queries/sessionState'
@@ -14,11 +14,13 @@ interface CableHandlers {
 }
 
 let cableHandlers: CableHandlers | null = null
+let subscriptionCount = 0
 
 vi.mock('@rails/actioncable', () => ({
   createConsumer: vi.fn(() => ({
     subscriptions: {
       create: vi.fn((_identifier: unknown, handlers: CableHandlers) => {
+        subscriptionCount += 1
         cableHandlers = handlers
         return { unsubscribe: vi.fn() }
       }),
@@ -45,7 +47,7 @@ vi.mock('@/queries/explanationQueries', async () => ({
 
 vi.mock('../smoothScrollToPart', () => ({ smoothScrollToPart: vi.fn() }))
 
-import { fetchSession, fetchSessionParts } from '@/queries/sessions'
+import { fetchSession, fetchSessionParts, sessionsKeys } from '@/queries/sessions'
 import { fetchSessionState } from '@/queries/sessionState'
 import { fetchCurrentExplanation } from '@/queries/explanationQueries'
 
@@ -86,11 +88,13 @@ const parts = {
 }
 
 function wrapper(queryClient: QueryClient) {
-  return ({ children }: { children: ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  return ({ children }: { children: ReactNode }) => (
+    <StrictMode><QueryClientProvider client={queryClient}>{children}</QueryClientProvider></StrictMode>
+  )
 }
 
-function SharedSubscriberProbe() {
-  const live = useLiveSession('7', initialSession)
+function SharedSubscriberProbe({ session = initialSession }: { session?: SessionWrapper }) {
+  const live = useLiveSession('7', session)
   return (
     <>
       <output data-testid="reading">{live.currentPartKey}</output>
@@ -99,14 +103,50 @@ function SharedSubscriberProbe() {
   )
 }
 
+function RouteSubscriberProbe() {
+  const { data = initialSession } = useQuery({
+    queryKey: sessionsKeys.session('7'),
+    queryFn: () => fetchSession('7'),
+    initialData: initialSession,
+    staleTime: Infinity,
+  })
+  return <SharedSubscriberProbe session={data} />
+}
+
 describe('useLiveSession with shared ActionCable subscribers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     cableHandlers = null
+    subscriptionCount = 0
     vi.mocked(fetchSession).mockResolvedValue(initialSession)
     vi.mocked(fetchSessionParts).mockResolvedValue(parts)
     vi.mocked(fetchSessionState).mockResolvedValue(state(10))
     vi.mocked(fetchCurrentExplanation).mockResolvedValue([])
+  })
+
+  it('does not verify an ordinary contiguous publication while already connected', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
+    const view = render(<RouteSubscriberProbe />, { wrapper: wrapper(queryClient) })
+
+    await waitFor(() => expect(view.getByTestId('reading')).toHaveTextContent('lp:101'))
+    act(() => cableHandlers?.connected?.())
+    await waitFor(() => expect(fetchCurrentExplanation).toHaveBeenCalledTimes(1))
+    vi.mocked(fetchSessionState).mockClear()
+    vi.mocked(fetchSession).mockClear()
+    vi.mocked(fetchSessionParts).mockClear()
+    vi.mocked(fetchCurrentExplanation).mockClear()
+    const stableSubscriptionCount = subscriptionCount
+
+    act(() => {
+      cableHandlers?.received?.({ event: 'part_change', data: publication(state(11, 102)) })
+    })
+
+    await waitFor(() => expect(view.getByTestId('reading')).toHaveTextContent('lp:102'))
+    await waitFor(() => expect(fetchCurrentExplanation).toHaveBeenCalledTimes(1))
+    expect(subscriptionCount).toBe(stableSubscriptionCount)
+    expect(fetchSessionState).not.toHaveBeenCalled()
+    expect(fetchSession).not.toHaveBeenCalled()
+    expect(fetchSessionParts).not.toHaveBeenCalled()
   })
 
   it('does not verify a contiguous first publication batched with reconnect confirmation', async () => {

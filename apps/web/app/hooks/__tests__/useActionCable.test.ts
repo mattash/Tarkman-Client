@@ -203,6 +203,21 @@ describe('useActionCable', () => {
     expect(createConsumer).toHaveBeenCalledTimes(1)
   })
 
+  it('does not reconnect when an equivalent channel identifier is recreated', async () => {
+    const { result, rerender } = renderHook(
+      ({ channelName }) => useActionCableState(channelName, 'part_change'),
+      { initialProps: { channelName: 'channel_999' } },
+    )
+    await waitFor(() => expect(capturedSubscriptions).toHaveLength(1))
+    act(() => capturedSubscriptions[0].connected?.())
+    expect(result.current.connected).toBe(true)
+
+    rerender({ channelName: '{"channel":"SessionChannel","id":"999"}' })
+
+    expect(capturedSubscriptions).toHaveLength(1)
+    expect(result.current.connected).toBe(true)
+  })
+
   it('shares one consumer across distinct channels', async () => {
     const firstHook = renderHook(() =>
       useActionCable('channel_first', 'part_change')
