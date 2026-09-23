@@ -9,6 +9,7 @@ import { Message } from '../components/Message'
 import { StatusOverlay } from '../components/StatusOverlay'
 import { MinimalStatusView } from '../components/MinimalStatusView'
 import { ExplanationIndicator } from '../components/ExplanationIndicator'
+import { ConnectionIndicator } from '../components/ConnectionIndicator'
 import { useLiveSession } from '../hooks/useLiveSession'
 import type { SessionWrapper } from '../types/session'
 import type { DisplayLinkConfig } from '../types/displayLink'
@@ -159,11 +160,4 @@ function LiveCurrentDisplay({ initialSession, config }: { initialSession: Sessio
       />
     </>
   )
-}
-
-function ConnectionIndicator({ state }: { state: 'connected' | 'recovering' | 'disconnected' }) {
-  if (state === 'connected') return null
-  return <div role="status" aria-live="polite" className="fixed right-3 top-3 z-[60] rounded-full bg-gray-950/85 px-3 py-1 text-sm font-medium text-amber-200 shadow">
-    {state === 'recovering' ? 'Reconnecting…' : 'Disconnected — retrying'}
-  </div>
 }

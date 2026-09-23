@@ -42,9 +42,14 @@ export function acceptCommandPublication(queryClient: QueryClient, sessionId: st
   const session = queryClient.getQueryData<SessionWrapper>(sessionsKeys.session(sessionId))
   const parts = queryClient.getQueryData<PartsResponse>(sessionsKeys.sessionParts(sessionId))?.parts
   if (!state || !session || !parts || !cursorResolves(parts, state)) return false
-  const result = publicationResult(session.session.revision, session.session.content_context ?? null, state)
-  if (result === 'duplicate') return true
-  if (result !== 'applied') return false
+  const currentRevision = session.session.revision
+  if (currentRevision == null) return false
+  if (state.revision < currentRevision) return true
+  const knownContext = queryClient.getQueryData<SessionState>(sessionsKeys.state(sessionId))?.contentContext ??
+    session.session.content_context ?? null
+  if (knownContext !== null && knownContext !== state.contentContext) return false
+  if (state.revision === currentRevision) return true
+  if (state.revision !== currentRevision + 1) return false
   const updated = sessionWithState(session, state, parts)
   queryClient.setQueryData(sessionsKeys.session(sessionId), updated)
   queryClient.setQueryData(sessionsKeys.state(sessionId), state)

@@ -44,11 +44,13 @@ vi.mock('@/components/StatusOverlay', () => ({
 }))
 
 vi.mock('@/hooks/useLiveSession', () => ({
-  useLiveSession: (_id: string, initialSession: ReturnType<typeof createMockSession>) => ({
+  useLiveSession: vi.fn((_id: string, initialSession: ReturnType<typeof createMockSession>) => ({
     sessionData: initialSession, parts: [], partsRef: { current: {} }, currentPartId: null, currentPartKey: null,
     isLoading: false, error: null, connectionState: 'connected',
-  }),
+  })),
 }))
+
+import { useLiveSession } from '@/hooks/useLiveSession'
 
 // Mock the MinimalStatusView component
 vi.mock('@/components/MinimalStatusView', () => ({
@@ -232,6 +234,22 @@ describe('sessions.display route', () => {
 
     expect(await screen.findByTestId('session-parts-parallel')).toBeInTheDocument()
     expect(screen.getByTestId('session-parts-parallel')).toHaveTextContent('Parallel Parts for 10')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('shows an unobtrusive reconnecting badge while recovering', async () => {
+    mockUseSessionPolling.mockReturnValue({ data: mockSessionData, isLoading: false, isError: false })
+    vi.mocked(useLiveSession).mockReturnValueOnce({
+      sessionData: mockSessionData, parts: [], partsRef: { current: {} }, currentPartId: null, currentPartKey: null,
+      isLoading: false, error: null, connectionState: 'recovering',
+    })
+
+    const history = createMemoryHistory({ initialEntries: ['/sessions/display'] })
+    const router = createRouter({ routeTree, history })
+    render(<RouterProvider router={router} />, { wrapper: createTestWrapper() })
+
+    const status = await screen.findByRole('status')
+    expect(status).toHaveTextContent('Reconnecting…')
   })
 
   it('should show welcome message when at position 0 and before_message is set', async () => {

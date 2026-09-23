@@ -155,6 +155,30 @@ describe('useLiveSession', () => {
     expect(fetchSessionParts).not.toHaveBeenCalled()
   })
 
+  it('quietly supersedes an in-flight recovery when a newer contiguous publication arrives', async () => {
+    cable = { message: null, connected: true }
+    const { result, rerender } = renderHook(() => useLiveSession('7', initialSession), { wrapper: wrapper() })
+    await waitFor(() => expect(result.current.currentPartKey).toBe('lp:101'))
+    await waitFor(() => expect(result.current.connectionState).toBe('connected'))
+    vi.clearAllMocks()
+    let resolvePending: (value: SessionState) => void = () => {}
+    vi.mocked(fetchSessionState)
+      .mockReturnValueOnce(new Promise(resolve => { resolvePending = resolve }))
+      .mockResolvedValue(state(11, 102))
+
+    act(() => window.dispatchEvent(new Event('focus')))
+    await waitFor(() => expect(fetchSessionState).toHaveBeenCalledTimes(1))
+    cable = { message: publication(state(11, 102)), connected: true }
+    rerender()
+    await waitFor(() => expect(result.current.currentPartKey).toBe('lp:102'))
+    act(() => resolvePending(state(10, 101)))
+
+    await waitFor(() => expect(result.current.connectionState).toBe('connected'))
+    expect(result.current.error).toBeNull()
+    expect(result.current.currentPartKey).toBe('lp:102')
+    expect(fetchSessionParts).not.toHaveBeenCalled()
+  })
+
   it('refreshes the manifest exactly once when content context changes', async () => {
     const changedSession = { ...initialSession, session: { ...initialSession.session, revision: 11 } }
     const { result, rerender } = renderHook(() => useLiveSession('7', initialSession), { wrapper: wrapper() })

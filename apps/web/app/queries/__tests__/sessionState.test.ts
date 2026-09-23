@@ -85,6 +85,31 @@ describe('session state contract', () => {
     expect(invalidate).not.toHaveBeenCalled()
   })
 
+  it('accepts a production-shaped contiguous ack when the full session has no content context', () => {
+    const queryClient = new QueryClient()
+    const productionSession: SessionWrapper = {
+      session: { ...session.session, content_context: undefined },
+    }
+    queryClient.setQueryData(sessionsKeys.session('7'), productionSession)
+    queryClient.setQueryData(sessionsKeys.sessionParts('7'), { ...parts, sessionData: productionSession })
+
+    expect(acceptCommandPublication(queryClient, '7', publication)).toBe(true)
+    expect(queryClient.getQueryData<SessionWrapper>(sessionsKeys.session('7'))?.session).toMatchObject({
+      revision: 11,
+      content_context: 'aaaa000000000000',
+      current_liturgy_part_id: 105,
+    })
+    expect(acceptCommandPublication(queryClient, '7', publication)).toBe(true)
+  })
+
+  it('refuses a contiguous ack when a known compact-state context disagrees', () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData(sessionsKeys.session('7'), { session: { ...session.session, content_context: undefined } })
+    queryClient.setQueryData(sessionsKeys.sessionParts('7'), parts)
+    queryClient.setQueryData(sessionsKeys.state('7'), { ...parseSessionPublication(publication, 7)!, contentContext: 'different' })
+    expect(acceptCommandPublication(queryClient, '7', publication)).toBe(false)
+  })
+
   it('refuses an ack for an unknown occurrence so recovery can refresh content', () => {
     const queryClient = new QueryClient()
     queryClient.setQueryData(sessionsKeys.session('7'), session)

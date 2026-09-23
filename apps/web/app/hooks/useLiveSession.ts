@@ -66,7 +66,7 @@ export function useLiveSession(
   onPartChange?: (partId: string) => void,
 ): LiveSessionReading {
   const queryClient = useQueryClient()
-  const partsRef = React.useMemo(() => ({ current: {} as Record<string, HTMLElement> }), [sessionId])
+  const partsRef = React.useRef<Record<string, HTMLElement>>({})
   const [snapshot, setSnapshot] = React.useState<LiveSnapshot>({
     session: initialSession,
     parts: [],
@@ -80,6 +80,7 @@ export function useLiveSession(
   const generation = React.useRef(0)
   const recovery = React.useRef<Promise<void> | null>(null)
   const queuedRecovery = React.useRef(false)
+  const queuedFull = React.useRef(false)
   const invalidations = React.useRef(0)
   const stateSupported = React.useRef<boolean | null>(null)
   const lastScroll = React.useRef<{ key: string; element: HTMLElement } | null>(null)
@@ -137,6 +138,7 @@ export function useLiveSession(
     if (!after || after.id !== Number(sessionId) || before.id !== Number(sessionId)) throw new Error('Unexpected session state response')
     if (before.contentContext !== after.contentContext || beforeInvalidations !== invalidations.current) {
       queuedRecovery.current = true
+      queuedFull.current ||= before.contentContext !== after.contentContext
       return
     }
     if (after.revision < observedRevision.current ||
@@ -148,7 +150,7 @@ export function useLiveSession(
     const reconciled = sessionWithState(metadata, after, parts)
     if (loaded) queryClient.setQueryData<PartsResponse>(sessionsKeys.sessionParts(sessionId), {
       parts,
-      sessionData: metadata,
+      sessionData: reconciled,
     })
     queryClient.setQueryData(sessionsKeys.session(sessionId), reconciled)
     queryClient.setQueryData(sessionsKeys.state(sessionId), after)
@@ -159,6 +161,7 @@ export function useLiveSession(
     if (recovery.current) {
       invalidations.current += 1
       queuedRecovery.current = true
+      queuedFull.current ||= full
       return recovery.current
     }
     const currentGeneration = generation.current
@@ -179,8 +182,10 @@ export function useLiveSession(
       if (recovery.current !== tracked) return
       recovery.current = null
       if (generation.current === currentGeneration && queuedRecovery.current) {
+        const runFull = queuedFull.current
         queuedRecovery.current = false
-        void recover(false)
+        queuedFull.current = false
+        void recover(runFull)
       }
     })
     recovery.current = tracked
@@ -190,12 +195,19 @@ export function useLiveSession(
   const applyPublication = React.useCallback((update: SessionState) => {
     if (update.id !== Number(sessionId)) return
     observedRevision.current = Math.max(observedRevision.current, update.revision)
+    const recoveringNow = recovery.current !== null
+    if (recoveringNow) {
+      invalidations.current += 1
+      queuedRecovery.current = true
+    }
     const current = snapshotRef.current
     const result = publicationResult(current.session.session.revision, current.manifestContext, update)
     if (result === 'duplicate') return
     if (result === 'recover' || !cursorResolves(current.parts, update)) {
-      invalidations.current += 1
-      void recover(false)
+      if (!recoveringNow) {
+        invalidations.current += 1
+        void recover(false)
+      }
       return
     }
     const session = sessionWithState(current.session, update, current.parts)
@@ -213,6 +225,9 @@ export function useLiveSession(
     stateSupported.current = null
     invalidations.current = 0
     queuedRecovery.current = false
+    queuedFull.current = false
+    partsRef.current = {}
+    lastScroll.current = null
     setIsLoading(true)
     setError(null)
     void recover(true)
