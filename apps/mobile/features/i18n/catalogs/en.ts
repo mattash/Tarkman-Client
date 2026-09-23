@@ -336,6 +336,7 @@ export const en = {
     comingUp: 'COMING UP',
     tapToJump: 'Tap a part to go straight to it.',
     armHint: 'Shows Go here for this part.',
+    showMore: 'Show more parts',
     nextUp: 'Next up · {role}',
   },
   serviceSheet: {

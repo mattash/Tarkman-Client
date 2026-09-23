@@ -342,6 +342,7 @@ export const ru: Catalog = {
     comingUp: 'ДАЛЕЕ',
     tapToJump: 'Нажмите на часть, чтобы сразу перейти к ней.',
     armHint: 'Показывает кнопку «Перейти сюда» для этой части.',
+    showMore: 'Показать ещё части',
     nextUp: 'Далее · {role}',
   },
   serviceSheet: {

@@ -20,6 +20,8 @@ import { useI18n } from '../../../../features/i18n'
 const TWO_PANE_WIDTH = 700
 const RAIL_WIDTH = 296
 const COMING_UP = 6
+/** How close to the end of the rail, in points, counts as having scrolled to it. */
+const MORE_THRESHOLD = 48
 /** How long Go here waits under an upcoming part before the row settles back. */
 const ARMED_MS = 8000
 /** Narrowest column, in points at the standard 24pt reading size, before columns give way to a stack. */
@@ -45,6 +47,17 @@ export default function ServiceControlScreen() {
   const [arming, setArming] = useState<{ key: string; at: string | undefined } | null>(null)
   const armed = arming !== null && arming.at === partKey ? arming.key : null
   const setArmed = (key: string | null) => setArming(key === null ? null : { key, at: partKey })
+  // Scrolling to the end of Coming up brings the next few parts into it, so an operator can skip well ahead. All parts are
+  // already loaded; this only widens the window, which goes back to its usual size whenever the service moves.
+  const [widened, setWidened] = useState<{ count: number; at: string | undefined } | null>(null)
+  const shown = widened !== null && widened.at === partKey ? widened.count : COMING_UP
+  const upcoming = state.parts.slice(index + 1, index + 1 + shown)
+  const hasMore = index + 1 + shown < state.parts.length
+  const showMore = () => { if (hasMore) setWidened({ count: shown + COMING_UP, at: partKey }) }
+  // Scroll events keep arriving at the end until the new rows are laid out, so the rail widens again only once its
+  // content has actually grown since the last time.
+  const widenedFrom = useRef<{ height: number; at: string | undefined } | null>(null)
+
   useEffect(() => {
     if (armed === null) return
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -153,13 +166,23 @@ export default function ServiceControlScreen() {
     {wide ? <View style={{ flex: 1, flexDirection: 'row' }}>
       {readingPane}
       <View testID="control-rail" style={{ width: RAIL_WIDTH, borderLeftWidth: 1, borderLeftColor: colors.divider, backgroundColor: colors.surface }}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
+        <ScrollView testID="coming-up-list" style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }} scrollEventThrottle={100}
+          onScroll={({ nativeEvent: { layoutMeasurement, contentOffset, contentSize } }) => {
+            if (layoutMeasurement.height + contentOffset.y < contentSize.height - MORE_THRESHOLD) return
+            if (widenedFrom.current?.height === contentSize.height && widenedFrom.current.at === partKey) return
+            widenedFrom.current = { height: contentSize.height, at: partKey }
+            showMore()
+          }}>
           <AppText variant="eyebrow" tone="muted">{t('control.comingUp')}</AppText>
           {part && nextPart && !controls.forbidden && <AppText variant="caption" tone="muted">{t('control.tapToJump')}</AppText>}
-          {state.parts.slice(index + 1, index + 1 + COMING_UP).map(item => <ComingUpRow key={item.key} item={item} language={first} selected={languages}
+          {upcoming.map(item => <ComingUpRow key={item.key} item={item} language={first} selected={languages}
             armed={armed === item.key} {...holds(item.key)} readOnly={controls.forbidden}
             onArm={() => setArmed(armed === item.key ? null : item.key)}
             onJump={async () => { if (await run(item.key, () => commands.goToPart(sessionId, item.id, expected, item.liturgyPartId))) setArmed(null) }} />)}
+          {/* Also reachable without scrolling: for a screen reader, and when the rail is too short to scroll at all. */}
+          {part && hasMore && <View style={{ alignSelf: 'flex-start', marginLeft: -spacing.sm }}>
+            <AppButton variant="quiet" onPress={showMore}>{t('control.showMore')}</AppButton>
+          </View>}
           {part && !nextPart && <AppText variant="caption" tone="muted">{t('common.lastPart')}</AppText>}
         </ScrollView>
         <View testID="control-deck" style={{ padding: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.divider }}>
