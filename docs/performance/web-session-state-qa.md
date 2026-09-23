@@ -3,7 +3,7 @@
 Issue: Tarkman-Client #156
 Date: 2026-09-23
 Source branch: `openclaw/16fa4a69-6bd0-4e96-8ffd-9d9729e09b79`
-Application SHA: `a49bb788f962e3084a56f0fe86303dec70a02c40`
+Application SHA: `c52b65b21bc94d9552ca34b2489da82e5fdc36d8`
 
 ## Automated proof
 
@@ -55,10 +55,12 @@ Use browser DevTools Network with **Preserve log** enabled and filter successive
 8. **Safety poll:** leave the tab idle for at least 30 seconds. Expect a small `state.json` request, not one full `/s/:id.json` request every second.
 9. **Layouts and boundaries:** repeat normal advance in single and parallel modes and verify first/last controller boundaries remain disabled appropriately.
 
-Rendered QA against `b7f064e797c4db9c4ded7498f9745251a31a21b1` isolated a browser-only shared
-ActionCable lifecycle race: reconnect confirmation and its first contiguous publication can be React-batched.
-The publication effect establishes canonical state, then the connection effect previously issued a redundant
-`state.json` recovery. Application commit `a49bb788f962e3084a56f0fe86303dec70a02c40`
-lets that same-batch contiguous publication satisfy reconnect while preserving recovery when reconnect has no
-publication, or when its publication has a gap, context mismatch, or unknown cursor. Fresh independent browser
-evidence is required against the corrected head; this document does not claim that rerun complete.
+Rendered QA against `c8bf1f86f82ddcbf9fe178723588b6036862485b` proved that the remaining immediate
+`state.json` request also occurred on an ordinary already-connected publication. The shared ActionCable hook
+keyed subscription effects by a memoized identifier object's reference identity. A publication-driven render
+could recreate that equivalent object, tear down all shared listeners, and synthesize a disconnect/reconnect;
+the reconnect recovery was therefore correct for the false lifecycle signal. Application commit
+`c52b65b21bc94d9552ca34b2489da82e5fdc36d8` keys lifecycle and retained messages by the
+canonical primitive channel key and no longer forces a local disconnected state during effect setup. Fresh
+independent browser evidence is required against the corrected head; this document does not claim that rerun
+complete.

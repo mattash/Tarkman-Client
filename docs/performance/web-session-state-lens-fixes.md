@@ -78,3 +78,36 @@ Latest validation:
 - Full web suite: **44 files, 394 tests passed**.
 - Typecheck and production build passed; build transformed 2,353 modules.
 - Fresh rendered QA remains required against the new head.
+
+## Ordinary connected publication / synthetic reconnect
+
+Fresh rendered QA against `c8bf1f86f82ddcbf9fe178723588b6036862485b` showed the same immediate
+`state.json` on an ordinary already-connected contiguous publication, so the reconnect-batch fix above was
+necessary but incomplete. The underlying source was `useActionCableState`: its subscription effect depended
+on a memoized identifier object's reference identity and unconditionally set local connection state to false
+when setting up. React is allowed to recreate memoized values; when publication-driven route and explanation
+renders recreated equivalent identifier objects, both shared listeners could clean up, the shared channel was
+briefly emptied and recreated, and its confirmation became a synthetic reconnect. `useLiveSession` then
+correctly recovered in response to that false connection lifecycle.
+
+Application commit `c52b65b21bc94d9552ca34b2489da82e5fdc36d8` makes subscription lifetime depend
+on `getIdentifierKey(...)`, the canonical primitive identity already used by the shared-channel registry. The
+identifier object is created inside the effect, retained messages are tagged with the same semantic key, and
+effect setup no longer forces a disconnected state before the shared channel reports its actual state. Real
+disconnect/reconnect callbacks are unchanged.
+
+Regression coverage:
+
+- `useActionCable.test.ts` proves two equivalent channel representations retain one connected subscription;
+  this test fails on `c8bf1f8` with a second subscription.
+- `useLiveSession.actioncable.test.tsx` now runs under `StrictMode` with an active route-style session query and
+  the real shared live-session/explanation subscribers. An ordinary contiguous publication moves the reading,
+  refreshes explanations once, retains the shared subscription, and performs zero state/session/parts reads.
+- The prior reconnect-confirmation-plus-publication regression remains covered.
+
+Latest validation:
+
+- Focused suites: **4 files, 36 tests passed**.
+- Full web suite: **44 files, 396 tests passed**.
+- Typecheck and production build passed; build transformed 2,353 modules.
+- Fresh independent Lens and rendered QA remain required.

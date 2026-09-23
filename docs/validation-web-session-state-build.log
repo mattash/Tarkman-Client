@@ -4,7 +4,7 @@
 
 
 ♻️  Generating routes...
-✅ Processed routes in 623ms
+✅ Processed routes in 627ms
 vite v5.4.11 building for production...
 transforming...
 Browserslist: browsers data (caniuse-lite) is 22 months old. Please run:
@@ -19,5 +19,5 @@ dist/assets/index-B0llhS0f.js             16.72 kB │ gzip:   6.30 kB
 dist/assets/vendor-tanstack-DDZUp7U7.js   99.03 kB │ gzip:  30.84 kB
 dist/assets/vendor-react-B20bf5Xv.js     141.47 kB │ gzip:  45.50 kB
 dist/assets/vendor-sentry-DnvXVWIk.js    276.71 kB │ gzip:  90.83 kB
-dist/assets/index-BisH8omS.js            358.43 kB │ gzip: 113.91 kB
-✓ built in 7.98s
+dist/assets/index-CriIbeLr.js            358.41 kB │ gzip: 113.94 kB
+✓ built in 7.89s
