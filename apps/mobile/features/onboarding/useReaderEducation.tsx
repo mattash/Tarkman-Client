@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
-import { View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
+import { AppIcon } from '../../components/AppIcon'
 import { AppText } from '../../components/AppText'
-import { spacing } from '../../design/tokens'
+import { useTheme } from '../../design/ThemeProvider'
+import { radii, spacing, touchTarget } from '../../design/tokens'
 import { useI18n } from '../i18n'
 import { useOnboarding } from './OnboardingProvider'
 import { CoachmarkOverlay } from './CoachmarkOverlay'
@@ -14,7 +16,7 @@ export function useReaderEducation({ id, healthy, ready, sheetOpen, available, f
   root: RefObject<View | null>; targets: Record<Step, RefObject<View | null>>; layoutVersion: string
   open(step: Exclude<Step, 'follow'>): void
 }) {
-  const onboarding = useOnboarding(), { t } = useI18n()
+  const onboarding = useOnboarding(), { t } = useI18n(), { colors } = useTheme()
   const { record, update, clearPending } = onboarding
   const [tour, setTour] = useState<Step | null>(null), [invitation, setInvitation] = useState(false)
   const [hint, setHint] = useState(false), [waitingSheet, setWaitingSheet] = useState(false)
@@ -97,10 +99,21 @@ export function useReaderEducation({ id, healthy, ready, sheetOpen, available, f
       <AppButton variant="quiet" onPress={end}>{t('onboarding.notNow')}</AppButton>
     </View>
   </View> : null
-  const hintView = hint && eligible && !following && !sheetOpen && !tour ? <View style={{ gap: spacing.xs }}>
-    <AppText variant="label">{t('onboarding.returnTitle')}</AppText>
-    <AppText variant="caption">{t('onboarding.returnBody')}</AppText>
-    <AppButton variant="quiet" onPress={dismissHint}>{t('onboarding.dismiss')}</AppButton>
+  const hintView = hint && eligible && !following && !sheetOpen && !tour ? <View style={{
+    alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md,
+    borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.secondary,
+  }}>
+    <View accessible={false} style={{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.secondary }}>
+      <AppIcon name="next" size={18} color={colors.primary} />
+    </View>
+    <View style={{ flex: 1, gap: 1 }}>
+      <AppText variant="label">{t('onboarding.returnTitle')}</AppText>
+      <AppText variant="caption" tone="muted">{t('onboarding.returnBody')}</AppText>
+    </View>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('onboarding.dismiss')} onPress={dismissHint}
+      style={{ width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.sm }}>
+      <AppIcon name="close" size={18} color={colors.muted} />
+    </Pressable>
   </View> : null
   return { tourActive: tour !== null, endTour: () => { if (tour) end() }, overlay, invitationView, hintView, openControl, recordUse,
     browseStarted: (dragging = false) => { gesture.current = dragging; if (eligible && !tour && !sheetOpen) browse.current = true; settle() },

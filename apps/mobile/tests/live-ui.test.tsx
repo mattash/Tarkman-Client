@@ -269,7 +269,7 @@ it('coordinates the tour with the real language sheet and does not dispatch read
   expect(screen.queryByText('Step 2 of 4')).toBeNull()
   await act(async () => { jest.mocked(AppModal).mock.calls.at(-1)?.[0].onAfterDismiss?.() })
   expect(screen.getByText('Step 2 of 4')).toBeTruthy()
-  await fireEvent.press(screen.getByText('End tour'))
+  await fireEvent.press(screen.getByRole('button', { name: 'End tour' }))
   expect(dispatch).not.toHaveBeenCalled()
   expect(retry).not.toHaveBeenCalled()
 })

@@ -1,6 +1,6 @@
 import { it, expect, jest } from '@jest/globals'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
-import { AppState, View } from 'react-native'
+import { AccessibilityInfo, AppState, View } from 'react-native'
 import { AppButton } from '../components/AppButton'
 import { AppText } from '../components/AppText'
 import { ThemeProvider } from '../design/ThemeProvider'
@@ -8,11 +8,13 @@ import { OnboardingProvider, useOnboarding } from '../features/onboarding/Onboar
 import { initialOnboarding, readOnboarding, tipEligible, ONBOARDING_KEY } from '../features/onboarding/state'
 import { Help } from '../features/onboarding/Help'
 import { useReaderEducation } from '../features/onboarding/useReaderEducation'
-import { useRef } from 'react'
+import { CoachmarkOverlay } from '../features/onboarding/CoachmarkOverlay'
+import { useRef, type RefObject } from 'react'
 
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() }, useFocusEffect: (effect: () => void) => {
   jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect])
 } }))
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ __esModule: true, default: () => ({ width: 390, height: 800, scale: 1, fontScale: 1 }) }))
 const store = () => ({ get: jest.fn<(key: string) => Promise<string | null>>(async () => null), set: jest.fn<(key: string, value: string) => Promise<void>>(async () => {}), remove: jest.fn(async () => {}) })
 function Probe() {
   const o = useOnboarding()
@@ -60,7 +62,7 @@ it('dismisses the Today card persistently while keeping help accessible', async 
   const s = store()
   const first = await render(<ThemeProvider><OnboardingProvider store={s}><Help card /></OnboardingProvider></ThemeProvider>)
   await waitFor(() => expect(screen.getByText('Learn the basics')).toBeTruthy())
-  await fireEvent.press(screen.getByText('Dismiss this tip'))
+  await fireEvent.press(screen.getByRole('button', { name: 'Dismiss this tip' }))
   await waitFor(() => expect(s.set).toHaveBeenCalled())
   const saved = s.set.mock.calls.at(-1)![1]
   await first.unmount(); s.get.mockResolvedValue(saved)
@@ -118,7 +120,7 @@ it('requires a real browse gesture and settlement before showing return help', a
   expect(screen.queryByText('Reading at your own pace')).toBeNull()
   await act(async () => jest.advanceTimersByTime(1))
   expect(screen.getByText('Reading at your own pace')).toBeTruthy()
-  await fireEvent.press(screen.getByText('Dismiss this tip'))
+  await fireEvent.press(screen.getByRole('button', { name: 'Dismiss this tip' }))
   expect(state().dismissed).toEqual(['return'])
   await fireEvent.press(screen.getByText('browse'))
   await act(async () => jest.advanceTimersByTime(500))
@@ -156,4 +158,27 @@ it('manual replay preserves automatic suppression and feature choices', async ()
   await fireEvent.press(screen.getByText('Finish'))
   expect(state()).toMatchObject({ status: 'completed', suppressed: true, used: ['language'], cardDismissed: true })
   expect(screen.queryByText('Next')).toBeNull()
+})
+
+it('shows the anchored spotlight and keeps the tour actions accessible', async () => {
+  const next = jest.fn(), back = jest.fn(), end = jest.fn(), tryAction = jest.fn()
+  const frame = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(callback => { callback(0); return 1 })
+  const screenReader = jest.spyOn(AccessibilityInfo, 'isScreenReaderEnabled').mockResolvedValue(false)
+  const container = { current: { measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => done(0, 0, 390, 800) } } as RefObject<View>
+  const target = { current: { measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => done(300, 20, 48, 48) } } as RefObject<View | null>
+  await render(<ThemeProvider><CoachmarkOverlay step="language" target={target} container={container} layoutVersion="1" available
+    next={next} back={back} end={end} tryAction={tryAction} /></ThemeProvider>)
+  await waitFor(() => expect(screen.getByTestId('coachmark-scrim-top')).toBeTruthy())
+  expect(screen.getByText('Step 2 of 4')).toBeTruthy()
+  await fireEvent.press(screen.getByRole('link', { name: 'Open language choices' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Back' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Next' }))
+  target.current = null
+  await fireEvent.press(screen.getByRole('button', { name: 'End tour' }))
+  expect(tryAction).toHaveBeenCalledTimes(1)
+  expect(back).toHaveBeenCalledTimes(1)
+  expect(next).toHaveBeenCalledTimes(1)
+  expect(end).toHaveBeenCalledTimes(1)
+  frame.mockRestore()
+  screenReader.mockRestore()
 })

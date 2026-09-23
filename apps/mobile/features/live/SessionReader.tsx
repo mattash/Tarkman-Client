@@ -146,10 +146,10 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       // Role and posture travel with the route so part detail can draw its header before the part loads.
       open={item => router.push({ pathname: '/sessions/[id]/part/[partId]', params: { id: String(id), partId: String(item.id), key: item.key,
         role: item.role, service: title, ...(item.posture ? { posture: item.posture } : {}) } })} />}
-    {!following && <View testID="return-to-live" style={{ alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md,
+    {!following && <View testID="return-to-live" style={{ alignItems: 'center', gap: education.hintView ? spacing.md : spacing.xs, paddingHorizontal: spacing.md,
       paddingTop: spacing.sm, paddingBottom: spacing.sm, backgroundColor: colors.background }}>
       {education.hintView}
-      {!accessibilitySize && <AppText variant="caption" tone="muted">{showingSaved ? t('reader.showingSavedText') : manualPart !== undefined && manualPart !== part?.key ? t('reader.liveMovedOn') : t('reader.ownPace')}</AppText>}
+      {!accessibilitySize && !education.hintView && <AppText variant="caption" tone="muted">{showingSaved ? t('reader.showingSavedText') : manualPart !== undefined && manualPart !== part?.key ? t('reader.liveMovedOn') : t('reader.ownPace')}</AppText>}
       <AppButton icon="live" rounded accessibilityHint={showingSaved ? t('reader.returnToLiveSavedHint') : t('reader.returnToLiveHint')}
         onPress={() => { education.recordUse('return'); dispatch({ type: 'follow' }); retry() }}>{t('reader.returnToLive')}</AppButton>
     </View>}
