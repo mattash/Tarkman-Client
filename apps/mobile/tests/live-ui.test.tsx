@@ -1,6 +1,9 @@
+import { OnboardingProvider } from '../features/onboarding/OnboardingProvider'
 import * as ReactNative from 'react-native'
 import { beforeEach, expect, it, jest } from '@jest/globals'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
+import { AppModal } from '../components/AppModal'
+
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
 import { SessionReader } from '../features/live/SessionReader'
@@ -8,8 +11,9 @@ import { useReader } from '../features/live/useReader'
 import { initialState } from '../features/live/state'
 import { normalizeParts, normalizeSession } from '../features/live/contracts'
 jest.mock('../features/live/useReader')
+jest.mock('../components/AppModal', () => ({ AppModal: jest.fn(jest.requireActual<typeof import('../components/AppModal')>('../components/AppModal').AppModal) }))
 jest.mock('../features/auth/AuthProvider', () => ({ useAuth: () => ({ state: { status: 'signedOut' } }) }))
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
+jest.mock('expo-router', () => ({ useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]), router: { push: jest.fn() } }))
 let mockOnline = true
 jest.mock('../features/live/lifecycle', () => ({ lifecycle: { listen: (callback: (active: boolean, online: boolean) => void) => { callback(true, mockOnline); return () => {} } } }))
 const preferencesStore = { get: async () => null, set: async () => {}, remove: async () => {} }
@@ -242,8 +246,30 @@ it('omits the indicator only when the actions row wraps, leaving every button re
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
   expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
   // On the test renderer onLayout doesn't fire automatically; simulate the narrow-viewport wrap.
-  fireEvent(screen.getByTestId('reader-header-nav'), 'layout', { nativeEvent: { layout: { width: 200, height: 56, x: 0, y: 0 } } })
-  fireEvent(screen.getByTestId('reader-header-buttons'), 'layout', { nativeEvent: { layout: { width: 340, height: 112, x: 0, y: 0 } } })
+  await fireEvent(screen.getByTestId('reader-header-nav'), 'layout', { nativeEvent: { layout: { width: 200, height: 56, x: 0, y: 0 } } })
+  await fireEvent(screen.getByTestId('reader-header-buttons'), 'layout', { nativeEvent: { layout: { width: 340, height: 112, x: 0, y: 0 } } })
   await waitFor(() => expect(screen.queryByTestId('control-connection')).toBeNull())
   for (const name of ['All services', 'Choose reading language', 'Explain current part', 'Reading preferences']) expect(screen.getByRole('button', { name })).toBeOnTheScreen()
+})
+
+
+it('coordinates the tour with the real language sheet and does not dispatch reader commands', async () => {
+  const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer', status: 'active' } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'English prayer', role: 'Choir' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts }, retry, refreshAfterCommand: jest.fn(), dispatch })
+  await render(<OnboardingProvider store={preferencesStore}><SessionReader endpoints={endpoints} id={7} back={() => {}} /></OnboardingProvider>, { wrapper })
+  await fireEvent(screen.getByTestId('reader-root'), 'layout', { nativeEvent: { layout: { width: 390, height: 844 } } })
+  await fireEvent.press(await screen.findByText('Start tour'))
+  await fireEvent.press(screen.getByText('Next'))
+  expect(screen.getByText('Step 2 of 4')).toBeTruthy()
+  await fireEvent.press(screen.getByTestId('reader-language'))
+  expect(screen.queryByText('Step 2 of 4')).toBeNull()
+  expect(screen.getByText('Reading language')).toBeTruthy()
+  await fireEvent.press(screen.getByRole('button', { name: 'Close Reading language' }))
+  expect(screen.queryByText('Step 2 of 4')).toBeNull()
+  await act(async () => { jest.mocked(AppModal).mock.calls.at(-1)?.[0].onAfterDismiss?.() })
+  expect(screen.getByText('Step 2 of 4')).toBeTruthy()
+  await fireEvent.press(screen.getByText('End tour'))
+  expect(dispatch).not.toHaveBeenCalled()
+  expect(retry).not.toHaveBeenCalled()
 })

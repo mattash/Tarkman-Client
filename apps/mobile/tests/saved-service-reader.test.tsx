@@ -23,7 +23,7 @@ jest.mock('../features/live/cable')
 jest.mock('../features/live/lifecycle', () => ({ lifecycle: { listen: jest.fn() } }))
 jest.mock('../features/preferences/storage', () => ({ preferencesStore: { get: jest.fn(), set: jest.fn(), remove: jest.fn() } }))
 jest.mock('../features/auth/AuthProvider', () => ({ useAuth: () => ({ state: { status: 'signedOut' } }) }))
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
+jest.mock('expo-router', () => ({ useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]), router: { push: jest.fn() } }))
 // Observe the actual list's safety props while still rendering its accessible rows.
 jest.mock('../features/live/PartList', () => {
   const actual = jest.requireActual<typeof import('../features/live/PartList')>('../features/live/PartList')

@@ -1,5 +1,7 @@
+import { HelpContent } from '../onboarding/Help'
+import { useReaderEducation } from '../onboarding/useReaderEducation'
 import { useEffect, useRef, useState } from 'react'
-import { View, useWindowDimensions, type LayoutChangeEvent } from 'react-native'
+import { Platform, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native'
 import { router } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
@@ -29,17 +31,20 @@ const abbreviations = { en: 'EN', ru: 'RU', grabar: 'Գրբ', translit: 'TR' } a
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
   useScreenKeepAwake('tarkman-live-reader')
   const { state, retry, dispatch, saved } = useReader(endpoints, id)
-  const { preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear: clearPreferences } = usePreferences()
+  const { ready: preferencesReady, preferences, setLanguage, setSelectedLanguages, setAppearance, setReadingSize, clear: clearPreferences } = usePreferences()
   const { colors } = useTheme()
   const { t } = useI18n()
   const { width, height, fontScale } = useWindowDimensions()
   const language = preferences.language
-  const [sheet, setSheet] = useState<'language' | 'preferences' | 'explanation' | null>(null)
+  const [sheet, setSheet] = useState<'language' | 'preferences' | 'explanation' | 'help' | null>(null)
+  const [sheetClosing, setSheetClosing] = useState(false)
   const [forgetting, setForgetting] = useState(false)
   const [languageMode, setLanguageMode] = useState<'quick' | 'choose'>('quick')
   const [draftLanguages, setDraftLanguages] = useState<Language[]>(preferences.selectedLanguages)
   const [languageError, setLanguageError] = useState(false)
   const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null), explanationOpener = useRef<View>(null)
+  const root = useRef<View>(null), followTarget = useRef<View>(null)
+  const [layoutReady, setLayoutReady] = useState(false)
   const activeOpener = useRef<View>(null)
   const [manualPart, setManualPart] = useState<string | undefined>(undefined)
   // Storage is a render fallback only; live state and its position channel stay authoritative.
@@ -79,6 +84,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     setLanguageError(false)
     setLanguageMode('quick')
     setForgetting(false)
+    setSheetClosing(true)
     setSheet(null)
   }
   const openLanguage = () => {
@@ -90,58 +96,73 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const applyLanguages = () => {
     if (draftLanguages.length === 0) { setLanguageError(true); return }
     setSelectedLanguages(draftLanguages)
+    education.recordUse('language')
     dismissSheet()
   }
   const live = !showingSaved && state.listed && state.connected && !state.stale && !state.error && state.session?.status === 'active'
+  const available = live && online && !!part && !state.loading && !state.refreshing && !state.explanationsLoading && !state.explanationError && state.explanations.length > 0
+  const education = useReaderEducation({ id, healthy: live && online && !!part, ready: preferencesReady && layoutReady,
+    sheetOpen: sheet !== null || sheetClosing, available, following, root,
+    targets: { follow: followTarget, language: languageOpener, explanation: explanationOpener, preferences: preferencesOpener },
+    layoutVersion: `${fitKey}:${wrappedAt}:${height}:${preferences.readingSize}`,
+    open: step => {
+      activeOpener.current = step === 'language' ? languageOpener.current : step === 'explanation' ? explanationOpener.current : preferencesOpener.current
+      if (step === 'language') openLanguage()
+      else setSheet(step)
+    },
+  })
   const details = <View testID="reader-header-details" style={{ paddingHorizontal: spacing.page, paddingBottom: spacing.md, gap: spacing.sm }}>
     <AppText variant="heading">{title}</AppText>
     {church && <AppText variant="caption" tone="muted">{church}</AppText>}
     <ReaderStatus state={state} retry={retry} showLive={false} savedCopy={showingSaved} />
     {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">{t('reader.currentPartUnavailable')}</AppText>}
   </View>
-  return <View style={{ flex: 1 }}>
+  return <View testID="reader-root" ref={root} {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string }) => { if (event.key === 'Escape') education.endTour() } } : {})} onLayout={() => setLayoutReady(true)} style={{ flex: 1 }}>
     <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
       paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
-      <View testID="reader-header-nav" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }} onLayout={markRow}>
+      <View ref={followTarget} collapsable={false} testID="reader-header-nav" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }} onLayout={markRow}>
         <AppButton variant="quiet" icon="back" iconOnly={width < 600 || accessibilitySize} onPress={back}>{t('common.allServices')}</AppButton>
         {live && <StatusPill label={t('common.live')} tone="success" icon="connected" announce={false} />}
       </View>
       <View testID="reader-header-buttons" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginLeft: 'auto', flexShrink: 1 }} onLayout={markActions}>
         {showStatus && <ControlConnectionStatus state={state} offline={!online} sending={false} />}
         <AppButton testID="reader-language" ref={languageOpener} variant="quiet" selected icon="languages"
-          onPress={() => { activeOpener.current = languageOpener.current; openLanguage() }}
+          onPress={() => education.openControl('language')}
           accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === language)!.label })}>
           {abbreviations[language]}
         </AppButton>
         <AppButton testID="reader-explain" ref={explanationOpener} variant="quiet" icon="explanation" iconOnly disabled={!showingSaved && !part}
-          onPress={() => { activeOpener.current = explanationOpener.current; setSheet('explanation') }}>{showingSaved ? t('reader.explainSavedText') : t('reader.explainCurrentPart')}</AppButton>
+          selected={available} accessibilityHint={available ? t('onboarding.available') : undefined}
+          onPress={() => education.openControl('explanation')}>{showingSaved ? t('reader.explainSavedText') : t('reader.explainCurrentPart')}</AppButton>
         <AppButton testID="reader-preferences" ref={preferencesOpener} variant="quiet" icon="preferences" iconOnly
-          onPress={() => { activeOpener.current = preferencesOpener.current; setSheet('preferences') }}>{t('readingPreferences.title')}</AppButton>
+          onPress={() => education.openControl('preferences')}>{t('readingPreferences.title')}</AppButton>
       </View>
     </View>
+    {education.invitationView}
     {state.loading ? details : <PartList parts={showingSaved ? saved.parts : state.parts} currentKey={showingSaved ? undefined : part?.key} following={following} language={language}
       selectedLanguages={preferences.selectedLanguages} readingSize={preferences.readingSize} paused={!showingSaved && state.session?.status === 'paused'}
-      header={details} compact={compactReading} switchLanguage={setLanguage}
-      manual={() => { if (showingSaved) return; if (state.following) setManualPart(part?.key); dispatch({ type: 'manual' }) }}
+      header={details} compact={compactReading} switchLanguage={value => { setLanguage(value); education.recordUse('language') }} browseSettled={education.browseSettled} browseMoved={education.browseMoved} browseMomentum={education.browseMomentum}
+      manual={dragging => { if (showingSaved) return; education.browseStarted(dragging); if (state.following) setManualPart(part?.key); dispatch({ type: 'manual' }) }}
       // Role and posture travel with the route so part detail can draw its header before the part loads.
       open={item => router.push({ pathname: '/sessions/[id]/part/[partId]', params: { id: String(id), partId: String(item.id), key: item.key,
         role: item.role, service: title, ...(item.posture ? { posture: item.posture } : {}) } })} />}
     {!following && <View testID="return-to-live" style={{ alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md,
       paddingTop: spacing.sm, paddingBottom: spacing.sm, backgroundColor: colors.background }}>
+      {education.hintView}
       {!accessibilitySize && <AppText variant="caption" tone="muted">{showingSaved ? t('reader.showingSavedText') : manualPart !== undefined && manualPart !== part?.key ? t('reader.liveMovedOn') : t('reader.ownPace')}</AppText>}
       <AppButton icon="live" rounded accessibilityHint={showingSaved ? t('reader.returnToLiveSavedHint') : t('reader.returnToLiveHint')}
-        onPress={() => { dispatch({ type: 'follow' }); retry() }}>{t('reader.returnToLive')}</AppButton>
+        onPress={() => { education.recordUse('return'); dispatch({ type: 'follow' }); retry() }}>{t('reader.returnToLive')}</AppButton>
     </View>}
     <AppModal visible={sheet !== null} title={sheet === 'language' ? (languageMode === 'quick' ? t('reader.readingLanguage') : t('reader.chooseLanguages'))
-      : sheet === 'preferences' ? t('readingPreferences.title') : t('common.explanation')}
-      openerRef={activeOpener} onDismiss={dismissSheet} dismissLabel={sheet === 'language' && languageMode === 'choose' ? t('common.cancel') : t('common.done')}
+      : sheet === 'preferences' ? t('readingPreferences.title') : sheet === 'help' ? t('onboarding.help') : t('common.explanation')}
+      openerRef={activeOpener} restoreFocus={!education.tourActive} onDismiss={dismissSheet} onAfterDismiss={() => { setSheetClosing(false); education.sheetDismissed() }} dismissLabel={sheet === 'language' && languageMode === 'choose' ? t('common.cancel') : t('common.done')}
       headerAction={sheet === 'language' && languageMode === 'choose' ? <AppButton variant="quiet" onPress={applyLanguages}>{t('reader.applyLanguages')}</AppButton> : undefined}>
       {sheet === 'language' ? languageMode === 'quick' ? <>
         <AppText variant="caption" tone="muted">{t('reader.switchingKeepsPlace')}</AppText>
         {preferences.selectedLanguages.map(value => {
           const item = sampleLanguages.find(candidate => candidate.value === value)!
           return <LanguageSelectionRow key={value} language={value} label={item.label} selected={value === language}
-            onPress={() => { setLanguage(value); dismissSheet() }} />
+            onPress={() => { setLanguage(value); education.recordUse('language'); dismissSheet() }} />
         })}
         <AppButton variant="quiet" icon="next" onPress={() => {
           setDraftLanguages(preferences.selectedLanguages)
@@ -159,6 +180,9 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
             setDraftLanguages(current => current.includes(item.value) ? current.filter(value => value !== item.value) : [...current, item.value])
           }} />)}
       </> : sheet === 'preferences' ? <>
+        <AppButton variant="quiet" onPress={() => setSheet('help')}>{t('onboarding.help')}</AppButton>
+        <AppButton variant="quiet" onPress={() => { if (!live) { setSheet('help'); return }; education.replay(); dismissSheet() }}>{t(education.inProgress ? 'onboarding.resume' : 'onboarding.tour')}</AppButton>
+        {education.inProgress && <AppButton variant="quiet" onPress={() => { education.restart(); dismissSheet() }}>{t('onboarding.restart')}</AppButton>}
         <AppText variant="label">{t('readingPreferences.appearance')}</AppText>
         <SegmentedControl label={t('readingPreferences.appearance')} value={preferences.appearance} onChange={setAppearance}
           options={[{ value: 'system', label: t('readingPreferences.system') }, { value: 'light', label: t('readingPreferences.light') }, { value: 'dark', label: t('readingPreferences.dark') }]} />
@@ -178,6 +202,10 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
             <AppButton variant="quiet" onPress={() => setForgetting(false)}>{t('readingPreferences.keep')}</AppButton>
           </> : <AppButton variant="secondary" onPress={() => setForgetting(true)}>{t('readingPreferences.forget')}</AppButton>}
         </View>
+      </> : sheet === 'help' ? <>
+        <HelpContent />
+        {!live && <AppText>{t('onboarding.unavailable')}</AppText>}
+        {live && <AppButton onPress={() => { education.replay(); dismissSheet() }}>{t(education.inProgress ? 'onboarding.resume' : 'onboarding.show')}</AppButton>}
       </> : <>
         <AppText variant="label" style={{ textTransform: 'capitalize' }}>{showingSaved ? t('reader.lastSeenExplanations') : part?.role ?? t('reader.currentPartUnavailableShort')}</AppText>
         <AppText variant="caption" tone="muted">{showingSaved ? t('reader.savedExplanationsNote') : t('reader.explanationsFollowNote')}</AppText>
@@ -194,5 +222,6 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           </View>)}
       </>}
     </AppModal>
+    {education.overlay}
   </View>
 }

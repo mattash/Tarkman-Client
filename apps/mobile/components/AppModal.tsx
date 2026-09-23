@@ -7,17 +7,19 @@ import { AppText } from './AppText'
 import { AppButton } from './AppButton'
 import { useI18n } from '../features/i18n'
 
-export function AppModal({ visible, onDismiss, title, children, openerRef, headerAction, dismissLabel }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<View | null>; headerAction?: ReactNode; dismissLabel?: string }>) {
+export function AppModal({ visible, onDismiss, title, children, openerRef, headerAction, dismissLabel, onAfterDismiss, restoreFocus = true }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<View | null>; headerAction?: ReactNode; dismissLabel?: string; onAfterDismiss?: () => void; restoreFocus?: boolean }>) {
   const closeRef = useRef<View>(null)
   const { t } = useI18n()
   const dismiss = dismissLabel ?? t('common.done')
   const wasVisible = useRef(false)
-  const restore = () => focusControl(openerRef?.current)
+  const completion = useRef({ onAfterDismiss, restoreFocus })
+  useEffect(() => { completion.current = { onAfterDismiss, restoreFocus } }, [onAfterDismiss, restoreFocus])
+  const restore = () => { if (restoreFocus) focusControl(openerRef?.current); onAfterDismiss?.() }
   useEffect(() => {
     // Android does not expose Modal.onDismiss. No exit animation ensures the
     // next frame runs after removal; iOS/web restore after the dismissal event.
     if (wasVisible.current && !visible && Platform.OS === 'android') {
-      const frame = requestAnimationFrame(() => focusControl(openerRef?.current))
+      const frame = requestAnimationFrame(() => { if (completion.current.restoreFocus) focusControl(openerRef?.current); completion.current.onAfterDismiss?.() })
       wasVisible.current = visible
       return () => cancelAnimationFrame(frame)
     }

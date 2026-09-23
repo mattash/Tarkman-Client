@@ -1,4 +1,6 @@
 import '../global.css'
+import { OnboardingNavigation } from '../features/onboarding/OnboardingNavigation'
+import { OnboardingProvider } from '../features/onboarding/OnboardingProvider'
 import * as Sentry from '@sentry/react-native'
 import { Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -21,7 +23,7 @@ function RootLayout() {
 }
 function PreferenceTheme() {
   const { preferences } = usePreferences()
-  return <I18nProvider preference={preferences.interfaceLanguage}><ThemeProvider appearance={preferences.appearance}><RootContent /></ThemeProvider></I18nProvider>
+  return <I18nProvider preference={preferences.interfaceLanguage}><ThemeProvider appearance={preferences.appearance}><OnboardingProvider><RootContent /></OnboardingProvider></ThemeProvider></I18nProvider>
 }
 function RootContent() {
   const { colors, scheme } = useTheme()
@@ -29,6 +31,7 @@ function RootContent() {
   // Each screen owns its safe area, so the tab bar can reach the home indicator and the scanner can fill the display.
   const safe = { paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }
   return <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+    <OnboardingNavigation />
     <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     <ReadingFontProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background, ...safe } }}>

@@ -15,9 +15,9 @@ import { useI18n } from '../i18n'
 const READING_WIDTH = 1152
 
 export function PartList({ parts, currentKey, following, language, selectedLanguages, manual, open, switchLanguage,
-  readingSize = 'standard', paused = false, header, compact = false }: {
+  browseSettled, browseMoved, browseMomentum, readingSize = 'standard', paused = false, header, compact = false }: {
   parts: LivePart[]; currentKey?: string; following: boolean; language: Language; selectedLanguages: readonly Language[]
-  manual(): void; open(part: LivePart): void; switchLanguage?(language: Language): void; readingSize?: ReadingSize
+  browseSettled?(): void; browseMoved?(): void; browseMomentum?(): void; manual(dragging?: boolean): void; open(part: LivePart): void; switchLanguage?(language: Language): void; readingSize?: ReadingSize
   paused?: boolean; header?: ReactElement; compact?: boolean
 }) {
   const { fontScale } = useWindowDimensions()
@@ -78,10 +78,11 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
     <FlashList testID="reading-list" ref={list} data={parts} keyExtractor={p => p.key}
       // Opening straight onto the live part avoids drawing and scrolling past everything before it.
       initialScrollIndex={following && index > 0 ? index : undefined} onLoad={() => target()}
-      extraData={`${currentKey}:${index}:${layoutKey}:${paused}:${gutter}:${page}`} onScrollBeginDrag={stopFollowing}
+      extraData={`${currentKey}:${index}:${layoutKey}:${paused}:${gutter}:${page}`} onScrollBeginDrag={() => actions.current.manual(true)}
       // Status pills live in the list header. FlashList keeps the first visible part anchored by default,
       // so a status change never moves prayer text.
-      onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y }} scrollEventThrottle={100}
+      onScrollEndDrag={browseSettled} onMomentumScrollEnd={browseSettled} onMomentumScrollBegin={browseMomentum}
+      onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y; browseMoved?.() }} scrollEventThrottle={100}
       ListHeaderComponent={header ? <View style={{ paddingHorizontal: gutter }}>{header}</View> : null}
       ListFooterComponent={<View style={{ height: spacing.xxl }} />}
       ListEmptyComponent={<AppText style={{ padding: page, paddingHorizontal: page + gutter }}>{t('common.noReadingParts')}</AppText>}
