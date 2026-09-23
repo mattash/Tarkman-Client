@@ -112,19 +112,17 @@ it('drops a stored interface language this build does not ship without losing re
   await waitFor(() => expect(store.set).toHaveBeenCalledWith(PREFERENCES_KEY, expect.not.stringContaining('interfaceLanguage')))
 })
 
-it('shows the Russian draft only where drafts are allowed, with Russian plurals and English fallback outside it', async () => {
-  expect(INTERFACE_CATALOGS.ru.reviewed).toBe(false)
-  expect(availableInterfaceLanguages(false)).not.toContain('ru')
+it('offers reviewed Russian in production with Russian plurals', async () => {
+  expect(INTERFACE_CATALOGS.ru.reviewed).toBe(true)
+  expect(availableInterfaceLanguages(false)).toContain('ru')
   function Probe() {
     const { t: translateHere, language } = useI18n()
     return <Text>{`${language}|${translateHere('common.done')}|${translateHere('settings.chooseUpTo', { count: 3 })}`}</Text>
   }
-  const { rerender } = await render(<I18nProvider preference="ru" includeDrafts><Probe /></I18nProvider>)
+  await render(<I18nProvider preference="ru" includeDrafts={false}><Probe /></I18nProvider>)
   expect(screen.getByText(/^ru\|Готово\|Выберите до 3 языков/)).toBeOnTheScreen()
   expect(t('control.positionLabel', { position: 2, total: 5 })).toBe('Часть 2 из 5')
   expect(statusName('showing_gospel')).toBe('Чтение Евангелия')
-  await rerender(<I18nProvider preference="ru" includeDrafts={false}><Probe /></I18nProvider>)
-  expect(screen.getByText(/^en\|Done\|Choose up to 3 languages/)).toBeOnTheScreen()
   expect(translate('ru', 'controlLanguages.full', { count: 1 })).toContain('1 языка')
 })
 

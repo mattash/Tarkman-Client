@@ -1,8 +1,8 @@
 import type { Catalog } from '..'
 
 /**
- * Russian interface copy. DRAFT: machine-drafted from `en.ts` and not yet confirmed by a fluent reader, so it is registered
- * with `reviewed: false`. Part roles, service titles and announcements come from the server and are not translated here.
+ * Russian interface copy, approved by a fluent reader and registered as reviewed.
+ * Part roles, service titles and announcements come from the server and are not translated here.
  */
 export const ru: Catalog = {
   common: {

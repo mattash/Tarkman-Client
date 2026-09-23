@@ -240,18 +240,18 @@ it('shows configuration failure without mounting network consumers', async () =>
   } finally { if (api !== undefined) process.env.EXPO_PUBLIC_API_URL = api; if (cable !== undefined) process.env.EXPO_PUBLIC_ACTIONCABLE_URL = cable }
 })
 
-it('chooses a draft interface language in Settings and switches the screen to it', async () => {
+it('chooses the reviewed Russian interface language in Settings and switches the screen to it', async () => {
   function Localized({ children }: { children: React.ReactNode }) {
     const { preferences: chosen } = usePreferences()
-    return <I18nProvider preference={chosen.interfaceLanguage} includeDrafts>{children}</I18nProvider>
+    return <I18nProvider preference={chosen.interfaceLanguage} includeDrafts={false}>{children}</I18nProvider>
   }
   try {
     await render(<Settings />, { wrapper: ({ children }) => wrapper({ children: <Localized>{children}</Localized> }) })
     expect(screen.getByText('Interface language')).toBeOnTheScreen()
-    expect(screen.getByText('Draft translations are still being checked and may contain mistakes.')).toBeOnTheScreen()
-    await fireEvent.press(screen.getByRole('radio', { name: 'Русский · draft' }))
+    expect(screen.queryByText('Draft translations are still being checked and may contain mistakes.')).not.toBeOnTheScreen()
+    await fireEvent.press(screen.getByRole('radio', { name: 'Русский' }))
     expect(await screen.findByText('Язык интерфейса')).toBeOnTheScreen()
-    expect(screen.getByRole('radio', { name: 'Русский · черновик' })).toBeSelected()
+    expect(screen.getByRole('radio', { name: 'Русский' })).toBeSelected()
     await fireEvent.press(screen.getByRole('radio', { name: 'Как на устройстве' }))
     expect(await screen.findByText('Interface language')).toBeOnTheScreen()
   } finally {
