@@ -1,0 +1,286 @@
+
+> @tarkman/web@1.6.1 test:integration
+> vitest run integration.test
+
+
+ RUN  v3.2.4 /home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanation > should fetch a real explanation
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchCurrentExplanation > should fetch current explanations or handle gracefully if none exist
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchLiturgyExplanations > should fetch liturgy explanations
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchLiturgyExplanation > should fetch a single liturgy explanation
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchPartExplanations > should fetch part explanations
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchPartExplanations > should handle non-existent part gracefully
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationCitations > should fetch explanation citations or return empty array
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationCitations > should handle non-existent explanation gracefully
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationCitations > should handle explanations with new fields (summary, tags, status)
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationRatings > should fetch explanation ratings or return zero ratings
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+stderr | app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationRatings > should handle non-existent explanation gracefully
+Error: Error: getaddrinfo ENOTFOUND example.test
+    at Object.dispatchError (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/xhr-utils.js:62:19)
+    at Request.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/xhr/XMLHttpRequest-impl.js:655:18)
+    at Request.emit (node:events:526:24)
+    at ClientRequest.<anonymous> (/home/crabbox/.openclaw/cloud-workers/cbx_fd175ed22239/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/67d50e683525964a/702c8f313d5ca712a6d64ff2ecc1ee69/88/apps/web/node_modules/jsdom/lib/jsdom/living/helpers/http-request.js:127:14)
+    at ClientRequest.emit (node:events:514:28)
+    at emitErrorEvent (node:_http_client:114:11)
+    at TLSSocket.socketErrorListener (node:_http_client:766:5)
+    at TLSSocket.emit (node:events:514:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts (11 tests | 8 failed) 201ms
+   × explanationQueries integration tests > fetchExplanation > should fetch a real explanation 57ms
+     → Failed to fetch explanation 1
+   ✓ explanationQueries integration tests > fetchCurrentExplanation > should fetch current explanations or handle gracefully if none exist 9ms
+   × explanationQueries integration tests > fetchLiturgyExplanations > should fetch liturgy explanations 21ms
+     → Failed to fetch liturgy explanations
+   × explanationQueries integration tests > fetchLiturgyExplanation > should fetch a single liturgy explanation 11ms
+     → Failed to fetch liturgy explanation 1
+   × explanationQueries integration tests > fetchPartExplanations > should fetch part explanations 10ms
+     → Failed to fetch part explanations for part 4
+   × explanationQueries integration tests > fetchPartExplanations > should handle non-existent part gracefully 16ms
+     → Failed to fetch part explanations for part 999999
+   × explanationQueries integration tests > fetchExplanationCitations > should fetch explanation citations or return empty array 14ms
+     → Failed to fetch citations
+   × explanationQueries integration tests > fetchExplanationCitations > should handle non-existent explanation gracefully 6ms
+     → Failed to fetch citations
+   × explanationQueries integration tests > fetchExplanationCitations > should handle explanations with new fields (summary, tags, status) 32ms
+     → Failed to fetch liturgy explanation 1
+   ✓ explanationQueries integration tests > fetchExplanationRatings > should fetch explanation ratings or return zero ratings 12ms
+   ✓ explanationQueries integration tests > fetchExplanationRatings > should handle non-existent explanation gracefully 7ms
+ ↓ app/queries/__tests__/sessionQueries.integration.test.ts (5 tests | 2 skipped)
+ ✓ app/__tests__/integration/auth.integration.test.tsx (1 test) 728ms
+   ✓ Authentication Flow > should allow user to login and logout  726ms
+ ↓ app/queries/__tests__/partQueries.integration.test.ts (1 test | 1 skipped)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanation > should fetch a real explanation
+Error: Failed to fetch explanation 1
+ ❯ Module.fetchExplanation app/queries/explanationQueries.ts:32:11
+     30|     return data.explanation
+     31|   } catch {
+     32|     throw new Error(`Failed to fetch explanation ${explanationId}`)
+       |           ^
+     33|   }
+     34| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:27:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchLiturgyExplanations > should fetch liturgy explanations
+Error: Failed to fetch liturgy explanations
+ ❯ Module.fetchLiturgyExplanations app/queries/explanationQueries.ts:65:11
+     63|     return data.explanations.map(wrapper => wrapper.explanation)
+     64|   } catch {
+     65|     throw new Error('Failed to fetch liturgy explanations')
+       |           ^
+     66|   }
+     67| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:62:28
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchLiturgyExplanation > should fetch a single liturgy explanation
+Error: Failed to fetch liturgy explanation 1
+ ❯ Module.fetchLiturgyExplanation app/queries/explanationQueries.ts:74:11
+     72|     return data.explanation
+     73|   } catch {
+     74|     throw new Error(`Failed to fetch liturgy explanation ${explanation…
+       |           ^
+     75|   }
+     76| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:76:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchPartExplanations > should fetch part explanations
+Error: Failed to fetch part explanations for part 4
+ ❯ Module.fetchPartExplanations app/queries/explanationQueries.ts:95:11
+     93|       return []
+     94|     }
+     95|     throw new Error(`Failed to fetch part explanations for part ${part…
+       |           ^
+     96|   }
+     97| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:88:28
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchPartExplanations > should handle non-existent part gracefully
+Error: Failed to fetch part explanations for part 999999
+ ❯ Module.fetchPartExplanations app/queries/explanationQueries.ts:95:11
+     93|       return []
+     94|     }
+     95|     throw new Error(`Failed to fetch part explanations for part ${part…
+       |           ^
+     96|   }
+     97| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:107:28
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationCitations > should fetch explanation citations or return empty array
+Error: Failed to fetch citations
+ ❯ Module.fetchExplanationCitations app/queries/explanationQueries.ts:113:11
+    111|       return []
+    112|     }
+    113|     throw new Error('Failed to fetch citations')
+       |           ^
+    114|   }
+    115| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:116:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationCitations > should handle non-existent explanation gracefully
+Error: Failed to fetch citations
+ ❯ Module.fetchExplanationCitations app/queries/explanationQueries.ts:113:11
+    111|       return []
+    112|     }
+    113|     throw new Error('Failed to fetch citations')
+       |           ^
+    114|   }
+    115| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:135:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  app/queries/__tests__/explanationQueries.integration.test.ts > explanationQueries integration tests > fetchExplanationCitations > should handle explanations with new fields (summary, tags, status)
+Error: Failed to fetch liturgy explanation 1
+ ❯ Module.fetchLiturgyExplanation app/queries/explanationQueries.ts:74:11
+     72|     return data.explanation
+     73|   } catch {
+     74|     throw new Error(`Failed to fetch liturgy explanation ${explanation…
+       |           ^
+     75|   }
+     76| }
+ ❯ app/queries/__tests__/explanationQueries.integration.test.ts:142:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed | 1 passed | 2 skipped (4)
+      Tests  8 failed | 4 passed | 3 skipped (18)
+   Start at  04:40:58
+   Duration  11.13s (transform 1.18s, setup 641ms, collect 3.60s, tests 929ms, environment 3.47s, prepare 582ms)
