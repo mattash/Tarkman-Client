@@ -3,7 +3,7 @@
 Issue: Tarkman-Client #156
 Date: 2026-09-23
 Source branch: `openclaw/16fa4a69-6bd0-4e96-8ffd-9d9729e09b79`
-Source SHA: `4c7035576836e6f5d5eb8aa881607b45b9ee82e4`
+Source SHA: `0f418a95343adf40152369244e85636bbc1b0e73`
 
 ## Automated proof
 
