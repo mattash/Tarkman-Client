@@ -1,3 +1,4 @@
+/* global process, __dirname, fetch, setTimeout, clearTimeout */
 const assert = require('node:assert/strict')
 const { after, before, beforeEach, test } = require('node:test')
 const { spawn } = require('node:child_process')
