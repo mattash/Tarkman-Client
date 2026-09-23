@@ -1,9 +1,9 @@
 import * as React from 'react'
 import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateSessionStatus, sessionsKeys, sessionMutationKeys, classifyControlFailure, controlFailureMessage } from '@/queries/sessions'
+import { updateSessionStatus, sessionMutationKeys, classifyControlFailure, controlFailureMessage } from '@/queries/sessions'
 import { SessionStatus, STATUS_LABELS } from '@/types/status'
 import { CustomMessageModal } from './CustomMessageModal'
-import { acceptCommandPublication } from '@/queries/sessionState'
+import { acceptCommandPublication, recoverRejectedCommand } from '@/queries/sessionState'
 
 interface SessionStatusControlProps {
   sessionId: number
@@ -29,7 +29,7 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active', curr
     onMutate: () => setCommandError(null),
     onSuccess: async (response) => {
       if (!acceptCommandPublication(queryClient, sessionIdString, response)) {
-        await queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString), exact: true })
+        await recoverRejectedCommand(queryClient, sessionIdString)
       }
       setIsOpen(false)
       setCustomMessageModalOpen(false)

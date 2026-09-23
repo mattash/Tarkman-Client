@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, render, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -98,6 +98,32 @@ describe('useLiveSession', () => {
     rerender()
     expect(result.current.currentPartKey).toBe('lp:102')
     expect(fetchSessionState).not.toHaveBeenCalled()
+  })
+
+  it('does not verify a contiguous connected publication before the 30-second safety poll', async () => {
+    vi.useFakeTimers()
+    try {
+      cable = { message: null, connected: true }
+      const { result, rerender } = renderHook(() => useLiveSession('7', initialSession), { wrapper: wrapper() })
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+      expect(result.current.currentPartKey).toBe('lp:101')
+      vi.clearAllMocks()
+
+      cable = { message: publication(state(11, 102)), connected: true }
+      rerender()
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+      expect(result.current.currentPartKey).toBe('lp:102')
+      expect(fetchSessionState).not.toHaveBeenCalled()
+      expect(fetchSession).not.toHaveBeenCalled()
+      expect(fetchSessionParts).not.toHaveBeenCalled()
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(29000) })
+      expect(fetchSessionState).toHaveBeenCalledTimes(1)
+      expect(fetchSession).not.toHaveBeenCalled()
+      expect(fetchSessionParts).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('ignores an older out-of-order publication without rewinding', async () => {
@@ -233,11 +259,14 @@ describe('useLiveSession', () => {
   })
 
   it('recovers on reconnect and refuses a stale state response that would rewind', async () => {
+    cable = { message: null, connected: true }
     const { result, rerender } = renderHook(() => useLiveSession('7', initialSession), { wrapper: wrapper() })
     await waitFor(() => expect(result.current.currentPartKey).toBe('lp:101'))
-    cable = { message: publication(state(11, 102)), connected: false }
+    cable = { message: publication(state(11, 102)), connected: true }
     rerender()
     await waitFor(() => expect(result.current.currentPartKey).toBe('lp:102'))
+    cable = { message: cable.message, connected: false }
+    rerender()
     vi.clearAllMocks()
     vi.mocked(fetchSessionState).mockResolvedValue(state(10, 101))
 
@@ -283,5 +312,27 @@ describe('useLiveSession', () => {
       expect(result.current.sessionData.session.id).toBe(8)
       expect(result.current.sessionData.session.revision).toBe(1)
     })
+  })
+
+  it('preserves new-session ref registration and scrolls to its occurrence', async () => {
+    const secondSession = { ...initialSession, session: { ...initialSession.session,
+      id: 8, revision: 0, current_part_id: 5, current_liturgy_part_id: 102, current_part_position: 2 } }
+    const secondState = { ...state(1, 102), id: 8 }
+    vi.mocked(fetchSessionState).mockImplementation(async id => id === '8' ? secondState : state(10))
+    vi.mocked(fetchSession).mockImplementation(async id => id === '8' ? secondSession : initialSession)
+    vi.mocked(fetchSessionParts).mockImplementation(async (_id, session) => parts(session ?? initialSession))
+
+    function RefRegistrationProbe({ id, session }: { id: string; session: SessionWrapper }) {
+      const live = useLiveSession(id, session)
+      return <div ref={element => { if (element) live.partsRef.current['lp:102'] = element }} />
+    }
+
+    const view = render(<RefRegistrationProbe id="7" session={initialSession} />, { wrapper: wrapper() })
+    await waitFor(() => expect(fetchSessionState).toHaveBeenCalledWith('7'))
+    vi.mocked(smoothScrollToPart).mockClear()
+    view.rerender(<RefRegistrationProbe id="8" session={secondSession} />)
+
+    await waitFor(() => expect(smoothScrollToPart).toHaveBeenCalledTimes(1))
+    expect(smoothScrollToPart).toHaveBeenCalledWith(expect.any(HTMLElement), expect.any(Object))
   })
 })

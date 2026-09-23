@@ -10,7 +10,7 @@ import {
   controlFailureMessage,
 } from '@/queries/sessions'
 import { SessionWrapper } from '@/types/session'
-import { acceptCommandPublication } from '@/queries/sessionState'
+import { acceptCommandPublication, recoverRejectedCommand } from '@/queries/sessionState'
 
 interface FastForwardButtonProps {
   sessionId: string
@@ -31,9 +31,7 @@ export function FastForwardButton({ sessionId, partId }: FastForwardButtonProps)
     staleTime: 1000,
   })
 
-  const refreshFromServer = () => Promise.all([
-    queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId) }),
-  ])
+  const refreshFromServer = () => recoverRejectedCommand(queryClient, sessionId)
 
   const setPartMutation = useMutation({
     mutationKey,

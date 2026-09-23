@@ -19,7 +19,14 @@ function sessionCursor(session: SessionData): ReadingCursor | null {
 }
 
 export function useSessionParts(sessionId: string, options?: UseSessionPartsOptions) {
-  const partsRef = React.useRef<Record<string, HTMLElement>>({})
+  const sessionPartsRef = React.useRef<{ sessionId: string; ref: React.MutableRefObject<Record<string, HTMLElement>> }>({
+    sessionId,
+    ref: { current: {} },
+  })
+  if (sessionPartsRef.current.sessionId !== sessionId) {
+    sessionPartsRef.current = { sessionId, ref: { current: {} } }
+  }
+  const partsRef = sessionPartsRef.current.ref
   const [selected, setSelected] = React.useState<(ReadingCursor & { sessionId: string }) | null>(null)
   const accepted = React.useRef<{ sessionId: string; cursor: ReadingCursor; live: boolean } | null>(null)
   const lastScroll = React.useRef<{ sessionId: string; key: string; element: HTMLElement } | null>(null)
@@ -30,10 +37,7 @@ export function useSessionParts(sessionId: string, options?: UseSessionPartsOpti
   const knownSessionData = options?.sessionData
   const events = React.useMemo(() => ['part_change', 'status_change'], [])
   const subscriptionData = useActionCable(`channel_${sessionId}`, events)
-  React.useEffect(() => {
-    partsRef.current = {}
-    lastScroll.current = null
-  }, [sessionId])
+  if (lastScroll.current?.sessionId !== sessionId) lastScroll.current = null
   const { data, isLoading, error } = useQuery<PartsResponse>({
     queryKey: sessionsKeys.sessionParts(sessionId),
     queryFn: async () => {

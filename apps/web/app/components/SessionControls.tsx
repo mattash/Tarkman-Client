@@ -14,7 +14,7 @@ import {
 import { SessionWrapper } from '@/types/session'
 import { PartsResponse } from '@/types/part'
 import { SessionStatusControl } from './SessionStatusControl'
-import { acceptCommandPublication } from '@/queries/sessionState'
+import { acceptCommandPublication, recoverRejectedCommand } from '@/queries/sessionState'
 
 interface SessionControlsProps {
   sessionId: number
@@ -57,9 +57,7 @@ export function SessionControls({ sessionId }: SessionControlsProps) {
   const currentPartIndex = currentKey == null ? -1 : parts.findIndex(({ part }) => readingKey(part) === currentKey)
   const atFirstPart = currentPartIndex === 0
   const atLastPart = currentPartIndex >= 0 && currentPartIndex === parts.length - 1
-  const refreshFromServer = () => Promise.all([
-    queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionIdString) }),
-  ])
+  const refreshFromServer = () => recoverRejectedCommand(queryClient, sessionIdString)
 
   const partMutation = useMutation({
     mutationKey,

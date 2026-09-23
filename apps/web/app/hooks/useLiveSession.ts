@@ -66,7 +66,14 @@ export function useLiveSession(
   onPartChange?: (partId: string) => void,
 ): LiveSessionReading {
   const queryClient = useQueryClient()
-  const partsRef = React.useRef<Record<string, HTMLElement>>({})
+  const sessionPartsRef = React.useRef<{ sessionId: string; ref: React.MutableRefObject<Record<string, HTMLElement>> }>({
+    sessionId,
+    ref: { current: {} },
+  })
+  if (sessionPartsRef.current.sessionId !== sessionId) {
+    sessionPartsRef.current = { sessionId, ref: { current: {} } }
+  }
+  const partsRef = sessionPartsRef.current.ref
   const [snapshot, setSnapshot] = React.useState<LiveSnapshot>({
     session: initialSession,
     parts: [],
@@ -84,6 +91,11 @@ export function useLiveSession(
   const invalidations = React.useRef(0)
   const stateSupported = React.useRef<boolean | null>(null)
   const lastScroll = React.useRef<{ key: string; element: HTMLElement } | null>(null)
+  const lastScrollSession = React.useRef(sessionId)
+  if (lastScrollSession.current !== sessionId) {
+    lastScrollSession.current = sessionId
+    lastScroll.current = null
+  }
   const scrollAnimationRef = React.useRef<number | null>(null)
   const scrollTimeoutRef = React.useRef<number | null>(null)
   const events = React.useMemo(() => ['part_change', 'status_change'], [])
@@ -136,9 +148,12 @@ export function useLiveSession(
     const after = verify ? await fetchSessionState(sessionId) : before
     if (generation.current !== currentGeneration) return
     if (!after || after.id !== Number(sessionId) || before.id !== Number(sessionId)) throw new Error('Unexpected session state response')
-    if (before.contentContext !== after.contentContext || beforeInvalidations !== invalidations.current) {
+    if (before.contentContext !== after.contentContext) {
       queuedRecovery.current = true
-      queuedFull.current ||= before.contentContext !== after.contentContext
+      queuedFull.current = true
+      return
+    }
+    if (beforeInvalidations !== invalidations.current) {
       return
     }
     if (after.revision < observedRevision.current ||
@@ -195,21 +210,20 @@ export function useLiveSession(
   const applyPublication = React.useCallback((update: SessionState) => {
     if (update.id !== Number(sessionId)) return
     observedRevision.current = Math.max(observedRevision.current, update.revision)
-    const recoveringNow = recovery.current !== null
-    if (recoveringNow) {
-      invalidations.current += 1
-      queuedRecovery.current = true
-    }
     const current = snapshotRef.current
     const result = publicationResult(current.session.session.revision, current.manifestContext, update)
     if (result === 'duplicate') return
-    if (result === 'recover' || !cursorResolves(current.parts, update)) {
-      if (!recoveringNow) {
-        invalidations.current += 1
-        void recover(false)
-      }
+    const resolves = cursorResolves(current.parts, update)
+    const recoveringNow = recovery.current !== null
+    if (result === 'recover' || !resolves) {
+      invalidations.current += 1
+      if (recoveringNow) queuedRecovery.current = true
+      else void recover(false)
       return
     }
+    // A contiguous publication is already canonical. If it supersedes a safety/focus recovery,
+    // invalidate that response but do not schedule routine verification of the publication.
+    if (recoveringNow) invalidations.current += 1
     const session = sessionWithState(current.session, update, current.parts)
     queryClient.setQueryData(sessionsKeys.session(sessionId), session)
     queryClient.setQueryData(sessionsKeys.state(sessionId), update)
@@ -226,8 +240,6 @@ export function useLiveSession(
     invalidations.current = 0
     queuedRecovery.current = false
     queuedFull.current = false
-    partsRef.current = {}
-    lastScroll.current = null
     setIsLoading(true)
     setError(null)
     void recover(true)
@@ -245,10 +257,11 @@ export function useLiveSession(
     }
   }, [applyPublication, cable.message, recover, sessionId])
 
-  const previousConnected = React.useRef(false)
+  const previousConnected = React.useRef(cable.connected)
+  const hasConnected = React.useRef(cable.connected)
   React.useEffect(() => {
-    if (cable.connected && !previousConnected.current) void recover(false)
-    if (!cable.connected && previousConnected.current) void recover(false)
+    if (cable.connected && !previousConnected.current && hasConnected.current) void recover(false)
+    if (cable.connected) hasConnected.current = true
     previousConnected.current = cable.connected
   }, [cable.connected, recover])
 

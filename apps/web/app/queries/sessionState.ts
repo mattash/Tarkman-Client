@@ -57,6 +57,12 @@ export function acceptCommandPublication(queryClient: QueryClient, sessionId: st
   return true
 }
 
+export async function recoverRejectedCommand(queryClient: QueryClient, sessionId: string): Promise<void> {
+  // Refresh metadata first so the manifest request is bracketed against the canonical session it belongs to.
+  await queryClient.invalidateQueries({ queryKey: sessionsKeys.session(sessionId), exact: true })
+  await queryClient.invalidateQueries({ queryKey: sessionsKeys.sessionParts(sessionId), exact: true })
+}
+
 const SESSION_STATUSES = new Set<SessionStatus>([
   'active',
   'paused',

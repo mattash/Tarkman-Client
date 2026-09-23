@@ -33,7 +33,7 @@ function session(id) {
   } }
 }
 function json(res, value, code = 200) {
-  res.writeHead(code, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Accept, X-Polling-Client', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Cache-Control': 'no-store' })
+  res.writeHead(code, { 'Content-Type': 'application/json', 'Access-Control-Allow-Headers': 'Content-Type, Accept, X-Polling-Client', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Cache-Control': 'no-store' })
   res.end(JSON.stringify(value))
 }
 function broadcast() {
@@ -44,6 +44,12 @@ function broadcast() {
 }
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${port}`)
+  const origin = req.headers.origin
+  if (origin === 'http://127.0.0.1:3000' || origin === 'http://localhost:3000') {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('Vary', 'Origin')
+  }
   if (req.method === 'OPTIONS') return json(res, {})
   if (url.pathname === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return res.end(fs.readFileSync(path.join(__dirname, 'review.html')))
