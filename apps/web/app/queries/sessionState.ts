@@ -82,6 +82,11 @@ function positiveInteger(value: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null
 }
 
+function positiveIdentifier(value: unknown): number | null {
+  if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) return positiveInteger(Number(value))
+  return positiveInteger(value)
+}
+
 function revision(value: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null
 }
@@ -93,7 +98,9 @@ function nullableText(value: unknown): value is string | null {
 export function parseSessionPublication(value: unknown, fallbackId?: number): SessionState | null {
   const data = record(value)
   if (!data) return null
-  const id = positiveInteger(data.id ?? data.session ?? data.session_id ?? fallbackId)
+  const id = [data.id, data.session, data.session_id, fallbackId]
+    .map(positiveIdentifier)
+    .find((candidate): candidate is number => candidate !== null) ?? null
   const stateRevision = revision(data.revision)
   const contentContext = data.content_context
   const status = data.session_status ?? data.status

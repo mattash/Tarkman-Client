@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createConsumer, Subscription } from '@rails/actioncable'
 
 interface ActionCableEnvelope {
@@ -21,7 +21,7 @@ export interface ActionCableMessage {
 }
 
 interface ChannelMessage {
-  channelKey: string
+  channelName: string
   message: ActionCableMessage
 }
 
@@ -192,14 +192,15 @@ export function useActionCableState(
   const [channelMessage, setChannelMessage] = useState<ChannelMessage | null>(null)
   const [connected, setConnected] = useState(false)
   const eventKey = JSON.stringify(Array.isArray(eventName) ? eventName : [eventName])
-  // Subscription lifecycle must depend on semantic channel identity, not a memoized object reference.
-  // Otherwise a publication render can tear down every shared listener and synthesize a reconnect.
-  const channelKey = getIdentifierKey(getChannelIdentifier(channelName))
+
+  const identifier = useMemo(() => {
+    return getChannelIdentifier(channelName)
+  }, [channelName])
 
   useEffect(() => {
     setChannelMessage(null)
+    setConnected(false)
     const subscribedEvents = new Set(JSON.parse(eventKey) as string[])
-    const identifier = getChannelIdentifier(channelName)
 
     return subscribeToSharedChannel(
       getActionCableUrl(),
@@ -207,16 +208,16 @@ export function useActionCableState(
       (envelope) => {
         if (!subscribedEvents.has(envelope.event)) return
         setChannelMessage({
-          channelKey,
+          channelName,
           message: envelope.data as ActionCableMessage,
         })
       },
       setConnected,
     )
-  }, [channelKey, eventKey])
+  }, [channelName, identifier, eventKey])
 
   return {
-    message: channelMessage?.channelKey === channelKey ? channelMessage.message : null,
+    message: channelMessage?.channelName === channelName ? channelMessage.message : null,
     connected,
   }
 }

@@ -55,6 +55,14 @@ describe('session state contract', () => {
     expect(parseSessionPublication({ ...publication, cursor: { part_id: 5 } }, 7)).toBeNull()
   })
 
+  it('normalizes numeric-string ActionCable session identifiers', () => {
+    expect(parseSessionPublication({ ...publication, id: '7', session: '7' }, 7)).toMatchObject({
+      id: 7,
+      revision: 11,
+      cursor: { liturgyPartId: 105 },
+    })
+  })
+
   it('treats only 404/405 as an optional legacy state endpoint', async () => {
     vi.mocked(api.get).mockRejectedValueOnce(Object.assign(new Error('missing'), { isAxiosError: true, response: { status: 404 } }))
     await expect(fetchSessionState('7')).resolves.toBeNull()

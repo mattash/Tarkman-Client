@@ -70,7 +70,7 @@ function state(revision: number, occurrence = 101): SessionState {
 
 function publication(value: SessionState): Record<string, unknown> {
   return {
-    session: value.id, revision: value.revision, content_context: value.contentContext,
+    id: String(value.id), session: String(value.id), revision: value.revision, content_context: value.contentContext,
     cursor: value.cursor && {
       part_id: value.cursor.partId, liturgy_part_id: value.cursor.liturgyPartId,
       liturgy_id: value.cursor.liturgyId, position: value.cursor.position,
@@ -147,6 +147,36 @@ describe('useLiveSession with shared ActionCable subscribers', () => {
     expect(fetchSessionState).not.toHaveBeenCalled()
     expect(fetchSession).not.toHaveBeenCalled()
     expect(fetchSessionParts).not.toHaveBeenCalled()
+  })
+
+  it('accepts a contiguous publication immediately after a completed safety recovery', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
+      const view = render(<RouteSubscriberProbe />, { wrapper: wrapper(queryClient) })
+
+      await waitFor(() => expect(view.getByTestId('reading')).toHaveTextContent('lp:101'))
+      act(() => cableHandlers?.connected?.())
+      vi.mocked(fetchSessionState).mockClear()
+      await act(async () => { await vi.advanceTimersByTimeAsync(30000) })
+      await waitFor(() => expect(fetchSessionState).toHaveBeenCalledTimes(1))
+      vi.mocked(fetchSessionState).mockClear()
+      vi.mocked(fetchSession).mockClear()
+      vi.mocked(fetchSessionParts).mockClear()
+      vi.mocked(fetchCurrentExplanation).mockClear()
+
+      act(() => {
+        cableHandlers?.received?.({ event: 'part_change', data: publication(state(11, 102)) })
+      })
+
+      await waitFor(() => expect(view.getByTestId('reading')).toHaveTextContent('lp:102'))
+      await waitFor(() => expect(fetchCurrentExplanation).toHaveBeenCalledTimes(1))
+      expect(fetchSessionState).not.toHaveBeenCalled()
+      expect(fetchSession).not.toHaveBeenCalled()
+      expect(fetchSessionParts).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not verify a contiguous first publication batched with reconnect confirmation', async () => {
