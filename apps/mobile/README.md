@@ -709,18 +709,12 @@ server sends (service titles, part roles, announcements) is not interface copy a
   English has. `npm run check:i18n` fails CI when reader-facing English is written inline outside the catalogs;
   mark a deliberate exception with `// i18n-ignore` on that line.
 
-### Russian draft
+### Russian catalog
 
-`catalogs/ru.ts` is a machine-drafted Russian catalog registered with `reviewed: false`. Development builds and
-EAS `preview` builds (`EXPO_PUBLIC_SENTRY_ENVIRONMENT=preview`) offer it under **Settings → Interface language**,
-marked as a draft, and choose it automatically on a device set to Russian. Production builds ignore it and stay in
-English until it is confirmed.
-
-To confirm it, a fluent reader uses a preview build in Russian across Today, Services, the live reader, part
-detail, Settings, sign-in, scanning and service control. Fix wording in `ru.ts`, then set `reviewed: true`. At that
-point, also add `ios.infoPlist.CFBundleLocalizations` (`en`, `ru`) so iOS offers Russian in the app's own language
-setting, and localize the camera and location permission prompts through `expo.locales`. Both are left out while
-the draft could be shown to readers of a production build.
+A fluent Russian reader completed review of `catalogs/ru.ts`, and the product owner approved it on September 18,
+2026. It is registered with `reviewed: true`, so production builds offer **Русский** under **Settings → Interface
+language** without a draft marker and may choose it automatically on a device set to Russian. Liturgical text and
+server-provided copy remain outside this interface catalog.
 
 
 ### Unattended Expo web displays (#158)
@@ -800,38 +794,26 @@ fullscreen is not forced because browsers require a user gesture. No new package
 authentication, EAS configuration or Vercel routing changes are required. These
 routes ship with the Expo web build; the existing Vercel app remains the Vite app.
 
-#### Local display review
+#### Local apps/web display review
 
-The fixture is synthetic and binds only to loopback. From the repository root:
+The shared fixture is synthetic and binds only to loopback. The active PR #171 runbook targets the Vite client
+in `apps/web`, not Expo web. From the repository root:
 
 ```sh
-node apps/mobile/qa/display/server.cjs
-EXPO_PUBLIC_API_URL=http://127.0.0.1:8101 \
-EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
-EXPO_PUBLIC_DEFAULT_CHURCH_ID=7 \
-npm run web --prefix apps/mobile -- --port 8082
+npm ci --prefix apps/web
+NODE_PATH="$PWD/apps/web/node_modules" node apps/mobile/qa/display/server.cjs
+VITE_API_URL=http://127.0.0.1:8101 \
+VITE_ACTIONCABLE_URL=ws://127.0.0.1:8101/cable \
+npm run dev --prefix apps/web -- --host 127.0.0.1 --port 3000
 ```
 
-Open `http://127.0.0.1:8101` for links and controls. Leave a display open in a second
-tab; try the long reading, every operator message, service end/start, switching
-services, link expiry/recovery and connection loss. The two named fixture service
-IDs are **9001** (Divine Liturgy) and **9002** (Evening Prayer). If Expo uses another
-port, open the fixture with `?app=http://localhost:PORT`.
+Open `http://127.0.0.1:8101` for links and controls. Leave a display open in a second tab; try the long reading, every operator message, service end/start, switching services, link expiry/recovery and connection loss. The two named fixture service IDs are **9001** (Divine Liturgy) and **9002** (Evening Prayer). If Expo uses another port, open the fixture with `?app=http://localhost:PORT`.
 
+The active Vite display review adds exact scenario isolation, browser-control authentication, scroll instrumentation, publication overrides, fallback modes, and ordered-log instructions in `qa/display/REVIEW.md` and `../../docs/performance/web-session-state-qa.md`.
+The standalone fixture page's **My display links** link targets the Expo web app on port 8082 (`?expo=http://localhost:PORT` overrides it); the Vite display links target port 3000 (`?app=http://127.0.0.1:PORT` overrides that base).
 
 ### My display links (#173)
 
-About → Account → My display links opens the authenticated mine collection,
-including expired links. List/new/edit routes use the existing signed-in layout.
-Local drafts have an explicit Create/Save, versioned partial PATCH, inline synthetic
-preview, conflict review and unsaved-navigation guard. Unknown mutation outcomes
-require canonical reconciliation; uncertain POSTs are never automatically retried.
-State is scoped to API environment and signed-in identity and fenced on navigation.
-Display preferences never enter personal reader preferences or saved-service storage.
+About → Account → My display links opens the authenticated mine collection, including expired links. List/new/edit routes use the existing signed-in layout. Local drafts have an explicit Create/Save, versioned partial PATCH, inline synthetic preview, conflict review and unsaved-navigation guard. Unknown mutation outcomes require canonical reconciliation; uncertain POSTs are never automatically retried. State is scoped to API environment and signed-in identity and fenced on navigation. Display preferences never enter personal reader preferences or saved-service storage.
 
-Sharing uses only the persisted HTTPS `display_url`. iOS uses anchored RN Share;
-web invokes Web Share directly from the tap, with Copy/manual-copy fallback.
-Expo Clipboard is the only added native dependency and requires a rebuilt client.
-[Fixture, Expo-web scenario and physical share checklist](qa/display/README.md)
-describe the review matrix. Backend #446 and physical-device behavior still require
-parent validation; no device recording is claimed by the source implementation.
+Sharing uses only the persisted HTTPS `display_url`. iOS uses anchored RN Share; web invokes Web Share directly from the tap, with Copy/manual-copy fallback. Expo Clipboard is the only added native dependency and requires a rebuilt client. [Fixture, Expo-web scenario and physical share checklist](qa/display/README.md) describe the review matrix. Backend #446 and physical-device behavior still require parent validation; no device recording is claimed by the source implementation.

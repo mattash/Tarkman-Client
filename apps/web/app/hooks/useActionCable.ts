@@ -6,12 +6,18 @@ interface ActionCableEnvelope {
   data: Record<string, unknown>
 }
 
-interface ActionCableMessage {
+export interface ActionCableMessage {
   revision?: number
   cursor?: { part_id: number; liturgy_part_id: number; liturgy_id: number; position: number } | null
   part?: string | number
   status?: string
+  session_status?: string
   status_message?: string | null
+  content_context?: string
+  posture?: string | null
+  date?: string | null
+  session?: number
+  session_id?: number
 }
 
 interface ChannelMessage {
@@ -27,10 +33,13 @@ type ActionCableChannelIdentifier = string | {
 
 type ActionCableConsumer = ReturnType<typeof createConsumer>
 type EnvelopeListener = (envelope: ActionCableEnvelope) => void
+type ConnectionListener = (connected: boolean) => void
 
 interface SharedChannel {
   subscription: Subscription
   listeners: Set<EnvelopeListener>
+  connectionListeners: Set<ConnectionListener>
+  connected: boolean
 }
 
 interface SharedConnection {
@@ -95,7 +104,8 @@ function getIdentifierKey(identifier: ActionCableChannelIdentifier): string {
 function subscribeToSharedChannel(
   url: string | undefined,
   identifier: ActionCableChannelIdentifier,
-  listener: EnvelopeListener
+  listener: EnvelopeListener,
+  connectionListener?: ConnectionListener
 ): () => void {
   const connectionKey = url
   let connection = sharedConnections.get(connectionKey)
@@ -113,24 +123,43 @@ function subscribeToSharedChannel(
 
   if (!channel) {
     const listeners = new Set<EnvelopeListener>()
+    const connectionListeners = new Set<ConnectionListener>()
+    const channelState = { connected: false }
     const subscription = connection.consumer.subscriptions.create(identifier, {
+      connected() {
+        channelState.connected = true
+        for (const subscribedListener of Array.from(connectionListeners)) subscribedListener(true)
+      },
+      disconnected() {
+        channelState.connected = false
+        for (const subscribedListener of Array.from(connectionListeners)) subscribedListener(false)
+      },
       received(envelope: ActionCableEnvelope) {
-        for (const subscribedListener of Array.from(listeners)) {
-          subscribedListener(envelope)
-        }
+        for (const subscribedListener of Array.from(listeners)) subscribedListener(envelope)
       },
     })
 
-    channel = { subscription, listeners }
+    channel = {
+      subscription,
+      listeners,
+      connectionListeners,
+      get connected() { return channelState.connected },
+      set connected(value: boolean) { channelState.connected = value },
+    }
     connection.channels.set(channelKey, channel)
   }
 
   channel.listeners.add(listener)
+  if (connectionListener) {
+    channel.connectionListeners.add(connectionListener)
+    connectionListener(channel.connected)
+  }
 
   return () => {
     channel.listeners.delete(listener)
+    if (connectionListener) channel.connectionListeners.delete(connectionListener)
 
-    if (channel.listeners.size > 0) return
+    if (channel.listeners.size > 0 || channel.connectionListeners.size > 0) return
 
     channel.subscription.unsubscribe()
     connection.channels.delete(channelKey)
@@ -151,11 +180,17 @@ function subscribeToSharedChannel(
  * Returns the `data` payload directly (same shape as old Pusher messages),
  * making it a drop-in replacement for usePusher in most components.
  */
-export function useActionCable(
+export interface ActionCableState {
+  message: ActionCableMessage | null
+  connected: boolean
+}
+
+export function useActionCableState(
   channelName: string,
   eventName: string | string[]
-): ActionCableMessage | null {
+): ActionCableState {
   const [channelMessage, setChannelMessage] = useState<ChannelMessage | null>(null)
+  const [connected, setConnected] = useState(false)
   const eventKey = JSON.stringify(Array.isArray(eventName) ? eventName : [eventName])
 
   const identifier = useMemo(() => {
@@ -164,6 +199,7 @@ export function useActionCable(
 
   useEffect(() => {
     setChannelMessage(null)
+    setConnected(false)
     const subscribedEvents = new Set(JSON.parse(eventKey) as string[])
 
     return subscribeToSharedChannel(
@@ -175,11 +211,20 @@ export function useActionCable(
           channelName,
           message: envelope.data as ActionCableMessage,
         })
-      }
+      },
+      setConnected,
     )
   }, [channelName, identifier, eventKey])
 
-  return channelMessage?.channelName === channelName
-    ? channelMessage.message
-    : null
+  return {
+    message: channelMessage?.channelName === channelName ? channelMessage.message : null,
+    connected,
+  }
+}
+
+export function useActionCable(
+  channelName: string,
+  eventName: string | string[]
+): ActionCableMessage | null {
+  return useActionCableState(channelName, eventName).message
 }

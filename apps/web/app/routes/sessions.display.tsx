@@ -9,6 +9,10 @@ import { Message } from '../components/Message'
 import { StatusOverlay } from '../components/StatusOverlay'
 import { MinimalStatusView } from '../components/MinimalStatusView'
 import { ExplanationIndicator } from '../components/ExplanationIndicator'
+import { ConnectionIndicator } from '../components/ConnectionIndicator'
+import { useLiveSession } from '../hooks/useLiveSession'
+import type { SessionWrapper } from '../types/session'
+import type { DisplayLinkConfig } from '../types/displayLink'
 
 export const Route = createFileRoute('/sessions/display')({
   component: RouteComponent,
@@ -77,6 +81,13 @@ function RouteComponent() {
     return loadingView
   }
 
+  return <LiveCurrentDisplay initialSession={sessionWrapper} config={config} />
+}
+
+function LiveCurrentDisplay({ initialSession, config }: { initialSession: SessionWrapper; config: DisplayLinkConfig | undefined }) {
+  const id = initialSession.session.id.toString()
+  const live = useLiveSession(id, initialSession)
+  const sessionWrapper = live.sessionData
   const { current_part_position, num_of_parts, options, status, status_message } = sessionWrapper.session
 
   // Resolve preferences: token config overrides, otherwise defaults
@@ -102,24 +113,19 @@ function RouteComponent() {
   // Minimal status view for pages_only / posture_only
   if (statusView === 'pages_only') {
     return (
-      <MinimalStatusView
-        statusView="pages_only"
-        page={sessionWrapper.session.page}
-      />
+      <><ConnectionIndicator state={live.connectionState} /><MinimalStatusView statusView="pages_only" page={sessionWrapper.session.page} /></>
     )
   }
 
   if (statusView === 'posture_only') {
     return (
-      <MinimalStatusView
-        statusView="posture_only"
-        posture={sessionWrapper.session.posture ?? undefined}
-      />
+      <><ConnectionIndicator state={live.connectionState} /><MinimalStatusView statusView="posture_only" posture={sessionWrapper.session.posture ?? undefined} /></>
     )
   }
 
   return (
     <>
+      <ConnectionIndicator state={live.connectionState} />
       {!isNoneView && (
         <StatusOverlay
           status={status || 'active'}
@@ -137,12 +143,14 @@ function RouteComponent() {
           lang1={lang1}
           lang2={lang2}
           sessionData={sessionWrapper}
+          live={live}
         />
       ) : (
         <SessionPartsSingle
           sessionId={sessionWrapper.session.id.toString()}
           lang1={lang1}
           sessionData={sessionWrapper}
+          live={live}
         />
       )}
 

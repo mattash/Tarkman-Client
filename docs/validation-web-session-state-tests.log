@@ -1,0 +1,68 @@
+
+> @tarkman/web@1.6.1 test
+> vitest run --exclude '**/*.integration.test.ts' --exclude '**/*.integration.test.tsx' --exclude 'app/__tests__/integration/**'
+
+
+ RUN  v3.2.4 /home/crabbox/.openclaw/cloud-workers/cbx_9ed5a1d1677e/node-host/gateway-656f351221419f8192a5433c92cbbbea/workspaces/d50a77da4985994a/702c8f313d5ca712a6d64ff2ecc1ee69/112/apps/web
+
+ ✓ app/hooks/__tests__/useLiveSession.test.tsx (16 tests) 1670ms
+ ✓ app/hooks/__tests__/useSessionPolling.test.tsx (6 tests) 1488ms
+   ✓ useSessionPolling > should recover when a retry succeeds  1057ms
+ ✓ app/components/__tests__/SessionControls.test.tsx (17 tests) 1536ms
+   ✓ SessionControls > should call prevPart when previous button is clicked  406ms
+ ✓ app/components/__tests__/CurrentExplanation.test.tsx (13 tests) 909ms
+ ✓ app/components/__tests__/ExplanationIndicator.test.tsx (4 tests) 1078ms
+   ✓ ExplanationIndicator > shows QR when a new explanation arrives and hides after 20 seconds  896ms
+ ✓ app/components/__tests__/LoginForm.test.tsx (13 tests) 1252ms
+ ✓ app/components/__tests__/SessionStatusControl.test.tsx (13 tests) 622ms
+ ✓ app/__tests__/routes/sessions.display.test.tsx (14 tests) 161ms
+ ✓ app/hooks/__tests__/useSessionParts.test.tsx (10 tests) 456ms
+stderr | app/components/__tests__/ExplanationDrawer.test.tsx > ExplanationDrawer > shows the empty state after a successful empty query
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | app/components/__tests__/ExplanationDrawer.test.tsx > ExplanationDrawer > shows an unavailable alert instead of the empty state when the query fails
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | app/components/__tests__/ExplanationDrawer.test.tsx > ExplanationDrawer > retries an unavailable explanation and renders the recovered content
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ app/components/__tests__/ExplanationDrawer.test.tsx (8 tests) 332ms
+ ✓ app/components/__tests__/Navbar.test.tsx (9 tests) 291ms
+ ✓ app/hooks/__tests__/useUserSessionPolling.test.tsx (4 tests) 242ms
+ ✓ app/components/__tests__/ProjectorExplanation.test.tsx (11 tests) 232ms
+ ✓ app/components/__tests__/CitationsList.test.tsx (8 tests) 212ms
+ ✓ app/components/__tests__/FastForwardButton.test.tsx (5 tests) 162ms
+ ✓ app/components/__tests__/SessionList.test.tsx (12 tests) 149ms
+ ✓ app/hooks/__tests__/useLiveSession.actioncable.test.tsx (3 tests) 145ms
+ ✓ app/components/__tests__/ProtectedRoute.test.tsx (8 tests) 116ms
+ ✓ app/components/__tests__/LanguageSelector.test.tsx (7 tests) 125ms
+ ✓ app/__tests__/routes/sessions.$id.display.test.tsx (4 tests) 111ms
+ ✓ app/components/__tests__/LogoutButton.test.tsx (3 tests) 115ms
+ ✓ app/__tests__/api.test.ts (18 tests) 91ms
+ ✓ app/__tests__/routes/sessions.status.display.test.tsx (8 tests) 80ms
+ ✓ app/__tests__/routes/sessions.$id.parts.test.tsx (6 tests) 57ms
+ ✓ app/components/__tests__/RatingDisplay.test.tsx (13 tests) 63ms
+ ✓ app/hooks/__tests__/useActionCable.test.ts (14 tests) 61ms
+ ✓ app/components/__tests__/ConnectionIndicator.test.tsx (3 tests) 52ms
+ ✓ app/components/__tests__/PartDetails.test.tsx (1 test) 51ms
+ ✓ app/components/__tests__/StatusOverlay.test.tsx (12 tests) 40ms
+ ✓ app/contexts/__tests__/AuthContext.test.tsx (12 tests) 93ms
+ ✓ app/components/__tests__/SessionParts.test.tsx (1 test) 40ms
+ ✓ app/__tests__/routes/sessions.$id.explanations.test.tsx (3 tests) 39ms
+ ✓ app/hooks/__tests__/usePartScroll.test.ts (9 tests) 33ms
+ ✓ app/queries/__tests__/sessionQueries.test.ts (25 tests) 13ms
+ ✓ app/contexts/__tests__/LanguageContext.test.tsx (7 tests) 32ms
+ ✓ app/components/__tests__/TagBadge.test.tsx (12 tests) 31ms
+ ✓ app/hooks/__tests__/smoothScrollToPart.test.ts (15 tests) 23ms
+ ✓ app/queries/__tests__/explanationQueries.test.ts (26 tests) 10ms
+ ✓ app/queries/__tests__/sessionState.test.ts (8 tests) 8ms
+ ✓ app/queries/__tests__/partQueries.test.ts (3 tests) 4ms
+ ✓ app/__tests__/universal-links.test.ts (4 tests) 4ms
+ ✓ app/utils/__tests__/authRedirect.test.ts (6 tests) 4ms
+ ✓ app/config/__tests__/environment.test.ts (5 tests) 3ms
+ ✓ app/queries/__tests__/core-runtime.test.ts (1 test) 2ms
+
+ Test Files  44 passed (44)
+      Tests  400 passed (400)
+   Start at  12:09:03
+   Duration  57.99s (transform 1.69s, setup 3.74s, collect 12.45s, tests 12.24s, environment 17.83s, prepare 3.41s)

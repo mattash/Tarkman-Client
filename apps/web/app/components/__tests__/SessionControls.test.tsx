@@ -10,7 +10,8 @@ vi.mock('@/queries/sessions', async () => ({
   ...(await vi.importActual<typeof import('@/queries/sessions')>('@/queries/sessions')),
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
-    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+    sessionParts: (id: string) => ['sessions', 'sessionParts', id],
+    state: (id: string) => ['sessions', 'sessionState', id],
   },
   sessionMutationKeys: {
     controls: (id: string) => ['sessionControls', id],
@@ -137,6 +138,77 @@ describe('SessionControls', () => {
     await waitFor(() => {
       expect(nextPart).toHaveBeenCalledWith('123', expect.any(String), 1, undefined)
     })
+  })
+
+  it('applies a complete successful ack without a canonical refetch', async () => {
+    const versionedSession = { ...mockSession, session: { ...mockSession.session,
+      revision: 10, current_liturgy_part_id: 11, current_part_position: 1 } }
+    const occurrenceParts = [
+      { part: { ...mockParts[0].part, liturgy_part_id: 11, liturgy_id: 1, position: 1 } },
+      { part: { ...mockParts[1].part, liturgy_part_id: 22, liturgy_id: 1, position: 2 } },
+    ]
+    vi.mocked(fetchSession).mockResolvedValue(versionedSession)
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: occurrenceParts, sessionData: versionedSession })
+    vi.mocked(nextPart).mockResolvedValue({
+      status: 'success', current_part_id: 2, revision: 11, content_context: 'context-v1',
+      cursor: { part_id: 2, liturgy_part_id: 22, liturgy_id: 1, position: 2 },
+      session_status: 'active', status_message: null, posture: null, date: '2024-01-01',
+    })
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+    await waitFor(() => expect(screen.getByLabelText('Next part')).toBeEnabled())
+    await userEvent.click(screen.getByLabelText('Next part'))
+    await waitFor(() => expect(nextPart).toHaveBeenCalledTimes(1))
+    expect(fetchSession).toHaveBeenCalledTimes(1)
+    expect(fetchSessionParts).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes metadata and the manifest when an ack names an unknown occurrence', async () => {
+    const versionedSession = { ...mockSession, session: { ...mockSession.session,
+      revision: 10, content_context: 'context-v1', current_liturgy_part_id: 11, current_part_position: 1 } }
+    const occurrenceParts = [
+      { part: { ...mockParts[0].part, liturgy_part_id: 11, liturgy_id: 1, position: 1 } },
+      { part: { ...mockParts[1].part, liturgy_part_id: 22, liturgy_id: 1, position: 2 } },
+    ]
+    vi.mocked(fetchSession).mockResolvedValue(versionedSession)
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: occurrenceParts, sessionData: versionedSession })
+    vi.mocked(nextPart).mockResolvedValue({
+      status: 'success', current_part_id: 99, revision: 11, content_context: 'context-v1',
+      cursor: { part_id: 99, liturgy_part_id: 999, liturgy_id: 1, position: 9 },
+      session_status: 'active', status_message: null, posture: null, date: '2024-01-01',
+    })
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+    await waitFor(() => expect(screen.getByLabelText('Next part')).toBeEnabled())
+    await userEvent.click(screen.getByLabelText('Next part'))
+
+    await waitFor(() => expect(fetchSession).toHaveBeenCalledTimes(2))
+    expect(fetchSessionParts).toHaveBeenCalledTimes(2)
+    expect(nextPart).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes metadata and the manifest when an ack changes known content', async () => {
+    const versionedSession = { ...mockSession, session: { ...mockSession.session,
+      revision: 10, content_context: 'context-v1', current_liturgy_part_id: 11, current_part_position: 1 } }
+    const occurrenceParts = [
+      { part: { ...mockParts[0].part, liturgy_part_id: 11, liturgy_id: 1, position: 1 } },
+      { part: { ...mockParts[1].part, liturgy_part_id: 22, liturgy_id: 1, position: 2 } },
+    ]
+    vi.mocked(fetchSession).mockResolvedValue(versionedSession)
+    vi.mocked(fetchSessionParts).mockResolvedValue({ parts: occurrenceParts, sessionData: versionedSession })
+    vi.mocked(nextPart).mockResolvedValue({
+      status: 'success', current_part_id: 2, revision: 11, content_context: 'context-v2',
+      cursor: { part_id: 2, liturgy_part_id: 22, liturgy_id: 1, position: 2 },
+      session_status: 'active', status_message: null, posture: null, date: '2024-01-01',
+    })
+
+    render(<SessionControls sessionId={123} />, { wrapper: createWrapper() })
+    await waitFor(() => expect(screen.getByLabelText('Next part')).toBeEnabled())
+    await userEvent.click(screen.getByLabelText('Next part'))
+
+    await waitFor(() => expect(fetchSession).toHaveBeenCalledTimes(2))
+    expect(fetchSessionParts).toHaveBeenCalledTimes(2)
+    expect(nextPart).toHaveBeenCalledTimes(1)
   })
 
   it('should disable previous button while mutation is pending', async () => {
@@ -276,6 +348,7 @@ describe('SessionControls', () => {
     // The refused move must not be retried, and the screen must pull the true position.
     expect(nextPart).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(fetchSession).toHaveBeenCalledTimes(2))
+    expect(fetchSessionParts).toHaveBeenCalledTimes(2)
   })
 
   it('says plainly when this account may not control the service', async () => {

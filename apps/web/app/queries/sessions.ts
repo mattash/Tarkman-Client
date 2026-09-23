@@ -8,7 +8,8 @@ export const sessionsKeys = {
   all: ['sessions'] as const,
   list: () => [...sessionsKeys.all, 'list'] as const,
   session: (id: string) => [...sessionsKeys.all, 'session', id] as const,
-  sessionParts: (id: string) => [...sessionsKeys.all, 'session', id, 'parts'] as const,
+  sessionParts: (id: string) => [...sessionsKeys.all, 'sessionParts', id] as const,
+  state: (id: string) => [...sessionsKeys.all, 'sessionState', id] as const,
 }
 
 export const sessionMutationKeys = {
@@ -70,9 +71,16 @@ export async function fetchSessionParts(
   throw new Error(`Failed to load parts for session ${sessionId}`)
 }
 
-interface SessionPartResponse {
+export interface SessionCommandResponse {
   status: string
   current_part_id: number
+  revision?: number
+  cursor?: { part_id: number; liturgy_part_id: number; liturgy_id: number; position: number } | null
+  content_context?: string
+  session_status?: string
+  status_message?: string | null
+  posture?: string | null
+  date?: string | null
 }
 
 /**
@@ -84,8 +92,8 @@ function expectedPart(expectedPartId?: number | null, expectedRevision?: number)
     ...(expectedRevision == null ? {} : { expected_revision: expectedRevision }) }
 }
 
-export async function setPart(sessionId: string, partId: number, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number, liturgyPartId?: number): Promise<SessionPartResponse> {
-  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/set_part.json`, {
+export async function setPart(sessionId: string, partId: number, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number, liturgyPartId?: number): Promise<SessionCommandResponse> {
+  const { data } = await api.post<SessionCommandResponse>(`/s/${sessionId}/set_part.json`, {
     part_id: partId,
     ...(liturgyPartId == null ? {} : { liturgy_part_id: liturgyPartId }),
     transitioned_at: transitionedAt,
@@ -94,16 +102,16 @@ export async function setPart(sessionId: string, partId: number, transitionedAt?
   return data
 }
 
-export async function prevPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number): Promise<SessionPartResponse> {
-  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/prev.json`, {
+export async function prevPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number): Promise<SessionCommandResponse> {
+  const { data } = await api.post<SessionCommandResponse>(`/s/${sessionId}/prev.json`, {
     transitioned_at: transitionedAt,
     ...expectedPart(expectedPartId, expectedRevision)
   })
   return data
 }
 
-export async function nextPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number): Promise<SessionPartResponse> {
-  const { data } = await api.post<SessionPartResponse>(`/s/${sessionId}/next.json`, {
+export async function nextPart(sessionId: string, transitionedAt?: string, expectedPartId?: number | null, expectedRevision?: number): Promise<SessionCommandResponse> {
+  const { data } = await api.post<SessionCommandResponse>(`/s/${sessionId}/next.json`, {
     transitioned_at: transitionedAt,
     ...expectedPart(expectedPartId, expectedRevision)
   })
