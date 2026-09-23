@@ -181,6 +181,21 @@ describe('useLiveSession', () => {
     expect(fetchSessionParts).not.toHaveBeenCalled()
   })
 
+  it('recovers a malformed publication through one lightweight state read', async () => {
+    const { result, rerender } = renderHook(() => useLiveSession('7', initialSession), { wrapper: wrapper() })
+    await waitFor(() => expect(result.current.currentPartKey).toBe('lp:101'))
+    vi.clearAllMocks()
+    vi.mocked(fetchSessionState).mockResolvedValue(state(11, 102))
+
+    cable = { message: { session: 7, revision: 11 }, connected: false }
+    rerender()
+
+    await waitFor(() => expect(result.current.currentPartKey).toBe('lp:102'))
+    expect(fetchSessionState).toHaveBeenCalledTimes(1)
+    expect(fetchSession).not.toHaveBeenCalled()
+    expect(fetchSessionParts).not.toHaveBeenCalled()
+  })
+
   it('quietly supersedes an in-flight recovery when a newer contiguous publication arrives', async () => {
     cable = { message: null, connected: true }
     const { result, rerender } = renderHook(() => useLiveSession('7', initialSession), { wrapper: wrapper() })

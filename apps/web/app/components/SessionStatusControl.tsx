@@ -34,7 +34,11 @@ export function SessionStatusControl({ sessionId, currentStatus = 'active', curr
       setIsOpen(false)
       setCustomMessageModalOpen(false)
     },
-    onError: (error) => setCommandError(controlFailureMessage(classifyControlFailure(error), 'status')),
+    onError: async (error) => {
+      const failure = classifyControlFailure(error)
+      setCommandError(controlFailureMessage(failure, 'status'))
+      if (failure.kind === 'stale') await recoverRejectedCommand(queryClient, sessionIdString)
+    },
   })
 
   React.useEffect(() => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { SessionStatusControl } from '../SessionStatusControl'
 
 vi.mock('@/queries/sessions', async () => ({
@@ -17,7 +17,7 @@ vi.mock('@/queries/sessions', async () => ({
   updateSessionStatus: vi.fn()
 }))
 
-import { updateSessionStatus } from '@/queries/sessions'
+import { sessionsKeys, updateSessionStatus } from '@/queries/sessions'
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -29,6 +29,22 @@ const createWrapper = () => {
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
+}
+
+function createRecoveryHarness() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const fetchOrder: string[] = []
+  const fetchMetadata = vi.fn(async () => { fetchOrder.push('session'); return { session: { id: 123 } } })
+  const fetchParts = vi.fn(async () => { fetchOrder.push('parts'); return { parts: [], sessionData: { session: { id: 123 } } } })
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    function ActiveRecoveryQueries() {
+      useQuery({ queryKey: sessionsKeys.session('123'), queryFn: fetchMetadata })
+      useQuery({ queryKey: sessionsKeys.sessionParts('123'), queryFn: fetchParts })
+      return children
+    }
+    return <QueryClientProvider client={queryClient}><ActiveRecoveryQueries /></QueryClientProvider>
+  }
+  return { queryClient, fetchOrder, fetchMetadata, fetchParts, Wrapper }
 }
 
 describe('SessionStatusControl', () => {
@@ -202,5 +218,54 @@ describe('SessionStatusControl', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The service status could not be updated. Please try again.',
     )
+  })
+
+  it('reconciles metadata then the sibling manifest after one refused stale status command', async () => {
+    const refused = Object.assign(new Error('request failed'), {
+      isAxiosError: true,
+      response: { status: 409, data: { error: 'The session changed', current_part_id: 2 } },
+    })
+    vi.mocked(updateSessionStatus).mockRejectedValueOnce(refused)
+    const harness = createRecoveryHarness()
+    const invalidate = vi.spyOn(harness.queryClient, 'invalidateQueries')
+    render(<SessionStatusControl sessionId={123} currentStatus="active" currentRevision={8} />, { wrapper: harness.Wrapper })
+    await waitFor(() => expect(harness.fetchMetadata).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(harness.fetchParts).toHaveBeenCalledTimes(1))
+    harness.fetchOrder.length = 0
+    harness.fetchMetadata.mockClear()
+    harness.fetchParts.mockClear()
+    invalidate.mockClear()
+
+    await userEvent.click(screen.getByLabelText('Change session status'))
+    await userEvent.click(screen.getByText('Paused'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('The service moved on somewhere else')
+    await waitFor(() => expect(harness.fetchParts).toHaveBeenCalledTimes(1))
+    expect(updateSessionStatus).toHaveBeenCalledTimes(1)
+    expect(updateSessionStatus).toHaveBeenCalledWith('123', { status: 'paused', expected_revision: 8 })
+    expect(harness.fetchMetadata).toHaveBeenCalledTimes(1)
+    expect(harness.fetchOrder).toEqual(['session', 'parts'])
+    expect(invalidate).toHaveBeenNthCalledWith(1, { queryKey: sessionsKeys.session('123'), exact: true })
+    expect(invalidate).toHaveBeenNthCalledWith(2, { queryKey: sessionsKeys.sessionParts('123'), exact: true })
+  })
+
+  it('does not reconcile a non-stale status failure', async () => {
+    vi.mocked(updateSessionStatus).mockRejectedValueOnce(new Error('Network error'))
+    const harness = createRecoveryHarness()
+    const invalidate = vi.spyOn(harness.queryClient, 'invalidateQueries')
+    render(<SessionStatusControl sessionId={123} currentStatus="active" currentRevision={8} />, { wrapper: harness.Wrapper })
+    await waitFor(() => expect(harness.fetchParts).toHaveBeenCalledTimes(1))
+    harness.fetchMetadata.mockClear()
+    harness.fetchParts.mockClear()
+    invalidate.mockClear()
+
+    await userEvent.click(screen.getByLabelText('Change session status'))
+    await userEvent.click(screen.getByText('Paused'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('could not be updated')
+    expect(updateSessionStatus).toHaveBeenCalledTimes(1)
+    expect(invalidate).not.toHaveBeenCalled()
+    expect(harness.fetchMetadata).not.toHaveBeenCalled()
+    expect(harness.fetchParts).not.toHaveBeenCalled()
   })
 })
