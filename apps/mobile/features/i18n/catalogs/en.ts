@@ -334,6 +334,9 @@ export const en = {
     firstPartBoundary: 'This is the first part. There is nothing before it.',
     lastPartBoundary: 'This is the last part. There is nothing after it.',
     comingUp: 'COMING UP',
+    tapToJump: 'Tap a part to go straight to it.',
+    armHint: 'Shows Go here for this part.',
+    showMore: 'Show more parts',
     nextUp: 'Next up · {role}',
   },
   serviceSheet: {
