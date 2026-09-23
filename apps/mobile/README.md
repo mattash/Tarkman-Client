@@ -709,18 +709,12 @@ server sends (service titles, part roles, announcements) is not interface copy a
   English has. `npm run check:i18n` fails CI when reader-facing English is written inline outside the catalogs;
   mark a deliberate exception with `// i18n-ignore` on that line.
 
-### Russian draft
+### Russian catalog
 
-`catalogs/ru.ts` is a machine-drafted Russian catalog registered with `reviewed: false`. Development builds and
-EAS `preview` builds (`EXPO_PUBLIC_SENTRY_ENVIRONMENT=preview`) offer it under **Settings → Interface language**,
-marked as a draft, and choose it automatically on a device set to Russian. Production builds ignore it and stay in
-English until it is confirmed.
-
-To confirm it, a fluent reader uses a preview build in Russian across Today, Services, the live reader, part
-detail, Settings, sign-in, scanning and service control. Fix wording in `ru.ts`, then set `reviewed: true`. At that
-point, also add `ios.infoPlist.CFBundleLocalizations` (`en`, `ru`) so iOS offers Russian in the app's own language
-setting, and localize the camera and location permission prompts through `expo.locales`. Both are left out while
-the draft could be shown to readers of a production build.
+A fluent Russian reader completed review of `catalogs/ru.ts`, and the product owner approved it on September 18,
+2026. It is registered with `reviewed: true`, so production builds offer **Русский** under **Settings → Interface
+language** without a draft marker and may choose it automatically on a device set to Russian. Liturgical text and
+server-provided copy remain outside this interface catalog.
 
 
 ### Unattended Expo web displays (#158)
