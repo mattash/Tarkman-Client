@@ -51,63 +51,61 @@ Post-fix validation:
 
 Fresh independent Lens and browser reruns remain required; the PR remains draft and no rendered acceptance is claimed.
 
-## Shared ActionCable reconnect/publication race
+## Reconnect batching hardening (not the rendered defect root cause)
 
-A timing-separated rendered probe against `b7f064e797c4db9c4ded7498f9745251a31a21b1`
-showed no focus event and a contiguous publication followed 29 ms later by an unexpected `state.json` GET.
-The root cause was effect ordering during a real shared ActionCable reconnect: React can batch subscription
-confirmation with the first publication. `useLiveSession` processes its message effect first and correctly
-accepts the contiguous, resolvable revision, but its following connection effect still treated the same render
-as an unsatisfied reconnect and started recovery.
+Application commit `a49bb788f962e3084a56f0fe86303dec70a02c40` retains a narrow, independently
+covered hardening: when a true reconnect confirmation and its first contiguous publication are React-batched,
+the publication can satisfy that reconnect if its exact revision is already canonical. Reconnect without a
+publication, or with a duplicate, gap, context mismatch, or unknown cursor, still recovers.
 
-Application commit `a49bb788f962e3084a56f0fe86303dec70a02c40` records the revision only when a
-contiguous publication is accepted while a previously established connection is becoming connected again.
-The subsequent connection effect skips recovery only when that exact revision is already canonical. Reconnect
-without a publication still recovers; duplicate, gap, content-context mismatch, and unknown-cursor publications
-do not satisfy reconnect and retain their existing recovery paths. Focus and 30-second safety recovery are
-unchanged, and the independent explanation subscriber still invalidates its query normally.
+Subsequent instrumentation proved that this was **not** the cause of the rendered fixture failures. The same
+immediate request occurred on an ordinary established connection, and the actual fixture envelope failed parsing
+before reaching the contiguous-publication branch.
 
-`useLiveSession.actioncable.test.tsx` uses the real shared `useActionCable` implementation with both live-session
-and explanation subscribers. It batches reconnect confirmation and a contiguous `part_change` exactly as React
-does in the browser. The test fails on the prior implementation with one `fetchSessionState("7")` call and passes
-after the fix with zero state, metadata, or manifest reads and one expected explanation refresh.
+## Proven malformed-publication root cause
 
-Latest validation:
+Temporary, uncommitted trigger instrumentation labeled every `recover` call and recorded publication parsing,
+connection transitions, invalidation state, and revisions in the real one-tab loopback route. On the failing
+publication at `2026-09-23T10:15:55.764Z`, the only trigger was:
 
-- Focused shared-cable/live-session/explanation suites: **4 files, 34 tests passed**.
-- Full web suite: **44 files, 394 tests passed**.
-- Typecheck and production build passed; build transformed 2,353 modules.
-- Fresh rendered QA remains required against the new head.
+- `publication-malformed`
+- followed by `recover-request` with reason `malformed-publication`
+- `connected: true`, no focus or visibility event, and no recovery already in flight
 
-## Ordinary connected publication / synthetic reconnect
+The fixture derives its ActionCable identifier from `channel_9001`, so the subscription frame contains
+`"id":"9001"`. Its broadcast reuses that identifier in the publication as string-valued `id` and `session`.
+`parseSessionPublication` accepted only numeric IDs; because a present string `id` took precedence over the
+numeric route fallback, it rejected the otherwise complete revision+1 envelope. `ExplanationIndicator` does not
+parse the session envelope, so its expected explanation invalidation happened concurrently. The visible reading
+moved only after the resulting lightweight state recovery.
 
-Fresh rendered QA against `c8bf1f86f82ddcbf9fe178723588b6036862485b` showed the same immediate
-`state.json` on an ordinary already-connected contiguous publication, so the reconnect-batch fix above was
-necessary but incomplete. The underlying source was `useActionCableState`: its subscription effect depended
-on a memoized identifier object's reference identity and unconditionally set local connection state to false
-when setting up. React is allowed to recreate memoized values; when publication-driven route and explanation
-renders recreated equivalent identifier objects, both shared listeners could clean up, the shared channel was
-briefly emptied and recreated, and its confirmation became a synthetic reconnect. `useLiveSession` then
-correctly recovered in response to that false connection lifecycle.
+Application commit `847e9b74b9cbfd4de3a182673a7cd1146c2108c3`:
 
-Application commit `c52b65b21bc94d9552ca34b2489da82e5fdc36d8` makes subscription lifetime depend
-on `getIdentifierKey(...)`, the canonical primitive identity already used by the shared-channel registry. The
-identifier object is created inside the effect, retained messages are tagged with the same semantic key, and
-effect setup no longer forces a disconnected state before the shared channel reports its actual state. Real
-disconnect/reconnect callbacks are unchanged.
+- accepts safe positive integer strings only for the publication session identifier;
+- chooses the first valid identifier from `id`, `session`, `session_id`, and the numeric route fallback;
+- keeps revision and cursor fields strictly numeric;
+- reverts the unrelated semantic-channel-key change and equivalent-raw-channel test from `c52b65b`, whose
+  rendered-root-cause claim was disproven.
 
-Regression coverage:
+Regression coverage uses the exact fixture shape (`id: "7", session: "7"`) with the real shared live-session and
+explanation subscribers under `StrictMode` and an active route-style session query. It covers both:
 
-- `useActionCable.test.ts` proves two equivalent channel representations retain one connected subscription;
-  this test fails on `c8bf1f8` with a second subscription.
-- `useLiveSession.actioncable.test.tsx` now runs under `StrictMode` with an active route-style session query and
-  the real shared live-session/explanation subscribers. An ordinary contiguous publication moves the reading,
-  refreshes explanations once, retains the shared subscription, and performs zero state/session/parts reads.
-- The prior reconnect-confirmation-plus-publication regression remains covered.
+1. an ordinary established contiguous publication well before the safety timer; and
+2. a contiguous publication immediately after a completed 30-second safety recovery.
+
+On the prior parser, the ordinary regression fails and the reading remains at the old occurrence while recovery
+is requested. After the fix, both cases move directly, refresh explanations once, and perform zero immediate
+state, metadata, or manifest reads.
+
+Independent local browser proof after the fix:
+
+- ordinary one-tab publication at `2026-09-23T10:21:17.417Z`: POST and one explanation GET; zero state/parts/full-session GETs;
+- completed safety GET at `2026-09-23T10:22:30.770Z`, publication 101 ms later: POST and one explanation GET; zero additional state/parts/full-session GETs;
+- both pages remained focused and visible.
 
 Latest validation:
 
-- Focused suites: **4 files, 36 tests passed**.
-- Full web suite: **44 files, 396 tests passed**.
+- Focused suites: **5 files, 44 tests passed**.
+- Full web suite: **44 files, 397 tests passed**.
 - Typecheck and production build passed; build transformed 2,353 modules.
-- Fresh independent Lens and rendered QA remain required.
+- Fresh independent Lens and rendered QA remain required against the final pushed head.
