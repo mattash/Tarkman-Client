@@ -37,6 +37,13 @@ vi.mock('@/components/StatusOverlay', () => ({
   StatusOverlay: () => null,
 }))
 
+vi.mock('@/hooks/useLiveSession', () => ({
+  useLiveSession: vi.fn((_id: string, initialSession: ReturnType<typeof createMockSession>) => ({
+    sessionData: initialSession, parts: [], partsRef: { current: {} }, currentPartId: null, currentPartKey: null,
+    isLoading: false, error: null, connectionState: 'connected',
+  })),
+}))
+
 vi.mock('@/queries/sessions', () => ({
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
@@ -45,6 +52,7 @@ vi.mock('@/queries/sessions', () => ({
 }))
 
 import { fetchSession } from '@/queries/sessions'
+import { useLiveSession } from '@/hooks/useLiveSession'
 
 const createTestWrapper = () => {
   const queryClient = new QueryClient({
@@ -113,5 +121,41 @@ describe('sessions.$id.display route', () => {
 
     expect(screen.getByTestId('session-parts-parallel')).toHaveTextContent('Parallel Parts for 456')
     expect(screen.getByTestId('explanation-indicator')).toHaveTextContent('Explanation Indicator 456')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('shows an unobtrusive reconnecting badge while recovering, without a canonical state refetch loop', async () => {
+    vi.mocked(fetchSession).mockResolvedValue(createMockSession({ id: 789, current_part_position: 2 }))
+    vi.mocked(useLiveSession).mockReturnValueOnce({
+      sessionData: createMockSession({ id: 789, current_part_position: 2 }), parts: [], partsRef: { current: {} },
+      currentPartId: null, currentPartKey: null, isLoading: false, error: null, connectionState: 'recovering',
+    })
+
+    const history = createMemoryHistory({ initialEntries: ['/sessions/789/display'] })
+    const router = createRouter({ routeTree, history })
+    render(<RouterProvider router={router} />, { wrapper: createTestWrapper() })
+
+    await waitFor(() => expect(fetchSession).toHaveBeenCalledWith('789'))
+    const status = await screen.findByRole('status')
+    expect(status).toHaveTextContent('Reconnecting…')
+    expect(status).toHaveAttribute('aria-live', 'polite')
+  })
+
+  it('shows a disconnected retry badge without covering the reading', async () => {
+    vi.mocked(fetchSession).mockResolvedValue(createMockSession({ id: 321, current_part_position: 2 }))
+    vi.mocked(useLiveSession).mockReturnValueOnce({
+      sessionData: createMockSession({ id: 321, current_part_position: 2 }), parts: [], partsRef: { current: {} },
+      currentPartId: null, currentPartKey: null, isLoading: false, error: null, connectionState: 'disconnected',
+    })
+
+    const history = createMemoryHistory({ initialEntries: ['/sessions/321/display'] })
+    const router = createRouter({ routeTree, history })
+    render(<RouterProvider router={router} />, { wrapper: createTestWrapper() })
+
+    await waitFor(() => expect(fetchSession).toHaveBeenCalledWith('321'))
+    const status = await screen.findByRole('status')
+    expect(status).toHaveTextContent('Disconnected — retrying')
+    expect(status.className).toContain('fixed')
+    expect(screen.getByTestId('session-parts-parallel')).toBeInTheDocument()
   })
 })

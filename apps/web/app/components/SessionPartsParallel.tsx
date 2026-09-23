@@ -4,12 +4,14 @@ import { useSessionParts } from '../hooks/useSessionParts'
 import { LANG_FIELD_MAP } from './SessionPartsSingle'
 import { PartTextField, getPartTextField, shouldHideSessionPartText } from './sessionPartsUtils'
 import type { SessionWrapper } from '../types/session'
+import type { LiveSessionReading } from '../hooks/useLiveSession'
 
 interface SessionPartsParallelProps {
   sessionId: string
   lang1?: 'translit' | 'en' | 'hyw' | 'grabar'
   lang2?: 'translit' | 'en' | 'hyw' | 'grabar'
   sessionData?: SessionWrapper
+  live?: LiveSessionReading
 }
 
 export function SessionPartsParallel({
@@ -17,19 +19,32 @@ export function SessionPartsParallel({
   lang1 = 'translit',
   lang2 = 'en',
   sessionData,
+  live,
 }: SessionPartsParallelProps) {
-  const { partsRef, currentPartKey, isLoading, error, data } = useSessionParts(sessionId, { sessionData })
+  return live
+    ? <SessionPartsParallelContent lang1={lang1} lang2={lang2} live={live} />
+    : <StandaloneSessionPartsParallel sessionId={sessionId} lang1={lang1} lang2={lang2} sessionData={sessionData} />
+}
+
+function StandaloneSessionPartsParallel({ sessionId, lang1, lang2, sessionData }: Required<Pick<SessionPartsParallelProps, 'sessionId' | 'lang1' | 'lang2'>> & Pick<SessionPartsParallelProps, 'sessionData'>) {
+  const result = useSessionParts(sessionId, { sessionData })
+  const live: LiveSessionReading = { ...result, sessionData: result.data?.sessionData ?? sessionData!, parts: result.data?.parts ?? [], connectionState: 'connected' }
+  return <SessionPartsParallelContent lang1={lang1} lang2={lang2} live={live} />
+}
+
+function SessionPartsParallelContent({ lang1, lang2, live }: { lang1: NonNullable<SessionPartsParallelProps['lang1']>; lang2: NonNullable<SessionPartsParallelProps['lang2']>; live: LiveSessionReading }) {
+  const { partsRef, currentPartKey, isLoading, error, parts } = live
 
   if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error loading parts</div>
-  if (!data?.parts?.length) return <div>No parts available for this session.</div>
+  if (error && !parts.length) return <div>Error loading parts</div>
+  if (!parts.length) return <div>No parts available for this session.</div>
 
   const field1: PartTextField = LANG_FIELD_MAP[lang1]
   const field2: PartTextField = LANG_FIELD_MAP[lang2]
 
   return (
     <div className="relative w-screen left-[50%] right-[50%] -mx-[50vw] bg-gray-800 text-white p-5 shadow-md">
-      {(data?.parts ?? []).map(({ part }) => {
+      {parts.map(({ part }) => {
         const key = readingKey(part)
         const isCurrentPart = key === currentPartKey
         const text1 = getPartTextField(part, field1)
