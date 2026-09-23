@@ -19,7 +19,7 @@ vi.mock('@/queries/sessions', () => ({
     all: ['sessions'],
     list: () => ['sessions', 'list'],
     session: (id: string) => ['sessions', 'session', id],
-    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+    sessionParts: (id: string) => ['sessions', 'sessionParts', id],
   },
   fetchSessions: vi.fn(),
 }))

@@ -7,10 +7,11 @@ export interface SessionData {
     church_avatar: string
     occupied: boolean
     num_of_parts: number
-    current_part_position: number
-    current_part_id: number
+    current_part_position: number | null
+    current_part_id: number | null
     current_liturgy_part_id?: number | null
     revision?: number
+    content_context?: string
     cursor?: { part_id: number; liturgy_part_id: number; liturgy_id: number; position: number } | null
     current_liturgy_id?: number
     liturgies?: {

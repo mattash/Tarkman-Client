@@ -13,7 +13,7 @@ vi.mock('@/queries/sessions', async () => ({
   fetchSession: vi.fn().mockResolvedValue({ session: { id: 123, current_part_id: 123 } }),
   sessionsKeys: {
     session: (id: string) => ['sessions', 'session', id],
-    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'],
+    sessionParts: (id: string) => ['sessions', 'sessionParts', id],
   },
   sessionMutationKeys: {
     controls: (id: string) => ['sessionControls', id],
@@ -78,7 +78,7 @@ describe('FastForwardButton', () => {
     await user.click(button)
 
     await waitFor(() => {
-      expect(mockSetPart).toHaveBeenCalledWith('123', 456, expect.any(String), expect.anything())
+      expect(mockSetPart).toHaveBeenCalledWith('123', 456, expect.any(String), expect.anything(), undefined)
     })
   })
 

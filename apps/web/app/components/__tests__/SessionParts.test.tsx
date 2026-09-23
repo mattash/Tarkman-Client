@@ -12,7 +12,7 @@ vi.mock('../../queries/sessions', () => ({
   fetchSession: vi.fn(),
   fetchSessionParts: vi.fn(),
   sessionsKeys: {
-    sessionParts: (id: string) => ['sessions', 'session', id, 'parts'] as const,
+    sessionParts: (id: string) => ['sessions', 'sessionParts', id] as const,
     session: (id: string) => ['sessions', 'session', id] as const,
   },
 }))
