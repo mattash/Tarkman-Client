@@ -482,12 +482,18 @@ eas workflow:run .eas/workflows/update-preview.yml --ref REVIEWED_SHA -F message
 
 The manually triggered workflow publishes only iOS to the matching channel and
 EAS environment. Its update job uploads Sentry source maps and fails if the
-upload fails. This runs on EAS so it can use the existing `SENTRY_AUTH_TOKEN`
-with **Secret** visibility; a local upload cannot read that token. Using
-`--ref` pins the update to a committed revision and avoids uploading untracked
-local files. Verify the preview build receives the new bundle after a force
-quit and up to two launches, then confirm a preview JavaScript error has
-readable frames in Sentry. The development client can also load an update from
+upload fails. Publication happens before that upload: a failed workflow can
+leave an update available to installed builds. Before retrying a failed run,
+inspect its logs and the relevant channel with `eas channel:view preview` or
+`eas channel:view production` to determine whether an update group was
+published. Treat a published update as live; assess it and roll it back if
+needed. Rerunning the workflow publishes another update. The workflow runs on
+EAS so it can use the existing `SENTRY_AUTH_TOKEN` with **Secret** visibility;
+a local upload cannot read that token. Using `--ref` pins the update to a
+committed revision and avoids uploading untracked local files. Verify the
+preview build receives the new bundle after a force quit and up to two
+launches, then confirm a preview JavaScript error has readable frames in
+Sentry. The development client can also load an update from
 its Extensions tab.
 
 Only after that device check, build and distribute a compatible `0.1.1`
