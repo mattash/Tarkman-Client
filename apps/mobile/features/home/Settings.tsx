@@ -1,3 +1,4 @@
+import { Help } from '../onboarding/Help'
 import { useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import type { Language } from '@tarkman/core'
@@ -84,6 +85,8 @@ export function Settings() {
           <AppButton variant="secondary" size="card" onPress={() => setForgettingSavedCopy(true)}>{t('settings.removeSavedButton')}</AppButton>
         </>}
       </Section>
+
+      <Help />
 
       {showsTestErrorControls(observabilityConfig(), __DEV__) && <Section title={t('settings.errorReporting')}>
         <TestErrorControls />

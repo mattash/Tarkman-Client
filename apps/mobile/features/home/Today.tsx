@@ -1,3 +1,5 @@
+import { Help } from '../onboarding/Help'
+import { useOnboarding } from '../onboarding/OnboardingProvider'
 import { useCallback, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, View, useWindowDimensions } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
@@ -23,6 +25,7 @@ import { useI18n } from '../i18n'
  */
 export function Today() {
   const { state, retry } = useServices()
+  const onboarding = useOnboarding()
   const { colors } = useTheme()
   const { fontScale } = useWindowDimensions()
   const nearby = useNearbyChurch(state.services)
@@ -47,7 +50,10 @@ export function Today() {
   const found = nearby.state.status === 'found' ? state.services.find(session => nearby.state.status === 'found' && session.id === nearby.state.nearby.session.id) : undefined
   const lead = found ?? (state.services.length === 1 ? state.services[0] : undefined)
   const others = state.services.filter(session => session !== lead)
-  const open = (session: LiveSession) => router.push(`/sessions/${session.id}/parts`)
+  const open = (session: LiveSession) => {
+    if (onboarding.pending) onboarding.request(onboarding.pending.restart, session.id)
+    router.push(`/sessions/${session.id}/parts`)
+  }
   const page = fontScale > 2 ? spacing.md : spacing.page
   const nothingLive = !state.loading && !state.error && state.services.length === 0
 
@@ -55,10 +61,14 @@ export function Today() {
     refreshControl={<RefreshControl refreshing={pulling && state.refreshing} tintColor={colors.muted} onRefresh={() => { setPulling(true); retry() }} />}>
     <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center' }}>
       <ScreenHeader title={t('today.title')}>
-        <HeaderIconButton testID="today-scan" icon="scan" label={t('common.scanACode')} onPress={() => router.push('/scan')} />
-        <HeaderIconButton icon="tab-settings" label={t('common.settings')} onPress={() => router.navigate('/settings')} />
+        <HeaderIconButton testID="today-scan" icon="scan" label={t('common.scanACode')} onPress={() => { onboarding.clearPending(); router.push('/scan') }} />
+        <HeaderIconButton icon="tab-settings" label={t('common.settings')} onPress={() => { onboarding.clearPending(); router.navigate('/settings') }} />
       </ScreenHeader>
 
+      {onboarding.pending && <View style={{ gap: spacing.sm }}>
+        <AppText>{t(state.services.length ? 'onboarding.choose' : 'onboarding.unavailable')}</AppText>
+        <AppButton variant="quiet" onPress={onboarding.clearPending}>{t('common.cancel')}</AppButton>
+      </View>}
       {state.loading && <AppText tone="muted" style={{ marginTop: 18 }} accessibilityLiveRegion="polite">{t('today.lookingForServices')}</AppText>}
       {state.error && !state.loading && <View style={{ marginTop: 18 }}><ReaderStatus state={state} retry={retry} /></View>}
 
@@ -71,6 +81,8 @@ export function Today() {
             accessibilityLabel={t('today.rowLiveLabel', { title: session.title, church: session.church })} onPress={() => open(session)} />)}
         </View>}
       </>}
+
+      <Help card liveAvailable={state.services.some(service => service.status === 'active')} />
 
       {nothingLive && <>
         <AppText tone="muted" style={{ marginTop: 18 }}>{t('today.nothingLive')}</AppText>

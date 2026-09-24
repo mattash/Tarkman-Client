@@ -1,5 +1,5 @@
 import { useState, type Ref } from 'react'
-import { ActivityIndicator, Platform, Pressable, type PressableProps, type View } from 'react-native'
+import { ActivityIndicator, Platform, Pressable, View, type PressableProps } from 'react-native'
 import { useTheme } from '../design/ThemeProvider'
 import { radii, spacing, touchTarget } from '../design/tokens'
 import { AppIcon, type IconName } from './AppIcon'
@@ -9,22 +9,26 @@ import { AppText } from './AppText'
 export interface AppButtonProps extends Omit<PressableProps, 'children' | 'style'> {
   ref?: Ref<View>
   children: string
-  variant?: 'primary' | 'secondary' | 'quiet' | 'destructive'
+  variant?: 'primary' | 'secondary' | 'secondaryDestructive' | 'quiet' | 'destructive' | 'row' | 'text'
   icon?: IconName
   iconOnly?: boolean
   selected?: boolean
   rounded?: boolean
   loading?: boolean
+  labelMaxFontSizeMultiplier?: number
+  labelNumberOfLines?: number
   /** regular 48/8 for toolbars and sheets; card 48/10 inside cards; form 52/12 and hero 54/12 for a screen's one main action. */
   size?: keyof typeof sizes
 }
 const sizes = {
   regular: { minHeight: touchTarget, radius: radii.control, label: 'label' },
+  tier: { minHeight: touchTarget, radius: radii.action, label: 'label' },
   card: { minHeight: touchTarget, radius: radii.field, label: 'label' },
   form: { minHeight: 52, radius: radii.action, label: 'action' },
   hero: { minHeight: 54, radius: radii.action, label: 'action' },
 } as const
-export function AppButton({ children, variant = 'primary', loading = false, icon, iconOnly = false, selected = false, rounded = false, size = 'regular', disabled = false, accessibilityState, onFocus, onBlur, onPressIn, onPressOut, ...props }: AppButtonProps) {
+export function AppButton({ children, variant = 'primary', loading = false, icon, iconOnly = false, selected = false, rounded = false, size = 'regular', disabled = false,
+  labelMaxFontSizeMultiplier, labelNumberOfLines, accessibilityState, onFocus, onBlur, onPressIn, onPressOut, ...props }: AppButtonProps) {
   const { colors } = useTheme()
   const [focused, setFocused] = useState(false)
   // NativeWind's native runtime replaces function-valued Pressable styles with {}, so pressed state is tracked here.
@@ -33,25 +37,36 @@ export function AppButton({ children, variant = 'primary', loading = false, icon
   const inactive = disabled || loading
   const metrics = sizes[size]
   // Card and form buttons take the 1pt control outline from the designs; toolbar buttons keep their 2pt divider.
-  const outlined = size !== 'regular'
+  const outlined = size !== 'regular' || variant === 'secondaryDestructive'
   // A 1pt outline grows to the 2pt focus ring without moving the label.
-  const borderWidth = outlined && !focused ? 1 : 2
+  const borderWidth = variant === 'text' || variant === 'row' ? 0 : outlined && !focused ? 1.5 : 2
   // Only filled actions invert on press; quiet/secondary controls get a neutral tint and keep their text color.
   const strongPress = pressed && (variant === 'primary' || variant === 'destructive')
-  const backgroundColor = inactive ? colors.disabled : strongPress ? colors.pressed : pressed ? colors.pressedSubtle : selected ? colors.secondary
-    : variant === 'quiet' ? 'transparent' : variant === 'secondary' ? colors.surface : colors[variant]
+  const backgroundColor = inactive ? variant === 'text' ? 'transparent' : colors.disabled
+    : strongPress ? colors.pressed : pressed || (focused && (variant === 'text' || variant === 'row')) ? colors.pressedSubtle : selected ? colors.secondary
+    : variant === 'quiet' || variant === 'text' ? 'transparent' : variant === 'secondary' || variant === 'secondaryDestructive' ? colors.surface
+    : variant === 'row' ? colors.secondary : colors[variant]
   const color = inactive ? colors.onDisabled : strongPress ? colors.onPrimary : pressed ? colors.foreground : selected ? colors.onSecondary
-    : variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.foreground
+    : variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive
+    : variant === 'secondaryDestructive' ? colors.destructive : variant === 'text' ? colors.primary : colors.foreground
   return <Pressable {...props} accessibilityRole={props.accessibilityRole ?? 'button'} accessibilityLabel={props.accessibilityLabel ?? children}
     {...(Platform.OS === 'web' ? { 'aria-checked': accessibilityState?.checked,
       'aria-selected': selected || accessibilityState?.selected, 'aria-disabled': inactive, 'aria-busy': loading } : {})}
     accessibilityState={{ ...accessibilityState, selected: selected || accessibilityState?.selected, disabled: inactive, busy: loading }} disabled={inactive}
     onFocus={event => { setFocused(true); onFocus?.(event) }} onBlur={event => { setFocused(false); onBlur?.(event) }}
     onPressIn={event => { setPressed(true); onPressIn?.(event) }} onPressOut={event => { setPressed(false); onPressOut?.(event) }}
-    style={{ minHeight: metrics.minHeight, minWidth: touchTarget, paddingVertical: spacing.sm + 2 - borderWidth, paddingHorizontal: (iconOnly && fontReady ? spacing.sm : spacing.md) + 2 - borderWidth,
-      borderRadius: rounded ? 999 : metrics.radius, backgroundColor, borderWidth, borderColor: focused ? (variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.focus) : variant === 'secondary' && !selected ? (outlined ? colors.border : colors.divider) : 'transparent', flexDirection: 'row', gap: spacing.sm, alignItems: 'center', justifyContent: 'center' }}>
+    style={{ minHeight: variant === 'row' ? 52 : metrics.minHeight, minWidth: touchTarget,
+      paddingVertical: spacing.sm + 2 - borderWidth, paddingHorizontal: (iconOnly && fontReady ? spacing.sm : variant === 'text' ? spacing.xs : spacing.md) + 2 - borderWidth,
+      borderRadius: rounded ? 999 : variant === 'row' ? radii.action : metrics.radius, backgroundColor, borderWidth,
+      borderColor: focused ? (variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.focus)
+        : variant === 'secondaryDestructive' ? colors.destructive : variant === 'secondary' && !selected ? (outlined ? colors.border : colors.divider) : 'transparent',
+      flexDirection: 'row', gap: spacing.sm, alignItems: 'center', justifyContent: variant === 'row' ? 'flex-start' : 'center' }}>
     {loading && <ActivityIndicator color={color} accessible={false} />}
-    {icon && !loading && <AppIcon name={icon} color={color} />}
-    {(!iconOnly || !fontReady) && <AppText variant={metrics.label} style={{ color, textAlign: 'center' }}>{children}</AppText>}
+    {icon && !loading && (variant === 'row' ? <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.menuIconSurface }}>
+      <AppIcon name={icon} size={18} color={colors.primary} />
+    </View> : <AppIcon name={icon} color={color} size={variant === 'text' ? 18 : 22} />)}
+    {(!iconOnly || !fontReady) && <AppText variant={metrics.label} maxFontSizeMultiplier={labelMaxFontSizeMultiplier} numberOfLines={labelNumberOfLines}
+      style={{ color, textAlign: variant === 'row' ? 'left' : 'center', flexGrow: variant === 'row' ? 1 : 0 }}>{children}</AppText>}
+    {variant === 'row' && <AppIcon name="next" color={colors.primary} size={18} />}
   </Pressable>
 }

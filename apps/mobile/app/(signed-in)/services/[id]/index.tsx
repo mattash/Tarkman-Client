@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, ActivityIndicator, Platform, ScrollView, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../../../components/AppButton'
+import { BackButton } from '../../../../components/BackButton'
 import { AppText } from '../../../../components/AppText'
 import { LiturgyText } from '../../../../components/LiturgyText'
 import { Notice } from '../../../../components/Notice'
@@ -87,7 +88,7 @@ export default function ServiceControlScreen() {
 
   const header = <View testID="control-header" style={{ minHeight: 56, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
     gap: spacing.sm, paddingHorizontal: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
-    <AppButton variant="quiet" icon="back" onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/services') } }}>{t('common.myServices')}</AppButton>
+    <BackButton onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/services') } }}>{t('common.myServices')}</BackButton>
     {wide && state.session && <AppText variant="rowTitle" style={{ flexShrink: 1 }}>{state.session.title}</AppText>}
     <View style={{ marginLeft: 'auto', paddingRight: spacing.sm, maxWidth: '100%' }}>
       <ControlConnectionStatus state={state} offline={offline} sending={controls.running !== null} />

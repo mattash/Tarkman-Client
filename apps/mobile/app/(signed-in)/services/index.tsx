@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { AccessibilityInfo, ActivityIndicator, Platform, View } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../../components/AppButton'
+import { BackButton } from '../../../components/BackButton'
 import { AppText } from '../../../components/AppText'
 import { Card } from '../../../components/Surface'
 import { spacing } from '../../../design/tokens'
@@ -32,9 +33,8 @@ export default function MyServicesScreen() {
     ListHeaderComponent={
     <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg }}>
       <View style={{ alignSelf: 'flex-start' }}>
-        <AppButton variant="quiet" icon="back" onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/settings') } }}>{t('common.settings')}</AppButton>
+        <BackButton onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/settings') } }}>{t('common.settings')}</BackButton>
       </View>
-      <AppText variant="label" tone="accent">{t('myServices.eyebrow')}</AppText>
       <AppText variant="title">{t('myServices.title')}</AppText>
       {user && <AppText tone="muted">{t('common.signedInAs', { name: user.name || user.email })}</AppText>}
       {result.loading && <ActivityIndicator accessibilityLabel={t('myServices.loading')} />}
@@ -46,7 +46,7 @@ export default function MyServicesScreen() {
         <AppText variant="heading">{service.title}</AppText>
         <AppText tone="muted">{[service.church, formatServiceDate(service.date)].filter(Boolean).join(' · ')}</AppText>
         <AppText variant="caption">{statusLabel(service.status)}</AppText>
-        <AppButton accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })} onPress={() => {
+        <AppButton size="tier" accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })} onPress={() => {
           if (user) void recordRecentlyControlled({ sessionId: service.id, title: service.title, church: service.church, date: service.date }, user.id)
           router.push(`/services/${service.id}`)
         }}>{t('myServices.openControls')}</AppButton>

@@ -9,6 +9,9 @@ const names = {
   selected: 'checkmark', checkbox: 'checkbox-outline', unchecked: 'square-outline',
   more: 'ellipsis-horizontal', live: 'sync-outline', alert: 'alert-circle-outline',
   paused: 'pause', offline: 'cloud-offline-outline', connected: 'radio-button-on',
+  broadcast: 'radio', ended: 'checkmark', help: 'help', refresh: 'refresh',
+  share: 'share-outline', copy: 'copy-outline', open: 'open-outline',
+  guide: 'help-circle-outline', tour: 'compass-outline',
   scan: 'scan-outline', location: 'location-outline',
   // Tab glyphs are separate entries from explanation/preferences: they draw at 26pt and fill when selected.
   'tab-today': 'radio-outline', 'tab-today-selected': 'radio',
