@@ -39,9 +39,9 @@ export function LinkActions({ link, disabled = false, adapter = platformShare }:
   return <View style={{ gap: spacing.sm }}>
     {expiredLink(link.expires_at, now) && <AppText tone="destructive">{t('links.expired')}</AppText>}
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-      <AppButton ref={shareRef} variant="secondary" disabled={blocked || busy} onPress={share} accessibilityLabel={t('links.shareTitle', { title: link.title })}>{t('links.share')}</AppButton>
-      <AppButton ref={copyRef} variant="quiet" disabled={blocked || busy} onPress={copy} accessibilityLabel={t('links.copyTitle', { title: link.title })}>{t('links.copy')}</AppButton>
-      <AppButton variant="quiet" disabled={blocked || busy} onPress={() => {
+      <AppButton ref={shareRef} variant="text" icon="share" disabled={blocked || busy} onPress={share} accessibilityLabel={t('links.shareTitle', { title: link.title })}>{t('links.share')}</AppButton>
+      <AppButton ref={copyRef} variant="text" icon="copy" disabled={blocked || busy} onPress={copy} accessibilityLabel={t('links.copyTitle', { title: link.title })}>{t('links.copy')}</AppButton>
+      <AppButton variant="text" icon="open" disabled={blocked || busy} onPress={() => {
         if (allowed()) void Linking.openURL(link.display_url).catch(() => { if (mounted.current) setNotice(t('links.openFailed')) })
       }} accessibilityLabel={t('links.openTitle', { title: link.title })}>{t('links.open')}</AppButton>
     </View>

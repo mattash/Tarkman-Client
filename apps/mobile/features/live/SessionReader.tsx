@@ -1,10 +1,11 @@
 import { HelpContent } from '../onboarding/Help'
 import { useReaderEducation } from '../onboarding/useReaderEducation'
 import { useEffect, useRef, useState } from 'react'
-import { Platform, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native'
+import { Platform, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
+import { BackButton } from '../../components/BackButton'
 import { AppModal } from '../../components/AppModal'
 import { AppText } from '../../components/AppText'
 import { SegmentedControl } from '../../components/SegmentedControl'
@@ -22,7 +23,7 @@ import { publishLivePosition } from './livePosition'
 import { saveLastReading } from '../progress/lastReading'
 import { PartList } from './PartList'
 import { ReaderStatus } from './ReaderStatus'
-import { ControlConnectionStatus } from './ConnectionStatus'
+import { ReaderStatusControl } from './ReaderStatusControl'
 import { lifecycle } from './lifecycle'
 import { useScreenKeepAwake } from '../keepAwake/useScreenKeepAwake'
 import { useI18n } from '../i18n'
@@ -68,17 +69,9 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   // The reader sends no commands; its indicator reads the same connection fields as the controller's.
   const [online, setOnline] = useState(true)
   useEffect(() => lifecycle.listen((_active, connected) => { setOnline(current => current === connected ? current : connected) }), [])
-  // The status widget is the first thing to go: the left group (Back) marks the single-row height,
-  // and if the actions group grows past it with the widget included, the widget is omitted until the
-  // viewport, text scale, or language changes. A saved copy must not imply server synchronization.
+  // The compact status control keeps this header on one row at every connection state.
+  // A saved copy must not imply server synchronization.
   const fitKey = `${width}:${fontScale}:${language}`
-  const [wrappedAt, setWrappedAt] = useState<string | null>(null)
-  const rowHeight = useRef<number | null>(null)
-  const showStatus = !showingSaved && wrappedAt !== fitKey
-  const markRow = (event: LayoutChangeEvent) => { rowHeight.current ??= event.nativeEvent.layout.height }
-  const markActions = (event: LayoutChangeEvent) => {
-    if (rowHeight.current !== null && event.nativeEvent.layout.height > rowHeight.current + 1) setWrappedAt(fitKey)
-  }
   const dismissSheet = () => {
     setDraftLanguages(preferences.selectedLanguages)
     setLanguageError(false)
@@ -104,7 +97,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const education = useReaderEducation({ id, healthy: live && online && !!part, ready: preferencesReady && layoutReady,
     sheetOpen: sheet !== null || sheetClosing, available, following, root,
     targets: { follow: followTarget, language: languageOpener, explanation: explanationOpener, preferences: preferencesOpener },
-    layoutVersion: `${fitKey}:${wrappedAt}:${height}:${preferences.readingSize}`,
+    layoutVersion: `${fitKey}:${height}:${preferences.readingSize}`,
     open: step => {
       activeOpener.current = step === 'language' ? languageOpener.current : step === 'explanation' ? explanationOpener.current : preferencesOpener.current
       if (step === 'language') openLanguage()
@@ -118,15 +111,14 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">{t('reader.currentPartUnavailable')}</AppText>}
   </View>
   return <View testID="reader-root" ref={root} {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string }) => { if (event.key === 'Escape') education.endTour() } } : {})} onLayout={() => setLayoutReady(true)} style={{ flex: 1 }}>
-    <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
+    <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
       paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
-      <View ref={followTarget} collapsable={false} testID="reader-header-nav" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }} onLayout={markRow}>
-        <AppButton variant="quiet" icon="back" iconOnly={width < 600 || accessibilitySize} onPress={back}>{t('common.allServices')}</AppButton>
-        {live && <StatusPill label={t('common.live')} tone="success" icon="connected" announce={false} />}
+      <View ref={followTarget} collapsable={false} testID="reader-header-nav" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 0 }}>
+        <BackButton iconOnly onPress={back}>{t('common.allServices')}</BackButton>
+        {!showingSaved && <ReaderStatusControl state={state} online={online} retry={retry} back={back} />}
       </View>
-      <View testID="reader-header-buttons" style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginLeft: 'auto', flexShrink: 1 }} onLayout={markActions}>
-        {showStatus && <ControlConnectionStatus state={state} offline={!online} sending={false} />}
-        <AppButton testID="reader-language" ref={languageOpener} variant="quiet" selected icon="languages"
+      <View testID="reader-header-buttons" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginLeft: 'auto', flexShrink: 0 }}>
+        <AppButton testID="reader-language" ref={languageOpener} variant="quiet" selected icon="languages" labelMaxFontSizeMultiplier={1.3} labelNumberOfLines={1}
           onPress={() => education.openControl('language')}
           accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === language)!.label })}>
           {abbreviations[language]}
@@ -180,9 +172,9 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
             setDraftLanguages(current => current.includes(item.value) ? current.filter(value => value !== item.value) : [...current, item.value])
           }} />)}
       </> : sheet === 'preferences' ? <>
-        <AppButton variant="quiet" onPress={() => setSheet('help')}>{t('onboarding.help')}</AppButton>
-        <AppButton variant="quiet" onPress={() => { if (!live) { setSheet('help'); return }; education.replay(); dismissSheet() }}>{t(education.inProgress ? 'onboarding.resume' : 'onboarding.tour')}</AppButton>
-        {education.inProgress && <AppButton variant="quiet" onPress={() => { education.restart(); dismissSheet() }}>{t('onboarding.restart')}</AppButton>}
+        <AppButton variant="row" icon="guide" accessibilityHint={t('onboarding.help')} onPress={() => setSheet('help')}>{t('onboarding.help')}</AppButton>
+        <AppButton variant="row" icon="tour" accessibilityHint={t('onboarding.tour')} onPress={() => { if (!live) { setSheet('help'); return }; education.replay(); dismissSheet() }}>{t(education.inProgress ? 'onboarding.resume' : 'onboarding.tour')}</AppButton>
+        {education.inProgress && <AppButton variant="text" icon="refresh" onPress={() => { education.restart(); dismissSheet() }}>{t('onboarding.restart')}</AppButton>}
         <AppText variant="label">{t('readingPreferences.appearance')}</AppText>
         <SegmentedControl label={t('readingPreferences.appearance')} value={preferences.appearance} onChange={setAppearance}
           options={[{ value: 'system', label: t('readingPreferences.system') }, { value: 'light', label: t('readingPreferences.light') }, { value: 'dark', label: t('readingPreferences.dark') }]} />
@@ -199,8 +191,8 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           {forgetting ? <>
             <AppText accessibilityRole="alert">{t('readingPreferences.resetConfirm')}</AppText>
             <AppButton variant="destructive" onPress={() => { clearPreferences(); dismissSheet() }}>{t('readingPreferences.reset')}</AppButton>
-            <AppButton variant="quiet" onPress={() => setForgetting(false)}>{t('readingPreferences.keep')}</AppButton>
-          </> : <AppButton variant="secondary" onPress={() => setForgetting(true)}>{t('readingPreferences.forget')}</AppButton>}
+            <AppButton variant="text" onPress={() => setForgetting(false)}>{t('readingPreferences.keep')}</AppButton>
+          </> : <AppButton variant="secondaryDestructive" size="tier" onPress={() => setForgetting(true)}>{t('readingPreferences.forget')}</AppButton>}
         </View>
       </> : sheet === 'help' ? <>
         <HelpContent />

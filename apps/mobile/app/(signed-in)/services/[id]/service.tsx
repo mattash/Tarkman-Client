@@ -4,6 +4,7 @@ import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { KnownSessionStatus, Language } from '@tarkman/core'
 import { AppButton } from '../../../../components/AppButton'
+import { BackButton } from '../../../../components/BackButton'
 import { AppIcon } from '../../../../components/AppIcon'
 import { AppText } from '../../../../components/AppText'
 import { Notice } from '../../../../components/Notice'
@@ -67,10 +68,10 @@ export default function ServiceSheet() {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.lg, paddingBottom: spacing.sm,
       paddingHorizontal: spacing.lg, backgroundColor: colors.overlay }}>
       {page === 'parts' && <View style={{ marginLeft: -spacing.sm }}>
-        <AppButton variant="quiet" icon="back" iconOnly accessibilityLabel={t('serviceSheet.backToService')} onPress={() => setPage('service')}>{t('common.service')}</AppButton>
+        <BackButton iconOnly accessibilityLabel={t('serviceSheet.backToService')} onPress={() => setPage('service')}>{t('common.service')}</BackButton>
       </View>}
       <AppText variant="heading" style={{ flex: 1 }}>{page === 'parts' ? t('serviceSheet.goToAnother') : t('common.service')}</AppText>
-      <AppButton variant="quiet" accessibilityLabel={t('common.closeTitle', { title: page === 'parts' ? t('serviceSheet.goToAnother') : t('common.service') })} onPress={close}>{t('common.done')}</AppButton>
+      <AppButton variant="text" accessibilityLabel={t('common.closeTitle', { title: page === 'parts' ? t('serviceSheet.goToAnother') : t('common.service') })} onPress={close}>{t('common.done')}</AppButton>
     </View>
     <View style={{ gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
       {offline && <Notice tone="neutral">{t('control.offline')}</Notice>}

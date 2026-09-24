@@ -38,9 +38,9 @@ export function AppModal({ visible, onDismiss, title, children, openerRef, heade
         paddingTop: spacing.lg, paddingBottom: Math.max(insets.bottom, spacing.lg), paddingLeft: Math.max(insets.left, spacing.lg), paddingRight: Math.max(insets.right, spacing.lg), gap: spacing.md }}>
         {/* iOS convention: a lone Done trails the title; with a commit action, Cancel leads and the commit trails. */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm }}>
-          {headerAction && <AppButton ref={closeRef} variant="quiet" onPress={onDismiss} accessibilityLabel={t('common.closeTitle', { title })}>{dismiss}</AppButton>}
+          {headerAction && <AppButton ref={closeRef} variant="text" onPress={onDismiss} accessibilityLabel={t('common.closeTitle', { title })}>{dismiss}</AppButton>}
           <AppText variant="heading" style={{ flex: 1 }}>{title}</AppText>
-          {headerAction ?? <AppButton ref={closeRef} variant="quiet" onPress={onDismiss} accessibilityLabel={t('common.closeTitle', { title })}>{dismiss}</AppButton>}
+          {headerAction ?? <AppButton ref={closeRef} variant="text" onPress={onDismiss} accessibilityLabel={t('common.closeTitle', { title })}>{dismiss}</AppButton>}
         </View>
         <ScrollView testID="modal-content" style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: spacing.md }}>
           {children}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, ActivityIndicator, findNodeHandle, Platform, Pressable, ScrollView, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../../../components/AppButton'
+import { BackButton } from '../../../../components/BackButton'
 import { AppText } from '../../../../components/AppText'
 import { LiturgyText } from '../../../../components/LiturgyText'
 import { Notice } from '../../../../components/Notice'
@@ -97,7 +98,7 @@ export default function PartDetailScreen() {
       <View onLayout={event => { offsets.current.column = event.nativeEvent.layout.y }}
         style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg }}>
         <View style={{ alignSelf: 'flex-start', marginLeft: -spacing.sm }}>
-          <AppButton variant="quiet" icon="back" onPress={back} accessibilityHint={t('part.returnsHint')}>{service ?? t('common.backToService')}</AppButton>
+          <BackButton onPress={back} accessibilityHint={t('part.returnsHint')}>{service ?? t('common.backToService')}</BackButton>
         </View>
         {role ? <PartHeading role={role} posture={posture} /> : null}
 
