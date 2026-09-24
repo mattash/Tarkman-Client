@@ -3,7 +3,7 @@ import * as ReactNative from 'react-native'
 import { beforeEach, expect, it, jest } from '@jest/globals'
 import { AppModal } from '../components/AppModal'
 
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { PreferencesProvider } from '../features/preferences/PreferencesProvider'
 import { SessionReader } from '../features/live/SessionReader'
@@ -144,14 +144,15 @@ it('omits the switch prompt when no selected language has this part, and names l
   expect(screen.getAllByText('Choose another reading language for this part.')).toHaveLength(1)
   expect(screen.getByRole('button', { name: 'Read in Գրաբար' })).toHaveTextContent('Read in Գրաբար')
 })
-it('keeps the steady Live indicator out of live announcements and anchors reading content', async () => {
+it('keeps the steady compact status out of live announcements and anchors reading content', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Prayer', role: 'priest' } }] })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, listed: true, session, parts }, retry, refreshAfterCommand: jest.fn(), dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
-  expect(screen.getByLabelText('Live')).toHaveProp('accessibilityLiveRegion', 'none')
+  expect(screen.getByTestId('reader-status-control')).toHaveProp('accessibilityLabel', 'Status. Service Live. Connected.')
+  expect(screen.getByTestId('reader-status-control')).not.toHaveProp('accessibilityLiveRegion', 'polite')
   expect(screen.getByRole('button', { name: 'priest, current part' })).toBeOnTheScreen()
-  // FlashList keeps the first visible part anchored unless told not to, so a status pill growing the header never moves prayer text.
+  // FlashList keeps the first visible part anchored while the status details open over the reader.
   expect(screen.getByTestId('reading-list').props.maintainVisibleContentPosition?.disabled).not.toBe(true)
 })
 it('previews larger text and asks before resetting reading choices', async () => {
@@ -187,7 +188,8 @@ it.each([
       jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...state, following }, retry, refreshAfterCommand: jest.fn(), dispatch })
       await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
       const header = within(screen.getByTestId('reader-header-actions'))
-      expect(header.getByLabelText('Live')).toBeOnTheScreen()
+      expect(header.getByRole('button', { name: 'Status. Service Live. Connected.' })).toBeOnTheScreen()
+      expect(screen.getByTestId('reader-header-actions')).toHaveStyle({ flexWrap: 'nowrap' })
       for (const name of ['All services', 'Choose reading language', 'Explain current part', 'Reading preferences']) {
         expect(header.getByRole('button', { name })).toBeOnTheScreen()
       }
@@ -199,11 +201,11 @@ it.each([
   } finally { viewport.mockRestore() }
 })
 
-it('shows the shared connection indicator in the reader toolbar', async () => {
+it('shows the combined service and connection status in the reader toolbar', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session }, retry, refreshAfterCommand: jest.fn(), dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
-  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Status. Service Live. Connected.' })).toBeOnTheScreen()
 })
 
 it('derives the indicator from the same connection fields as the controller, without polling', async () => {
@@ -211,16 +213,16 @@ it('derives the indicator from the same connection fields as the controller, wit
   const show = (state: object) => jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, ...state }, retry, refreshAfterCommand: jest.fn(), dispatch })
   show({ connected: true, stale: false, session })
   const view = await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
-  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Status. Service Live. Connected.' })).toBeOnTheScreen()
   show({ connected: true, stale: true, session })
   await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
-  expect(screen.getByLabelText('Server connection: Synchronizing')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Status. Service Live. Syncing.' })).toBeOnTheScreen()
   show({ connected: false, stale: true, session })
   await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
-  expect(screen.getByLabelText('Server connection: Reconnecting')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Status. Service Live. Reconnecting.' })).toBeOnTheScreen()
   show({ connected: true, stale: false, error: 'Could not refresh', session })
   await view.rerender(<SessionReader endpoints={endpoints} id={7} back={() => {}} />)
-  expect(screen.getByLabelText('Server connection: Updates unavailable')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Status. Service Live. Updates unavailable.' })).toBeOnTheScreen()
 })
 
 it('shows Offline when the device reports no network', async () => {
@@ -228,27 +230,24 @@ it('shows Offline when the device reports no network', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session }, retry, refreshAfterCommand: jest.fn(), dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
-  expect(screen.getByLabelText('Server connection: Offline')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Status. Service Live. Offline.' })).toBeOnTheScreen()
 })
 
-it('hides the indicator while the reader shows a saved copy', async () => {
+it('hides the compact status while the reader shows a saved copy', async () => {
   const parts = normalizeParts({ parts: [{ part: { id: 1, en: 'Saved prayer', role: 'priest' } }] })
   jest.mocked(useReader).mockReturnValue({
     saved: { version: 1, savedAt: 1, session: { id: 7, title: 'Saved service', church: 'St. John', date: null }, parts, explanations: null },
     state: { ...initialState, loading: false, error: 'offline', connected: false, parts: [] }, retry, refreshAfterCommand: jest.fn(), dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
-  expect(screen.queryByLabelText(/^Server connection/)).toBeNull()
+  expect(screen.queryByTestId('reader-status-control')).toBeNull()
 })
 
-it('omits the indicator only when the actions row wraps, leaving every button reachable', async () => {
+it('keeps the compact status and actions on one row', async () => {
   const session = normalizeSession({ session: { id: 7, current_part_id: 1, liturgy: 'Prayer' } })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session }, retry, refreshAfterCommand: jest.fn(), dispatch })
   await render(<SessionReader endpoints={endpoints} id={7} back={() => {}} />, { wrapper })
-  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
-  // On the test renderer onLayout doesn't fire automatically; simulate the narrow-viewport wrap.
-  await fireEvent(screen.getByTestId('reader-header-nav'), 'layout', { nativeEvent: { layout: { width: 200, height: 56, x: 0, y: 0 } } })
-  await fireEvent(screen.getByTestId('reader-header-buttons'), 'layout', { nativeEvent: { layout: { width: 340, height: 112, x: 0, y: 0 } } })
-  await waitFor(() => expect(screen.queryByTestId('control-connection')).toBeNull())
+  expect(screen.getByRole('button', { name: 'Status. Service Live. Connected.' })).toBeOnTheScreen()
+  expect(screen.getByTestId('reader-header-actions')).toHaveStyle({ flexWrap: 'nowrap' })
   for (const name of ['All services', 'Choose reading language', 'Explain current part', 'Reading preferences']) expect(screen.getByRole('button', { name })).toBeOnTheScreen()
 })
 
