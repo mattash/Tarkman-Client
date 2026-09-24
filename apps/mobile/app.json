@@ -3,7 +3,7 @@
     "name": "Tarkman",
     "slug": "tarkman",
     "owner": "mesropash",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "scheme": "tarkman",
     "platforms": [
       "ios",
@@ -104,6 +104,12 @@
       "eas": {
         "projectId": "c76aa8c8-fb02-40b5-b4ae-8469b1bbeb47"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c76aa8c8-fb02-40b5-b4ae-8469b1bbeb47"
     },
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icons/app-icon.png"

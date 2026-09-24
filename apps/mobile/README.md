@@ -447,6 +447,63 @@ sign-in token is entered by the reader at runtime and kept in the keychain, and
 any future build-time secret (a Sentry auth token, an App Store Connect API key)
 belongs in EAS secrets, never in `app.json`, `eas.json` or source control.
 
+### EAS Update release workflow (iOS)
+
+This app uses the EAS project ID in `app.json`. New `preview` and `production`
+builds contain `expo-updates`, the project's update URL, and separate update
+channels. Existing installed builds must be replaced with a new build before
+they can receive EAS Updates. Android is outside the v1 release scope.
+
+The runtime version follows the user-visible app version (`expo.version`, now
+`0.1.1` for the first update-enabled binary). Increment that version and ship
+a new binary whenever a native dependency, config plugin, or native app
+setting changes. A build-number increment alone does not change the runtime.
+Publish only JavaScript and asset changes against an existing runtime; compare
+the proposed update with the installed build before publishing.
+
+Before the first build or update, work from `apps/mobile` and confirm `eas
+whoami` can access the project in `app.json`. Both EAS `preview` and
+`production` environments need `EXPO_PUBLIC_API_URL`,
+`EXPO_PUBLIC_ACTIONCABLE_URL`, `EXPO_PUBLIC_SENTRY_DSN`, and
+`EXPO_PUBLIC_SENTRY_ENVIRONMENT` (matching the environment name). The public
+API/cable endpoints must use HTTPS/WSS outside development. Inspect names with
+`eas env:list --environment preview` and the production equivalent; do not
+print sensitive values into logs. `eas.json` also sets the Sentry environment
+for builds, but its `env` entries are not used by `eas update`.
+
+For the first delivery, build and install a fresh iOS preview binary from the
+committed configuration. Then publish a small JavaScript-only change from its
+reviewed Git commit:
+
+```sh
+eas build --platform ios --profile preview
+eas workflow:run .eas/workflows/update-preview.yml --ref REVIEWED_SHA -F message="Describe the change" --wait
+```
+
+The manually triggered workflow publishes only iOS to the matching channel and
+EAS environment. Its update job uploads Sentry source maps and fails if the
+upload fails. This runs on EAS so it can use the existing `SENTRY_AUTH_TOKEN`
+with **Secret** visibility; a local upload cannot read that token. Using
+`--ref` pins the update to a committed revision and avoids uploading untracked
+local files. Verify the preview build receives the new bundle after a force
+quit and up to two launches, then confirm a preview JavaScript error has
+readable frames in Sentry. The development client can also load an update from
+its Extensions tab.
+
+Only after that device check, build and distribute a compatible `0.1.1`
+production binary through the normal store release process. Once that binary
+is available to users, publish the same reviewed JavaScript change to
+`production` from that reviewed Git commit:
+
+```sh
+eas workflow:run .eas/workflows/update-production.yml --ref REVIEWED_SHA -F message="Describe the reviewed change" --wait
+```
+
+Verify the resulting update group and monitor errors. Use
+`eas update:rollback` to return a channel to a previous
+update or the binary's embedded bundle if needed. Publishing and rollback are
+manual release actions; a passing CI bundle export does not publish anything.
+
 ### Beta exit criteria
 
 The canonical [beta exit criteria](../../docs/beta-exit-criteria.md) define the

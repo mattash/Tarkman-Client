@@ -1,0 +1,19 @@
+name: Publish iOS preview update
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        type: string
+        description: Describe the JavaScript or asset change
+        required: true
+
+jobs:
+  update_preview:
+    type: update
+    environment: preview
+    params:
+      platform: ios
+      channel: preview
+      message: ${{ inputs.message }}
+      upload_sentry_sourcemaps: true
