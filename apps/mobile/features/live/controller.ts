@@ -3,7 +3,8 @@ import type { SavedServiceInput } from '../offline/savedService'
 import type { ReaderApi } from './api'
 import type { CableClient } from './cable'
 import { currentPart, parseEvent, sessionWithState, type SessionState, type LivePart, type LiveSession } from './contracts'
-import { initialState, readerReducer, type ReaderAction } from './state'
+import { explanationContextKey, explanationOwnerKey } from './explanationCue'
+import { canRetainExplanations, initialState, readerReducer, type ReaderAction } from './state'
 import { t } from '../i18n'
 const FULL_REFRESH_MS = 30000
 type RecoveryMode = 'full' | 'navigation'
@@ -44,9 +45,12 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     const sequence = explanationGeneration, abort = new AbortController()
     inheritRecovery(abort.signal, parent)
     const isCurrent = () => alive && epoch === generation && sequence === explanationGeneration && !abort.signal.aborted && !state.stale
+    const ownerKey = explanationOwnerKey(session.id, part.key), requestId = state.explanationProvenance.requestId + 1
+    dispatch({ type: 'explanationStart', ownerKey, contextKey: explanationContextKey(session), requestId })
+    if (!isCurrent()) return
     explanationRequest = abort
     const timeout = setTimeout(() => {
-      if (isCurrent()) dispatch({ type: 'explanations', explanations: [], failed: true })
+      if (isCurrent()) dispatch({ type: 'explanations', ownerKey, requestId, explanations: [], failed: true })
       abort.abort()
     }, 12000)
     explanationTimeout = timeout
@@ -65,11 +69,11 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         }
       }
       const explanations = result.filter(e => !e.liturgyPartId || e.liturgyPartId === part.liturgyPartId)
-      dispatch({ type: 'explanations', explanations, failed: false })
+      dispatch({ type: 'explanations', ownerKey, requestId, explanations, failed: false })
       // A subscriber can dispose or start another recovery during dispatch.
       if (isCurrent()) save({ session, parts, explanations: { liturgyPartId: part.liturgyPartId, items: explanations } })
     } catch {
-      if (isCurrent()) dispatch({ type: 'explanations', explanations: [], failed: true })
+      if (isCurrent()) dispatch({ type: 'explanations', ownerKey, requestId, explanations: [], failed: true })
     } finally {
       clearTimeout(timeout)
       if (explanationTimeout === timeout) explanationTimeout = null
@@ -79,8 +83,14 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
   function accept(session: LiveSession, parts: LivePart[], services: LiveSession[], generation: number, signal: AbortSignal, trace?: BenchmarkContext) {
     const part = currentPart(session, parts)
     benchmarkMark('recovery.accepted', { part_id: session.currentPartId, part_key: part?.key, position: session.currentPosition }, trace)
-    dispatch({ type: 'recovered', now: Date.now(), explanationsLoading: loadExplanations && !!part,
-      snapshot: { services, session, parts, explanations: [], explanationError: false, listed: services.some(s => s.id === id) } })
+    const ownerKey = part ? explanationOwnerKey(session.id, part.key) : null, contextKey = explanationContextKey(session)
+    const listed = services.some(s => s.id === id)
+    const enabled = loadExplanations && !!part
+    const retain = enabled && listed && session.status === 'active' && canRetainExplanations(state, ownerKey, contextKey)
+    dispatch({ type: 'recovered', now: Date.now(), explanationsLoading: enabled && !retain,
+      provenance: { ownerKey: enabled ? ownerKey : null, contextKey: enabled ? contextKey : null,
+        requestId: state.explanationProvenance.requestId + 1, status: !enabled ? 'idle' : retain ? 'revalidating' : 'loading' },
+      snapshot: { services, session, parts, explanations: retain ? state.explanations : [], explanationError: false, listed } })
     if (alive && epoch === generation && !queued) {
       save({ session, parts, explanations: undefined })
       void refreshExplanations(session, parts, generation, signal)
@@ -186,16 +196,9 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         if (!alive || epoch !== generation || abort.signal.aborted || mustRerun || verifying !== invalidations) { benchmarkMark('recovery.discarded', { reason: queued ? 'queued' : 'generation' }, trace); return }
         if (session.id !== id || after.id !== id) throw new Error(t('errors.unexpectedSession'))
         if (JSON.stringify(session) !== JSON.stringify(after)) { benchmarkMark('recovery.discarded', { reason: 'changed_snapshot' }, trace); queued = true; dispatch({ type: 'stale' }); return }
-        const part = currentPart(after, parts)
         queued = false; queuedFull = false
         if (fetchedParts) partsFetchedAt = Date.now()
-        benchmarkMark('recovery.accepted', { part_id: after.currentPartId, part_key: part?.key, position: after.currentPosition }, trace)
-        dispatch({ type: 'recovered', now: Date.now(), explanationsLoading: loadExplanations && !!part,
-          snapshot: { services, session: after, parts, explanations: [], explanationError: false, listed: services.some(s => s.id === id) } })
-        if (alive && epoch === generation && !queued) {
-          save({ session: after, parts, explanations: undefined })
-          void refreshExplanations(after, parts, generation, abort.signal)
-        }
+        accept(after, parts, services, generation, abort.signal, trace)
       }
     } catch {
       benchmarkMark('recovery.failed', { aborted: abort.signal.aborted }, trace)
@@ -230,7 +233,8 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         const event = parseEvent(value)
         if (event?.sessionId === id) {
           benchmarkCable(value, id)
-          if (event.state && applyPublication(event.state)) return
+          if (event.event === 'explanation_updated') dispatch({ type: 'explanationReset', status: 'invalid' })
+          if (event.event !== 'explanation_updated' && event.state && applyPublication(event.state)) return
           if (event.event === 'explanation_updated' && stateSupported && state.session && !request && !state.stale) {
             cancelExplanations()
             void refreshExplanations(state.session, state.parts, epoch, new AbortController().signal)
@@ -248,7 +252,7 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
       if (enabled === loadExplanations) return
       loadExplanations = enabled
       cancelExplanations()
-      dispatch({ type: 'explanations', explanations: [], failed: false })
+      dispatch({ type: 'explanationReset', status: 'idle' })
       if (enabled && alive && active && online && state.session && !state.stale) {
         void refreshExplanations(state.session, state.parts, epoch, new AbortController().signal)
       }

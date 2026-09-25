@@ -9,9 +9,9 @@ const parts = normalizeParts({ parts: [
   { part: { id: 1, liturgy_id: 10, liturgy_part_id: 12, position: 2, en: 'Repeated' } },
 ] })
 const session = normalizeSession({ session: { id: 7, current_part_id: 1, current_liturgy_id: 10, current_part_position: 1,
-  num_of_parts: 2, liturgies: [{ id: 10, position: 1 }] } })
+  status: 'active', parts_context: 'fixture', num_of_parts: 2, liturgies: [{ id: 10, position: 1 }] } })
 const next = { ...session, currentPosition: 2 }
-const explanation: LiveExplanation = { id: 1, title: 'First explanation', description: null, liturgyPartId: 11 }
+const explanation: LiveExplanation = { id: 1, title: 'First explanation', description: null, liturgyPartId: 11, contentFingerprint: '["First explanation",null]' }
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve() }
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r }); return { promise, resolve } }
 let api: jest.Mocked<ReaderApi>, save: jest.Mock<ReaderCache['save']>, callbacks: CableCallbacks
@@ -122,4 +122,30 @@ it('changes explanation loading without resetting manual mode, occurrence or the
   controller.setLoadExplanations(false); await flush()
   expect(controller.getSnapshot().explanations).toEqual([])
   expect(api.parts).toHaveBeenCalledTimes(partsReads); expect(api.session).toHaveBeenCalledTimes(sessionReads)
+})
+
+it('retains legacy verified same-context explanations throughout ordinary refresh without flicker', async () => {
+  const controller = setup(); await flush(); callbacks.connected(); await flush()
+  const seen: string[] = []
+  controller.subscribe(() => seen.push(controller.getSnapshot().explanationProvenance.status))
+  const pending = deferred<LiveExplanation[]>()
+  api.explanations.mockReturnValueOnce(pending.promise)
+  controller.retry(); await flush()
+  expect(controller.getSnapshot().explanations).toEqual([explanation])
+  expect(controller.getSnapshot().explanationProvenance.status).toBe('revalidating')
+  expect(seen.every(status => status === 'revalidating')).toBe(true)
+  pending.resolve([explanation]); await flush()
+  expect(controller.getSnapshot().explanationProvenance.status).toBe('ready')
+})
+it('clears unknown-context proof at recovery start and disconnect invalidates a pending ticket', async () => {
+  api.session.mockResolvedValue({ ...session, partsContext: null })
+  const controller = setup(); await flush(); callbacks.connected(); await flush()
+  const pending = deferred<LiveExplanation[]>()
+  api.explanations.mockReturnValue(pending.promise)
+  controller.retry()
+  expect(controller.getSnapshot().explanations).toEqual([])
+  await flush(); callbacks.disconnected()
+  expect(controller.getSnapshot().explanations).toEqual([])
+  lifecycleEvent(false, true); pending.resolve([explanation]); await flush()
+  expect(controller.getSnapshot().explanationProvenance.status).toBe('invalid')
 })

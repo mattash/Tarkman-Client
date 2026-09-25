@@ -1,8 +1,8 @@
 import { HelpContent } from '../onboarding/Help'
 import { useReaderEducation } from '../onboarding/useReaderEducation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Platform, View, useWindowDimensions } from 'react-native'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import type { Language } from '@tarkman/core'
 import { AppButton } from '../../components/AppButton'
 import { BackButton } from '../../components/BackButton'
@@ -27,6 +27,10 @@ import { ReaderStatusControl } from './ReaderStatusControl'
 import { lifecycle } from './lifecycle'
 import { useScreenKeepAwake } from '../keepAwake/useScreenKeepAwake'
 import { useI18n } from '../i18n'
+
+import { readerScopeKey } from './explanationCue'
+import { useExplanationCue } from './useExplanationCue'
+import { ExplanationSheetContent } from './ExplanationSheetContent'
 
 const abbreviations = { en: 'EN', ru: 'RU', grabar: 'Գրբ', translit: 'TR' } as const
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
@@ -67,12 +71,31 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const accessibilitySize = fontScale > 1.5
   const compactReading = accessibilitySize || width > height || !following
   // The reader sends no commands; its indicator reads the same connection fields as the controller's.
-  const [online, setOnline] = useState(true)
-  useEffect(() => lifecycle.listen((_active, connected) => { setOnline(current => current === connected ? current : connected) }), [])
+  const [online, setOnline] = useState(true), [active, setActive] = useState(true), [focused, setFocused] = useState(true)
+  const scope = readerScopeKey(endpoints, id)
+  const [opening, setOpening] = useState(() => ({ scope, visible: false, token: {}, shown: false }))
+  if (opening.scope !== scope || opening.visible !== (sheet !== null)) {
+    setOpening({ scope, visible: sheet !== null, token: {}, shown: false })
+  }
+  const openingGuard = useRef(opening)
+  useLayoutEffect(() => { openingGuard.current = opening }, [opening])
+  const presentation = useMemo(() => sheet === 'explanation' && opening.shown && !sheetClosing && active && online && focused ? {} : null,
+    [sheet, opening, sheetClosing, active, online, focused])
+  const cue = useExplanationCue(scope, state, active && online && focused && !showingSaved, presentation)
+  const invalidatePresentation = cue.invalidatePresentation
+  useEffect(() => lifecycle.listen((foreground, connected) => {
+    if (!foreground || !connected) invalidatePresentation()
+    setActive(foreground); setOnline(connected)
+  }), [invalidatePresentation])
+  useFocusEffect(useCallback(() => {
+    setFocused(true)
+    return () => { invalidatePresentation(); setFocused(false) }
+  }, [invalidatePresentation]))
   // The compact status control keeps this header on one row at every connection state.
   // A saved copy must not imply server synchronization.
   const fitKey = `${width}:${fontScale}:${language}`
   const dismissSheet = () => {
+    invalidatePresentation()
     setDraftLanguages(preferences.selectedLanguages)
     setLanguageError(false)
     setLanguageMode('quick')
@@ -93,12 +116,12 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     dismissSheet()
   }
   const live = !showingSaved && state.listed && state.connected && !state.stale && !state.error && state.session?.status === 'active'
-  const available = live && online && !!part && !state.loading && !state.refreshing && !state.explanationsLoading && !state.explanationError && state.explanations.length > 0
   const education = useReaderEducation({ id, healthy: live && online && !!part, ready: preferencesReady && layoutReady,
-    sheetOpen: sheet !== null || sheetClosing, available, following, root,
+    sheetOpen: sheet !== null || sheetClosing, available: cue.available, following, root,
     targets: { follow: followTarget, language: languageOpener, explanation: explanationOpener, preferences: preferencesOpener },
     layoutVersion: `${fitKey}:${height}:${preferences.readingSize}`,
     open: step => {
+      invalidatePresentation()
       activeOpener.current = step === 'language' ? languageOpener.current : step === 'explanation' ? explanationOpener.current : preferencesOpener.current
       if (step === 'language') openLanguage()
       else setSheet(step)
@@ -124,7 +147,8 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           {abbreviations[language]}
         </AppButton>
         <AppButton testID="reader-explain" ref={explanationOpener} variant="quiet" icon="explanation" iconOnly disabled={!showingSaved && !part}
-          selected={available} accessibilityHint={available ? t('onboarding.available') : undefined}
+          highlighted={cue.available} badgeCount={cue.newCount} accessibilityHint={cue.available ? t('reader.explanationsAvailable') : undefined}
+          accessibilityLabel={cue.newCount > 0 ? t('reader.explainCurrentPartNew', { count: cue.newCount }) : undefined}
           onPress={() => education.openControl('explanation')}>{showingSaved ? t('reader.explainSavedText') : t('reader.explainCurrentPart')}</AppButton>
         <AppButton testID="reader-preferences" ref={preferencesOpener} variant="quiet" icon="preferences" iconOnly
           onPress={() => education.openControl('preferences')}>{t('readingPreferences.title')}</AppButton>
@@ -147,6 +171,9 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     </View>}
     <AppModal visible={sheet !== null} title={sheet === 'language' ? (languageMode === 'quick' ? t('reader.readingLanguage') : t('reader.chooseLanguages'))
       : sheet === 'preferences' ? t('readingPreferences.title') : sheet === 'help' ? t('onboarding.help') : t('common.explanation')}
+      onAfterShow={() => {
+        if (openingGuard.current.token === opening.token && opening.visible) setOpening(current => current.token === opening.token ? { ...current, shown: true } : current)
+      }}
       openerRef={activeOpener} restoreFocus={!education.tourActive} onDismiss={dismissSheet} onAfterDismiss={() => { setSheetClosing(false); education.sheetDismissed() }} dismissLabel={sheet === 'language' && languageMode === 'choose' ? t('common.cancel') : t('common.done')}
       headerAction={sheet === 'language' && languageMode === 'choose' ? <AppButton variant="quiet" onPress={applyLanguages}>{t('reader.applyLanguages')}</AppButton> : undefined}>
       {sheet === 'language' ? languageMode === 'quick' ? <>
@@ -209,9 +236,10 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
           : state.stale ? <StatusPill label={t('common.reconnecting')} tone="info" message={t('reader.explanationsRefresh')} />
           : state.explanationError ? <><StatusPill label={t('reader.couldNotLoadExplanations')} tone="danger" /><AppButton loading={state.refreshing} onPress={retry}>{t('reader.retryExplanations')}</AppButton></>
           : state.explanations.length === 0 ? <AppText variant="explanation">{t('common.noPartExplanation')}</AppText>
-          : state.explanations.map(explanation => <View key={explanation.id} style={{ gap: spacing.sm }}>
-            <AppText variant="heading">{explanation.title}</AppText><LiturgyText variant="explanation" text={explanation.description} blocks />
-          </View>)}
+          : null}
+        {!showingSaved && <ExplanationSheetContent
+          explanations={!state.loading && !state.explanationsLoading && !state.stale && !state.explanationError ? state.explanations : []}
+          batch={cue.batch} presentation={presentation} onPresented={cue.acknowledgePresented} />}
       </>}
     </AppModal>
     {education.overlay}

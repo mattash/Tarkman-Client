@@ -7,7 +7,7 @@ import { AppText } from './AppText'
 import { AppButton } from './AppButton'
 import { useI18n } from '../features/i18n'
 
-export function AppModal({ visible, onDismiss, title, children, openerRef, headerAction, dismissLabel, onAfterDismiss, restoreFocus = true }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<View | null>; headerAction?: ReactNode; dismissLabel?: string; onAfterDismiss?: () => void; restoreFocus?: boolean }>) {
+export function AppModal({ visible, onDismiss, title, children, openerRef, headerAction, dismissLabel, onAfterDismiss, onAfterShow, restoreFocus = true }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<View | null>; headerAction?: ReactNode; dismissLabel?: string; onAfterDismiss?: () => void; onAfterShow?: () => void; restoreFocus?: boolean }>) {
   const closeRef = useRef<View>(null)
   const { t } = useI18n()
   const dismiss = dismissLabel ?? t('common.done')
@@ -29,7 +29,7 @@ export function AppModal({ visible, onDismiss, title, children, openerRef, heade
   const insets = useSafeAreaInsets()
   const ios = Platform.OS === 'ios'
   return <Modal testID="app-modal" visible={visible} transparent={!ios} animationType={ios ? 'slide' : 'none'}
-    presentationStyle={ios ? 'pageSheet' : 'overFullScreen'} allowSwipeDismissal onShow={() => focusControl(closeRef.current)}
+    presentationStyle={ios ? 'pageSheet' : 'overFullScreen'} allowSwipeDismissal onShow={() => { focusControl(closeRef.current); onAfterShow?.() }}
     onDismiss={restore} onRequestClose={onDismiss} statusBarTranslucent={!ios}>
     <KeyboardAvoidingView behavior={ios ? 'padding' : 'height'} style={{ flex: 1, justifyContent: ios ? 'flex-start' : 'flex-end', backgroundColor: ios ? colors.overlay : colors.backdrop }}>
       {!ios && <Pressable accessible={false} focusable={false} importantForAccessibility="no" testID="modal-backdrop" onPress={onDismiss} style={{ position: 'absolute', inset: 0 }} />}

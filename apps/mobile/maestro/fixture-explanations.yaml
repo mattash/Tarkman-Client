@@ -5,6 +5,11 @@ appId: app.tarkman
 name: Read the current part's explanation
 ---
 - runFlow: fixture-open-service.yaml
+- extendedWaitUntil:
+    visible:
+      id: "reader-explain-badge"
+    timeout: 15000
+- assertVisible: "1"
 - tapOn:
     id: "reader-explain"
 - extendedWaitUntil:
@@ -16,3 +21,10 @@ name: Read the current part's explanation
 - extendedWaitUntil:
     visible: "All services"
     timeout: 15000
+
+- assertNotVisible:
+    id: "reader-explain-badge"
+- tapOn:
+    id: "reader-explain"
+- assertVisible: "Sample explanation · Lord’s Prayer"
+- tapOn: "Close Explanation"
