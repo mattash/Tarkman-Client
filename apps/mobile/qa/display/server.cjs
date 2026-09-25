@@ -79,7 +79,7 @@ function currentPart() { return extraPart && index === extraPart.part.position -
 function state(id, overrides = {}) {
   const p = currentPart()
   return { id, revision, content_context: contentContext, status, session_status: status,
-    status_message: 'Please join us for fellowship after the service.\nAll are welcome.', posture: p.posture, date: '2026-09-19',
+    status_message: status === 'showing_custom' ? 'Please join us for fellowship after the service.\nAll are welcome.' : null, posture: p.posture, date: '2026-09-19',
     cursor: { part_id: p.id, liturgy_part_id: p.liturgy_part_id, liturgy_id: 99, position: p.position }, ...overrides }
 }
 function session(id) {
@@ -95,7 +95,7 @@ function json(res, value, code = 200) {
   res.end(JSON.stringify(value))
 }
 
-function cableEnvelope(identifierId, overrides = {}) { return { ...state(String(identifierId)), session: String(identifierId), part: currentPart().id, ...overrides } }
+function cableEnvelope(identifierId, overrides = {}) { return { ...state(Number(identifierId)), session: Number(identifierId), session_id: Number(identifierId), part: currentPart().id, ...overrides } }
 function broadcastEnvelope(envelope, event = 'part_change') {
   for (const [socket, identifiers] of clients) for (const identifier of identifiers) {
     const subscription = JSON.parse(identifier)
@@ -103,6 +103,7 @@ function broadcastEnvelope(envelope, event = 'part_change') {
     if (socket.readyState === 1) socket.send(JSON.stringify({ identifier, message: { event, data: envelope } }))
   }
   log('publication', { event, envelope })
+  return envelope
 }
 function broadcastCurrent() {
   let emitted = null
@@ -130,7 +131,7 @@ function applyReviewChange(change) {
   if (typeof change.live === 'boolean') live = change.live
   if ([9001, 9002].includes(change.sessionId)) sessionId = change.sessionId
   setIndex(change.index)
-  if (['active', 'paused', 'showing_gospel', 'showing_epistle', 'showing_welcome', 'showing_custom'].includes(change.status)) status = change.status
+  if (['active', 'paused', 'showing_gospel', 'showing_epistle', 'showing_welcome', 'showing_custom', 'showing_session_qr'].includes(change.status)) status = change.status
   if (typeof change.expired === 'boolean') expired = change.expired
   if (typeof change.disconnected === 'boolean') disconnected = change.disconnected
 }
@@ -245,6 +246,7 @@ const server = http.createServer(async (req, res) => {
     if (isCommand && ['POST', 'PATCH'].includes(req.method)) {
       const request = await body(req)
       const attempt = log('command', { method: req.method, path: url.pathname, request, mode: commandMode })
+      if (request.expected_revision !== revision) return json(res, { error: 'stale_revision', current_revision: revision }, 409)
       if (commandMode === 'refuse409') return json(res, { error: 'The current part changed', current_part_id: currentPart().id, attempt_sequence: attempt.sequence }, 409)
       if (suffix === '/next.json') {
         if (index >= parts().length - 1) return json(res, { status: 'Could not advance session', current_part_id: currentPart().id }, 422)
@@ -259,7 +261,7 @@ const server = http.createServer(async (req, res) => {
         if (requested) index = requested.part.position - 1
       } else if (suffix === '/update_status.json' && typeof request.status === 'string') status = request.status
       revision += 1
-      const response = commandResponse(), emitted = broadcastCurrent()
+      const response = commandResponse(), emitted = broadcastEnvelope(cableEnvelope(id), suffix === '/update_status.json' ? 'status_change' : 'part_change')
       return json(res, { ...response, emitted })
     }
     if (suffix === '.json') { log('session', { method: req.method, path: url.pathname }); return json(res, session(id)) }

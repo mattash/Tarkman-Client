@@ -13,6 +13,7 @@ import { useControllerPresence } from './presence/useControllerPresence'
 import type { PresenceState } from './presence/coordinator'
 
 export const STOP_ANNOUNCEMENT = 'stop-announcement'
+export const STOP_SESSION_QR = 'stop-session-qr'
 
 export interface ServiceControlValue {
   sessionId: number

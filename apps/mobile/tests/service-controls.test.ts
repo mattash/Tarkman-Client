@@ -81,3 +81,14 @@ it('selects the requested occurrence when a Part is reused', async () => {
   await commands.goToPart(9, 52, 52, 152)
   expect(JSON.parse(String(authorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ part_id: 52, liturgy_part_id: 152, expected_part_id: 52 })
 })
+
+it('sends QR show/stop as revision-aware status commands without message or navigation', async () => {
+  const authorizedFetch = jest.fn<() => Promise<Response>>().mockResolvedValue(respond(200, { status: 'success', current_part_id: 1, revision: 6,
+    session_status: 'showing_session_qr', status_message: null, posture: null, date: null, content_context: 'v1', cursor: { part_id: 1, liturgy_part_id: 11, liturgy_id: 2, position: 1 } }))
+  const commands = createServiceControls(authorizedFetch, 5)
+  await expect(commands.setStatus(9, 'showing_session_qr')).resolves.toMatchObject({ status: 'showing_session_qr', revision: 6 })
+  await commands.setStatus(9, 'active')
+  expect((authorizedFetch.mock.calls as unknown as [string, { body: string }][]).map(([path, init]) => [path, JSON.parse(init.body)]))
+    .toEqual([['/s/9/update_status.json', { status: 'showing_session_qr', expected_revision: 5 }],
+      ['/s/9/update_status.json', { status: 'active', expected_revision: 5 }]])
+})

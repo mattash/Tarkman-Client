@@ -526,3 +526,32 @@ it('sends the displayed revision and forwards the confirmed command state to the
   await waitFor(() => expect(retry).toHaveBeenCalledWith(expect.objectContaining({ id: 9, revision: 6, cursor: expect.objectContaining({ liturgyPartId: 22 }) })))
   expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toMatchObject({ expected_part_id: 1, expected_revision: 5 })
 })
+
+it('shows a dedicated QR command without moving the part or using the announcement', async () => {
+  await render(<Control />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
+  await fireEvent.press(screen.getByTestId('show-session-qr'))
+  expect(sent()).toEqual(['PATCH /s/9/update_status.json'])
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toEqual({ status: 'showing_session_qr' })
+  expect(mockBack).toHaveBeenCalled()
+})
+
+it('stops a QR presentation using active, keeping custom announcement separate', async () => {
+  jest.mocked(useReader).mockReturnValue(reader({ session: { ...session, status: 'showing_session_qr' } }))
+  await render(<Control />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
+  expect(screen.getByTestId('stop-session-qr')).toBeOnTheScreen()
+  expect(screen.getByLabelText('Message')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByTestId('stop-session-qr'))
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toEqual({ status: 'active' })
+  expect(sent()).toEqual(['PATCH /s/9/update_status.json'])
+})
+
+it('holds the QR command offline and surfaces stale refusal in its own section', async () => {
+  ;(globalThis as { __online?: boolean }).__online = false
+  await render(<Control />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
+  expect(screen.getByTestId('show-session-qr')).toBeDisabled()
+  await fireEvent.press(screen.getByTestId('show-session-qr'))
+  expect(mockAuthorizedFetch).not.toHaveBeenCalled()
+})

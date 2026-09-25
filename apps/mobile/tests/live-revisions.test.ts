@@ -253,3 +253,17 @@ it('retains the revisioned cue on benign polls, invalidates explanation events i
   callbacks.received({ event: 'explanation_updated', data: { session_id: 7, explanation_id: 1 } }); await flush()
   expect(controller.getSnapshot().explanations).toEqual([])
 })
+
+it('adopts QR status_change and ack without moving occurrence, then restores it from recovery state', async () => {
+  const controller = await setup()
+  const qr = { session_status: 'showing_session_qr', status_message: null }
+  controller.refreshAfterCommand(compact(1, 0, qr))
+  event(1, 0, qr, 'status_change')
+  expect(controller.getSnapshot().session).toMatchObject({ status: 'showing_session_qr', revision: 1, currentLiturgyPartId: 11 })
+  expect(api.state).not.toHaveBeenCalled()
+  api.state.mockResolvedValue(compact(4, 0, qr))
+  event(4, 0, qr, 'status_change'); await flush()
+  expect(controller.getSnapshot().session).toMatchObject({ status: 'showing_session_qr', revision: 4, currentLiturgyPartId: 11 })
+  event(5, 0, { session_status: 'active' }, 'status_change')
+  expect(controller.getSnapshot().session).toMatchObject({ status: 'active', revision: 5, currentLiturgyPartId: 11 })
+})

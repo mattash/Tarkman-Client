@@ -119,3 +119,61 @@ checks do not replace the pinned compiler, Jest, browser, backend or device runs
 - Fixture and Playwright runner JavaScript syntax checks and `git diff --check`
   passed. Mobile Jest, pinned typecheck/lint, export, live backend integration,
   browser execution and physical-device checks remain for the parent.
+
+## Session read-along QR (#187) — independent web QA
+
+On this branch, start the fixture and Expo web exactly as above (fresh fixture and
+`EXPO_PUBLIC_API_URL`/`EXPO_PUBLIC_ACTIONCABLE_URL` pointing at loopback). POST
+`/qa/reset` before each scenario. Sign in at `http://127.0.0.1:8082/sign-in`
+with `operator@display.test` / `fixture` (synthetic account only). Open
+`http://127.0.0.1:8082/services/9001/service` as controller, then open two
+`http://127.0.0.1:8082/sessions/display?token=token-A` tabs. Use the controller's
+Service sheet → **Show read-along QR**; both displays should show the same large
+black-on-white SVG encoding exactly `https://web.tarkman.app/sessions/9001/parts`,
+with that same full HTTPS URL visible below it in both English and Russian.
+`tarkman.app` is the API host and must never be the generated reader destination. Stop showing
+should restore the same reading (fixture starts at index 1). Verify phone
+390×844 and projector 1920×1080 and 1280×720; record screenshots and network
+`/qa/log` evidence. The scanner's exact URL round-trip is covered by Jest; for
+physical scanner QA, scan the rendered QR from the Tarkman home screen on a
+separate device and confirm Read along for 9001. The canonical URL is production,
+not the fixture origin; do not navigate there during fixture-only QA.
+
+For recovery, leave QR active, close/reopen a display or POST
+`{"disconnected":true}` then `{"disconnected":false}` to `/review/state`;
+confirm state remains QR. For suppression, open `?token=quiet` (notifications disabled) or
+`?token=plain` (status view set to none) instead of the Token A display;
+the QR should not replace the reading. Use `/qa/status` to inspect
+revision/index and `/qa/log` to verify PATCH `/s/9001/update_status.json` with
+`expected_revision`, one increment, `status_change` publication, no next/set_part,
+and matching ack. POST `{"commandMode":"refuse409"}` to `/qa/config` for stale
+refusal, then restore `accept`. No live backend or credentials are involved.
+
+### PR #188 URL correction — current-build evidence for UI Operator
+
+Use a clean checkout of the updated PR head and record `git rev-parse HEAD` with
+all evidence. Restart both servers from that checkout; do not reuse an old Metro
+process, export, or controller screenshot. To render this checkout with fixture
+endpoints, use separate terminals from the repository root:
+
+```sh
+DISPLAY_FIXTURE_PORT=8118 node apps/mobile/qa/display/server.cjs
+```
+
+```sh
+EXPO_PUBLIC_API_URL=http://127.0.0.1:8118 \
+EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8118/cable \
+EXPO_PUBLIC_DEFAULT_CHURCH_ID=7 npm run web --prefix apps/mobile -- --port 8082 --clear
+```
+
+Follow the sign-in/controller/two-display steps above using app port **8082** and
+fixture port **8118**. POST `http://127.0.0.1:8118/qa/reset` first. Capture a **fresh controller
+screenshot** with the Service sheet open after Show read-along QR succeeds and
+Stop showing is available, plus separate screenshots of both QR displays.
+Name evidence with the tested head SHA and viewport, and record the command and
+publication log from `/qa/log`. Decode the rendered QR without navigating to the
+production destination and assert the exact HTTPS URL above; check its visible
+caption in English and Russian. Repeat at 390×844, 1280×720 and 1920×1080,
+checking caption wrapping, quiet zone and clipping. Confirm Stop showing restores
+the same part, numeric ActionCable session IDs remain 9001, and `quiet`/`plain`
+suppression still works as described above.
