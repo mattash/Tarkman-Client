@@ -163,12 +163,11 @@ DISPLAY_FIXTURE_PORT=8118 node apps/mobile/qa/display/server.cjs
 ```sh
 EXPO_PUBLIC_API_URL=http://127.0.0.1:8118 \
 EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8118/cable \
-EXPO_PUBLIC_DEFAULT_CHURCH_ID=7 npm run web --prefix apps/mobile -- --port 8088 --clear
+EXPO_PUBLIC_DEFAULT_CHURCH_ID=7 npm run web --prefix apps/mobile -- --port 8082 --clear
 ```
 
-Follow the sign-in/controller/two-display steps above using app port **8088** and
-fixture port **8118** (open the app URLs directly; fixture landing-page links use
-8082). POST `http://127.0.0.1:8118/qa/reset` first. Capture a **fresh controller
+Follow the sign-in/controller/two-display steps above using app port **8082** and
+fixture port **8118**. POST `http://127.0.0.1:8118/qa/reset` first. Capture a **fresh controller
 screenshot** with the Service sheet open after Show read-along QR succeeds and
 Stop showing is available, plus separate screenshots of both QR displays.
 Name evidence with the tested head SHA and viewport, and record the command and
@@ -178,8 +177,3 @@ caption in English and Russian. Repeat at 390×844, 1280×720 and 1920×1080,
 checking caption wrapping, quiet zone and clipping. Confirm Stop showing restores
 the same part, numeric ActionCable session IDs remain 9001, and `quiet`/`plain`
 suppression still works as described above.
-
-The URL-correction coding session could not capture fresh rendered evidence:
-the sandbox denied the fixture loopback listener with `EPERM`. No prior
-controller screenshot is offered as evidence for this build. UI Operator must
-complete and attach these current-head captures before rendered QA is accepted.
