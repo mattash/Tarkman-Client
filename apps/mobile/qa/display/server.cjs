@@ -56,9 +56,11 @@ let stateMode, reconciliationState, commandMode
 const prayer = { en: 'Our Father, who art in heaven,\nhallowed be thy name.\n\nThy kingdom come.\nThy will be done,\non earth as it is in heaven.',
   grabar: 'Հայր մեր, որ յերկինս ես,\nսուրբ եղիցի անուն քո։\n\nԵկեսցէ արքայութիւն քո,\nեղիցին կամք քո\nորպէս յերկինս եւ յերկրի։',
   translit: 'Hayr mer, vor hergins yes,\nsurp yeghitsi anun ko.\n\nYegestse arkayutyun ko,\nyeghitsin gamk ko\nvorbes hergins yev hergri.' }
+// Opt-in status fallback review: the initial occurrence is missing both values.
+const missingStatus = process.env.DISPLAY_FIXTURE_MISSING_STATUS === '1'
 const baseParts = [0, 1, 2, 3].map(i => ({ part: {
   id: i === 3 ? 902 : 901 + i, liturgy_id: 99, liturgy_part_id: 9901 + i, position: i + 1,
-  role: i === 2 ? 'priest' : 'choir', page: [1, 24, 108, 24][i], posture: ['stand', 'stand', 'sit', 'kneel'][i],
+  role: i === 2 ? 'priest' : 'choir', page: missingStatus && i === 1 ? null : [1, 24, 108, 24][i], posture: missingStatus && i === 1 ? null : ['stand', 'stand', 'sit', 'kneel'][i],
   effective_duration_ms: i === 2 ? 30000 : 60000,
   ...Object.fromEntries(Object.entries(prayer).map(([language, text]) => [language, i === 2 ? Array(6).fill(text).join('\n\n') : text])), ru: null,
 } }))

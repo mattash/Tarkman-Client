@@ -1,3 +1,4 @@
+import { positiveId } from '../live/contracts'
 import type { LivePart, LiveSession } from '../live/contracts'
 import { t } from '../i18n'
 import type { DisplayPreferences } from './config'
@@ -46,4 +47,12 @@ export function postureKey(value: string | null | undefined): 'stand' | 'sit' | 
 export function displayPosture(value: string | null | undefined): string | null {
   const key = postureKey(value)
   return key ? t(`display.${key}`) : null
+}
+
+/** Missing status metadata has a presentation default; unsupported instructions stay unknown. */
+export function statusPostureKey(value: string | null | undefined): ReturnType<typeof postureKey> {
+  return value == null || value.trim() === '' ? 'stand' : postureKey(value)
+}
+export function statusPageNumber(sessionPage: unknown, partPage: unknown): number | null {
+  return positiveId(sessionPage) ?? positiveId(partPage)
 }

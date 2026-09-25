@@ -1,7 +1,7 @@
 import { useTheme } from '../../design/ThemeProvider'
 import { useI18n } from '../i18n'
 import type { PostureIconProps } from './PostureIcon'
-import { displayPosture, postureKey } from './presentation'
+import { statusPostureKey } from './presentation'
 
 // Same silhouettes as apps/web/app/components/Posture.tsx, with empty margins cropped.
 const postureShapes = {
@@ -45,8 +45,8 @@ const viewBoxes = { sit: '26 5 76 119', stand: '14 0 26 54', kneel: '16 1 68 98'
 export function PostureIcon({ posture }: PostureIconProps) {
   const { colors } = useTheme()
   const { t } = useI18n()
-  const key = postureKey(posture)
-  const label = displayPosture(posture) ?? t('display.postureUnavailable')
+  const key = statusPostureKey(posture)
+  const label = key ? t(`display.${key}`) : t('display.postureUnavailable')
   return <svg data-testid="display-posture" role="img" aria-label={label}
     viewBox={key ? viewBoxes[key] : '0 0 100 100'} width="100%" height="100%"
     style={{ display: 'block', color: colors.foreground }}>

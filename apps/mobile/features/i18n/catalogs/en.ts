@@ -229,6 +229,7 @@ export const en = {
     kneel: 'Kneel',
     postureUnavailable: 'No posture indicated',
     hymnalPage: 'Hymnal page',
+    pageUnavailable: 'Page number unavailable',
     page: 'Page {page}',
     explanationAvailable: 'Explanation available',
     autoAdvance: 'Text continues automatically',

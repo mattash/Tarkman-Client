@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { StyleSheet, View, useWindowDimensions } from 'react-native'
 import { StatusPill } from '../../components/StatusPill'
+import { AppIcon } from '../../components/AppIcon'
+import { useReadingFont } from '../../design/readingFont'
 import { AppText } from '../../components/AppText'
 import { useTheme } from '../../design/ThemeProvider'
 import { spacing } from '../../design/tokens'
@@ -11,7 +13,7 @@ import type { DisplayLanguage, DisplayPreferences } from './config'
 import { DisplayNotice } from './DisplayFrame'
 import { PostureIcon } from './PostureIcon'
 import { ProjectionText } from './ProjectionText'
-import { projectionMessage, projectionText } from './presentation'
+import { projectionMessage, projectionText, statusPageNumber } from './presentation'
 import { projectionDuration } from './projectionTiming'
 import { useProjectionClock } from './useProjectionClock'
 import { customization, projectionLayout, independentDuration, createManualPosition, createPageGroup } from './customization'
@@ -47,8 +49,8 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
     independent: { en: createManualPosition(), grabar: createManualPosition(), translit: createManualPosition(), hyw: createManualPosition() },
   }), [sessionId, part?.key])
   const pageGroup = useMemo(() => ({ occurrence: `${sessionId}/${part?.key}`, ...createPageGroup() }), [sessionId, part?.key])
-  const posture = session?.posture ?? part?.posture
-  const page = session?.page ?? part?.page
+  const posture = session?.posture?.trim() || part?.posture?.trim() || null
+  const page = statusPageNumber(session?.page, part?.page)
   const message = session ? projectionMessage(session, state.parts, config) : null
   const languages: DisplayLanguage[] = [...new Set(config.mode === 'parallel' && config.lang2 ? [config.lang1, config.lang2] : [config.lang1])]
   const texts = languages.map(language => language === 'hyw' ? null : projectionText(part?.text[language]))
@@ -73,12 +75,13 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
     const both = showPage && showPosture
     const pageWidth = (width - layout.paddingHorizontal * 2) * (both && !compact ? 0.65 : 1)
     const itemHeight = (height - layout.paddingVertical * 2) / (both && compact ? 2 : 1)
-    const pageText = page != null && page > 0 ? String(page) : '—'
-    const numberSize = Math.min(itemHeight * 0.85, pageWidth / (pageText.length * 0.65)) / fontScale
+    const pageText = page !== null ? String(page) : null
+    const numberSize = pageText !== null ? Math.min(itemHeight * 0.85, pageWidth / (pageText.length * 0.65)) / fontScale : 0
     return <View testID="display-status" style={[styles.screen, screenPadding]}>
       <View style={[styles.statusContent, { flexDirection: compact ? 'column' : 'row' }]}>
         {showPage && <View style={[styles.statusItem, { flex: both && !compact ? 0.65 : 1 }]}>
-          <AppText testID="display-page" style={{ fontSize: numberSize * Math.min(1, layout.textScale), lineHeight: numberSize * Math.min(1, layout.textScale) * 1.1, fontWeight: '600', textAlign: 'center', fontVariant: ['tabular-nums'] }}>{pageText}</AppText>
+          {page !== null ? <AppText testID="display-page" accessibilityLabel={t('display.page', { page })} style={{ fontSize: numberSize * Math.min(1, layout.textScale), lineHeight: numberSize * Math.min(1, layout.textScale) * 1.1, fontWeight: '600', textAlign: 'center', fontVariant: ['tabular-nums'] }}>{pageText}</AppText>
+            : <PagePlaceholder width={pageWidth} height={itemHeight} scale={layout.textScale} />}
         </View>}
         {showPosture && <View style={[styles.statusItem, { flex: both && !compact ? 0.35 : 1 }]}>
           <PostureIcon posture={posture} />
@@ -108,6 +111,20 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
           </View>)}
         </View>
       </> : <DisplayNotice title={t('display.waitingForPart')} />}
+  </View>
+}
+/** Keep the page slot intact while the bundled decorative font loads. */
+function PagePlaceholder({ width, height, scale }: { width: number; height: number; scale: number }) {
+  const ready = useReadingFont()
+  const { t } = useI18n()
+  const { colors } = useTheme()
+  const available = Math.max(0, Math.min(width, height))
+  // AppIcon's line height and width each add two points to the glyph size.
+  const size = Math.max(0, Math.min(available * 0.35 * Math.min(1, scale), available - 2))
+  return <View testID="display-page-placeholder" accessible accessibilityRole="image"
+    accessibilityLabel={t('display.pageUnavailable')} style={{ maxWidth: '100%', alignItems: 'center' }}>
+    {ready ? <View style={{ opacity: 0.55 }}><AppIcon name="book" color={colors.muted} size={size} /></View>
+      : <AppText accessible={false} importantForAccessibility="no" tone="muted" style={{ textAlign: 'center' }}>{t('display.pageUnavailable')}</AppText>}
   </View>
 }
 const styles = StyleSheet.create({
