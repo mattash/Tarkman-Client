@@ -231,6 +231,7 @@ export const ru: Catalog = {
     kneel: 'Преклоните колени',
     postureUnavailable: 'Положение не указано',
     hymnalPage: 'Страница сборника',
+    pageUnavailable: 'Номер страницы недоступен',
     page: 'Страница {page}',
     explanationAvailable: 'Доступно пояснение',
     autoAdvance: 'Текст продолжается автоматически',
