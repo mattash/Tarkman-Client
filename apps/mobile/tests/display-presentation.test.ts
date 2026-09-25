@@ -83,7 +83,7 @@ it('keeps valid session pages authoritative, including the safe integer boundary
 
 it('generates a canonical scanner-compatible credential-free reader URL', () => {
   const url = sessionReaderUrl(4008)
-  expect(url).toBe('https://tarkman.app/sessions/4008/parts')
+  expect(url).toBe('https://web.tarkman.app/sessions/4008/parts')
   expect(readScannedLink(url)).toEqual({ kind: 'service', sessionId: 4008, path: '/sessions/4008/parts' })
   expect(() => sessionReaderUrl(0)).toThrow()
 })

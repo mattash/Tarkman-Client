@@ -259,15 +259,16 @@ it.each<['en' | 'ru', string, string]>([
   expect(!!screen.queryByText(label, { includeHiddenElements: true })).toBe(false)
 })
 
-it('renders structured QR on two displays and recovers the same reading after stop', async () => {
+it.each(['en', 'ru'] as const)('renders the web reader QR and caption in %s on two displays and recovers after stop', async language => {
   const session = normalizeSession({ session: { id: 42, status: 'showing_session_qr', current_part_id: 1, current_liturgy_part_id: 11 } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11, en: 'Peace unto all.' } }] })
   const result = { saved: null, state: { ...initialState, loading: false, session, parts }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() }
   jest.mocked(useReader).mockReturnValue(result)
-  const pair = () => <ThemeProvider><I18nProvider><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={config} sessionId={42} /><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={config} sessionId={42} /></I18nProvider></ThemeProvider>
+  const pair = () => <ThemeProvider><I18nProvider preference={language}><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={config} sessionId={42} /><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={config} sessionId={42} /></I18nProvider></ThemeProvider>
   const view = await render(pair())
   expect(view.getAllByTestId('display-session-qr')).toHaveLength(2)
-  expect(view.getAllByLabelText('https://tarkman.app/sessions/42/parts')).toHaveLength(2)
+  expect(view.getAllByLabelText('https://web.tarkman.app/sessions/42/parts')).toHaveLength(2)
+  expect(view.getAllByText('https://web.tarkman.app/sessions/42/parts')).toHaveLength(2)
   expect(view.queryByText('Peace unto all.')).toBeNull()
   jest.mocked(useReader).mockReturnValue({ ...result, state: { ...result.state, session: { ...session, status: 'active' } } })
   await view.rerender(pair())
@@ -302,5 +303,5 @@ it.each([[1280, 720], [1920, 1080], [390, 844]] as [number, number][])('keeps QR
   expect(qr.size + 2 * qr.quietZone + qr.titleLineHeight + qr.captionLineHeight + 2 * 24 + 16 + 2 * vertical).toBeLessThanOrEqual(height)
   expect(screen.getByTestId('display-session-qr')).toBeOnTheScreen()
   expect(screen.getByText('Scan to read along')).toHaveStyle({ lineHeight: qr.titleLineHeight })
-  expect(screen.getByText('tarkman.app/sessions/42/parts')).toHaveStyle({ lineHeight: qr.captionLineHeight })
+  expect(screen.getByText('https://web.tarkman.app/sessions/42/parts')).toHaveStyle({ lineHeight: qr.captionLineHeight })
 })

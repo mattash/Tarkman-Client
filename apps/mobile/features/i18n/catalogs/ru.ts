@@ -225,7 +225,7 @@ export const ru: Catalog = {
     epistle: 'Апостольское послание',
     welcome: 'Добро пожаловать',
     farewell: 'Идите с миром',
-    readerUrl: 'tarkman.app/sessions/{sessionId}/parts',
+    readerUrl: 'https://web.tarkman.app/sessions/{sessionId}/parts',
     scanToReadAlong: 'Сканируйте, чтобы читать вместе',
     announcement: 'Объявление',
     stand: 'Встаньте',

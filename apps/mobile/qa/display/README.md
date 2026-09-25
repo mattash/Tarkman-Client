@@ -129,7 +129,9 @@ with `operator@display.test` / `fixture` (synthetic account only). Open
 `http://127.0.0.1:8082/sessions/9001/parts` as controller, then open two
 `http://127.0.0.1:8082/sessions/display?token=token-A` tabs. Use the controller's
 Service sheet → **Show read-along QR**; both displays should show the same large
-black-on-white SVG, for `https://tarkman.app/sessions/9001/parts`. Stop showing
+black-on-white SVG encoding exactly `https://web.tarkman.app/sessions/9001/parts`,
+with that same full HTTPS URL visible below it in both English and Russian.
+`tarkman.app` is the API host and must never be the generated reader destination. Stop showing
 should restore the same reading (fixture starts at index 1). Verify phone
 390×844 and projector 1920×1080 and 1280×720; record screenshots and network
 `/qa/log` evidence. The scanner's exact URL round-trip is covered by Jest; for
@@ -146,3 +148,38 @@ revision/index and `/qa/log` to verify PATCH `/s/9001/update_status.json` with
 `expected_revision`, one increment, `status_change` publication, no next/set_part,
 and matching ack. POST `{"commandMode":"refuse409"}` to `/qa/config` for stale
 refusal, then restore `accept`. No live backend or credentials are involved.
+
+### PR #188 URL correction — current-build evidence for UI Operator
+
+Use a clean checkout of the updated PR head and record `git rev-parse HEAD` with
+all evidence. Restart both servers from that checkout; do not reuse an old Metro
+process, export, or controller screenshot. To render this checkout with fixture
+endpoints, use separate terminals from the repository root:
+
+```sh
+DISPLAY_FIXTURE_PORT=8118 node apps/mobile/qa/display/server.cjs
+```
+
+```sh
+EXPO_PUBLIC_API_URL=http://127.0.0.1:8118 \
+EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8118/cable \
+EXPO_PUBLIC_DEFAULT_CHURCH_ID=7 npm run web --prefix apps/mobile -- --port 8088 --clear
+```
+
+Follow the sign-in/controller/two-display steps above using app port **8088** and
+fixture port **8118** (open the app URLs directly; fixture landing-page links use
+8082). POST `http://127.0.0.1:8118/qa/reset` first. Capture a **fresh controller
+screenshot** with the Service sheet open after Show read-along QR succeeds and
+Stop showing is available, plus separate screenshots of both QR displays.
+Name evidence with the tested head SHA and viewport, and record the command and
+publication log from `/qa/log`. Decode the rendered QR without navigating to the
+production destination and assert the exact HTTPS URL above; check its visible
+caption in English and Russian. Repeat at 390×844, 1280×720 and 1920×1080,
+checking caption wrapping, quiet zone and clipping. Confirm Stop showing restores
+the same part, numeric ActionCable session IDs remain 9001, and `quiet`/`plain`
+suppression still works as described above.
+
+The URL-correction coding session could not capture fresh rendered evidence:
+the sandbox denied the fixture loopback listener with `EPERM`. No prior
+controller screenshot is offered as evidence for this build. UI Operator must
+complete and attach these current-head captures before rendered QA is accepted.

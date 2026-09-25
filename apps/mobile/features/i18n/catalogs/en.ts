@@ -223,7 +223,7 @@ export const en = {
     epistle: 'Epistle',
     welcome: 'Welcome',
     farewell: 'Go in peace',
-    readerUrl: 'tarkman.app/sessions/{sessionId}/parts',
+    readerUrl: 'https://web.tarkman.app/sessions/{sessionId}/parts',
     scanToReadAlong: 'Scan to read along',
     announcement: 'Announcement',
     stand: 'Stand',

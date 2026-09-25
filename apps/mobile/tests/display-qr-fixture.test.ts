@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { resolve } from 'node:path'
 import { request as httpRequest } from 'node:http'
 import { createReaderController } from '../features/live/controller'
+import { sessionReaderUrl } from '../features/displayLinks/sessionReaderUrl'
 import type { ReaderApi } from '../features/live/api'
 import type { CableClient } from '../features/live/cable'
 import { normalizeParts, normalizeSession, normalizeState } from '../features/live/contracts'
@@ -92,6 +93,10 @@ it('two connected readers adopt QR and active status_change without a state GET 
   expect(shown).toMatchObject({ revision: 2, emitted: { session_id: 9001, session: 9001 } })
   await until(() => readers.every(reader => reader.getSnapshot().session?.status === 'showing_session_qr'))
   expect(readers.map(reader => reader.getSnapshot().session?.currentLiturgyPartId)).toEqual([cursor, cursor])
+  expect(readers.map(reader => sessionReaderUrl(reader.getSnapshot().session!.id))).toEqual([
+    'https://web.tarkman.app/sessions/9001/parts',
+    'https://web.tarkman.app/sessions/9001/parts',
+  ])
   const stopped = await command('active', 2)
   expect(stopped).toMatchObject({ revision: 3, emitted: { session_id: 9001 } })
   await until(() => readers.every(reader => reader.getSnapshot().session?.status === 'active' && reader.getSnapshot().session?.revision === 3))
