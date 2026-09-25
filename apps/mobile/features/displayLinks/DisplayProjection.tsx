@@ -71,13 +71,13 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
     detail={t('display.retrying')} />
 
   if (message?.kind === 'session_qr' && !minimal) {
-    const size = Math.max(0, Math.min(width - padding * 4, height * 0.7, 760))
+    const qr = sessionQrLayout(width, height, fontScale, layout.paddingHorizontal, layout.paddingVertical)
     return <View testID="display-session-qr" style={[styles.screen, styles.qrScreen, screenPadding]}>
-      <AppText style={{ color: '#fff', fontSize: Math.max(28, Math.min(56, width / 18)), textAlign: 'center', fontWeight: '700' }}>{t('display.scanToReadAlong')}</AppText>
-      <View style={{ backgroundColor: '#fff', padding: Math.max(16, size * 0.06) }} accessible accessibilityRole="image" accessibilityLabel={message.url}>
-        <QRCode value={message.url} size={size} color="#000000" backgroundColor="#ffffff" />
+      <AppText style={{ color: '#fff', fontSize: qr.titleSize, lineHeight: qr.titleLineHeight, textAlign: 'center', fontWeight: '700' }}>{t('display.scanToReadAlong')}</AppText>
+      <View style={{ backgroundColor: '#fff', padding: qr.quietZone }} accessible accessibilityRole="image" accessibilityLabel={message.url}>
+        <QRCode value={message.url} size={qr.size} color="#000000" backgroundColor="#ffffff" />
       </View>
-      <AppText style={{ color: '#fff', fontSize: Math.max(18, Math.min(32, width / 32)), textAlign: 'center' }}>{t('display.readerUrl', { sessionId: message.sessionId })}</AppText>
+      <AppText style={{ color: '#fff', fontSize: qr.captionSize, lineHeight: qr.captionLineHeight, textAlign: 'center' }}>{t('display.readerUrl', { sessionId: message.sessionId })}</AppText>
     </View>
   }
 
@@ -138,6 +138,18 @@ function PagePlaceholder({ width, height, scale }: { width: number; height: numb
     {ready ? <View style={{ opacity: 0.55 }}><AppIcon name="book" color={colors.muted} size={size} /></View>
       : <AppText accessible={false} importantForAccessibility="no" tone="muted" style={{ textAlign: 'center' }}>{t('display.pageUnavailable')}</AppText>}
   </View>
+}
+/** Reserve both scaled text lines, quiet zone, gaps and screen margins before sizing the matrix. */
+export function sessionQrLayout(width: number, height: number, fontScale: number, paddingHorizontal: number, paddingVertical: number) {
+  const titleSize = Math.max(28, Math.min(56, width / 18))
+  const captionSize = Math.max(18, Math.min(32, width / 32))
+  const titleLineHeight = titleSize * 1.3, captionLineHeight = captionSize * 1.3
+  const availableHeight = height - paddingVertical * 2 - spacing.lg * 2 - spacing.md - (titleLineHeight + captionLineHeight) * fontScale
+  const availableWidth = width - paddingHorizontal * 2
+  const space = Math.max(0, Math.min(availableHeight, availableWidth))
+  const size = Math.max(0, Math.min(760, space / 1.12, space - 32))
+  const quietZone = Math.max(16, size * 0.06)
+  return { size, quietZone, titleSize, captionSize, titleLineHeight, captionLineHeight }
 }
 const styles = StyleSheet.create({
   screen: { flex: 1, minHeight: 0 }, qrScreen: { alignItems: 'center', justifyContent: 'center', gap: spacing.lg, backgroundColor: '#101010' }, body: { flex: 1, minHeight: 0 }, column: { flex: 1, minWidth: 0, minHeight: 0 },

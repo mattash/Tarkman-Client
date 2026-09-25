@@ -139,8 +139,9 @@ not the fixture origin; do not navigate there during fixture-only QA.
 
 For recovery, leave QR active, close/reopen a display or POST
 `{"disconnected":true}` then `{"disconnected":false}` to `/review/state`;
-confirm state remains QR. For suppression open `?token=quiet` or `?token=plain`
-(instead of A); QR should not replace its reading. Use `/qa/status` to inspect
+confirm state remains QR. For suppression, open `?token=quiet` (notifications disabled) or
+`?token=plain` (status view set to none) instead of the Token A display;
+the QR should not replace the reading. Use `/qa/status` to inspect
 revision/index and `/qa/log` to verify PATCH `/s/9001/update_status.json` with
 `expected_revision`, one increment, `status_change` publication, no next/set_part,
 and matching ack. POST `{"commandMode":"refuse409"}` to `/qa/config` for stale

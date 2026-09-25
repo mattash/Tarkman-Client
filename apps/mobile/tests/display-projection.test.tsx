@@ -6,7 +6,7 @@ import { ReadingFontContext } from '../design/readingFont'
 import { colors } from '../design/tokens'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { I18nProvider, setActiveInterfaceLanguage } from '../features/i18n'
-import { DisplayProjection } from '../features/displayLinks/DisplayProjection'
+import { DisplayProjection, sessionQrLayout } from '../features/displayLinks/DisplayProjection'
 import { useReader } from '../features/live/useReader'
 import { initialState } from '../features/live/state'
 import type { DisplayLinkConfig } from '../features/displayLinks/config'
@@ -285,4 +285,22 @@ it('keeps the reading when QR overlays are disabled by display preferences', asy
   await renderProjection({ config: { ...config, status_view: 'none' } })
   expect(screen.queryByTestId('display-session-qr')).toBeNull()
   expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
+})
+
+it.each([[1280, 720], [1920, 1080], [390, 844]] as [number, number][])('keeps QR title, quiet zone and URL inside %d×%d', async (width, height) => {
+  jest.mocked(useWindowDimensions).mockReturnValue({ width, height, scale: 1, fontScale: 1 })
+  const session = normalizeSession({ session: { id: 42, status: 'showing_session_qr', current_part_id: 1, current_liturgy_part_id: 11 } })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session, parts: [] },
+    retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection()
+  const screenPadding = StyleSheet.flatten(screen.getByTestId('display-session-qr').props.style)
+  const horizontal = Number(screenPadding.paddingHorizontal), vertical = Number(screenPadding.paddingVertical)
+  const qr = sessionQrLayout(width, height, 1, horizontal, vertical)
+  expect(qr.size).toBeGreaterThan(width >= 1280 ? 400 : 250)
+  expect(qr.quietZone).toBeGreaterThanOrEqual(16)
+  expect(qr.size + 2 * qr.quietZone + 2 * horizontal).toBeLessThanOrEqual(width)
+  expect(qr.size + 2 * qr.quietZone + qr.titleLineHeight + qr.captionLineHeight + 2 * 24 + 16 + 2 * vertical).toBeLessThanOrEqual(height)
+  expect(screen.getByTestId('display-session-qr')).toBeOnTheScreen()
+  expect(screen.getByText('Scan to read along')).toHaveStyle({ lineHeight: qr.titleLineHeight })
+  expect(screen.getByText('tarkman.app/sessions/42/parts')).toHaveStyle({ lineHeight: qr.captionLineHeight })
 })

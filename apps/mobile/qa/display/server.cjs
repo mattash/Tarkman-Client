@@ -95,7 +95,7 @@ function json(res, value, code = 200) {
   res.end(JSON.stringify(value))
 }
 
-function cableEnvelope(identifierId, overrides = {}) { return { ...state(String(identifierId)), session: String(identifierId), session_id: String(identifierId), part: currentPart().id, ...overrides } }
+function cableEnvelope(identifierId, overrides = {}) { return { ...state(Number(identifierId)), session: Number(identifierId), session_id: Number(identifierId), part: currentPart().id, ...overrides } }
 function broadcastEnvelope(envelope, event = 'part_change') {
   for (const [socket, identifiers] of clients) for (const identifier of identifiers) {
     const subscription = JSON.parse(identifier)
