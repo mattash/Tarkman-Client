@@ -18,6 +18,7 @@ import { ControlButton } from '../../../../features/services/ControlButton'
 import { OpeningLine } from '../../../../features/services/OpeningLine'
 import { STOP_ANNOUNCEMENT, useServiceControl } from '../../../../features/services/ServiceControlProvider'
 import { statusName, useI18n } from '../../../../features/i18n'
+import { ControllerStatusRow } from '../../../../features/services/presence/ControllerPresenceIndicator'
 
 // KnownSessionStatus is one enum answering two questions, so the sheet groups them apart.
 const DOING: KnownSessionStatus[] = ['active', 'paused']
@@ -25,7 +26,7 @@ const INSTEAD: KnownSessionStatus[] = ['showing_gospel', 'showing_epistle', 'sho
 
 /** Everything occasional: status, pause, announcement and jumping to a part. Next and Back are never here. */
 export default function ServiceSheet() {
-  const { sessionId, state, controls, commands, part, offline, announcing, expected, run, holds, errorMessage, setSheetOpen } = useServiceControl()
+  const { sessionId, presence, state, controls, commands, part, offline, announcing, expected, run, holds, errorMessage, setSheetOpen } = useServiceControl()
   const { colors } = useTheme()
   const { t } = useI18n()
   const { preferences } = usePreferences()
@@ -78,6 +79,7 @@ export default function ServiceSheet() {
       {page === 'parts' ? state.parts.map(item => <PartRow key={item.key} item={item} current={item.key === part?.key} language={controlLanguages[0]} selected={controlLanguages}
         failure={failureUnder([item.key])} {...holds(item.key)}
         onPress={async () => { if (await run(item.key, () => commands.goToPart(sessionId, item.id, expected, item.liturgyPartId))) close() }} />) : <>
+        <ControllerStatusRow state={presence} />
         <SheetSection label={t('serviceSheet.congregationSees')}>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {DOING.map(item => <StatusButton key={item} status={item} height={52} selected={status === item} {...holds(item)} onPress={() => { void setStatus(item) }} />)}

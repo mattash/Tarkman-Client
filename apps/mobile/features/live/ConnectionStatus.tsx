@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { AccessibilityInfo, Animated, Easing, Platform, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { AppIcon } from '../../components/AppIcon'
@@ -9,7 +9,9 @@ import { radii, spacing } from '../../design/tokens'
 import { useI18n } from '../i18n'
 import type { ReaderState } from './state'
 
-export function ControlConnectionStatus({ state, offline, sending }: { state: ReaderState; offline: boolean; sending: boolean }) {
+export function ControlConnectionStatus({ state, offline, sending, leading }: {
+  state: ReaderState; offline: boolean; sending: boolean; leading?: ReactNode
+}) {
   const { colors } = useTheme()
   const { t } = useI18n()
   const [reduceMotion, setReduceMotion] = useState(true)
@@ -39,8 +41,7 @@ export function ControlConnectionStatus({ state, offline, sending }: { state: Re
 
   const labels = [t('control.connected'), t('control.synchronizing'), t('control.connecting'), t('common.reconnecting'),
     t('control.offlineStatus'), t('readerStatus.updatesUnavailable')]
-  return <View testID="control-connection" accessible accessibilityLabel={t('control.connectionLabel', { status: label })}
-    accessibilityState={{ busy: working }} accessibilityLiveRegion="none" style={{ maxWidth: '100%' }}>
+  return <View testID="control-connection" style={{ maxWidth: '100%' }}>
     {/* Reserve the widest translated label without a fixed font size or width. The badge can
         grow left inside this slot without wrapping the toolbar or moving the reading below it. */}
     <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
@@ -49,12 +50,17 @@ export function ControlConnectionStatus({ state, offline, sending }: { state: Re
         <AppIcon name="live" size={16} color={color} /><AppText variant="label" numberOfLines={1}>{text}</AppText>
       </View>)}
     </View>
-    <View style={{ alignSelf: 'flex-end', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-      paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radii.control, backgroundColor }}>
-      <Animated.View testID="control-connection-icon" style={{ transform: [{ rotate: rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>
-        <AppIcon name={offline ? 'offline' : working ? 'live' : failed ? 'alert' : 'connected'} size={16} color={color} />
-      </Animated.View>
-      <AppText variant="label" numberOfLines={1} style={{ color }}>{label}</AppText>
+    <View testID="control-connection-visible" style={{ alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+      {leading}
+      <View accessible accessibilityLabel={t('control.connectionLabel', { status: label })}
+        accessibilityState={{ busy: working }} accessibilityLiveRegion="none"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.xs, borderRadius: radii.control, backgroundColor }}>
+        <Animated.View testID="control-connection-icon" style={{ transform: [{ rotate: rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>
+          <AppIcon name={offline ? 'offline' : working ? 'live' : failed ? 'alert' : 'connected'} size={16} color={color} />
+        </Animated.View>
+        <AppText variant="label" numberOfLines={1} style={{ color }}>{label}</AppText>
+      </View>
     </View>
   </View>
 }
