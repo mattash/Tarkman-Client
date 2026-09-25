@@ -5,7 +5,7 @@ import { useReadingFont } from '../design/readingFont'
 const names = {
   info: 'information-circle-outline', details: 'information-circle',
   back: 'chevron-back', next: 'chevron-forward', up: 'chevron-up', down: 'chevron-down', languages: 'language-outline',
-  explanation: 'book-outline', preferences: 'options-outline', close: 'close-outline',
+  explanation: 'book-outline', book: 'book-outline', preferences: 'options-outline', close: 'close-outline',
   selected: 'checkmark', checkbox: 'checkbox-outline', unchecked: 'square-outline',
   more: 'ellipsis-horizontal', live: 'sync-outline', alert: 'alert-circle-outline',
   paused: 'pause', offline: 'cloud-offline-outline', connected: 'radio-button-on',

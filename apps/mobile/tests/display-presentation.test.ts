@@ -1,6 +1,6 @@
 import { expect, it } from '@jest/globals'
 import { DEFAULT_DISPLAY_CONFIG } from '../features/displayLinks/config'
-import { displayPosture, projectionMessage, projectionText } from '../features/displayLinks/presentation'
+import { displayPosture, projectionMessage, projectionText, statusPageNumber, statusPostureKey } from '../features/displayLinks/presentation'
 import { normalizeParts, normalizeSession, normalizeState, sessionWithState } from '../features/live/contracts'
 const parts = normalizeParts({ parts: [
   { part: { id: 1, liturgy_id: 10, liturgy_part_id: 101, position: 1, page: 12 } },
@@ -57,4 +57,24 @@ it('converts legacy HTML to safe readable text without injecting executable mark
   expect(projectionText('<p>Blessed &amp; holy<br>Word</p><script>alert(1)</script>')).toBe('Blessed & holy\nWord')
   expect(projectionText('&#x531; &lt;word&gt;')).toBe('Ա <word>')
   expect(projectionText('   ')).toBeNull()
+})
+
+it.each([
+  [null, 'stand'], [undefined, 'stand'], ['', 'stand'], [' \t\n', 'stand'],
+  ['stand', 'stand'], [' Standing ', 'stand'], ['SIT', 'sit'], [' sitting ', 'sit'],
+  ['Kneel', 'kneel'], [' KNEELING ', 'kneel'], ['unknown', null], [' stand up ', null],
+])('resolves status posture %p to %p without broadening strict recognition', (value, expected) => {
+  expect(statusPostureKey(value)).toBe(expected)
+})
+it.each([null, undefined, 0, -1, 1.5, NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER + 1, '12', '', {}, true])(
+  'rejects invalid page %p and falls back only to a valid occurrence page', value => {
+    expect(statusPageNumber(value, 42)).toBe(42)
+    expect(statusPageNumber(value, value)).toBeNull()
+    expect(statusPageNumber(24, value)).toBe(24)
+  },
+)
+it('keeps valid session pages authoritative, including the safe integer boundary', () => {
+  expect(statusPageNumber(1, 42)).toBe(1)
+  expect(statusPageNumber(Number.MAX_SAFE_INTEGER, 42)).toBe(Number.MAX_SAFE_INTEGER)
+  expect(statusPageNumber(null, Number.MAX_SAFE_INTEGER)).toBe(Number.MAX_SAFE_INTEGER)
 })
