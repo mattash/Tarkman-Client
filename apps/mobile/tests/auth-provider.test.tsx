@@ -83,3 +83,31 @@ it('does not let a late 401 for an earlier sign-in end a newer one', async () =>
   expect(result.current.state).toMatchObject({ status: 'signedIn', token: 'new-token' })
   expect(JSON.parse(saved()!)).toMatchObject({ token: 'new-token' })
 })
+
+it('does not expire a new sign-in when a delayed old 401 uses the same reissued token', async () => {
+  const slow = deferred<Response>()
+  const { store, saved } = memoryStore({ [AUTH_KEY]: storedAuth('same-token') })
+  const request = fakeApi({ 'GET /s.json': () => slow.promise, 'DELETE /users/sign_out': () => respond(204),
+    'POST /users/sign_in': () => respond(200, { token: 'same-token', user }) })
+  const { result } = await setup(store, request)
+  await waitFor(() => expect(result.current.state.status).toBe('signedIn'))
+  const old = result.current.authorizedFetch('/s.json')
+  await act(async () => { result.current.signOut(); await result.current.signIn({ email: user.email, password: 'pw' }) })
+  await act(async () => { slow.resolve(respond(401)); await expect(old).rejects.toThrow('Your sign-in has ended') })
+  expect(result.current.state).toEqual({ status: 'signedIn', token: 'same-token', user })
+  expect(JSON.parse(saved()!)).toMatchObject({ token: 'same-token', user })
+  expect(store.remove).toHaveBeenCalledTimes(1) // explicit sign-out only; stale 401 cannot clear the new write
+})
+
+it('notifies presence cleanup before switching accounts with a reissued token', async () => {
+  const { store } = memoryStore({ [AUTH_KEY]: storedAuth('same-token') })
+  const request = fakeApi({ 'POST /users/sign_in': () => respond(200, { token: 'same-token', user }) })
+  const { result } = await setup(store, request)
+  await waitFor(() => expect(result.current.state.status).toBe('signedIn'))
+  const seen: string[] = []
+  const remove = result.current.beforeSignOut(() => { seen.push(result.current.state.status) })
+  await act(() => result.current.signIn({ email: user.email, password: 'pw' }))
+  expect(seen).toEqual(['signedIn'])
+  expect(result.current.state.status).toBe('signedIn')
+  remove()
+})

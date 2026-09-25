@@ -83,6 +83,18 @@ const secondSession = { session: {
 } }
 const listed = { single: [session], several: [session, secondSession], none: [] }[SCENARIO] ?? [session]
 const explanationEdits = new Map()
+const presence = new Map()
+function presenceSnapshot(id, client) {
+  const now = Date.now()
+  const entries = [...presence.entries()].filter(([key, value]) => key.startsWith(`${id}:`) && value.active && value.expires > now)
+  const own = client ? presence.get(`${id}:${client}`) : null
+  const self = !!own?.active && own.expires > now
+  return { session_id: Number(id), reporting_scope: 'participating_clients', controller_count: entries.length,
+    other_controller_count: client ? entries.length - Number(self) : null, self_present: client ? self : null,
+    accepted_sequence: own?.sequence ?? null, server_time: new Date(now).toISOString(),
+    self_expires_at: self ? new Date(own.expires).toISOString() : null,
+    heartbeat_interval_seconds: 10, lease_ttl_seconds: 45 }
+}
 function explanationResponse() {
   const occurrence = parts.find(({ part }) => part.id === session.session.current_part_id).part
   return { explanations: (explanationEdits.get(occurrence.liturgy_part_id) ?? [explanation]).map(item => ({ explanation: { ...item, liturgy_part_id: occurrence.liturgy_part_id } })) }
@@ -145,12 +157,27 @@ async function route(req, res) {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Accept, Authorization, Content-Type, X-Polling-Client',
-      'Access-Control-Allow-Methods': 'DELETE, GET, OPTIONS, PATCH, POST',
+      'Access-Control-Allow-Methods': 'DELETE, GET, OPTIONS, PATCH, POST, PUT',
     })
     return res.end()
   }
 
   const path = new URL(req.url, `http://${HOST}:${PORT}`).pathname
+  const presenceRoute = path.match(/^\/s\/(\d+)\/controller_presence(?:\/([a-f\d-]+))?\.json$/i)
+  if (presenceRoute) {
+    if (!authorized(req)) return error(res, 401, 'Sign in required.')
+    const [, id, client] = presenceRoute
+    if (id !== String(SESSION_ID) && id !== String(SECOND_SESSION_ID)) return error(res, 404, 'Session not found.')
+    if (req.method === 'GET' && !client) return json(res, 200, presenceSnapshot(id, new URL(req.url, `http://${HOST}:${PORT}`).searchParams.get('client_instance_id')))
+    if (req.method !== 'PUT' || !client) return error(res, 405, 'Presence method unavailable.')
+    if (!/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(client)) return error(res, 400, 'Invalid UUID.')
+    const body = await requestJson(req)
+    if (!body || Object.keys(body).sort().join(',') !== 'active,sequence' || !Number.isSafeInteger(body.sequence) || body.sequence <= 0 || typeof body.active !== 'boolean') return error(res, 400, 'Invalid presence update.')
+    const key = `${id}:${client}`
+    const previous = presence.get(key)
+    if (!previous || body.sequence > previous.sequence) presence.set(key, { sequence: body.sequence, active: body.active, expires: body.active ? Date.now() + 45000 : 0 })
+    return json(res, 200, presenceSnapshot(id, client))
+  }
   // Loopback-only synthetic QA controls; these are never part of the reader/API client.
   if (path === '/fixture/explanations' && req.method === 'POST') {
     const input = await requestJson(req)
