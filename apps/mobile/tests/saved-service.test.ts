@@ -15,7 +15,7 @@ function input() {
       position: id, role: 'priest', en: 'Text', ru: 'Текст', grabar: 'Տէր', translit: 'Ter', posture: 'stand' } })) }),
     explanations: { liturgyPartId: 11, items: normalizeExplanations({ explanations: [
       { explanation: { id: 7, title: 'Title', description: 'Description', liturgy_part_id: 11 } },
-    ] }) },
+    ] }).map(({ id, title, description, liturgyPartId }) => ({ id, title, description, liturgyPartId })) },
   }
 }
 function record(): SavedServiceV1 { return buildSavedService(input(), now)! }
@@ -200,4 +200,13 @@ test('T-07: preservation still applies the size cap and a failed lookup leaves t
   expect(store.set).not.toHaveBeenCalled(); expect(store.remove).not.toHaveBeenCalled()
   await saveSavedService({ ...sized(SAVED_SERVICE_MAX_BYTES), explanations: undefined }, store, () => now)
   expect((await loadSavedService(store, () => now))?.explanations).toBeNull()
+})
+
+test('live fingerprints stay local while older saved explanations remain readable', () => {
+  const source = input()
+  const live = normalizeExplanations({ explanations: [{ explanation: { id: 7, title: 'Title', description: 'Description', liturgy_part_id: 11 } }] })
+  expect(live[0].contentFingerprint).toBeDefined()
+  const saved = buildSavedService({ ...source, explanations: { liturgyPartId: 11, items: live } }, now)!
+  expect(saved.explanations?.items).toEqual(source.explanations.items)
+  expect(saved.explanations?.items[0]).not.toHaveProperty('contentFingerprint')
 })

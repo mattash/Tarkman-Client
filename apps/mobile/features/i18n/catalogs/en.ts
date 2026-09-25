@@ -322,6 +322,11 @@ export const en = {
     chooseReadingLanguage: 'Choose reading language',
     currentLanguageHint: 'Current language: {language}',
     explainSavedText: 'Explain saved text',
+    explanationsAvailable: 'Explanations are available for the current part.',
+    explainCurrentPartNew: {
+      one: 'Explain current part, {count} new explanation',
+      other: 'Explain current part, {count} new explanations',
+    },
     explainCurrentPart: 'Explain current part',
     showingSavedText: 'Showing saved text',
     liveMovedOn: 'Live reading moved on',

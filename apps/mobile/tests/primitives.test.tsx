@@ -226,3 +226,20 @@ it('keeps every semantic text/background pairing at WCAG AA contrast', () => {
     }
   }
 })
+
+it.each([0, 1, 9, 10])('renders decorative count %s without adding selection or another tap target', async count => {
+  await render(<AppButton testID="explain" highlighted badgeCount={count} accessibilityLabel={`Explain, ${count} new explanations`}>Explain</AppButton>, { wrapper })
+  expect(screen.getAllByRole('button')).toHaveLength(1)
+  expect(screen.getByRole('button').props.accessibilityState.selected).not.toBe(true)
+  const badge = screen.queryByTestId('explain-badge', { includeHiddenElements: true })
+  if (count === 0) expect(badge).toBeNull()
+  else { expect(badge).toHaveProp('pointerEvents', 'none'); expect(badge).toHaveTextContent(count > 9 ? '9+' : String(count)) }
+})
+it('composes the modal presentation callback with ordinary dismissal', async () => {
+  const shown = jest.fn(), dismiss = jest.fn(), after = jest.fn()
+  await render(<AppModal visible title="Explanation" onAfterShow={shown} onDismiss={dismiss} onAfterDismiss={after} />, { wrapper })
+  expect(shown).not.toHaveBeenCalled()
+  await fireEvent(screen.getByTestId('app-modal'), 'show'); expect(shown).toHaveBeenCalledTimes(1)
+  await fireEvent.press(screen.getByRole('button', { name: 'Close Explanation' })); expect(dismiss).toHaveBeenCalledTimes(1)
+  await fireEvent(screen.getByTestId('app-modal'), 'dismiss'); expect(after).toHaveBeenCalledTimes(1)
+})

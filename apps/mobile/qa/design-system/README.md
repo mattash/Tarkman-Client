@@ -52,3 +52,10 @@ current occurrence 99001. Screenshots are under `evidence/`; exact checks,
 corrections and remaining platform limits are recorded in
 `docs/design-system/mobile-application-trial.md` at the repository root.
 These captures are provisional review evidence, not fixed visual baselines.
+
+## Explanation badge (#180)
+
+The fixture now serves explanations for the current occurrence and supports
+loopback-only deterministic edits/additions/empty/count-cap scenarios, publishing
+ActionCable invalidations. See [the issue 180 review steps and execution limits](../issue180/REVIEW.md).
+Older screenshot and device results above do not validate the new badge.

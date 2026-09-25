@@ -231,3 +231,25 @@ it('does not pair newer periodic metadata with old content when text changes dur
   expect(controller.getSnapshot()).toMatchObject({ stale: false, session: { contentContext: 'edited' } })
   expect(controller.getSnapshot().parts[0].text.en).toBe('Edited gospel')
 })
+
+it('retains the revisioned cue on benign polls, invalidates explanation events immediately without a manifest read', async () => {
+  const item = { id: 1, title: 'A', description: null, liturgyPartId: 11, contentFingerprint: '["A",null]' }
+  api.explanations.mockResolvedValue([item])
+  const controller = await setup(true), seen: string[] = []
+  controller.subscribe(() => seen.push(controller.getSnapshot().explanationProvenance.status))
+  controller.retry(); await flush()
+  expect(seen.every(status => ['revalidating', 'ready'].includes(status))).toBe(true)
+  const pending = defer<typeof item[]>()
+  api.explanations.mockReturnValueOnce(pending.promise)
+  const reads = api.parts.mock.calls.length
+  callbacks.received({ event: 'explanation_updated', data: { session_id: 7, explanation_id: 1 } })
+  expect(controller.getSnapshot().explanations).toEqual([])
+  expect(seen).toContain('invalid')
+  pending.resolve([{ ...item, title: 'Edited', contentFingerprint: '["Edited",null]' }]); await flush()
+  expect(controller.getSnapshot().explanationProvenance.status).toBe('ready')
+  expect(controller.getSnapshot().explanations[0].title).toBe('Edited')
+  expect(api.parts).toHaveBeenCalledTimes(reads)
+  api.explanations.mockResolvedValue([])
+  callbacks.received({ event: 'explanation_updated', data: { session_id: 7, explanation_id: 1 } }); await flush()
+  expect(controller.getSnapshot().explanations).toEqual([])
+})

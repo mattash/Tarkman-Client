@@ -82,7 +82,16 @@ const secondSession = { session: {
   church_longitude: -71.1097,
 } }
 const listed = { single: [session], several: [session, secondSession], none: [] }[SCENARIO] ?? [session]
-const explanationResponse = { explanations: [{ explanation }] }
+const explanationEdits = new Map()
+function explanationResponse() {
+  const occurrence = parts.find(({ part }) => part.id === session.session.current_part_id).part
+  return { explanations: (explanationEdits.get(occurrence.liturgy_part_id) ?? [explanation]).map(item => ({ explanation: { ...item, liturgy_part_id: occurrence.liturgy_part_id } })) }
+}
+function broadcast(event) {
+  for (const socket of cableServer?.clients ?? []) {
+    if (socket.readyState === 1 && socket.fixtureIdentifier) socket.send(JSON.stringify({ identifier: socket.fixtureIdentifier, message: { event, data: event === 'explanation_updated' ? { session_id: SESSION_ID } : { session: SESSION_ID } } }))
+  }
+}
 
 function json(res, status, value, headers = {}) {
   const body = JSON.stringify(value)
@@ -127,6 +136,7 @@ function moveTo(index) {
   session.session.current_part_id = next.id
   session.session.current_part_position = next.position
   session.session.current_part_role = next.role
+  broadcast('part_change')
   return true
 }
 
@@ -141,6 +151,22 @@ async function route(req, res) {
   }
 
   const path = new URL(req.url, `http://${HOST}:${PORT}`).pathname
+  // Loopback-only synthetic QA controls; these are never part of the reader/API client.
+  if (path === '/fixture/explanations' && req.method === 'POST') {
+    const input = await requestJson(req)
+    const occurrence = parts.find(({ part }) => part.id === session.session.current_part_id).part
+    const scenario = input?.scenario
+    const items = scenario === 'empty' ? [] : scenario === 'many' ? Array.from({ length: 12 }, (_, i) => ({ ...explanation, id: explanation.id + i }))
+      : scenario === 'add' ? [explanation, { ...explanation, id: explanation.id + 1, title: 'Added fixture explanation' }]
+      : scenario === 'edit' ? [{ ...explanation, description: 'Edited fixture explanation. Same occurrence, new authored body.' }] : [explanation]
+    explanationEdits.set(occurrence.liturgy_part_id, items)
+    broadcast('explanation_updated')
+    return json(res, 200, explanationResponse())
+  }
+  if (path === '/fixture/occurrence' && req.method === 'POST') {
+    const input = await requestJson(req)
+    return moveTo(Number(input?.index)) ? json(res, 200, session) : error(res, 422, 'Unknown fixture occurrence')
+  }
   if (path === '/users/sign_in' && req.method === 'POST') {
     const input = await requestJson(req)
     const user = input?.user
@@ -166,7 +192,7 @@ async function route(req, res) {
     const found = parts.find(({ part }) => part.id === Number(partMatch[1]))
     return found ? json(res, 200, found) : error(res, 404, 'Unknown fixture part')
   }
-  if (path === `/s/${SESSION_ID}/explanations/current.json`) return json(res, 200, explanationResponse)
+  if (path === `/s/${SESSION_ID}/explanations/current.json`) return json(res, 200, explanationResponse())
   const explanationMatch = path.match(new RegExp(`^/s/${SESSION_ID}/explanations/(\\d+)\\.json$`))
   if (explanationMatch && Number(explanationMatch[1]) === explanation.id) return json(res, 200, { explanation })
   const control = path.match(new RegExp(`^/s/${SESSION_ID}/(next|prev|set_part|update_status)\\.json$`))
@@ -212,6 +238,7 @@ try {
         if (frame.command === 'subscribe' && typeof frame.identifier === 'string') {
           const identifier = JSON.parse(frame.identifier)
           if (identifier.channel === 'SessionChannel' && identifier.id === SESSION_ID) {
+            socket.fixtureIdentifier = frame.identifier
             socket.send(JSON.stringify({ identifier: frame.identifier, type: 'confirm_subscription' }))
           } else socket.send(JSON.stringify({ identifier: frame.identifier, type: 'reject_subscription' }))
         }

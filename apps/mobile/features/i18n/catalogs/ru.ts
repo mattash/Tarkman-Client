@@ -324,6 +324,13 @@ export const ru: Catalog = {
     chooseReadingLanguage: 'Выбрать язык чтения',
     currentLanguageHint: 'Текущий язык: {language}',
     explainSavedText: 'Пояснение к сохранённому тексту',
+    explanationsAvailable: 'Для текущей части доступны пояснения.',
+    explainCurrentPartNew: {
+      one: 'Пояснить текущую часть, {count} новое пояснение',
+      few: 'Пояснить текущую часть, {count} новых пояснения',
+      many: 'Пояснить текущую часть, {count} новых пояснений',
+      other: 'Пояснить текущую часть, {count} нового пояснения',
+    },
     explainCurrentPart: 'Пояснение к текущей части',
     showingSavedText: 'Показан сохранённый текст',
     liveMovedOn: 'Служба ушла вперёд',

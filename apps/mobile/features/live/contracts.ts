@@ -29,7 +29,7 @@ export interface LivePart {
   /** What the congregation does during this part ("stand"), when the service publishes one. */
   posture: string | null
 }
-export interface LiveExplanation { id: number; title: string; description: string | null; liturgyPartId: number | null }
+export interface LiveExplanation { id: number; title: string; description: string | null; liturgyPartId: number | null; contentFingerprint?: string }
 export function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(t('errors.unexpectedFormat'))
   return value as Record<string, unknown>
@@ -98,9 +98,18 @@ export function normalizeParts(value: unknown): LivePart[] {
 export function normalizeExplanations(value: unknown): LiveExplanation[] {
   const rows = record(value).explanations
   if (!Array.isArray(rows)) throw new Error(t('errors.unexpectedExplanations'))
-  return rows.map(row => { const e = record(record(row).explanation)
-    return { id: requiredId(e.id), title: text(e.title) || t('fallbacks.explanation'), description: text(e.description), liturgyPartId: positiveId(e.liturgy_part_id) }
-  })
+  const unique = new Map<number, LiveExplanation>()
+  for (const row of rows) {
+    const e = record(record(row).explanation), authoredTitle = text(e.title), description = text(e.description)
+    const item = { id: requiredId(e.id), title: authoredTitle || t('fallbacks.explanation'), description,
+      liturgyPartId: positiveId(e.liturgy_part_id), contentFingerprint: JSON.stringify([authoredTitle, description]) }
+    const previous = unique.get(item.id)
+    if (previous && (previous.contentFingerprint !== item.contentFingerprint || previous.liturgyPartId !== item.liturgyPartId)) {
+      throw new Error(t('errors.unexpectedExplanations'))
+    }
+    unique.set(item.id, item)
+  }
+  return [...unique.values()]
 }
 export function currentPart(session: LiveSession, parts: LivePart[]): LivePart | undefined {
   if (session.currentLiturgyPartId != null) return parts.find(p => p.liturgyPartId === session.currentLiturgyPartId &&

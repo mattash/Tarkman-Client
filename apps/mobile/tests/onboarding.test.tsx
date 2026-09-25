@@ -9,6 +9,10 @@ import { initialOnboarding, readOnboarding, tipEligible, ONBOARDING_KEY } from '
 import { Help } from '../features/onboarding/Help'
 import { useReaderEducation } from '../features/onboarding/useReaderEducation'
 import { CoachmarkOverlay } from '../features/onboarding/CoachmarkOverlay'
+import { useExplanationCue } from '../features/live/useExplanationCue'
+import { initialState } from '../features/live/state'
+import { normalizeExplanations, normalizeParts, normalizeSession } from '../features/live/contracts'
+import { explanationOwnerKey } from '../features/live/explanationCue'
 import { useRef, type RefObject } from 'react'
 
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() }, useFocusEffect: (effect: () => void) => {
@@ -180,5 +184,33 @@ it('shows the anchored spotlight and keeps the tour actions accessible', async (
   expect(next).toHaveBeenCalledTimes(1)
   expect(end).toHaveBeenCalledTimes(1)
   frame.mockRestore()
+  screenReader.mockRestore()
+})
+
+const cueParts = normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11 } }] })
+const cueSession = normalizeSession({ session: { id: 7, current_part_id: 1, status: 'active' } })
+const cueState = { ...initialState, loading: false, connected: true, stale: false, session: cueSession, parts: cueParts,
+  explanations: normalizeExplanations({ explanations: [{ explanation: { id: 1, title: 'Authored' } }] }),
+  explanationProvenance: { ownerKey: explanationOwnerKey(7, cueParts[0].key), contextKey: null, requestId: 1, status: 'ready' as const } }
+function CueEducationProbe({ open }: { open: (step: string) => void }) {
+  const root = useRef<View>(null), cue = useExplanationCue('reader', cueState, true, null)
+  const e = useReaderEducation({ id: 7, healthy: true, ready: true, available: cue.available, sheetOpen: false, following: true, root,
+    targets: { follow: root, language: root, explanation: root, preferences: root }, layoutVersion: '1', open })
+  return <View ref={root}>{e.overlay}<AppText testID="product-new">{String(cue.newCount)}</AppText>
+    <AppButton ref={root} onPress={() => e.openControl('explanation')}>explain</AppButton>
+    <AppButton onPress={e.replay}>replay</AppButton><AppButton onPress={e.endTour}>skip</AppButton><AppButton onPress={e.sheetDismissed}>dismiss sheet</AppButton></View>
+}
+it('tour explanation action, skipping, completing and replaying never acknowledge the product cue', async () => {
+  const screenReader = jest.spyOn(AccessibilityInfo, 'isScreenReaderEnabled').mockResolvedValue(false)
+  const open = jest.fn(), s = store(); s.get.mockResolvedValue(JSON.stringify({ ...initialOnboarding, invitationPresented: true }))
+  await render(<ThemeProvider><OnboardingProvider store={s}><CueEducationProbe open={open} /></OnboardingProvider></ThemeProvider>)
+  await fireEvent.press(screen.getByText('explain')); expect(open).toHaveBeenCalledWith('explanation')
+  await fireEvent.press(screen.getByText('replay')); await fireEvent.press(screen.getByText('Next')); await fireEvent.press(screen.getByText('Next'))
+  await fireEvent.press(screen.getByText('Open explanation')); expect(open).toHaveBeenCalledTimes(2)
+  await fireEvent.press(screen.getByText('dismiss sheet'))
+  expect(screen.getByTestId('product-new')).toHaveTextContent('1')
+  await fireEvent.press(screen.getByText('skip')); await fireEvent.press(screen.getByText('replay'))
+  await fireEvent.press(screen.getByText('Next')); await fireEvent.press(screen.getByText('Next')); await fireEvent.press(screen.getByText('Next')); await fireEvent.press(screen.getByText('Finish'))
+  expect(screen.getByTestId('product-new')).toHaveTextContent('1')
   screenReader.mockRestore()
 })
