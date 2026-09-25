@@ -126,7 +126,7 @@ On this branch, start the fixture and Expo web exactly as above (fresh fixture a
 `EXPO_PUBLIC_API_URL`/`EXPO_PUBLIC_ACTIONCABLE_URL` pointing at loopback). POST
 `/qa/reset` before each scenario. Sign in at `http://127.0.0.1:8082/sign-in`
 with `operator@display.test` / `fixture` (synthetic account only). Open
-`http://127.0.0.1:8082/sessions/9001/parts` as controller, then open two
+`http://127.0.0.1:8082/services/9001/service` as controller, then open two
 `http://127.0.0.1:8082/sessions/display?token=token-A` tabs. Use the controller's
 Service sheet → **Show read-along QR**; both displays should show the same large
 black-on-white SVG encoding exactly `https://web.tarkman.app/sessions/9001/parts`,
