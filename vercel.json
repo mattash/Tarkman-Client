@@ -1,9 +1,8 @@
 {
-  "buildCommand": "npm run build --prefix apps/web",
-  "devCommand": "npm run dev --prefix apps/web",
-  "installCommand": "npm ci --prefix apps/web",
-  "framework": "vite",
-  "outputDirectory": "apps/web/dist",
+  "buildCommand": "CI=1 npm run mobile:export",
+  "devCommand": "npm run web --prefix apps/mobile",
+  "installCommand": "npm ci --prefix apps/mobile",
+  "outputDirectory": "apps/mobile/dist",
   "rewrites": [
     {
       "source": "/(.*)",

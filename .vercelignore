@@ -1,0 +1,15 @@
+.git
+.env*
+.vercel
+**/node_modules
+**/dist
+apps/mobile/.expo
+apps/mobile/ios
+apps/mobile/android
+apps/mobile/maestro
+apps/mobile/qa
+apps/mobile/tests
+apps/web
+docs
+memory
+tools
