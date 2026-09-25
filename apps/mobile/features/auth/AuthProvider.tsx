@@ -18,6 +18,7 @@ export interface AuthContextValue {
   signOut(): void
   /** Sends an API request with the current token. A 401 ends that sign-in and rejects with an unauthorized error. */
   authorizedFetch(path: string, init?: AuthorizedInit): Promise<Response>
+  beforeSignOut(callback: () => void): () => void
 }
 
 export interface AuthProviderProps {
@@ -32,6 +33,11 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ apiBase, store = authStore, request = fetch, children }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>({ status: 'hydrating' })
   const latest = useRef<AuthState>(state)
+  const endListeners = useRef(new Set<() => void>())
+  const beforeSignOut = useCallback((callback: () => void) => {
+    endListeners.current.add(callback)
+    return () => { endListeners.current.delete(callback) }
+  }, [])
   // Storage writes run one at a time, so a late clear can never erase a newer sign-in.
   const writes = useRef<Promise<void>>(Promise.resolve())
   const api = useMemo(() => apiBase ? createAuthApi(apiBase, request) : null, [apiBase, request])
@@ -54,11 +60,13 @@ export function AuthProvider({ apiBase, store = authStore, request = fetch, chil
     if (!api) throw new Error(t('signIn.notConfigured'))
     const auth = await api.signIn(credentials)
     await persist(() => saveAuth(store, auth))
+    if (latest.current.status === 'signedIn') endListeners.current.forEach(callback => callback())
     commit({ status: 'signedIn', ...auth })
   }, [api, store, persist, commit])
 
   const signOut = useCallback(() => {
     const previous = latest.current
+    if (previous.status === 'signedIn') endListeners.current.forEach(callback => callback())
     commit({ status: 'signedOut' })
     void persist(() => clearAuth(store))
     if (previous.status === 'signedIn') api?.signOut(previous.token).catch(() => { /* Revocation is best effort; the token is already gone from this device. */ })
@@ -73,13 +81,14 @@ export function AuthProvider({ apiBase, store = authStore, request = fetch, chil
     // Only the sign-in that sent this request ends; a concurrent 401 or a newer sign-in is left alone.
     const current = latest.current
     if (current.status === 'signedIn' && current.token === session.token) {
+      endListeners.current.forEach(callback => callback())
       commit({ status: 'signedOut', expired: true })
       void persist(() => clearAuth(store))
     }
     throw unauthorizedError()
   }, [apiBase, request, store, persist, commit])
 
-  const value = useMemo(() => ({ state, signIn, signOut, authorizedFetch }), [state, signIn, signOut, authorizedFetch])
+  const value = useMemo(() => ({ state, signIn, signOut, authorizedFetch, beforeSignOut }), [state, signIn, signOut, authorizedFetch, beforeSignOut])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

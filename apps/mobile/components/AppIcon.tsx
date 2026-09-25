@@ -11,6 +11,7 @@ const names = {
   paused: 'pause', offline: 'cloud-offline-outline', connected: 'radio-button-on',
   broadcast: 'radio', ended: 'checkmark', help: 'help', refresh: 'refresh',
   share: 'share-outline', copy: 'copy-outline', open: 'open-outline',
+  people: 'people-outline',
   guide: 'help-circle-outline', tour: 'compass-outline',
   scan: 'scan-outline', location: 'location-outline',
   // Tab glyphs are separate entries from explanation/preferences: they draw at 26pt and fill when selected.

@@ -16,6 +16,7 @@ import { ControlConnectionRecovery, ControlConnectionStatus } from '../../../../
 import { OpeningLine } from '../../../../features/services/OpeningLine'
 import { STOP_ANNOUNCEMENT, useServiceControl } from '../../../../features/services/ServiceControlProvider'
 import { useI18n } from '../../../../features/i18n'
+import { ControllerPresenceIndicator } from '../../../../features/services/presence/ControllerPresenceIndicator'
 
 /** One breakpoint: below it (a phone, or an iPad in narrow Split View) the tablet layout collapses to the phone layout exactly. */
 const TWO_PANE_WIDTH = 700
@@ -30,7 +31,7 @@ const MIN_COLUMN = 220
 const mono = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })
 
 export default function ServiceControlScreen() {
-  const { sessionId, invalid, state, retry, controls, commands, part, index, nextPart, previousPart, offline, announcing, expected,
+  const { sessionId, presence, invalid, state, retry, controls, commands, part, index, nextPart, previousPart, offline, announcing, expected,
     run, holds, errorMessage, sheetOpen } = useServiceControl()
   const { colors } = useTheme()
   const { t } = useI18n()
@@ -92,6 +93,7 @@ export default function ServiceControlScreen() {
     {wide && state.session && <AppText variant="rowTitle" style={{ flexShrink: 1 }}>{state.session.title}</AppText>}
     <View style={{ marginLeft: 'auto', paddingRight: spacing.sm, maxWidth: '100%' }}>
       <ControlConnectionStatus state={state} offline={offline} sending={controls.running !== null} />
+      <ControllerPresenceIndicator state={presence} />
     </View>
   </View>
 

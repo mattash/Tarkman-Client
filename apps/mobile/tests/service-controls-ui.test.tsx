@@ -11,6 +11,10 @@ import ServiceSheet from '../app/(signed-in)/services/[id]/service'
 import ControlLanguagesSheet from '../app/(signed-in)/services/[id]/languages'
 import { ServiceControlProvider } from '../features/services/ServiceControlProvider'
 import { deferred, respond } from './auth-helpers'
+import type { PresenceState } from '../features/services/presence/coordinator'
+
+let mockPresence: PresenceState = { kind: 'unavailable' }
+jest.mock('../features/services/presence/useControllerPresence', () => ({ useControllerPresence: () => mockPresence }))
 
 jest.mock('../features/live/useReader')
 let mockWindow = { width: 402, height: 874, scale: 3, fontScale: 1 }
@@ -42,6 +46,7 @@ const reader = (overrides: Partial<ReaderState> = {}) => ({ saved: null, state: 
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockPresence = { kind: 'unavailable' }
   ;(globalThis as { __online?: boolean }).__online = true
   process.env.EXPO_PUBLIC_API_URL = 'https://example.test'
   process.env.EXPO_PUBLIC_ACTIONCABLE_URL = 'wss://example.test/cable'
@@ -59,6 +64,17 @@ function Control() {
 }
 
 const sent = () => mockAuthorizedFetch.mock.calls.map(call => `${call[1]?.method} ${call[0]}`)
+
+it('shares controller status with the sheet without changing reader or command transport', async () => {
+  mockPresence = { kind: 'fresh', snapshot: { sessionId: 9, count: 2, others: 1, selfPresent: true, acceptedSequence: 4, interval: 10, ttl: 45 } }
+  await render(<Control />, { wrapper })
+  expect(screen.getByTestId('controller-presence')).toHaveTextContent('1 other controller connected')
+  expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
+  expect(within(screen.getByTestId('service-controller-status')).getByText('2 controllers connected, including this one')).toBeOnTheScreen()
+  expect(sent().filter(value => value.includes('controller_presence'))).toHaveLength(0)
+  expect(retry).not.toHaveBeenCalled()
+})
 
 it.each([402, 1200])('keeps routine synchronization quiet and real recovery outside the reading at %ipx', async width => {
   mockWindow = { ...mockWindow, width }

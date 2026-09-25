@@ -880,3 +880,41 @@ The standalone fixture page's **My display links** link targets the Expo web app
 About → Account → My display links opens the authenticated mine collection, including expired links. List/new/edit routes use the existing signed-in layout. Local drafts have an explicit Create/Save, versioned partial PATCH, inline synthetic preview, conflict review and unsaved-navigation guard. Unknown mutation outcomes require canonical reconciliation; uncertain POSTs are never automatically retried. State is scoped to API environment and signed-in identity and fenced on navigation. Display preferences never enter personal reader preferences or saved-service storage.
 
 Sharing uses only the persisted HTTPS `display_url`. iOS uses anchored RN Share; web invokes Web Share directly from the tap, with Copy/manual-copy fallback. Expo Clipboard is the only added native dependency and requires a rebuilt client. [Fixture, Expo-web scenario and physical share checklist](qa/display/README.md) describe the review matrix. Backend #446 and physical-device behavior still require parent validation; no device recording is claimed by the source implementation.
+
+## Controller presence / #184
+
+The signed-in service-control route and its Service/Languages sheets share one owner-only
+presence lifecycle. An in-memory cryptographic UUID identifies this app runtime/sign-in/API
+environment (independent browser tabs have separate IDs); each session's positive safe
+sequence increases across route remounts. No identifier or snapshot is persisted. While the
+control group is active, the app is foreground/visible and network reachability is known,
+`PUT /s/:id/controller_presence/:uuid.json` sends `{sequence,active:true}` immediately
+and serially at the server interval (normally 10 seconds). A higher-sequence best-effort
+`active:false` is issued before sign-out, route exit or backgrounding; it never delays those
+transitions. The server lease lasts 45 seconds and is authoritative for crashes; local
+status becomes unavailable after two missed intervals or immediately on failure/offline.
+Requests time out after 12 seconds. Transient failures retry with bounded backoff, while
+403/404/405 stop until route re-entry; 401 ends the current sign-in. HTTP 200 without
+acknowledgment of the newly sent sequence and self presence does not renew local status.
+
+This is **participating client** status, not an operator count, permission gate or lock.
+Older mobile builds and the legacy web client do not report; recently disconnected clients
+may remain until their lease expires. Neither the reader socket nor commands are changed.
+The API in Tarkman PR #449 must be deployed before this indicator can show a count.
+
+For independent rendered QA, run the existing synthetic fixture server at
+`node apps/mobile/qa/design-system/mock-reader-server.cjs` from the repository root.
+In a second terminal from `apps/mobile`, set `EXPO_PUBLIC_API_URL=http://127.0.0.1:8100`
+and `EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8100/cable`, then run `npm run web`.
+Sign in in two independent browser tabs with `operator@example.test` /
+`fixture-only-password` (both receive the exact same synthetic bearer token) and open
+controls for session `9001`. Both should show one other controller and a total of two;
+the fixture serves an ordered 45-second lease and no public service is changed. For iPhone/
+iPad simulator, build a local development client using the unsigned simulator build
+instructions above, then run `npm start -- --dev-client` with the same fixture endpoints
+on the simulator host, or point devices at an authorized LAN-reachable isolated backend
+(not the device's own localhost). Verify background/foreground,
+Service/Languages sheets, route exit, disconnect/lease expiry, Dynamic Type, Split View,
+VoiceOver, light/dark and connection-vs-presence labels. Never use or advance a public
+worship service. Automated Jest tests exercise protocol and ordering, not rendered or
+physical lifecycle behavior; UI Operator owns screenshots and device evidence.

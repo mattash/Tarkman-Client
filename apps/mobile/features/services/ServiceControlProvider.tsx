@@ -9,11 +9,14 @@ import { useReader } from '../live/useReader'
 import { createServiceControls, type ServiceControls } from './controls'
 import { useControls } from './useControls'
 import { t } from '../i18n'
+import { useControllerPresence } from './presence/useControllerPresence'
+import type { PresenceState } from './presence/coordinator'
 
 export const STOP_ANNOUNCEMENT = 'stop-announcement'
 
 export interface ServiceControlValue {
   sessionId: number
+  presence: PresenceState
   /** Null when the link or configuration is usable; otherwise the message to show instead of controls. */
   invalid: string | null
   state: ReaderState
@@ -47,6 +50,7 @@ const ServiceControlContext = createContext<ServiceControlValue | null>(null)
 export function ServiceControlProvider({ sessionId, children }: { sessionId: number; children: ReactNode }) {
   const { authorizedFetch } = useAuth()
   const config = readerConfig()
+  const presence = useControllerPresence(sessionId, config.endpoints?.api)
   const valid = Number.isInteger(sessionId) && sessionId > 0
   const { state, retry, refreshAfterCommand } = useReader(config.endpoints ?? { api: '', cable: '' }, valid ? sessionId : null, false)
   const controls = useControls(refreshAfterCommand)
@@ -58,7 +62,7 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
   const offline = !controls.online
   const resynced = state.updatedAt !== sentAgainst && !state.refreshing
   const value: ServiceControlValue = {
-    sessionId,
+    sessionId, presence,
     invalid: !config.endpoints ? config.error ?? t('control.cannotOpen') : valid ? null : t('common.serviceLinkInvalid'),
     state, retry, controls,
     commands: createServiceControls(authorizedFetch, state.session?.revision),

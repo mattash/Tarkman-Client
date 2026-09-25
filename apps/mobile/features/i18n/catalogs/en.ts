@@ -531,6 +531,15 @@ export const en = {
     showMore: 'Show more parts',
     nextUp: 'Next up · {role}',
   },
+  presence: {
+    title: 'CONTROLLERS',
+    checking: 'Checking controllers…',
+    none: 'No other controllers detected',
+    others: { one: '{count} other controller connected', other: '{count} other controllers connected' },
+    unavailable: 'Controller status unavailable',
+    total: { one: '{count} controller connected, including this one', other: '{count} controllers connected, including this one' },
+    caveat: 'Other controllers can change the current part. This count includes connected control instances that report their status. Older app versions and the legacy web client may not appear, and recently disconnected instances can remain briefly.',
+  },
   serviceSheet: {
     backToService: 'Back to Service',
     goToAnother: 'Go to another part',
