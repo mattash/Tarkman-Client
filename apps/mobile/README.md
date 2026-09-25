@@ -896,6 +896,10 @@ status becomes unavailable after two missed intervals or immediately on failure/
 Requests time out after 12 seconds. Transient failures retry with bounded backoff, while
 403/404/405 stop until route re-entry; 401 ends the current sign-in. HTTP 200 without
 acknowledgment of the newly sent sequence and self presence does not renew local status.
+On a presence 404, one bounded authenticated session read distinguishes a missing session
+(404) from an older backend with a valid session (200); failed reads remain ambiguous.
+405 is unsupported. These diagnostic reasons remain internal: the public status is
+unavailable in every case, never a fabricated zero. Explicit route re-entry retries.
 
 This is **participating client** status, not an operator count, permission gate or lock.
 Older mobile builds and the legacy web client do not report; recently disconnected clients

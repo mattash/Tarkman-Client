@@ -20,13 +20,17 @@ export function parsePresence(value: unknown, sessionId: number): PresenceSnapsh
   const time = (n: unknown) => typeof n === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(n) && Number.isFinite(Date.parse(n))
   const interval = data.heartbeat_interval_seconds
   const ttl = data.lease_ttl_seconds
+  // Database snapshot and JSON timestamps can straddle a statement/serialization boundary;
+  // two seconds is generous for that skew, not an extension of the advertised lease.
+  const leaseToleranceMs = 2000
   if (data.session_id !== sessionId || data.reporting_scope !== 'participating_clients' || !safe(data.controller_count) || !safe(data.other_controller_count) ||
     typeof self !== 'boolean' || (sequence !== null && (!safe(sequence) || sequence === 0)) ||
     !time(data.server_time) || (expires !== null && !time(expires)) ||
     !Number.isSafeInteger(interval) || (interval as number) < 1 || (interval as number) > 60 ||
     !Number.isSafeInteger(ttl) || (ttl as number) < (interval as number) || (ttl as number) > 300 ||
     (self ? data.controller_count !== (data.other_controller_count as number) + 1 || sequence === null || expires === null ||
-      Date.parse(expires as string) <= Date.parse(data.server_time as string)
+      Date.parse(expires as string) <= Date.parse(data.server_time as string) ||
+      Date.parse(expires as string) - Date.parse(data.server_time as string) > (ttl as number) * 1000 + leaseToleranceMs
       : data.controller_count !== data.other_controller_count || expires !== null)) {
     throw new Error('Invalid presence response') // i18n-ignore: internal protocol error, never shown to readers
   }

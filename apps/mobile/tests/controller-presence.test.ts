@@ -18,6 +18,8 @@ describe('presence contract', () => {
       expect(() => parsePresence({ ...snapshot(), ...bad }, 91)).toThrow()
     }
     expect(parsePresence({ ...snapshot(), self_present: false, self_expires_at: null, other_controller_count: 1 }, 91).selfPresent).toBe(false)
+    expect(parsePresence({ ...snapshot(), self_expires_at: '2026-09-25T12:00:47Z' }, 91).selfPresent).toBe(true)
+    expect(() => parsePresence({ ...snapshot(), self_expires_at: '2026-09-25T12:00:47.001Z' }, 91)).toThrow()
   })
 })
 
@@ -51,17 +53,32 @@ describe('serial lifecycle', () => {
     coordinator.stop()
   })
   it('does not loop on capability failure, but recovers a 5xx after backoff', async () => {
-    const replies = [response({}, 404), response({}, 500), response(snapshot(4))]
+    const replies = [response({}, 404), response({}, 404), response({}, 500), response(snapshot(4))]
     const fetcher = jest.fn(async () => replies.shift() ?? response(snapshot(4)))
     const states: PresenceState[] = []
     const coordinator = new PresenceCoordinator(fetcher, 91, identityFor({}, 'api'), state => states.push(state))
     coordinator.start(); await flush()
     await jest.advanceTimersByTimeAsync(60000)
-    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(states.at(-1)?.reason).toBe('missing-session')
     coordinator.stop(); coordinator.start(); await flush()
     expect(states.at(-1)?.kind).toBe('unavailable')
     await jest.advanceTimersByTimeAsync(2000)
     expect(states.at(-1)?.kind).toBe('fresh')
+    coordinator.stop()
+  })
+  it.each([
+    [404, 200, 'unsupported'], [404, 404, 'missing-session'], [404, 503, 'ambiguous'],
+    [405, null, 'unsupported'], [403, null, 'denied'], [401, null, 'unauthorized'],
+  ])('retains diagnostic reason for PUT %i, bounded read %s', async (status, read, reason) => {
+    const fetcher = jest.fn(async (path: string) => path.includes('controller_presence') ? response({}, status) : response({}, read ?? 500))
+    const states: PresenceState[] = []
+    const coordinator = new PresenceCoordinator(fetcher, 91, identityFor({}, String(status) + String(read)), state => states.push(state))
+    coordinator.start(); await flush()
+    expect(states.at(-1)).toMatchObject({ kind: 'unavailable', reason })
+    expect(fetcher).toHaveBeenCalledTimes(status === 404 ? 2 : 1)
+    await jest.advanceTimersByTimeAsync(60000)
+    expect(fetcher).toHaveBeenCalledTimes(status === 404 ? 2 : 1)
     coordinator.stop()
   })
   it('counts two independent clients using the exact same bearer token without touching commands or readers', async () => {

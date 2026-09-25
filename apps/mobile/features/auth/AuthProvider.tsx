@@ -33,6 +33,8 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ apiBase, store = authStore, request = fetch, children }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>({ status: 'hydrating' })
   const latest = useRef<AuthState>(state)
+  // Tokens may be reissued verbatim. A request belongs to a sign-in, not to its token string.
+  const signInGeneration = useRef(0)
   const endListeners = useRef(new Set<() => void>())
   const beforeSignOut = useCallback((callback: () => void) => {
     endListeners.current.add(callback)
@@ -42,7 +44,10 @@ export function AuthProvider({ apiBase, store = authStore, request = fetch, chil
   const writes = useRef<Promise<void>>(Promise.resolve())
   const api = useMemo(() => apiBase ? createAuthApi(apiBase, request) : null, [apiBase, request])
 
-  const commit = useCallback((next: AuthState) => { latest.current = next; setState(next) }, [])
+  const commit = useCallback((next: AuthState) => {
+    if (next.status === 'signedIn') signInGeneration.current++
+    latest.current = next; setState(next)
+  }, [])
   const persist = useCallback((write: () => Promise<void>) => {
     writes.current = writes.current.then(write).catch(() => { /* The in-memory session stays authoritative when storage fails. */ })
     return writes.current
@@ -75,12 +80,13 @@ export function AuthProvider({ apiBase, store = authStore, request = fetch, chil
   const authorizedFetch = useCallback(async (path: string, init: AuthorizedInit = {}) => {
     const session = latest.current
     if (session.status !== 'signedIn' || !apiBase) throw unauthorizedError()
+    const generation = signInGeneration.current
     const response = await request(`${apiBase}${path}`, { ...init, credentials: 'omit', cache: 'no-store', redirect: 'error',
       headers: { Accept: 'application/json', ...init.headers, Authorization: `Bearer ${session.token}` } })
     if (response.status !== 401) return response
     // Only the sign-in that sent this request ends; a concurrent 401 or a newer sign-in is left alone.
     const current = latest.current
-    if (current.status === 'signedIn' && current.token === session.token) {
+    if (current.status === 'signedIn' && signInGeneration.current === generation && current === session) {
       endListeners.current.forEach(callback => callback())
       commit({ status: 'signedOut', expired: true })
       void persist(() => clearAuth(store))

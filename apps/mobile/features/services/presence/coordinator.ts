@@ -2,7 +2,8 @@ import { randomUUID } from 'expo-crypto'
 import type { AuthContextValue } from '../../auth/AuthProvider'
 import { putPresence, type PresenceSnapshot } from './api'
 
-export type PresenceState = { kind: 'checking' | 'unavailable' | 'fresh'; snapshot?: PresenceSnapshot }
+export type PresenceState = { kind: 'checking' | 'unavailable' | 'fresh'; snapshot?: PresenceSnapshot;
+  reason?: 'ineligible' | 'unauthorized' | 'denied' | 'unsupported' | 'missing-session' | 'ambiguous' | 'transient' }
 interface Identity { uuid: string; sequences: Map<number, number> }
 const identities = new WeakMap<object, Map<string, Identity>>()
 export function identityFor(signIn: object, environment: string): Identity {
@@ -28,7 +29,7 @@ export class PresenceCoordinator {
   private abort?: AbortController
   private failures = 0
   private interval = 10
-  private state: PresenceState = { kind: 'unavailable' }
+  private state: PresenceState = { kind: 'unavailable', reason: 'ineligible' }
   constructor(private readonly fetcher: AuthContextValue['authorizedFetch'], private readonly sessionId: number,
     private readonly identity: Identity, private readonly notify: (state: PresenceState) => void,
     private readonly clock = () => performance.now()) {}
@@ -47,7 +48,7 @@ export class PresenceCoordinator {
     ++this.generation
     clearTimeout(this.timer); clearTimeout(this.stale)
     this.abort?.abort()
-    this.publish({ kind: 'unavailable' })
+    this.publish({ kind: 'unavailable', reason: 'ineligible' })
     // Allocate now, before a new activation can issue its heartbeat. Never retry this leave.
     const sequence = next(this.identity, this.sessionId)
     void putPresence(this.fetcher, this.sessionId, this.identity.uuid, sequence, false, AbortSignal.timeout(12000)).catch(() => {})
@@ -72,9 +73,20 @@ export class PresenceCoordinator {
     } catch (error) {
       if (!this.active || generation !== this.generation) return
       clearTimeout(this.stale)
-      this.publish({ kind: 'unavailable' })
       const status = (error as { status?: number }).status
-      if (status === 401 || status === 403 || status === 404 || status === 405) return
+      if (status === 404) {
+        // One bounded authenticated read distinguishes a missing session from an older backend.
+        // A failed/ambiguous read does not turn absence into zero or keep probing with PUTs.
+        let reason: PresenceState['reason'] = 'ambiguous'
+        try {
+          const read = await this.fetcher(`/s/${this.sessionId}.json`, { signal: AbortSignal.timeout(12000) })
+          reason = read.ok ? 'unsupported' : read.status === 404 ? 'missing-session' : 'ambiguous'
+        } catch { /* Expiry remains authoritative in authorizedFetch; no credential fallback. */ }
+        if (this.active && generation === this.generation) this.publish({ kind: 'unavailable', reason })
+        return
+      }
+      this.publish({ kind: 'unavailable', reason: status === 401 ? 'unauthorized' : status === 403 ? 'denied' : status === 405 ? 'unsupported' : 'transient' })
+      if (status === 401 || status === 403 || status === 405) return
       this.failures++
       this.timer = setTimeout(() => { void this.sample(generation) }, Math.min(30000, 2000 * 2 ** Math.min(this.failures - 1, 4)))
     } finally {
