@@ -9,6 +9,7 @@ export type KnownSessionStatus =
   | 'showing_epistle'
   | 'showing_welcome'
   | 'showing_custom'
+  | 'showing_session_qr'
 
 export interface StatusUpdateRequest {
   status: KnownSessionStatus
@@ -32,5 +33,6 @@ export const STATUS_LABELS: Record<KnownSessionStatus, string> = {
   showing_gospel: 'Gospel Reading',
   showing_epistle: 'Epistle Reading',
   showing_welcome: 'Welcome Message',
-  showing_custom: 'Custom Announcement'
+  showing_custom: 'Custom Announcement',
+  showing_session_qr: 'Read-along QR'
 }

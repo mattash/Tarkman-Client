@@ -13,6 +13,7 @@ import type { DisplayLanguage, DisplayPreferences } from './config'
 import { DisplayNotice } from './DisplayFrame'
 import { PostureIcon } from './PostureIcon'
 import { ProjectionText } from './ProjectionText'
+import QRCode from 'react-native-qrcode-svg'
 import { projectionMessage, projectionText, statusPageNumber } from './presentation'
 import { projectionDuration } from './projectionTiming'
 import { useProjectionClock } from './useProjectionClock'
@@ -57,8 +58,8 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
   const duration = projectionDuration(part?.effectiveDurationMs, texts)
   const available = !minimal && !discoveryError && !state.error
   const readingClock = useProjectionClock(`${sessionId}/${part?.key}`, available && !!part && !message && session?.status === 'active')
-  const messageText = message?.body ?? message?.title ?? null
-  const messageClock = useProjectionClock(`${sessionId}/${part?.key}/${message?.title}/${messageText}`, available && !!message)
+  const messageText = message?.kind === 'message' ? message.body ?? message.title : null
+  const messageClock = useProjectionClock(`${sessionId}/${part?.key}/${message?.kind === 'message' ? message.title : message?.kind}/${messageText}`, available && message?.kind === 'message')
 
   if (!session) return <DisplayNotice testID={state.error ? 'display-projection-unavailable' : 'display-projection-loading'}
     busy={!state.error} title={t(state.error ? 'display.projectionUnavailable' : 'display.loading')}
@@ -68,6 +69,17 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
   if (discoveryError || state.error) return <DisplayNotice testID="display-connection"
     title={t(discoveryError ? 'display.discoveryUnavailable' : 'readerStatus.updatesUnavailable')}
     detail={t('display.retrying')} />
+
+  if (message?.kind === 'session_qr' && !minimal) {
+    const size = Math.max(0, Math.min(width - padding * 4, height * 0.7, 760))
+    return <View testID="display-session-qr" style={[styles.screen, styles.qrScreen, screenPadding]}>
+      <AppText style={{ color: '#fff', fontSize: Math.max(28, Math.min(56, width / 18)), textAlign: 'center', fontWeight: '700' }}>{t('display.scanToReadAlong')}</AppText>
+      <View style={{ backgroundColor: '#fff', padding: Math.max(16, size * 0.06) }} accessible accessibilityRole="image" accessibilityLabel={message.url}>
+        <QRCode value={message.url} size={size} color="#000000" backgroundColor="#ffffff" />
+      </View>
+      <AppText style={{ color: '#fff', fontSize: Math.max(18, Math.min(32, width / 32)), textAlign: 'center' }}>{t('display.readerUrl', { sessionId: message.sessionId })}</AppText>
+    </View>
+  }
 
   if (minimal) {
     const showPage = config.status_view !== 'posture_only', showPosture = config.status_view !== 'pages_only'
@@ -95,7 +107,7 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
   const roleSize = Math.max(24, fontSize * 0.6)
   return <View testID="display-projection" style={[styles.screen, screenPadding, { gap: spacing.md }]}>
     {config.tokenProjection && config.show_explanations && !state.stale && !state.explanationError && state.explanations.length > 0 && <StatusPill label={t('links.explanationAvailable')} tone="info" />}
-    {message ? <ProjectionText key={`${message.title}/${message.body}`} text={messageText} fontSize={fontSize * 1.2} centered
+    {message?.kind === 'message' ? <ProjectionText key={`${message.title}/${message.body}`} text={messageText} fontSize={fontSize * 1.2} centered
       clock={messageClock} durationMs={projectionDuration(null, [messageText])} movement={settings.text_movement} preview={preview} />
       : part ? <>
         {part.role && <AppText testID="display-speaker" style={{ fontSize: roleSize, lineHeight: roleSize * 1.25, fontWeight: '600', textTransform: 'capitalize' }}>{part.role}</AppText>}
@@ -128,7 +140,7 @@ function PagePlaceholder({ width, height, scale }: { width: number; height: numb
   </View>
 }
 const styles = StyleSheet.create({
-  screen: { flex: 1, minHeight: 0 }, body: { flex: 1, minHeight: 0 }, column: { flex: 1, minWidth: 0, minHeight: 0 },
+  screen: { flex: 1, minHeight: 0 }, qrScreen: { alignItems: 'center', justifyContent: 'center', gap: spacing.lg, backgroundColor: '#101010' }, body: { flex: 1, minHeight: 0 }, column: { flex: 1, minWidth: 0, minHeight: 0 },
   statusContent: { flex: 1, alignItems: 'stretch' },
   statusItem: { minWidth: 0, minHeight: 0, alignItems: 'center', justifyContent: 'center' },
 })

@@ -119,3 +119,29 @@ checks do not replace the pinned compiler, Jest, browser, backend or device runs
 - Fixture and Playwright runner JavaScript syntax checks and `git diff --check`
   passed. Mobile Jest, pinned typecheck/lint, export, live backend integration,
   browser execution and physical-device checks remain for the parent.
+
+## Session read-along QR (#187) — independent web QA
+
+On this branch, start the fixture and Expo web exactly as above (fresh fixture and
+`EXPO_PUBLIC_API_URL`/`EXPO_PUBLIC_ACTIONCABLE_URL` pointing at loopback). POST
+`/qa/reset` before each scenario. Sign in at `http://127.0.0.1:8082/sign-in`
+with `operator@display.test` / `fixture` (synthetic account only). Open
+`http://127.0.0.1:8082/sessions/9001/parts` as controller, then open two
+`http://127.0.0.1:8082/sessions/display?token=token-A` tabs. Use the controller's
+Service sheet → **Show read-along QR**; both displays should show the same large
+black-on-white SVG, for `https://tarkman.app/sessions/9001/parts`. Stop showing
+should restore the same reading (fixture starts at index 1). Verify phone
+390×844 and projector 1920×1080 and 1280×720; record screenshots and network
+`/qa/log` evidence. The scanner's exact URL round-trip is covered by Jest; for
+physical scanner QA, scan the rendered QR from the Tarkman home screen on a
+separate device and confirm Read along for 9001. The canonical URL is production,
+not the fixture origin; do not navigate there during fixture-only QA.
+
+For recovery, leave QR active, close/reopen a display or POST
+`{"disconnected":true}` then `{"disconnected":false}` to `/review/state`;
+confirm state remains QR. For suppression open `?token=quiet` or `?token=plain`
+(instead of A); QR should not replace its reading. Use `/qa/status` to inspect
+revision/index and `/qa/log` to verify PATCH `/s/9001/update_status.json` with
+`expected_revision`, one increment, `status_change` publication, no next/set_part,
+and matching ack. POST `{"commandMode":"refuse409"}` to `/qa/config` for stale
+refusal, then restore `accept`. No live backend or credentials are involved.

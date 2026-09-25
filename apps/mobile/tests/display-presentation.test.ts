@@ -1,4 +1,6 @@
 import { expect, it } from '@jest/globals'
+import { readScannedLink } from '../features/scan/links'
+import { sessionReaderUrl } from '../features/displayLinks/sessionReaderUrl'
 import { DEFAULT_DISPLAY_CONFIG } from '../features/displayLinks/config'
 import { displayPosture, projectionMessage, projectionText, statusPageNumber, statusPostureKey } from '../features/displayLinks/presentation'
 import { normalizeParts, normalizeSession, normalizeState, sessionWithState } from '../features/live/contracts'
@@ -17,7 +19,7 @@ it.each([
   ['showing_welcome', 'Welcome', 'Welcome to our parish.'],
   ['showing_custom', 'Announcement', 'We will resume shortly.'],
 ])('renders the operator interrupt %s', (status, title, body) => {
-  expect(projectionMessage({ ...session, status, message: 'We will resume shortly.' }, parts, DEFAULT_DISPLAY_CONFIG)).toEqual({ title, body })
+  expect(projectionMessage({ ...session, status, message: 'We will resume shortly.' }, parts, DEFAULT_DISPLAY_CONFIG)).toEqual({ kind: 'message', title, body })
 })
 it('honors both notification suppression and the text-only status preference', () => {
   expect(projectionMessage({ ...session, status: 'paused' }, parts, { ...DEFAULT_DISPLAY_CONFIG, show_notifications: false })).toBeNull()
@@ -26,14 +28,14 @@ it('honors both notification suppression and the text-only status preference', (
 })
 it('uses occurrence boundaries for welcome and farewell, not reusable part IDs', () => {
   expect(projectionMessage(session, parts, DEFAULT_DISPLAY_CONFIG)).toBeNull()
-  expect(projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 101, currentPosition: 1 }, parts, DEFAULT_DISPLAY_CONFIG)?.body).toBe('Welcome to our parish.')
-  expect(projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 103, currentPosition: 3 }, parts, DEFAULT_DISPLAY_CONFIG)?.body).toBe('Go with God.')
-  expect(projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 103, currentPosition: 3, status: 'paused' }, parts, DEFAULT_DISPLAY_CONFIG)?.title).toBe('Service paused')
+  expect((projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 101, currentPosition: 1 }, parts, DEFAULT_DISPLAY_CONFIG) as { body: string })?.body).toBe('Welcome to our parish.')
+  expect((projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 103, currentPosition: 3 }, parts, DEFAULT_DISPLAY_CONFIG) as { body: string })?.body).toBe('Go with God.')
+  expect((projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 103, currentPosition: 3, status: 'paused' }, parts, DEFAULT_DISPLAY_CONFIG) as { title: string })?.title).toBe('Service paused')
 })
 it('supports old zero-position welcome snapshots', () => {
   const old = normalizeSession({ session: { ...raw, current_part_position: 0 } })
   expect(old.currentPosition).toBe(0)
-  expect(projectionMessage(old, [], DEFAULT_DISPLAY_CONFIG)?.title).toBe('Welcome')
+  expect((projectionMessage(old, [], DEFAULT_DISPLAY_CONFIG) as { title: string })?.title).toBe('Welcome')
 })
 it('preserves page, posture and display messages from public snapshots', () => {
   expect(session).toMatchObject({ page: 13, posture: 'stand', totalParts: 3, displayMessages: { before: 'Welcome to our parish.' } })
@@ -77,4 +79,17 @@ it('keeps valid session pages authoritative, including the safe integer boundary
   expect(statusPageNumber(1, 42)).toBe(1)
   expect(statusPageNumber(Number.MAX_SAFE_INTEGER, 42)).toBe(Number.MAX_SAFE_INTEGER)
   expect(statusPageNumber(null, Number.MAX_SAFE_INTEGER)).toBe(Number.MAX_SAFE_INTEGER)
+})
+
+it('generates a canonical scanner-compatible credential-free reader URL', () => {
+  const url = sessionReaderUrl(4008)
+  expect(url).toBe('https://tarkman.app/sessions/4008/parts')
+  expect(readScannedLink(url)).toEqual({ kind: 'service', sessionId: 4008, path: '/sessions/4008/parts' })
+  expect(() => sessionReaderUrl(0)).toThrow()
+})
+it('presents QR as structured interruption and suppresses it with operator overlays', () => {
+  const qr = { ...session, id: 4008, status: 'showing_session_qr', message: null }
+  expect(projectionMessage(qr, parts, DEFAULT_DISPLAY_CONFIG)).toEqual({ kind: 'session_qr', sessionId: 4008, url: sessionReaderUrl(4008) })
+  expect(projectionMessage(qr, parts, { ...DEFAULT_DISPLAY_CONFIG, show_notifications: false })).toBeNull()
+  expect(projectionMessage(qr, parts, { ...DEFAULT_DISPLAY_CONFIG, status_view: 'none' })).toBeNull()
 })

@@ -16,7 +16,7 @@ import type { LivePart } from '../../../../features/live/contracts'
 import { resolveControlLanguages, usePreferences } from '../../../../features/preferences/PreferencesProvider'
 import { ControlButton } from '../../../../features/services/ControlButton'
 import { OpeningLine } from '../../../../features/services/OpeningLine'
-import { STOP_ANNOUNCEMENT, useServiceControl } from '../../../../features/services/ServiceControlProvider'
+import { STOP_ANNOUNCEMENT, STOP_SESSION_QR, useServiceControl } from '../../../../features/services/ServiceControlProvider'
 import { statusName, useI18n } from '../../../../features/i18n'
 import { ControllerStatusRow } from '../../../../features/services/presence/ControllerPresenceIndicator'
 
@@ -89,6 +89,11 @@ export default function ServiceSheet() {
             {INSTEAD.map(item => <StatusButton key={item} status={item} height={48} selected={status === item} {...holds(item)} onPress={() => { void setStatus(item) }} />)}
           </View>
           {failureUnder(INSTEAD)}
+          {status === 'showing_session_qr' ? <ControlButton testID="stop-session-qr" label={t('serviceSheet.stopShowing')} height={48}
+            {...holds(STOP_SESSION_QR)} onPress={() => { void run(STOP_SESSION_QR, () => commands.setStatus(sessionId, 'active')) }} />
+            : <ControlButton testID="show-session-qr" label={t('serviceSheet.showReadAlongQr')} height={48}
+              {...holds('showing_session_qr')} onPress={() => { void setStatus('showing_session_qr') }} />}
+          {failureUnder(['showing_session_qr', STOP_SESSION_QR])}
         </SheetSection>
         <SheetSection label={t('serviceSheet.announcement')} divided>
           {announcing ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md }}>

@@ -258,3 +258,31 @@ it.each<['en' | 'ru', string, string]>([
   expect(screen.getByLabelText(stand)).toBeOnTheScreen()
   expect(!!screen.queryByText(label, { includeHiddenElements: true })).toBe(false)
 })
+
+it('renders structured QR on two displays and recovers the same reading after stop', async () => {
+  const session = normalizeSession({ session: { id: 42, status: 'showing_session_qr', current_part_id: 1, current_liturgy_part_id: 11 } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11, en: 'Peace unto all.' } }] })
+  const result = { saved: null, state: { ...initialState, loading: false, session, parts }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() }
+  jest.mocked(useReader).mockReturnValue(result)
+  const pair = () => <ThemeProvider><I18nProvider><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={config} sessionId={42} /><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={config} sessionId={42} /></I18nProvider></ThemeProvider>
+  const view = await render(pair())
+  expect(view.getAllByTestId('display-session-qr')).toHaveLength(2)
+  expect(view.getAllByLabelText('https://tarkman.app/sessions/42/parts')).toHaveLength(2)
+  expect(view.queryByText('Peace unto all.')).toBeNull()
+  jest.mocked(useReader).mockReturnValue({ ...result, state: { ...result.state, session: { ...session, status: 'active' } } })
+  await view.rerender(pair())
+  expect(view.queryByTestId('display-session-qr')).toBeNull()
+  expect(view.getAllByText('Peace unto all.')).toHaveLength(2)
+})
+
+it('keeps the reading when QR overlays are disabled by display preferences', async () => {
+  const session = normalizeSession({ session: { id: 42, status: 'showing_session_qr', current_part_id: 1, current_liturgy_part_id: 11 } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11, en: 'Peace unto all.' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session, parts }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection({ config: { ...config, show_notifications: false } })
+  expect(screen.queryByTestId('display-session-qr')).toBeNull()
+  expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
+  await renderProjection({ config: { ...config, status_view: 'none' } })
+  expect(screen.queryByTestId('display-session-qr')).toBeNull()
+  expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
+})
