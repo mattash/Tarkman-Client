@@ -18,7 +18,7 @@ import { ControlButton } from '../../../../features/services/ControlButton'
 import { OpeningLine } from '../../../../features/services/OpeningLine'
 import { STOP_ANNOUNCEMENT, useServiceControl } from '../../../../features/services/ServiceControlProvider'
 import { statusName, useI18n } from '../../../../features/i18n'
-import { presenceLabel } from '../../../../features/services/presence/ControllerPresenceIndicator'
+import { ControllerStatusRow } from '../../../../features/services/presence/ControllerPresenceIndicator'
 
 // KnownSessionStatus is one enum answering two questions, so the sheet groups them apart.
 const DOING: KnownSessionStatus[] = ['active', 'paused']
@@ -37,8 +37,6 @@ export default function ServiceSheet() {
   const [message, setMessage] = useState('')
   const closed = useRef(false)
   const status = state.session?.status
-  const controllerSummary = presence.kind === 'fresh' && presence.snapshot?.selfPresent
-    ? t('presence.total', { count: presence.snapshot.count }) : presenceLabel(presence, t)
 
   useEffect(() => {
     closed.current = false
@@ -81,12 +79,7 @@ export default function ServiceSheet() {
       {page === 'parts' ? state.parts.map(item => <PartRow key={item.key} item={item} current={item.key === part?.key} language={controlLanguages[0]} selected={controlLanguages}
         failure={failureUnder([item.key])} {...holds(item.key)}
         onPress={async () => { if (await run(item.key, () => commands.goToPart(sessionId, item.id, expected, item.liturgyPartId))) close() }} />) : <>
-        <View testID="service-controller-status" accessible accessibilityLabel={`${controllerSummary}. ${t('presence.caveat')}`}
-          style={{ gap: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.divider, paddingBottom: spacing.md }}>
-          <AppText variant="eyebrow" tone="muted">{t('presence.title')}</AppText>
-          <AppText>{controllerSummary}</AppText>
-          <AppText variant="caption" tone="muted">{t('presence.caveat')}</AppText>
-        </View>
+        <ControllerStatusRow state={presence} />
         <SheetSection label={t('serviceSheet.congregationSees')}>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {DOING.map(item => <StatusButton key={item} status={item} height={52} selected={status === item} {...holds(item)} onPress={() => { void setStatus(item) }} />)}

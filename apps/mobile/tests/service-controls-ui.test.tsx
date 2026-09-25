@@ -68,12 +68,35 @@ const sent = () => mockAuthorizedFetch.mock.calls.map(call => `${call[1]?.method
 it('shares controller status with the sheet without changing reader or command transport', async () => {
   mockPresence = { kind: 'fresh', snapshot: { sessionId: 9, count: 2, others: 1, selfPresent: true, acceptedSequence: 4, interval: 10, ttl: 45 } }
   await render(<Control />, { wrapper })
-  expect(screen.getByTestId('controller-presence')).toHaveTextContent('1 other controller connected')
+  expect(screen.getByRole('button', { name: '1 other controller connected' })).toBeOnTheScreen()
+  expect(within(screen.getByTestId('control-connection-visible')).getByTestId('controller-presence')).toBeOnTheScreen()
+  expect(within(screen.getByTestId('control-connection-visible')).getByLabelText('Server connection: Connected')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByTestId('controller-presence-trigger'))
+  expect(within(screen.getByTestId('controller-presence-callout')).getByText('1 connected')).toBeOnTheScreen()
+  await fireEvent(screen.getByTestId('controller-presence-callout'), 'accessibilityEscape')
   expect(screen.getByLabelText('Server connection: Connected')).toBeOnTheScreen()
   await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
-  expect(within(screen.getByTestId('service-controller-status')).getByText('2 controllers connected, including this one')).toBeOnTheScreen()
+  expect(within(screen.getByTestId('service-controller-status')).getByText('2 connected')).toBeOnTheScreen()
+  expect(screen.queryByText('Includes this device.')).toBeNull()
+  await fireEvent.press(screen.getByRole('button', { name: 'About controller counts' }))
+  expect(within(screen.getByTestId('controller-help-callout')).getByText('Includes this device.')).toBeOnTheScreen()
+  expect(within(screen.getByTestId('controller-help-callout')).getByText(/Older app versions and the legacy web client/)).toBeOnTheScreen()
   expect(sent().filter(value => value.includes('controller_presence'))).toHaveLength(0)
   expect(retry).not.toHaveBeenCalled()
+})
+
+it('shows zero other controllers without treating unavailable presence as zero', async () => {
+  mockPresence = { kind: 'fresh', snapshot: { sessionId: 9, count: 1, others: 0, selfPresent: true, acceptedSequence: 4, interval: 10, ttl: 45 } }
+  const view = await render(<Control />, { wrapper })
+  expect(within(screen.getByTestId('controller-presence')).getByText('0')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByTestId('controller-presence-trigger'))
+  expect(within(screen.getByTestId('controller-presence-callout')).getByText('No other reporting controllers detected.')).toBeOnTheScreen()
+  await fireEvent(screen.getByTestId('controller-presence-callout'), 'accessibilityEscape')
+
+  mockPresence = { kind: 'unavailable' }
+  await view.rerender(<Control />)
+  expect(within(screen.getByTestId('controller-presence')).queryByText('0')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Controller status unavailable' })).toBeOnTheScreen()
 })
 
 it.each([402, 1200])('keeps routine synchronization quiet and real recovery outside the reading at %ipx', async width => {

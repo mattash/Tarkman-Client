@@ -87,13 +87,13 @@ export default function ServiceControlScreen() {
     && readingWidth / languages.length - spacing.md >= MIN_COLUMN * fontScale * readingSizes[preferences.readingSize].fontSize / 24
   const first = languages[0]
 
-  const header = <View testID="control-header" style={{ minHeight: 56, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
+  const header = <View testID="control-header" style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     gap: spacing.sm, paddingHorizontal: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
     <BackButton onPress={() => { if (router.canGoBack()) { router.back() } else { router.replace('/services') } }}>{t('common.myServices')}</BackButton>
     {wide && state.session && <AppText variant="rowTitle" style={{ flexShrink: 1 }}>{state.session.title}</AppText>}
-    <View style={{ marginLeft: 'auto', paddingRight: spacing.sm, maxWidth: '100%' }}>
-      <ControlConnectionStatus state={state} offline={offline} sending={controls.running !== null} />
-      <ControllerPresenceIndicator state={presence} />
+    <View style={{ marginLeft: 'auto', paddingRight: spacing.sm }}>
+      <ControlConnectionStatus state={state} offline={offline} sending={controls.running !== null}
+        leading={<ControllerPresenceIndicator state={presence} />} />
     </View>
   </View>
 
