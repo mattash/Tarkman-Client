@@ -181,3 +181,31 @@ it('mounts one provider across the control screen and both child sheets without 
   await view.unmount()
   expect(calls.filter(call => !call.active)).toHaveLength(1)
 })
+
+it.each([403, 404, 405])('latches terminal %i across AppState/network churn until route re-entry', async status => {
+  mockAuthContext.authorizedFetch = async (url, init) => {
+    if (url === '/s/9.json') return { ok: true, status: 200 } as Response
+    const body = JSON.parse(init!.body as string) as { sequence: number; active: boolean }
+    calls.push({ path: url, ...body })
+    if (body.active && calls.filter(call => call.active).length === 1) return { ok: false, status } as Response
+    return reply(body.sequence, body.active)
+  }
+  const hook = await renderHook(() => useControllerPresence(9, 'https://one.test'))
+  await changeNetwork(online); await flush()
+  expect(hook.result.current).toMatchObject({ kind: 'unavailable', reason: status === 403 ? 'denied' : 'unsupported' })
+  const putCount = calls.length
+  await act(async () => app('background'))
+  await act(async () => app('active'))
+  await changeNetwork({ isConnected: false, isInternetReachable: false } as NetworkState)
+  await changeNetwork(unknown)
+  await changeNetwork(online)
+  await jest.advanceTimersByTimeAsync(60000)
+  expect(calls).toHaveLength(putCount) // no activation or leave PUT on terminal endpoint
+  mockPath = '/services'; await hook.rerender(undefined)
+  mockPath = '/services/9'; await hook.rerender(undefined)
+  await changeNetwork(online); await flush()
+  expect(calls.filter(call => call.active)).toHaveLength(2)
+  expect(calls.at(-1)?.sequence).toBe(2)
+  expect(hook.result.current.kind).toBe('fresh')
+  await hook.unmount()
+})

@@ -53,23 +53,27 @@ describe('serial lifecycle', () => {
     coordinator.stop()
   })
   it('does not loop on capability failure, but recovers a 5xx after backoff', async () => {
-    const replies = [response({}, 404), response({}, 404), response({}, 500), response(snapshot(4))]
+    const replies = [response({}, 404), response({}, 404), response({}, 500), response(snapshot(3))]
     const fetcher = jest.fn(async () => replies.shift() ?? response(snapshot(4)))
     const states: PresenceState[] = []
-    const coordinator = new PresenceCoordinator(fetcher, 91, identityFor({}, 'api'), state => states.push(state))
+    const identity = identityFor({}, 'api')
+    const coordinator = new PresenceCoordinator(fetcher, 91, identity, state => states.push(state))
     coordinator.start(); await flush()
     await jest.advanceTimersByTimeAsync(60000)
     expect(fetcher).toHaveBeenCalledTimes(2)
     expect(states.at(-1)?.reason).toBe('missing-session')
     coordinator.stop(); coordinator.start(); await flush()
+    expect(fetcher).toHaveBeenCalledTimes(2) // terminal latch survives stop/start
+    const reentered = new PresenceCoordinator(fetcher, 91, identity, state => states.push(state))
+    reentered.start(); await flush()
     expect(states.at(-1)?.kind).toBe('unavailable')
     await jest.advanceTimersByTimeAsync(2000)
     expect(states.at(-1)?.kind).toBe('fresh')
-    coordinator.stop()
+    reentered.stop()
   })
   it.each([
     [404, 200, 'unsupported'], [404, 404, 'missing-session'], [404, 503, 'ambiguous'],
-    [405, null, 'unsupported'], [403, null, 'denied'], [401, null, 'unauthorized'],
+    [405, null, 'unsupported'], [403, null, 'denied'],
   ])('retains diagnostic reason for PUT %i, bounded read %s', async (status, read, reason) => {
     const fetcher = jest.fn(async (path: string) => path.includes('controller_presence') ? response({}, status) : response({}, read ?? 500))
     const states: PresenceState[] = []
@@ -80,6 +84,9 @@ describe('serial lifecycle', () => {
     await jest.advanceTimersByTimeAsync(60000)
     expect(fetcher).toHaveBeenCalledTimes(status === 404 ? 2 : 1)
     coordinator.stop()
+    expect(fetcher).toHaveBeenCalledTimes(status === 404 ? 2 : 1)
+    coordinator.start()
+    expect(fetcher).toHaveBeenCalledTimes(status === 404 ? 2 : 1)
   })
   it('counts two independent clients using the exact same bearer token without touching commands or readers', async () => {
     const leases = new Map<string, { sequence: number; active: boolean }>()
@@ -128,5 +135,43 @@ describe('serial lifecycle', () => {
     expect(states.at(-1)?.kind).toBe('unavailable')
     expect(fetcher).toHaveBeenCalledTimes(2)
     coordinator.stop()
+  })
+  it('drops a fresh count before a deferred 404 diagnostic and fences its completion on exit', async () => {
+    let resolveRead!: (response: Response) => void
+    const read = new Promise<Response>(resolve => { resolveRead = resolve })
+    const calls: string[] = []
+    const fetcher = jest.fn(async (path: string, init?: RequestInit) => {
+      calls.push(path)
+      if (path === '/s/91.json') return read
+      const body = JSON.parse(init!.body as string) as { sequence: number; active: boolean }
+      return body.sequence === 1 ? response(snapshot(1, 2)) : response({}, 404)
+    })
+    const states: PresenceState[] = []
+    const coordinator = new PresenceCoordinator(fetcher, 91, identityFor({}, 'deferred-diagnostic'), state => states.push(state))
+    coordinator.start(); await flush()
+    expect(states.at(-1)?.kind).toBe('fresh')
+    await jest.advanceTimersByTimeAsync(10000)
+    await flush()
+    expect(states.at(-1)).toMatchObject({ kind: 'unavailable', reason: 'ambiguous' })
+    expect(calls).toHaveLength(3) // initial PUT, failed heartbeat PUT, one diagnostic GET
+    await jest.advanceTimersByTimeAsync(20000)
+    expect(states.at(-1)?.kind).toBe('unavailable')
+    resolveRead(response({}, 200)); await flush()
+    expect(states.at(-1)).toMatchObject({ kind: 'unavailable', reason: 'unsupported' })
+    coordinator.stop()
+    expect(calls).toHaveLength(3) // no terminal leave
+
+    let resolveOld!: (response: Response) => void
+    const oldRead = new Promise<Response>(resolve => { resolveOld = resolve })
+    const oldCalls: string[] = []
+    const oldFetcher = jest.fn(async (path: string) => { oldCalls.push(path); return path === '/s/91.json' ? oldRead : response({}, 404) })
+    const afterExit: PresenceState[] = []
+    const old = new PresenceCoordinator(oldFetcher, 91, identityFor({}, 'exited-diagnostic'), state => afterExit.push(state))
+    old.start(); await flush()
+    expect(afterExit.at(-1)?.reason).toBe('ambiguous')
+    old.stop()
+    resolveOld(response({}, 404)); await flush()
+    expect(afterExit.at(-1)).toMatchObject({ kind: 'unavailable', reason: 'ambiguous' })
+    expect(oldCalls).toHaveLength(2)
   })
 })

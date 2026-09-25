@@ -28,6 +28,7 @@ export class PresenceCoordinator {
   private stale?: ReturnType<typeof setTimeout>
   private abort?: AbortController
   private failures = 0
+  private terminal: PresenceState['reason'] | null = null
   private interval = 10
   private state: PresenceState = { kind: 'unavailable', reason: 'ineligible' }
   constructor(private readonly fetcher: AuthContextValue['authorizedFetch'], private readonly sessionId: number,
@@ -35,7 +36,7 @@ export class PresenceCoordinator {
     private readonly clock = () => performance.now()) {}
   private publish(state: PresenceState) { this.state = state; this.notify(state) }
   start() {
-    if (this.active) return
+    if (this.active || this.terminal) return
     this.active = true
     const generation = ++this.generation
     this.failures = 0
@@ -48,7 +49,8 @@ export class PresenceCoordinator {
     ++this.generation
     clearTimeout(this.timer); clearTimeout(this.stale)
     this.abort?.abort()
-    this.publish({ kind: 'unavailable', reason: 'ineligible' })
+    this.publish({ kind: 'unavailable', reason: this.terminal ?? 'ineligible' })
+    if (this.terminal) return // Forbidden/missing/unsupported endpoint: do not probe it with a leave.
     // Allocate now, before a new activation can issue its heartbeat. Never retry this leave.
     const sequence = next(this.identity, this.sessionId)
     void putPresence(this.fetcher, this.sessionId, this.identity.uuid, sequence, false, AbortSignal.timeout(12000)).catch(() => {})
@@ -74,18 +76,25 @@ export class PresenceCoordinator {
       if (!this.active || generation !== this.generation) return
       clearTimeout(this.stale)
       const status = (error as { status?: number }).status
+      const reason: PresenceState['reason'] = status === 401 ? 'unauthorized' : status === 403 ? 'denied' :
+        status === 404 ? 'ambiguous' : status === 405 ? 'unsupported' : 'transient'
+      if (status === 403 || status === 404 || status === 405) this.terminal = reason
+      // Invalidate any prior accepted count before the optional 404 diagnostic read.
+      this.publish({ kind: 'unavailable', reason })
       if (status === 404) {
         // One bounded authenticated read distinguishes a missing session from an older backend.
         // A failed/ambiguous read does not turn absence into zero or keep probing with PUTs.
-        let reason: PresenceState['reason'] = 'ambiguous'
+        let diagnostic: PresenceState['reason'] = 'ambiguous'
         try {
           const read = await this.fetcher(`/s/${this.sessionId}.json`, { signal: AbortSignal.timeout(12000) })
-          reason = read.ok ? 'unsupported' : read.status === 404 ? 'missing-session' : 'ambiguous'
+          diagnostic = read.ok ? 'unsupported' : read.status === 404 ? 'missing-session' : 'ambiguous'
         } catch { /* Expiry remains authoritative in authorizedFetch; no credential fallback. */ }
-        if (this.active && generation === this.generation) this.publish({ kind: 'unavailable', reason })
+        if (this.active && generation === this.generation && this.terminal) {
+          this.terminal = diagnostic
+          this.publish({ kind: 'unavailable', reason: diagnostic })
+        }
         return
       }
-      this.publish({ kind: 'unavailable', reason: status === 401 ? 'unauthorized' : status === 403 ? 'denied' : status === 405 ? 'unsupported' : 'transient' })
       if (status === 401 || status === 403 || status === 405) return
       this.failures++
       this.timer = setTimeout(() => { void this.sample(generation) }, Math.min(30000, 2000 * 2 ** Math.min(this.failures - 1, 4)))

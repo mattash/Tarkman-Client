@@ -894,7 +894,9 @@ and serially at the server interval (normally 10 seconds). A higher-sequence bes
 transitions. The server lease lasts 45 seconds and is authoritative for crashes; local
 status becomes unavailable after two missed intervals or immediately on failure/offline.
 Requests time out after 12 seconds. Transient failures retry with bounded backoff, while
-403/404/405 stop until route re-entry; 401 ends the current sign-in. HTTP 200 without
+403/404/405 latch for this route lifetime, suppressing both further registration and
+leave PUTs even across foreground/network churn until explicit route re-entry; 401
+ends the current sign-in. HTTP 200 without
 acknowledgment of the newly sent sequence and self presence does not renew local status.
 On a presence 404, one bounded authenticated session read distinguishes a missing session
 (404) from an older backend with a valid session (200); failed reads remain ambiguous.
