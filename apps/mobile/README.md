@@ -360,7 +360,7 @@ Links to the reading routes on `web.tarkman.app` open this app when it is
 installed, and stay in the browser when it is not. Two things make that work,
 and both must agree:
 
-- `apps/web/public/.well-known/apple-app-site-association` claims
+- `apps/mobile/public/.well-known/apple-app-site-association` claims
   `/sessions/*/parts` and `/sessions/*/part/*` for `FHF872BAQR.app.tarkman`, and
   `vercel.json` serves it as `application/json`. The church display routes are
   deliberately **not** claimed: a kiosk link must keep opening in the browser.

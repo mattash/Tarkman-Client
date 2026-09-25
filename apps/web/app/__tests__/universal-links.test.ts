@@ -6,7 +6,7 @@ const root = resolve(__dirname, '../../../..')
 const read = (path: string) => JSON.parse(readFileSync(resolve(root, path), 'utf8'))
 
 describe('apple-app-site-association', () => {
-  const association = read('apps/web/public/.well-known/apple-app-site-association')
+  const association = read('apps/mobile/public/.well-known/apple-app-site-association')
   const details = association.applinks.details
   const patterns: string[] = details.flatMap((detail: { components: { '/': string }[] }) => detail.components.map(component => component['/']))
 
