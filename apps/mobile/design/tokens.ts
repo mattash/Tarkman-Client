@@ -14,6 +14,8 @@ function nativePalette(theme: FoundationTheme, dark: boolean) {
     onPrimary: theme.actionOnPrimary,
     secondary: theme.selection,
     onSecondary: theme.onSelection,
+    explanationSurface: dark ? theme.surfaceRaised : theme.selection,
+    explanationBorder: dark ? '#9E7085' : '#8F5F75',
     menuIconSurface: dark ? '#624457' : '#E8D3DE',
     border: theme.borderControl,
     divider: theme.borderDivider,

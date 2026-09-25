@@ -38,14 +38,15 @@ export function AppButton({ children, variant = 'primary', loading = false, icon
   const fontReady = useReadingFont()
   const inactive = disabled || loading
   const metrics = sizes[size]
+  const explanationCue = variant === 'quiet' && iconOnly && badgeCount !== undefined
   // Card and form buttons take the 1pt control outline from the designs; toolbar buttons keep their 2pt divider.
   const outlined = size !== 'regular' || variant === 'secondaryDestructive'
   // A 1pt outline grows to the 2pt focus ring without moving the label.
-  const borderWidth = variant === 'text' || variant === 'row' ? 0 : outlined && !focused ? 1.5 : 2
+  const borderWidth = variant === 'text' || variant === 'row' ? 0 : (outlined || explanationCue && highlighted) && !focused ? 1.5 : 2
   // Only filled actions invert on press; quiet/secondary controls get a neutral tint and keep their text color.
   const strongPress = pressed && (variant === 'primary' || variant === 'destructive')
   const backgroundColor = inactive ? variant === 'text' ? 'transparent' : colors.disabled
-    : strongPress ? colors.pressed : pressed || (focused && (variant === 'text' || variant === 'row')) ? colors.pressedSubtle : selected || highlighted ? colors.secondary
+    : strongPress ? colors.pressed : pressed || (focused && (variant === 'text' || variant === 'row')) ? colors.pressedSubtle : explanationCue && highlighted ? colors.explanationSurface : selected || highlighted ? colors.secondary
     : variant === 'quiet' || variant === 'text' ? 'transparent' : variant === 'secondary' || variant === 'secondaryDestructive' ? colors.surface
     : variant === 'row' ? colors.secondary : colors[variant]
   const color = inactive ? colors.onDisabled : strongPress ? colors.onPrimary : pressed ? colors.foreground : selected || highlighted ? colors.onSecondary
@@ -61,21 +62,24 @@ export function AppButton({ children, variant = 'primary', loading = false, icon
       paddingVertical: spacing.sm + 2 - borderWidth, paddingHorizontal: (iconOnly && fontReady ? spacing.sm : variant === 'text' ? spacing.xs : spacing.md) + 2 - borderWidth,
       borderRadius: rounded ? 999 : variant === 'row' ? radii.action : metrics.radius, backgroundColor, borderWidth,
       borderColor: focused ? (variant === 'primary' ? colors.onPrimary : variant === 'destructive' ? colors.onDestructive : colors.focus)
-        : variant === 'secondaryDestructive' ? colors.destructive : variant === 'secondary' && !selected ? (outlined ? colors.border : colors.divider) : 'transparent',
+        : variant === 'secondaryDestructive' ? colors.destructive : explanationCue && highlighted ? colors.explanationBorder : variant === 'secondary' && !selected ? (outlined ? colors.border : colors.divider) : 'transparent',
       flexDirection: 'row', gap: spacing.sm, alignItems: 'center', justifyContent: variant === 'row' ? 'flex-start' : 'center' }}>
-    {badgeCount !== undefined && Number.isInteger(badgeCount) && badgeCount > 0 && <View testID={props.testID ? `${props.testID}-badge` : undefined}
-      pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
-      {...(Platform.OS === 'web' ? { 'aria-hidden': true } : {})}
-      style={{ position: 'absolute', right: 0, top: 0, width: spacing.lg, height: spacing.page, borderRadius: radii.control,
-        backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-      <AppText variant="caption" accessible={false} maxFontSizeMultiplier={1.2} style={{ color: colors.onPrimary, ...typography.tab }}>{badgeCount > 9 ? '9+' : String(badgeCount)}</AppText>
-    </View>}
     {loading && <ActivityIndicator color={color} accessible={false} />}
     {icon && !loading && (variant === 'row' ? <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.menuIconSurface }}>
       <AppIcon name={icon} size={18} color={colors.primary} />
-    </View> : badgeCount !== undefined && iconOnly ? <View style={{ transform: [{ translateX: -spacing.xs }, { translateY: spacing.sm }] }}><AppIcon name={icon} color={color} size={22} /></View> : <AppIcon name={icon} color={color} size={variant === 'text' ? 18 : 22} />)}
+    </View> : <AppIcon name={icon} color={color} size={variant === 'text' ? 18 : 22} />)}
     {(!iconOnly || !fontReady) && <AppText variant={metrics.label} maxFontSizeMultiplier={labelMaxFontSizeMultiplier} numberOfLines={labelNumberOfLines}
       style={{ color, textAlign: variant === 'row' ? 'left' : 'center', flexGrow: variant === 'row' ? 1 : 0 }}>{children}</AppText>}
+    {badgeCount !== undefined && Number.isInteger(badgeCount) && badgeCount > 0 && <View testID={props.testID ? `${props.testID}-badge` : undefined}
+      pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+      {...(Platform.OS === 'web' ? { 'aria-hidden': true } : {})}
+      style={{ position: 'absolute', right: explanationCue ? spacing.xs : 0, top: explanationCue ? spacing.sm : 0,
+        width: explanationCue ? badgeCount > 9 ? 21 : 17 : spacing.lg, height: explanationCue ? 17 : spacing.page,
+        borderRadius: explanationCue ? 9 : radii.control, backgroundColor: colors.primary,
+        alignItems: 'center', justifyContent: 'center' }}>
+      <AppText variant="caption" accessible={false} maxFontSizeMultiplier={1.2}
+        style={{ color: colors.onPrimary, ...typography.tab, fontSize: explanationCue ? 10 : typography.tab.fontSize }}>{badgeCount > 9 ? '9+' : String(badgeCount)}</AppText>
+    </View>}
     {variant === 'row' && <AppIcon name="next" color={colors.primary} size={18} />}
   </Pressable>
 }
