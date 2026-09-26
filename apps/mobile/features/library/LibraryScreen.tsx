@@ -62,7 +62,7 @@ export function LibraryScreen() {
     {offline && <AppText accessibilityLiveRegion="polite">{t('library.offline')}</AppText>}
     {!state.ready && <AppText>{t('library.loading')}</AppText>}
     {state.corrupt > 0 && <AppText accessibilityRole="alert">{t('library.corrupt')}</AppText>}
-    {state.error && !offline && <AppText accessibilityRole="alert">{t(state.error === 'network' || state.error === 'invalid' ? 'library.checkError' : `library.errors.${state.error}`)}</AppText>}
+    {state.error && !(offline && state.error === 'network') && <AppText accessibilityRole="alert">{t(state.error === 'network' ? 'library.checkError' : `library.errors.${state.error}`)}</AppText>}
     {filter === 'saved' && state.ready && !savedItems.length ? <>
       <AppText variant="heading">{t('library.noDownloads')}</AppText>
       <AppText tone="muted">{t('library.emptySavedHelp')}</AppText>
@@ -77,7 +77,10 @@ export function LibraryScreen() {
         {entry.description && <AppText tone="muted">{entry.description}</AppText>}
         {saved && <AppText variant="caption" tone="muted">{t(updated ? 'library.updateAvailable' : 'library.downloaded')}</AppText>}
         {busy && <AppText accessibilityLiveRegion="polite">{t(requested ? `library.${status}` : 'library.loading')}</AppText>}
-        {failure && <AppText accessibilityRole="alert">{t(requested && ['network', 'invalid', 'size'].includes(failure) ? saved ? 'library.updateError' : 'library.saveError' : `library.errors.${failure}`)}</AppText>}
+        {failure && <AppText accessibilityRole="alert">
+          {t(requested && failure === 'network' ? saved ? 'library.updateError' : 'library.saveError' : requested && failure === 'invalid' ? 'library.saveInvalidError' : `library.errors.${failure}`)}
+          {saved && (failure === 'size' || failure === 'invalid') ? ` ${t('library.savedCopyAvailable')}` : ''}
+        </AppText>}
         {saved ? <>
           <AppButton onPress={() => open(entry.id)}>{t('library.readSaved')}</AppButton>
           {(updated || failure) && <AppButton variant="secondary" loading={busy} disabled={!controller.enabled || offline || !state.ready} onPress={() => request([entry.id])}>{t('library.update')}</AppButton>}

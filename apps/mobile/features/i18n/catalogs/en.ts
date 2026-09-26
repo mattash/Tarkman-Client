@@ -7,6 +7,8 @@ export const en = {
     "removeSelection": "Remove selection",
     "noMatches": "No services match your search.",
     "updateError": "Couldn’t update right now. You can keep reading the version you have.",
+    "saveInvalidError": "This service couldn’t be saved because its content could not be validated.",
+    "savedCopyAvailable": "You can still choose Open to read your saved version.",
     "saveError": "This service didn’t finish saving. Try again when you’re connected.",
     "checkError": "Couldn’t check for new texts right now. Everything you’ve saved is still here.",
     "offline": "You’re offline. Saved services are ready; the rest will appear when you’re connected.",

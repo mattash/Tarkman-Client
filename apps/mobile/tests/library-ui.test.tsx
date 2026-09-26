@@ -157,6 +157,67 @@ it('save failures are humane and saved-only filtering excludes incomplete saves'
   await fireEvent.press(screen.getByRole('radio', { name: 'Show services, Saved' }))
   expect(screen.getByText('Nothing saved yet.')).toBeTruthy()
 })
+it.each<['size' | 'invalid', string]>([
+  ['size', 'This service is too large to save.'],
+  ['invalid', 'This service couldn’t be saved because its content could not be validated.'],
+])('%s save failures explain the reason without suggesting reconnection', async (code, message) => {
+  const { wrapper, controller, api } = setup()
+  api.bundle.mockRejectedValue(new LibraryError(code))
+  await render(<LibraryScreen />, { wrapper })
+  await waitFor(() => expect(screen.getByText('Save for offline')).toBeTruthy())
+  await fireEvent.press(screen.getByText('Save for offline'))
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(message))
+  expect(screen.getByRole('alert')).not.toHaveTextContent(/connected|saved version/)
+  expect(screen.queryByText('Open')).toBeNull()
+  expect(controller.getSnapshot().items[0].bundle).toBeNull()
+})
+it.each<['size' | 'invalid', string]>([
+  ['size', 'This service is too large to save.'],
+  ['invalid', 'This service couldn’t be saved because its content could not be validated.'],
+])('%s update failures explain the reason and keep the saved revision available through Open', async (code, message) => {
+  const { wrapper, controller, api, store } = setup()
+  await controller.request(701, true)
+  api.catalog.mockResolvedValue({ ...parseCatalog(catalog), liturgies: parseCatalog(catalog).liturgies.map(item => ({ ...item, revision: changed.revision })) })
+  await render(<LibraryScreen />, { wrapper })
+  await waitFor(() => expect(screen.getByText('Updated text available')).toBeTruthy())
+  api.bundle.mockRejectedValue(new LibraryError(code))
+  await fireEvent.press(screen.getByText('Update'))
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(`${message} You can still choose Open to read your saved version.`))
+  expect(screen.getByRole('alert')).not.toHaveTextContent(/connected/)
+  expect(screen.getByRole('button', { name: 'Open' }).props.accessibilityState.disabled).toBe(false)
+  await fireEvent.press(screen.getByText('Open'))
+  expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/liturgies/[id]', params: { id: '701', environment: 'test', origin: 'library' } })
+  expect(controller.getSnapshot().items[0].bundle?.revision).toBe(fixture.revision)
+  expect(store.rows.get('test:701')?.bundle?.revision).toBe(fixture.revision)
+})
+it('failed removal remains visible offline and retains the saved copy', async () => {
+  const { wrapper, controller, store } = setup()
+  await controller.request(701, true)
+  store.remove = async () => { throw new Error('SQLite removal failed') }
+  mockNetwork.isConnected = false
+  try {
+    await render(<LibraryScreen />, { wrapper })
+    await waitFor(() => expect(controller.getSnapshot().checkedAt).not.toBeNull())
+    expect(screen.getByText(/You’re offline/)).toBeTruthy()
+    await fireEvent.press(screen.getByText('Remove saved service'))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t save changes on this device. Please try again.'))
+    expect(screen.getByText('Open')).toBeTruthy()
+    expect(controller.getSnapshot().items[0].bundle?.revision).toBe(fixture.revision)
+  } finally { mockNetwork.isConnected = true }
+})
+it.each(['network', 'invalid', 'size', 'capacity', 'unsupported', 'cancelled', 'unavailable', 'storage'] as const)('known offline only suppresses a redundant network check error: %s', async code => {
+  const { wrapper, controller, api } = setup()
+  api.catalog.mockRejectedValue(new LibraryError(code))
+  mockNetwork.isConnected = false
+  try {
+    await render(<LibraryScreen />, { wrapper })
+    await waitFor(() => expect(controller.getSnapshot().error).toBe(code))
+    expect(screen.getByText(/You’re offline/)).toBeTruthy()
+    expect(screen.queryByText(/Couldn’t check for new texts right now/)).toBeNull()
+    if (code === 'network') expect(screen.queryByRole('alert')).toBeNull()
+    else expect(screen.getByRole('alert')).toBeTruthy()
+  } finally { mockNetwork.isConnected = true }
+})
 it('known offline disables online actions but keeps saved reading available', async () => {
   const { wrapper, controller } = setup()
   await controller.request(701, true)
