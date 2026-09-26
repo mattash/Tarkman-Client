@@ -8,3 +8,7 @@ It is kept only until the post-cutover rollback window closes, then removed.
 Do not add features here; fix bugs in `apps/mobile`. The root scripts for this
 app are `npm run legacy-web:*`, and the repository [README](../../README.md) and
 `CLAUDE.md` still document it under their legacy sections.
+
+When removing this app, also delete the `build` job in
+`.github/workflows/node.js.yml`, which still builds and tests it, and update the
+branch protection rule that requires its `build (22.x)` and `build (24.x)` checks.
