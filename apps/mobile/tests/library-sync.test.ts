@@ -278,7 +278,9 @@ it('a catalog check stopped by cancellation shows no error, and an error never s
   const { library, api } = setup()
   await library.refresh()
   const aborted = deferred<never>()
-  api.catalog.mockImplementationOnce((signal: AbortSignal) => { signal.addEventListener('abort', () => aborted.resolve(undefined as never)); return aborted.promise.then(() => { throw new Error('AbortError') }) })
+  // setup() types catalog without parameters; the coordinator still passes its AbortSignal.
+  const abortable = (signal: AbortSignal) => { signal.addEventListener('abort', () => aborted.resolve(undefined as never)); return aborted.promise.then(() => { throw new Error('AbortError') }) }
+  api.catalog.mockImplementationOnce(abortable as never)
   const stopped = library.refresh(true); await ticks(); library.cancel(); await stopped
   expect(library.getSnapshot().error).toBeUndefined()
   api.catalog.mockRejectedValueOnce(new LibraryError('network')); await library.refresh(true)
