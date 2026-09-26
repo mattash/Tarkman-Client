@@ -58,7 +58,8 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     if (started !== cancellation) return
     if (!api || disposed) { emit({ error: 'unsupported' }); return }
     if (metadata) return metadata
-    if (!force && !more && state.checkedAt !== null && now() - state.checkedAt < 300000) return
+    // An outstanding error is never cached: the next ordinary check retries and clears it.
+    if (!force && !more && state.error === undefined && state.checkedAt !== null && now() - state.checkedAt < 300000) return
     const controller = new AbortController(); catalogController = controller
     emit({ loading: true, error: undefined })
     metadata = (async () => {
@@ -83,7 +84,8 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
         emit({ catalog: [...new Map(catalog.map(i => [i.id, i])).values()], recommended: recommended.sort((a, b) => a.recommended_rank! - b.recommended_rank!), next: page.next_after_id,
           checkedAt: now(), loading: false })
       } catch (error) {
-        if (!disposed) emit({ loading: false, error: error instanceof LibraryError ? error.code : 'network' })
+        // A check stopped by cancel() (e.g. backgrounding) failed nothing the reader asked for.
+        if (!disposed) emit({ loading: false, error: controller.signal.aborted ? undefined : error instanceof LibraryError ? error.code : 'network' })
       } finally { metadata = undefined; catalogController = undefined }
     })()
     return metadata
@@ -122,8 +124,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
           if (!valid()) throw new LibraryError('cancelled')
           if (bundle === null) {
             // A 304 is useful only for the intact revision actually held on disk now.
-            const disk = await store.hydrate(environment)
-            const intact = disk.items.find(i => i.id === id)?.bundle
+            const intact = await store.intact(environment, id)
             if (!valid()) throw new LibraryError('cancelled')
             if (old && intact?.revision === old.revision) {
               if (save) { await store.verify(environment, id, now()); if (!valid()) throw new LibraryError('cancelled'); emit({ items: state.items.map(i => i.id === id ? { ...i, verifiedAt: now() } : i) }) }
@@ -142,7 +143,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
           }
           if (!valid()) throw new LibraryError('cancelled')
           if (save && old?.revision === bundle.revision) {
-            const intact = (await store.hydrate(environment)).items.find(i => i.id === id)?.bundle
+            const intact = await store.intact(environment, id)
             if (!valid()) throw new LibraryError('cancelled')
             if (intact?.revision === old.revision) {
               await store.verify(environment, id, now())
@@ -161,7 +162,13 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
           emit({ revoked: state.revoked.filter(i => i !== id) })
         } catch (error) {
           const code = error instanceof LibraryError ? error.code : 'network'
-          if (valid() && code === 'unavailable') { try { await remove(id, true) } catch { /* Storage error is visible. */ } }
+          if (valid() && code === 'unavailable') {
+            try { await remove(id, true) } catch {
+              // remove() invalidated this job before its delete failed, so the emit below is skipped:
+              // settle the kept copy here or it stays busy until restart. The storage error is visible.
+              emit({ status: { ...state.status, [id]: 'failed' }, failures: { ...state.failures, [id]: code } })
+            }
+          }
           if (!disposed && epoch(id) === generation) emit({ status: { ...state.status, [id]: code === 'cancelled' ? 'cancelled' : 'failed' }, failures: { ...state.failures, [id]: code } })
         } finally {
           if (valid()) {

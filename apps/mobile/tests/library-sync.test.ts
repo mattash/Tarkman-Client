@@ -251,3 +251,41 @@ it.each([699, 700])('rejects nonadvancing catalog continuation %s without retryi
   expect(library.getSnapshot()).toMatchObject({ catalog: [], next: 700, error: 'invalid', loading: false, checkedAt: 1000 })
   expect(fetcher).toHaveBeenCalledTimes(3)
 })
+
+it('checks only the requested copy when a revision is unchanged, never rehydrating every saved bundle', async () => {
+  const { library, api, store } = setup()
+  await library.request(701, true)
+  const hydrate = jest.spyOn(store, 'hydrate'), intact = jest.spyOn(store, 'intact')
+  api.bundle.mockResolvedValueOnce(null); await library.request(701, true)
+  api.bundle.mockResolvedValueOnce(bundle); await library.request(701, true)
+  expect(hydrate).not.toHaveBeenCalled()
+  expect(intact.mock.calls).toEqual([['test', 701], ['test', 701]])
+  expect(library.getSnapshot().status[701]).toBeUndefined()
+})
+
+it('settles a withdrawn liturgy whose saved copy cannot be deleted instead of leaving it busy', async () => {
+  const { library, api, store } = setup()
+  await library.request(701, true)
+  store.remove = async () => { throw new LibraryError('storage') }
+  api.bundle.mockRejectedValueOnce(new LibraryError('unavailable')); await library.request(701, true)
+  const snapshot = library.getSnapshot()
+  expect(snapshot.status[701]).toBe('failed'); expect(snapshot.failures[701]).toBe('unavailable')
+  expect(snapshot.storageError).toBe('storage'); expect(snapshot.revoked).toEqual([701])
+  expect(snapshot.items[0].bundle).toEqual(bundle)
+})
+
+it('a catalog check stopped by cancellation shows no error, and an error never survives the next ordinary check', async () => {
+  const { library, api } = setup()
+  await library.refresh()
+  const aborted = deferred<never>()
+  api.catalog.mockImplementationOnce((signal: AbortSignal) => { signal.addEventListener('abort', () => aborted.resolve(undefined as never)); return aborted.promise.then(() => { throw new Error('AbortError') }) })
+  const stopped = library.refresh(true); await ticks(); library.cancel(); await stopped
+  expect(library.getSnapshot().error).toBeUndefined()
+  api.catalog.mockRejectedValueOnce(new LibraryError('network')); await library.refresh(true)
+  expect(library.getSnapshot().error).toBe('network')
+  const calls = api.catalog.mock.calls.length
+  await library.refresh()
+  expect(api.catalog.mock.calls.length).toBeGreaterThan(calls); expect(library.getSnapshot().error).toBeUndefined()
+  await library.refresh()
+  expect(api.catalog.mock.calls.length).toBe(calls + 2)
+})

@@ -8,6 +8,7 @@ export const libraryStore: LibraryRepository = {
     try { dismissed = typeof localStorage !== 'undefined' && localStorage.getItem(`library.dismissed:${environment}`) === '1' } catch { /* Optional preference. */ }
     return { items: [], dismissed, corrupt: 0 }
   },
+  async intact() { return null },
   async intent() { throw new LibraryError('unsupported') },
   async commit() { throw new LibraryError('unsupported') },
   async verify() { throw new LibraryError('unsupported') },

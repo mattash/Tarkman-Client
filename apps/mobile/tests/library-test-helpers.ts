@@ -5,6 +5,7 @@ export function memoryStore(): LibraryRepository & { fail: boolean; rows: Map<st
   return {
     rows, fail: false, durable: true,
     async hydrate(environment) { return { items: [...rows].filter(([k]) => k.startsWith(`${environment}:`)).map(([, v]) => v), dismissed: dismissed.has(environment), corrupt: 0 } },
+    async intact(env, id) { return rows.get(`${env}:${id}`)?.bundle ?? null },
     async intent(env, id) { const key = `${env}:${id}`; if (!rows.has(key)) rows.set(key, { id, bundle: null, savedAt: null, verifiedAt: null }) },
     async commit(env, input, now, valid) {
       if (this.fail) throw new LibraryError('storage')

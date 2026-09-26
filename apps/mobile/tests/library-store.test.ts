@@ -159,3 +159,15 @@ it('rejects a checksum copied across environments and an oversized stored payloa
   expect((await store.hydrate('a')).items[0].bundle).toEqual(parseBundle(fixture))
   d.db.close()
 })
+
+it('reads one intact copy without hydrating, treating missing, pending and corrupt rows as absent', async () => {
+  const d = database(), store = createNativeStore(d.open)
+  await store.commit('a', parseBundle(fixture), 1, () => true); await store.intent('a', 702)
+  d.db.prepare('INSERT INTO library_items(environment,id,payload,bytes) VALUES (?,?,?,?)').run('a', 999, '{broken', 7)
+  expect(await store.intact('a', 701)).toEqual(parseBundle(fixture))
+  expect(await store.intact('a', 702)).toBeNull()
+  expect(await store.intact('a', 999)).toBeNull()
+  expect(await store.intact('b', 701)).toBeNull()
+  expect(await web.intact('a', 701)).toBeNull()
+  d.db.close()
+})

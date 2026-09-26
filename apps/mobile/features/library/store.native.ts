@@ -61,6 +61,12 @@ export function createNativeStore(open: () => Promise<SQLiteDatabase> = () => op
       const preference = await d.getFirstAsync<{ dismissed: number }>('SELECT dismissed FROM library_preferences WHERE environment=?', environment)
       return { items, dismissed: preference?.dismissed === 1, corrupt }
     }),
+    intact: (environment, id) => run(async d => {
+      const row = await d.getFirstAsync<StoredRow>(selectRow, MAX_BUNDLE_BYTES, environment, id)
+      if (!row) return null
+      // Corruption means "no intact copy", as in hydrate; only storage failures propagate.
+      try { return (await readRow(environment, row)).bundle } catch { return null }
+    }),
     intent: (environment, id) => run(async d => { await d.runAsync('INSERT OR IGNORE INTO library_items(environment,id) VALUES (?,?)', environment, id) }),
     commit: (environment, input, now, valid) => run(async d => {
       const bundle = parseBundle(input), payload = JSON.stringify(bundle), bytes = byteLength(payload)
