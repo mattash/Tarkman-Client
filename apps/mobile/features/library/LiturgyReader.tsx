@@ -31,7 +31,9 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
   const { preferences, setLanguage, setReadingSize, setAppearance } = usePreferences()
   const { colors } = useTheme()
   const [sheet, setSheet] = useState<'language' | 'preferences' | null>(null)
-  const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null)
+  const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null), explanationOpener = useRef<View>(null)
+  // With no live position, the book explains the part at the top of the screen.
+  const [topKey, setTopKey] = useState<string | undefined>(undefined)
   // Focus returns to whichever button opened the sheet; `sheet` is already null when the modal restores it.
   const opener = useRef<View>(null)
   const openSheet = (next: 'language' | 'preferences') => { opener.current = (next === 'language' ? languageOpener : preferencesOpener).current; setSheet(next) }
@@ -62,6 +64,8 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
     text: { en: p.requires_session_context && p.text.en === null ? t('library.sessionContext') : p.text.en,
       ru: p.text.ru, grabar: p.text.grabar, translit: p.text.translit },
   })) ?? [], [snapshot, t])
+  const occurrence = (part: LivePart | undefined) => part ? snapshot?.bundle.parts.find(p => p.liturgy_part_id === part.liturgyPartId) ?? null : null
+  const topPart = occurrence(parts.find(p => p.key === topKey) ?? parts[0])
   const back = () => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/live') }
   const backLabel = t(router.canGoBack() ? origin === 'library' ? 'library.back' : 'onboarding.back' : 'servicesList.title')
   const reading = !!snapshot && sameEnvironment && !revoked
@@ -75,6 +79,8 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
         accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === preferences.language)!.label })}>
         {languageAbbreviations[preferences.language]}
       </AppButton>
+      <AppButton testID="library-reader-explain" ref={explanationOpener} variant="quiet" icon="explanation" iconOnly disabled={!topPart}
+        highlighted={!!topPart?.explanations.length} onPress={() => { opener.current = explanationOpener.current; setDetail(topPart) }}>{t('library.details')}</AppButton>
       <AppButton testID="library-reader-preferences" ref={preferencesOpener} variant="quiet" icon="preferences" iconOnly
         onPress={() => openSheet('preferences')}>{t('readingPreferences.title')}</AppButton>
     </View>}
@@ -95,8 +101,8 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
     {toolbar}
     <PartList parts={parts} following={false} language={preferences.language} selectedLanguages={preferences.selectedLanguages}
       readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={details}
-      open={part => setDetail(snapshot.bundle.parts.find(p => p.liturgy_part_id === part.liturgyPartId) ?? null)} />
-    <AppModal visible={detail !== null} onDismiss={() => setDetail(null)} title={t('library.details')}>
+      topPartChanged={part => setTopKey(part?.key)} open={part => { opener.current = null; setDetail(occurrence(part)) }} />
+    <AppModal visible={detail !== null} onDismiss={() => setDetail(null)} openerRef={opener} title={t('library.details')}>
       {detail && <>
         <PartHeading role={detail.role} posture={detail.posture} />
         {detail.page !== null && <AppText variant="caption" tone="muted">{t('library.page', { page: detail.page })}</AppText>}

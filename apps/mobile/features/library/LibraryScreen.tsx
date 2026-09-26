@@ -1,20 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
-import { AppState, ScrollView } from 'react-native'
+import { AppState, ScrollView, View } from 'react-native'
 import { getNetworkStateAsync, addNetworkStateListener } from 'expo-network'
 import { router, useFocusEffect } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
+import { AppIcon } from '../../components/AppIcon'
 import { AppText } from '../../components/AppText'
 import { AppModal } from '../../components/AppModal'
 import { TextField } from '../../components/TextField'
 import { SegmentedControl } from '../../components/SegmentedControl'
 import { Card as Surface } from '../../components/Surface'
 import { spacing } from '../../design/tokens'
+import { useTheme } from '../../design/ThemeProvider'
 import { useI18n } from '../i18n'
 import { useLibrary } from './LibraryProvider'
 import type { CatalogItem } from './contracts'
 
 export function LibraryScreen() {
-  const { controller, state } = useLibrary(), { t } = useI18n()
+  const { controller, state } = useLibrary(), { t } = useI18n(), { colors } = useTheme()
   const [query, setQuery] = useState(''), [filter, setFilter] = useState<'all' | 'saved'>('all')
   const [choosing, setChoosing] = useState(false), [selected, setSelected] = useState<number[]>([])
   const [warning, setWarning] = useState<number[] | null>(null)
@@ -53,10 +55,9 @@ export function LibraryScreen() {
   const active = state.items.some(item => ['downloading', 'updating'].includes(state.status[item.id]))
   return <ScrollView testID="library-screen" contentContainerStyle={{ padding: spacing.page, gap: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center' }}>
     <AppText variant="title" accessibilityRole="header">{t('library.title')}</AppText>
-    <AppText tone="muted">{t('library.supporting')}</AppText>
+    <AppText tone="muted">{t(controller.durable ? 'library.supporting' : 'library.web')}</AppText>
     {!controller.enabled && <AppText accessibilityRole="alert">{t('library.unavailable')}</AppText>}
-    {!controller.durable && <AppText tone="muted">{t('library.web')}</AppText>}
-    <TextField label={t('library.search')} placeholder={t('library.search')} value={query} onChangeText={setQuery} />
+    <TextField label={t('library.search')} placeholder={t('library.search')} value={query} onChangeText={setQuery} leading={<AppIcon name="search" color={colors.muted} />} />
     <SegmentedControl<'all' | 'saved'> label={t('library.filter')} value={filter} onChange={setFilter} options={[{ value: 'all', label: t('library.all') }, { value: 'saved', label: t('library.savedFilter') }]} />
     {filter === 'all' && <AppText variant="heading" accessibilityRole="header">{t('library.browse')}</AppText>}
     {offline && <AppText accessibilityLiveRegion="polite">{t('library.offline')}</AppText>}
@@ -76,7 +77,6 @@ export function LibraryScreen() {
       return <Surface key={entry.id} style={{ padding: spacing.md, gap: spacing.sm }}>
         <AppText variant="heading">{entry.name}</AppText>
         {entry.description && <AppText tone="muted">{entry.description}</AppText>}
-        {saved && <AppText variant="caption" tone="muted">{t(updated ? 'library.updateAvailable' : 'library.downloaded')}</AppText>}
         {busy && <AppText accessibilityLiveRegion="polite">{t(requested ? `library.${status}` : 'library.loading')}</AppText>}
         {failure && <AppText accessibilityRole="alert">
           {t(requested && failure === 'network' ? saved ? 'library.updateError' : 'library.saveError' : requested && failure === 'invalid' ? 'library.saveInvalidError' : `library.errors.${failure}`)}
@@ -84,12 +84,16 @@ export function LibraryScreen() {
         </AppText>}
         {saved ? <>
           <AppButton onPress={() => open(entry.id)}>{t('library.readSaved')}</AppButton>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <AppIcon name="selected" color={colors.primary} size={18} />
+            <AppText variant="caption" tone="muted">{t(updated ? 'library.updateAvailable' : 'library.downloaded')}</AppText>
+          </View>
           {(updated || failure) && <AppButton variant="secondary" loading={busy} disabled={!controller.enabled || offline || !state.ready} onPress={() => request([entry.id])}>{t('library.update')}</AppButton>}
           <AppButton variant="quiet" onPress={() => { void controller.remove(entry.id).catch(() => undefined) }}>{t('library.remove')}</AppButton>
         </> : <>
-          {controller.durable && <AppButton loading={busy} disabled={!controller.enabled || offline || !state.ready} onPress={() => request([entry.id])}>{t('library.download')}</AppButton>}
-          <AppButton variant={controller.durable ? 'quiet' : 'primary'} disabled={!controller.enabled || offline || !state.ready || busy} accessibilityHint={t('library.internetRequired')} onPress={() => open(entry.id)}>{t('library.readOnline')}</AppButton>
+          <AppButton disabled={!controller.enabled || offline || !state.ready || busy} accessibilityHint={t('library.internetRequired')} onPress={() => open(entry.id)}>{t('library.readSaved')}</AppButton>
           <AppText variant="caption" tone="muted">{t('library.internetRequired')}</AppText>
+          {controller.durable && <AppButton variant="secondary" loading={busy} disabled={!controller.enabled || offline || !state.ready} onPress={() => request([entry.id])}>{t('library.download')}</AppButton>}
           {requested && <AppButton variant="quiet" onPress={() => { void controller.remove(entry.id).catch(() => undefined) }}>{t('library.removeSelection')}</AppButton>}
         </>}
       </Surface>

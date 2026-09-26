@@ -89,10 +89,11 @@ it('Settings requires confirmation and keeps preference and saved-service stores
 it('web offers online reading without a Download action or offline promise', async () => {
   const { wrapper } = setup(false)
   await render(<LibraryScreen />, { wrapper })
-  await waitFor(() => expect(screen.getByText('Read now')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('Open')).toBeTruthy())
   expect(screen.queryByText('Save for offline')).toBeNull()
   expect(screen.queryByText('Choose services to save')).toBeNull()
-  expect(screen.getByText(/Read here with an internet connection/)).toBeTruthy()
+  expect(screen.getByText('Read services here. To pray without a connection, save them in the app.')).toBeTruthy()
+  expect(screen.queryByText(/even without a connection/)).toBeNull()
 })
 
 it('Services preserves live scan/session navigation and isolates its error from Library', async () => {
@@ -117,7 +118,8 @@ it('All/Saved filters one list, keeps service names, and offers a single primary
   const { wrapper, controller } = setup()
   await render(<LibraryScreen />, { wrapper })
   await waitFor(() => expect(screen.getByText('Save for offline')).toBeTruthy())
-  expect(screen.getByText('Keep the services you pray with close at hand.')).toBeTruthy()
+  expect(screen.getByText('Keep the services you pray with close at hand, even without a connection.')).toBeTruthy()
+  expect(screen.queryByText(/Read services here/)).toBeNull()
   expect(screen.getByPlaceholderText('Search services')).toBeTruthy()
   expect(screen.queryByText('Not downloaded')).toBeNull()
   expect(screen.queryByText('Stop saving')).toBeNull()
@@ -169,7 +171,7 @@ it.each<['size' | 'invalid', string]>([
   await fireEvent.press(screen.getByText('Save for offline'))
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(message))
   expect(screen.getByRole('alert')).not.toHaveTextContent(/connected|saved version/)
-  expect(screen.queryByText('Open')).toBeNull()
+  expect(screen.queryByText('Saved on this device')).toBeNull()
   expect(controller.getSnapshot().items[0].bundle).toBeNull()
 })
 it.each<['size' | 'invalid', string]>([
@@ -284,7 +286,7 @@ it('Stop saving is contextual and cancels an active save', async () => {
   expect(screen.queryByText('Stop saving')).toBeNull()
   expect(controller.getSnapshot().items.some(item => item.bundle)).toBe(false)
 })
-it('Read now uses the reader without saving and Library back returns to its actual origin', async () => {
+it('Open on an unsaved service uses the reader without saving and Library back returns to its actual origin', async () => {
   const { wrapper, controller, api } = setup()
   await render(<LiturgyReader />, { wrapper })
   await waitFor(() => expect(screen.getByTestId('library-reader')).toBeTruthy())
@@ -311,13 +313,13 @@ it('successful empty All is distinct from an unavailable capability', async () =
   await waitFor(() => expect(screen.getByText('No services are available yet.')).toBeTruthy())
   expect(screen.queryByText('Nothing saved yet.')).toBeNull()
 })
-it('known offline disables Read now and Save for offline for an unsaved service', async () => {
+it('known offline disables Open and Save for offline for an unsaved service', async () => {
   mockNetwork.isConnected = false
   try {
     const { wrapper } = setup()
     await render(<LibraryScreen />, { wrapper })
     await waitFor(() => expect(screen.getByText('Save for offline')).toBeTruthy())
-    expect(screen.getByRole('button', { name: 'Read now' }).props.accessibilityState.disabled).toBe(true)
+    expect(screen.getByRole('button', { name: 'Open' }).props.accessibilityState.disabled).toBe(true)
     expect(screen.getByRole('button', { name: 'Save for offline' }).props.accessibilityState.disabled).toBe(true)
   } finally { mockNetwork.isConnected = true }
 })
@@ -343,4 +345,28 @@ it('reader keeps its controls in a pinned toolbar outside the scrolling text, li
   expect(screen.getByTestId('library-reader-details')).toHaveTextContent(/Saved on this device/)
   await fireEvent.press(screen.getByTestId('library-reader-preferences'))
   expect(screen.getByRole('radio', { name: 'Reading size, Larger' })).toBeTruthy()
+})
+
+it('each service offers one Open, with a status line saying whether it is saved or needs a connection', async () => {
+  const { wrapper } = setup()
+  await render(<LibraryScreen />, { wrapper })
+  await waitFor(() => expect(screen.getAllByText('Open').length).toBeGreaterThan(0))
+  expect(screen.queryByText('Read now')).toBeNull()
+  expect(screen.getAllByText('Needs an internet connection').length).toBe(screen.getAllByText('Open').length)
+  await fireEvent.press(screen.getAllByText('Save for offline')[0])
+  await waitFor(() => expect(screen.getByText('Saved on this device')).toBeTruthy())
+  expect(screen.queryAllByText('Needs an internet connection').length).toBe(screen.getAllByText('Open').length - 1)
+})
+
+it('the reader toolbar explains the part at the top of the screen, like the live reader explains the current part', async () => {
+  const { wrapper, controller } = setup()
+  await controller.request(701, true)
+  await render(<LiturgyReader />, { wrapper })
+  await waitFor(() => expect(screen.getByTestId('library-reader')).toBeTruthy())
+  const book = screen.getByTestId('library-reader-explain')
+  expect(book.props.accessibilityState.disabled).toBeFalsy()
+  await fireEvent.press(book)
+  // The book button's label and the sheet title.
+  expect(screen.getAllByText('About this part')).toHaveLength(2)
+  expect(screen.getByText('There are no explanations for this part yet.')).toBeTruthy()
 })
