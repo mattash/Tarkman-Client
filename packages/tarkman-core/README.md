@@ -21,10 +21,10 @@ an iOS export verifies Metro/Hermes bundling, not an Xcode build or device launc
 Run repository verification from the repository root, in this order:
 
 ```sh
-npm ci --prefix apps/web
-npm ls --all --prefix apps/web
 npm ci --prefix apps/mobile
 npm ls --all --prefix apps/mobile
+npm ci --prefix apps/web   # deprecated app, still checked as a consumer
+npm ls --all --prefix apps/web
 npm run core:test
 npm run core:check-consumers
 ```

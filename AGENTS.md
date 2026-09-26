@@ -2,18 +2,29 @@
 
 ## Repository layout
 
-- `apps/web` contains the existing Vite client. All web-relative paths below
+- `apps/mobile` is the production client: a managed Expo Router app that ships
+  to iOS and, as an Expo web export, to `web.tarkman.app` (cutover #177, PR #194).
+  Root `npm run dev/build/test/typecheck/lint` run in `apps/mobile`; the
+  `mobile:*` scripts remain. See `apps/mobile/README.md`. Run all EAS commands
+  only in `apps/mobile`.
+- `apps/web` is the **deprecated** Vite client. It no longer deploys anywhere; it is
+  kept only until the post-cutover rollback window closes, then removed. Do not add
+  features to it. Its scripts are `npm run legacy-web:*`. Everything below the
+  "Legacy apps/web" heading describes this app, and web-relative paths there
   (`app/`, `public/`, `.env*`, configs and `dist/`) are relative to `apps/web`.
-- Root `npm run dev/build/preview/typecheck/test/test:coverage/test:integration`
-  scripts run in `apps/web` via explicit npm prefixes. Each app has its own
-  `package-lock.json` and `node_modules`; there are no npm workspaces or root
-  dependencies. Install with `npm ci --prefix apps/web` and, separately,
-  `npm ci --prefix apps/mobile` from the repository root.
-  Run direct `npx vitest` commands from `apps/web`.
-- `apps/mobile` is a separate managed Expo Router app. Use `npm run mobile` from
-  root; see `apps/mobile/README.md`. Run all EAS commands only in `apps/mobile`.
-  EAS is intentionally unlinked until the owner chooses an Expo account/team.
-- Vercel uses repository root configuration and serves `apps/web/dist`.
+- Each app has its own `package-lock.json` and `node_modules`; there are no npm
+  workspaces or root dependencies. Install with `npm ci --prefix apps/mobile`
+  (and `npm ci --prefix apps/web` only when touching the legacy app).
+- Vercel uses the repository root `vercel.json`: it builds `npm run mobile:export`,
+  serves `apps/mobile/dist`, and redirects legacy Vite paths
+  (`/sessions/:id/explanations`, `/login`, `/dashboard`, `/part/:id`).
+  Tests for the redirects and the Apple association file live in
+  `apps/mobile/tests/universal-links.test.ts`.
+
+# Legacy apps/web (deprecated)
+
+The sections below describe the deprecated Vite client in `apps/web`. Run the
+commands below from `apps/web`, or use `npm run legacy-web:*` from the root.
 
 ## Project Structure & Module Organization
 - Frontend lives in `app/` (React + TypeScript). Key folders: `components/` (UI atoms/organisms), `routes/` (TanStack Router tree compiled into `routeTree.gen.ts`), `queries/` (API wrappers + TanStack Query keys), `contexts/` and `hooks/` for shared state and utilities, `types/` for shared interfaces.

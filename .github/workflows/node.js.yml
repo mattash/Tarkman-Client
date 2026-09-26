@@ -15,6 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Legacy Vite app (apps/web, deprecated since #177). The job keeps the name "build"
+  # because branch protection requires its checks; remove it together with apps/web.
   build:
 
     runs-on: ubuntu-latest
