@@ -12,7 +12,7 @@ import { useServices } from './ServicesProvider'
 import { useI18n } from '../i18n'
 
 /** Every public service listed for today, whatever the reader's location. */
-export function ServicesList() {
+export function ServicesList({ embedded = false }: { embedded?: boolean }) {
   const { state, retry } = useServices()
   const { colors } = useTheme()
   const { fontScale } = useWindowDimensions()
@@ -22,9 +22,9 @@ export function ServicesList() {
   return <ScrollView testID="services-list" contentContainerStyle={{ paddingTop: 6, paddingHorizontal: page, paddingBottom: spacing.lg }}
     refreshControl={<RefreshControl refreshing={pulling && state.refreshing} tintColor={colors.muted} onRefresh={() => { setPulling(true); retry() }} />}>
     <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center' }}>
-      <ScreenHeader title={t('servicesList.title')}>
+      {!embedded && <ScreenHeader title={t('servicesList.title')}>
         <HeaderIconButton icon="scan" label={t('common.scanACode')} onPress={() => router.push('/scan')} />
-      </ScreenHeader>
+      </ScreenHeader>}
       <AppText tone="muted" style={{ marginTop: 18 }}>{t('servicesList.intro')}</AppText>
       {(state.loading || state.error) && <View style={{ marginTop: 18 }}><ReaderStatus state={state} retry={retry} /></View>}
       {!state.loading && !state.error && state.services.length === 0 && <AppText tone="muted" style={{ marginTop: 18 }}>{t('today.nothingLive')}</AppText>}

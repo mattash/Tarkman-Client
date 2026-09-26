@@ -1,4 +1,5 @@
 import '../global.css'
+import { LibraryProvider } from '../features/library/LibraryProvider'
 import { OnboardingNavigation } from '../features/onboarding/OnboardingNavigation'
 import { OnboardingProvider } from '../features/onboarding/OnboardingProvider'
 import * as Sentry from '@sentry/react-native'
@@ -23,7 +24,7 @@ function RootLayout() {
 }
 function PreferenceTheme() {
   const { preferences } = usePreferences()
-  return <I18nProvider preference={preferences.interfaceLanguage}><ThemeProvider appearance={preferences.appearance}><OnboardingProvider><RootContent /></OnboardingProvider></ThemeProvider></I18nProvider>
+  return <I18nProvider preference={preferences.interfaceLanguage}><ThemeProvider appearance={preferences.appearance}><OnboardingProvider><LibraryProvider><RootContent /></LibraryProvider></OnboardingProvider></ThemeProvider></I18nProvider>
 }
 function RootContent() {
   const { colors, scheme } = useTheme()

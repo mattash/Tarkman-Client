@@ -1,0 +1,13 @@
+{
+  "bundle.json": "7bd423ccba93a5eb0bcbdefdaeef87106a63da3227449c16a88a328ce96bff99",
+  "bundle_too_large.json": "22392b1de19c075ad8d985fdec9dafcbfbbe3fe138ad07f48643fa861ba72a74",
+  "bundle_updated.json": "22581de0a3376078306a594424d314a234a38934b710298316effc04584055e7",
+  "catalog.json": "7351b4f3fc7253bbad921fa90d2da17ae75ceb4b66e7e9768dbe7fc768ebe3d9",
+  "catalog_empty.json": "9a8e2fbc183d9a9f63c7e2f3e85598d517fff34f8bad7b135460ffa677952c31",
+  "catalog_page.json": "ed0245f02aa8ba60d1cb876cf04816a4a9f471d22e1840adf0014c0213d7d991",
+  "catalog_recommended.json": "7351b4f3fc7253bbad921fa90d2da17ae75ceb4b66e7e9768dbe7fc768ebe3d9",
+  "invalid_public_liturgy_content.json": "8a7c566bde254ea74e262b466a776b2a78e5185ed99ac8490e02febf24085863",
+  "invalid_public_liturgy_parameters.json": "93371fbbe615270cff5c9b743479cbd6640bfeecd624fb6f789a06833c042df1",
+  "not_modified.json": "9179fae15bcbd083a9d60e45afc8667377da56f448528996829dde26bfa4cd03",
+  "public_liturgy_unavailable.json": "1018614c8d04a3992bd44c9ef662ed727ee713d49212110ee332cc0cfee1b428"
+}

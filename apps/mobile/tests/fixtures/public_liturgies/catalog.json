@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "liturgies": [
+    {
+      "id": 701,
+      "name": "Synthetic service",
+      "description": null,
+      "revision": "9717a46f8c3240847650a86b214fc52056cccfd31402b7dfdcc655c5aa02df88",
+      "languages_available": [
+        "en",
+        "grabar",
+        "translit"
+      ],
+      "occurrence_count": 3,
+      "download_bytes": 1143,
+      "recommended_rank": 1
+    }
+  ],
+  "next_after_id": null
+}

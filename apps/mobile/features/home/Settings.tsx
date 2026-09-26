@@ -1,3 +1,4 @@
+import { LibraryManagement } from '../library/LibraryManagement'
 import { Help } from '../onboarding/Help'
 import { useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
@@ -86,6 +87,7 @@ export function Settings() {
         </>}
       </Section>
 
+      <LibraryManagement />
       <Help />
 
       {showsTestErrorControls(observabilityConfig(), __DEV__) && <Section title={t('settings.errorReporting')}>
