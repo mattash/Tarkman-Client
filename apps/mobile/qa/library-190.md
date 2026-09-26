@@ -115,3 +115,42 @@ DNS, and writes to the worktree's shared Git metadata. The fixture server theref
 cannot be served here; independent UI Operator must run it in the authorized QA
 runtime. Existing `display-qr-fixture.test.ts` also needs a local HTTP/WebSocket
 listener. See `library-190-verification.md` for actual command results.
+
+## Focused Prayer Library refinement — PR #195
+
+Capture the final committed source HEAD (`git rev-parse HEAD`) and build identity
+in every evidence record. Earlier screenshots and the existing verification
+manifest do not verify this refinement. No screenshots or device rendering are
+claimed by this implementation. Use the loopback fixture commands above from
+`apps/mobile`; do not change env files or capability defaults. The web export
+without flags must remain gated. No backend fixtures have changed.
+
+Use Services → Prayer Library, or Settings → Prayer Library. The bottom tabs
+remain Today / Services / Settings. The library title is Prayer Library, with
+“Keep the services you pray with close at hand.” Search services filters both
+All and Saved. Saved means a complete saved copy, not a pending request. Native
+steps below require the existing iOS development client; browser memory cannot
+produce durable saved/update evidence.
+
+| Capture | Reproducible steps and expected result |
+| --- | --- |
+| Unsaved | Run `--scenario=normal`, remove previous saved services using Settings confirmation, then open All. Native offers Save for offline as primary, Read now as secondary with Internet connection required. Web offers Read now, with the app-only saving explanation. No negative badge. |
+| Empty Saved | With no saved copies, select Saved. Capture “Nothing saved yet.” and the anywhere/even-without-a-signal explanation. Pending or failed saves must not enter this filter. |
+| Saved | On native, Save for offline for Synthetic service. It appears once in All and once when switching to Saved, with Available offline and primary Open. No per-row Update until a newer text is known or a retry is needed. Search its existing name; clear the search. |
+| Updated | Save under normal, stop server, restart with `--scenario=updated` at the same port. Tap Check for new texts. Capture Updated text available, primary Open and secondary Update. Update explicitly; confirm normal Available offline state afterward. |
+| Offline | Save first on native, disconnect the simulator/device network (stopping only the HTTP server simulates an error, not known offline). Capture the offline sentence, enabled Open and disabled network actions. Read the saved copy. For cold start use the embedded local fixture build instructions above, not Metro. |
+| Check error | Keep Library mounted, restart server with `--scenario=error`, tap Check for new texts. Capture the check error and a still-usable Open. |
+| Save error | Start normal with an unsaved row visible, switch server to error without refreshing, then Save for offline. Capture the save error. Saved stays empty. |
+| Update error | Keep a saved row, switch server to error, tap Update saved services. Capture the update error; Open still reads the saved revision. |
+| Stop saving | Load normal rows, switch server to slow, tap Save for offline. Capture Saving, disabled/busy save action and Stop saving. Stop; the control disappears. Late completion must not create a saved copy. |
+| Empty All | Remove saved services, restart with `--scenario=empty`, tap Check for new texts. Capture No services are available yet. A failed check must never masquerade as a successful empty result. |
+| Reader | Open a saved service and separately Read now for an unsaved one. Read now must not add to Saved. Capture the existing English / Русский / Գրաբար / Translit labels for the selected language set, in the same order as the live reader (default: English / Գրաբար / Translit). Change selection through Settings to include Русский. Inspect occurrence 903 and its details for the calendar-variable explanation. |
+| Return path | Enter from Services → Prayer Library and open a reader; Prayer Library back returns to the Library segment. Repeat through Settings → Prayer Library; back returns to that standalone Library, then Settings. A directly opened reader with no history labels its fallback Services. |
+
+Use 390×844, 768×1024, and 1440×900 browser viewports for applicable states;
+use a named iOS simulator/device for saved states. Capture light/dark, large
+Dynamic Type, wrapping, focus/VoiceOver order, 48pt actions and sheet dismissal.
+Existing short descriptions and service names come directly from supplied data;
+the frozen synthetic fixture has no description. Do not invent a sacramental
+service description to fill that space. Human English/Russian copy review and
+native durability/accessibility acceptance remain pending until recorded by QA.

@@ -18,11 +18,11 @@ import type { Bundle, Occurrence } from './contracts'
 
 /** Pins one complete immutable revision. No SessionReader/controller/presence dependency. */
 export function LiturgyReader() {
-  const params = useLocalSearchParams<{ id: string; environment: string }>()
+  const params = useLocalSearchParams<{ id: string; environment: string; origin?: string }>()
   const { controller } = useLibrary()
-  return <Reader key={`${params.environment}:${params.id}:${controller.environment}`} id={Number(params.id)} environment={params.environment} />
+  return <Reader key={`${params.environment}:${params.id}:${controller.environment}`} id={Number(params.id)} environment={params.environment} origin={params.origin} />
 }
-function Reader({ id, environment }: { id: number; environment: string }) {
+function Reader({ id, environment, origin }: { id: number; environment: string; origin?: string }) {
   const { controller, state } = useLibrary(), { t } = useI18n()
   const { preferences, setLanguage, setReadingSize } = usePreferences()
   const sameEnvironment = environment === controller.environment
@@ -53,13 +53,13 @@ function Reader({ id, environment }: { id: number; environment: string }) {
       ru: p.text.ru, grabar: p.text.grabar, translit: p.text.translit },
   })) ?? [], [snapshot, t])
   const header = <View style={{ padding: spacing.page, gap: spacing.sm }}>
-    <BackButton onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/live') }}>{t('library.back')}</BackButton>
+    <BackButton onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/live') }}>{t(router.canGoBack() ? origin === 'library' ? 'library.back' : 'onboarding.back' : 'servicesList.title')}</BackButton>
     {snapshot && sameEnvironment && !revoked && <>
       <AppText variant="heading">{snapshot.bundle.liturgy.name}</AppText>
-      <AppText tone="muted">{snapshot.savedAt && stored?.bundle ? t('library.saved', { date: new Date(snapshot.savedAt).toLocaleDateString() }) : t('library.online')}</AppText>
+      <AppText tone="muted">{snapshot.savedAt && stored?.bundle ? t('library.downloaded') : t('library.online')}</AppText>
       {stored?.bundle && stored.bundle.revision !== snapshot.bundle.revision && <AppText accessibilityLiveRegion="polite">{t('library.reopen')}</AppText>}
       <SegmentedControl label={t('settings.readingLanguages')} value={preferences.language} onChange={setLanguage}
-        options={sampleLanguages.filter(l => preferences.selectedLanguages.includes(l.value))} />
+        options={preferences.selectedLanguages.map(value => sampleLanguages.find(language => language.value === value)!)} />
       <SegmentedControl label={t('readingPreferences.readingSize')} value={preferences.readingSize} onChange={setReadingSize}
         options={[{ value: 'standard', label: t('readingPreferences.standard') }, { value: 'larger', label: t('readingPreferences.larger') }, { value: 'extraLarge', label: t('readingPreferences.extraLarge') }]} />
       <AppButton variant="quiet" onPress={() => router.push('/(tabs)/settings')}>{t('settings.readingLanguages')}</AppButton>
