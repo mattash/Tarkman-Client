@@ -2,6 +2,8 @@ import { it, expect, jest } from '@jest/globals'
 import fixture from './fixtures/public_liturgies/bundle.json'
 import changed from './fixtures/public_liturgies/bundle_updated.json'
 import catalog from './fixtures/public_liturgies/catalog.json'
+import omitted from './fixtures/public_liturgies/catalog_content_error_page.json'
+import { createApi } from '../features/library/api'
 import { createLibrary } from '../features/library/downloadCoordinator'
 import { LibraryError, parseBundle, parseCatalog, type Bundle } from '../features/library/contracts'
 import { memoryStore, deferred, ticks } from './library-test-helpers'
@@ -143,4 +145,59 @@ it('removal during the durable follow-up prevents late persistence', async () =>
   expect(api.bundle).toHaveBeenCalledTimes(2)
   await library.remove(701); saved.resolve(bundle); await download
   expect((await store.hydrate('test')).items).toEqual([])
+})
+
+function catalogResponse(body: unknown): Response {
+  return { status: 200, ok: true, headers: { get: () => null }, text: async () => JSON.stringify(body) } as unknown as Response
+}
+it('continues omitted-content pages exactly once for recommendations and explicit catalog pagination', async () => {
+  const fetcher = jest.fn<typeof fetch>().mockImplementation(async url => {
+    const after = new URL(String(url)).searchParams.get('after_id')
+    return catalogResponse(after === null ? omitted : catalog)
+  })
+  const store = memoryStore(), library = createLibrary('test', createApi('https://example.test', fetcher), store, () => 1000)
+  await library.refresh()
+  expect(library.getSnapshot()).toMatchObject({ catalog: [], next: 700, recommended: parseCatalog(catalog).liturgies, loading: false, error: undefined })
+  await library.refresh(false, true)
+  await library.refresh()
+  expect(library.getSnapshot()).toMatchObject({ catalog: parseCatalog(catalog).liturgies, next: null, loading: false, error: undefined })
+  expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+    'https://example.test/public/liturgies.json?limit=100',
+    'https://example.test/public/liturgies.json?limit=100&recommended=true',
+    'https://example.test/public/liturgies.json?limit=100&after_id=700&recommended=true',
+    'https://example.test/public/liturgies.json?limit=100&after_id=700',
+  ])
+  expect(store.rows.size).toBe(0)
+})
+it.each([699, 700])('stops recommendation pagination on nonadvancing omitted-content cursor %s', async next => {
+  const fetcher = jest.fn<typeof fetch>()
+    .mockResolvedValueOnce(catalogResponse(catalog))
+    .mockResolvedValueOnce(catalogResponse(omitted))
+    .mockResolvedValue(catalogResponse({ ...omitted, next_after_id: next }))
+  const library = createLibrary('test', createApi('https://example.test', fetcher), memoryStore())
+  await library.refresh()
+  expect(library.getSnapshot()).toMatchObject({ error: 'invalid', loading: false, checkedAt: null })
+  expect(fetcher).toHaveBeenCalledTimes(3)
+})
+it('retains the 100-page recommendation cap even for advancing empty pages', async () => {
+  const fetcher = jest.fn<typeof fetch>().mockImplementation(async url => {
+    const params = new URL(String(url)).searchParams
+    return catalogResponse(params.has('recommended') ? { ...omitted, next_after_id: Number(params.get('after_id')) + 1 } : catalog)
+  })
+  const library = createLibrary('test', createApi('https://example.test', fetcher), memoryStore())
+  await library.refresh()
+  expect(library.getSnapshot()).toMatchObject({ error: 'capacity', loading: false, checkedAt: null })
+  expect(fetcher).toHaveBeenCalledTimes(101)
+})
+
+it.each([699, 700])('rejects nonadvancing catalog continuation %s without retrying or losing its cursor', async next => {
+  const fetcher = jest.fn<typeof fetch>()
+    .mockResolvedValueOnce(catalogResponse(omitted))
+    .mockResolvedValueOnce(catalogResponse(catalog))
+    .mockResolvedValue(catalogResponse({ ...omitted, next_after_id: next }))
+  const library = createLibrary('test', createApi('https://example.test', fetcher), memoryStore(), () => 1000)
+  await library.refresh()
+  await library.refresh(false, true)
+  expect(library.getSnapshot()).toMatchObject({ catalog: [], next: 700, error: 'invalid', loading: false, checkedAt: 1000 })
+  expect(fetcher).toHaveBeenCalledTimes(3)
 })

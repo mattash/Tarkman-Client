@@ -5,6 +5,8 @@ import { join } from 'node:path'
 import bundle from './fixtures/public_liturgies/bundle.json'
 import updated from './fixtures/public_liturgies/bundle_updated.json'
 import catalog from './fixtures/public_liturgies/catalog.json'
+import omitted from './fixtures/public_liturgies/catalog_content_error_page.json'
+import page from './fixtures/public_liturgies/catalog_page.json'
 import { byteLength, isUnavailable, parseBundle, parseCatalog } from '../features/library/contracts'
 import { libraryConfiguration } from '../features/library/config'
 import { createApi } from '../features/library/api'
@@ -96,4 +98,34 @@ it('embedded fixture builds can test native offline cold start without opening r
   expect(libraryConfiguration(false, '1', 'http://127.0.0.1:4190', '1').api).not.toBeNull()
   expect(libraryConfiguration(false, '1', 'https://example.test', '1').api).toBeNull()
   expect(libraryConfiguration(false, '1', 'http://127.0.0.1:4190', undefined).api).toBeNull()
+})
+
+it('accepts omitted-content continuations only when they advance, retaining nonempty cursor rules', () => {
+  expect(parseCatalog(omitted)).toEqual(omitted)
+  expect(parseCatalog(omitted, 699)).toEqual(omitted)
+  expect(parseCatalog({ ...omitted, next_after_id: null }, 700).next_after_id).toBeNull()
+  expect(parseCatalog(page, 700).next_after_id).toBe(701)
+  expect(() => parseCatalog({ ...page, next_after_id: 702 }, 700)).toThrow()
+  expect(() => parseCatalog({ ...catalog, liturgies: Array(101).fill(catalog.liturgies[0]) })).toThrow()
+})
+it.each([0, -1, 699, 700, 700.5, Number.MAX_SAFE_INTEGER + 1, '701', undefined])('rejects invalid or nonadvancing empty-page cursor %s', next => {
+  expect(() => parseCatalog({ ...omitted, next_after_id: next }, 700)).toThrow()
+})
+it('API carries an omitted-content cursor to later valid content exactly once', async () => {
+  const fetcher = jest.fn<typeof fetch>().mockResolvedValueOnce(response(200, omitted)).mockResolvedValueOnce(response(200, catalog))
+  const api = createApi('https://example.test', fetcher), signal = new AbortController().signal
+  const first = await api.catalog(signal)
+  expect(first.liturgies).toEqual([])
+  expect(first.next_after_id).toBe(700)
+  const second = await api.catalog(signal, first.next_after_id!)
+  expect(second).toEqual(parseCatalog(catalog))
+  expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+    'https://example.test/public/liturgies.json?limit=100',
+    'https://example.test/public/liturgies.json?limit=100&after_id=700',
+  ])
+})
+it.each([699, 700])('API rejects an empty-page cursor %s that does not advance past the request', async next => {
+  const fetcher = jest.fn<typeof fetch>().mockResolvedValue(response(200, { ...omitted, next_after_id: next }))
+  await expect(createApi('https://example.test', fetcher).catalog(new AbortController().signal, 700)).rejects.toMatchObject({ code: 'invalid' })
+  expect(fetcher).toHaveBeenCalledTimes(1)
 })

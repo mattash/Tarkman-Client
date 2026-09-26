@@ -57,7 +57,8 @@ export function parseCatalog(value: unknown, after = 0): Catalog {
       occurrence_count: integer(row.occurrence_count, 0, 20000), download_bytes: nullableInteger(row.download_bytes), recommended_rank: nullableInteger(row.recommended_rank) }
   })
   const next = nullableInteger(v.next_after_id)
-  if (next !== null && (!liturgies.length || next !== previous || next <= after)) return fail()
+  // Omitted invalid/oversized candidates may leave an empty page with a continuation.
+  if (next !== null && (next <= after || (liturgies.length > 0 && next !== previous))) return fail()
   return { schema_version: 1, liturgies, next_after_id: next }
 }
 export function parseBundle(value: unknown, expectedId?: number): Bundle {

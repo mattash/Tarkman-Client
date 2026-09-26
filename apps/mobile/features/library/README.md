@@ -16,7 +16,11 @@ fixtures were not yet committed at that HEAD. The exact copied bytes are pinned 
 as containing these fixtures. The contract test checks all hashes; run with
 `LIBRARY_BACKEND_FIXTURES=/path/to/Tarkman/spec/fixtures/public_liturgies` to additionally
 compare every byte to the actual backend checkout. Update both sides deliberately
-when the backend contract changes. Synthetic ID 701 is never a production starter.
+when the backend contract changes. `catalog_content_error_page.json` was copied
+from the same backend working tree on 2026-09-26 for backend PR #453: an omitted
+invalid/oversized candidate can leave an empty page with a positive safe integer
+cursor strictly greater than the requested `after_id`. Nonempty continuation
+cursors must still equal the last returned ID. Synthetic ID 701 is never a production starter.
 
 Anonymous GET only, `credentials: omit`, no auth headers or redirects:
 
