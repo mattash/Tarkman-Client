@@ -1,15 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
 import { AppModal } from '../../components/AppModal'
 import { BackButton } from '../../components/BackButton'
+import { LanguageSelectionRow } from '../../components/LanguageSelectionRow'
 import { LiturgyText } from '../../components/LiturgyText'
+import { PartHeading } from '../../components/PartHeading'
 import { SegmentedControl } from '../../components/SegmentedControl'
 import { spacing } from '../../design/tokens'
+import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
 import { PartList } from '../live/PartList'
+import { languageAbbreviations } from '../live/languageAbbreviations'
 import type { LivePart } from '../live/contracts'
 import { usePreferences } from '../preferences/PreferencesProvider'
 import { useI18n } from '../i18n'
@@ -24,7 +28,13 @@ export function LiturgyReader() {
 }
 function Reader({ id, environment, origin }: { id: number; environment: string; origin?: string }) {
   const { controller, state } = useLibrary(), { t } = useI18n()
-  const { preferences, setLanguage, setReadingSize } = usePreferences()
+  const { preferences, setLanguage, setReadingSize, setAppearance } = usePreferences()
+  const { colors } = useTheme()
+  const [sheet, setSheet] = useState<'language' | 'preferences' | null>(null)
+  const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null)
+  // Focus returns to whichever button opened the sheet; `sheet` is already null when the modal restores it.
+  const opener = useRef<View>(null)
+  const openSheet = (next: 'language' | 'preferences') => { opener.current = (next === 'language' ? languageOpener : preferencesOpener).current; setSheet(next) }
   const sameEnvironment = environment === controller.environment
   const validId = Number.isSafeInteger(id) && id > 0
   const [attempt, setAttempt] = useState(0)
@@ -52,39 +62,66 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
     text: { en: p.requires_session_context && p.text.en === null ? t('library.sessionContext') : p.text.en,
       ru: p.text.ru, grabar: p.text.grabar, translit: p.text.translit },
   })) ?? [], [snapshot, t])
-  const header = <View style={{ padding: spacing.page, gap: spacing.sm }}>
-    <BackButton onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/live') }}>{t(router.canGoBack() ? origin === 'library' ? 'library.back' : 'onboarding.back' : 'servicesList.title')}</BackButton>
-    {snapshot && sameEnvironment && !revoked && <>
-      <AppText variant="heading">{snapshot.bundle.liturgy.name}</AppText>
-      <AppText tone="muted">{snapshot.savedAt && stored?.bundle ? t('library.downloaded') : t('library.online')}</AppText>
-      {stored?.bundle && stored.bundle.revision !== snapshot.bundle.revision && <AppText accessibilityLiveRegion="polite">{t('library.reopen')}</AppText>}
-      <SegmentedControl label={t('settings.readingLanguages')} value={preferences.language} onChange={setLanguage}
-        options={preferences.selectedLanguages.map(value => sampleLanguages.find(language => language.value === value)!)} />
-      <SegmentedControl label={t('readingPreferences.readingSize')} value={preferences.readingSize} onChange={setReadingSize}
-        options={[{ value: 'standard', label: t('readingPreferences.standard') }, { value: 'larger', label: t('readingPreferences.larger') }, { value: 'extraLarge', label: t('readingPreferences.extraLarge') }]} />
-      <AppButton variant="quiet" onPress={() => router.push('/(tabs)/settings')}>{t('settings.readingLanguages')}</AppButton>
-    </>}
+  const back = () => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/live') }
+  const backLabel = t(router.canGoBack() ? origin === 'library' ? 'library.back' : 'onboarding.back' : 'servicesList.title')
+  const reading = !!snapshot && sameEnvironment && !revoked
+  // The live reader's toolbar: one pinned row, so the text scrolls beneath it instead of below a block of controls.
+  const toolbar = <View testID="library-reader-toolbar" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
+    <BackButton iconOnly onPress={back}>{backLabel}</BackButton>
+    {reading && <View style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', gap: spacing.xs, marginLeft: 'auto', flexShrink: 0 }}>
+      <AppButton testID="library-reader-language" ref={languageOpener} variant="quiet" selected icon="languages" labelMaxFontSizeMultiplier={1.3} labelNumberOfLines={1}
+        onPress={() => openSheet('language')}
+        accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === preferences.language)!.label })}>
+        {languageAbbreviations[preferences.language]}
+      </AppButton>
+      <AppButton testID="library-reader-preferences" ref={preferencesOpener} variant="quiet" icon="preferences" iconOnly
+        onPress={() => openSheet('preferences')}>{t('readingPreferences.title')}</AppButton>
+    </View>}
   </View>
-  if (revoked || !sameEnvironment) return <View>{header}<AppText accessibilityRole="alert">{t('library.errors.unavailable')}</AppText></View>
-  if (!snapshot) return <View>{header}<AppText accessibilityRole={failed || !validId ? 'alert' : undefined}>{t(!validId ? 'library.errors.invalid' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading')}</AppText>
-    {failed && validId && <AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton>}
+  const details = reading ? <View testID="library-reader-details" style={{ paddingHorizontal: spacing.page, paddingBottom: spacing.md, gap: spacing.sm }}>
+    <AppText variant="heading">{snapshot.bundle.liturgy.name}</AppText>
+    {snapshot.savedAt && stored?.bundle && <AppText variant="caption" tone="muted">{t('library.downloaded')}</AppText>}
+    {stored?.bundle && stored.bundle.revision !== snapshot.bundle.revision && <AppText variant="caption" accessibilityLiveRegion="polite">{t('library.reopen')}</AppText>}
+  </View> : undefined
+  const message = (text: string, alert: boolean) => <View style={{ padding: spacing.page, gap: spacing.md }}>
+    <AppText accessibilityRole={alert ? 'alert' : undefined}>{text}</AppText>
+  </View>
+  if (revoked || !sameEnvironment) return <View>{toolbar}{message(t('library.errors.unavailable'), true)}</View>
+  if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), failed || !validId)}
+    {failed && validId && <View style={{ paddingHorizontal: spacing.page }}><AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton></View>}
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">
+    {toolbar}
     <PartList parts={parts} following={false} language={preferences.language} selectedLanguages={preferences.selectedLanguages}
-      readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={header}
+      readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={details}
       open={part => setDetail(snapshot.bundle.parts.find(p => p.liturgy_part_id === part.liturgyPartId) ?? null)} />
     <AppModal visible={detail !== null} onDismiss={() => setDetail(null)} title={t('library.details')}>
       {detail && <>
-        <AppText>{detail.role}</AppText>
-        {detail.posture && <AppText>{detail.posture}</AppText>}
-        <AppText>{detail.page === null ? t('library.unknownPage') : t('library.page', { page: detail.page })}</AppText>
-        {detail.requires_session_context && <AppText>{t('library.sessionContext')}</AppText>}
-        <LiturgyText text={detail.text[preferences.language]} language={preferences.language} readingSize={preferences.readingSize} />
-        {!detail.explanations.length && <AppText>{t('library.noExplanations')}</AppText>}
+        <PartHeading role={detail.role} posture={detail.posture} />
+        {detail.page !== null && <AppText variant="caption" tone="muted">{t('library.page', { page: detail.page })}</AppText>}
+        <LiturgyText text={detail.requires_session_context && detail.text[preferences.language] === null ? t('library.sessionContext') : detail.text[preferences.language]} language={preferences.language} readingSize={preferences.readingSize} />
+        {!detail.explanations.length && <AppText variant="explanation">{t('library.noExplanations')}</AppText>}
         {detail.explanations.map(e => <View key={e.id} style={{ gap: spacing.sm }}>
           <AppText variant="heading">{e.title}</AppText>
-          <LiturgyText text={e.description} language={preferences.language} readingSize={preferences.readingSize} />
+          <LiturgyText variant="explanation" text={e.description} blocks />
         </View>)}
+      </>}
+    </AppModal>
+    <AppModal visible={sheet !== null} onDismiss={() => setSheet(null)} openerRef={opener}
+      title={sheet === 'language' ? t('reader.readingLanguage') : t('readingPreferences.title')}>
+      {sheet === 'language' ? <>
+        {preferences.selectedLanguages.map(value => <LanguageSelectionRow key={value} language={value} label={sampleLanguages.find(l => l.value === value)!.label}
+          selected={value === preferences.language} onPress={() => { setLanguage(value); setSheet(null) }} />)}
+        <AppButton variant="quiet" icon="next" onPress={() => { setSheet(null); router.push('/(tabs)/settings') }}>{t('reader.chooseLanguages')}</AppButton>
+      </> : <>
+        <AppText variant="label">{t('readingPreferences.appearance')}</AppText>
+        <SegmentedControl label={t('readingPreferences.appearance')} value={preferences.appearance} onChange={setAppearance}
+          options={[{ value: 'system', label: t('readingPreferences.system') }, { value: 'light', label: t('readingPreferences.light') }, { value: 'dark', label: t('readingPreferences.dark') }]} />
+        <AppText variant="label" style={{ marginTop: spacing.md }}>{t('readingPreferences.readingSize')}</AppText>
+        <SegmentedControl label={t('readingPreferences.readingSize')} value={preferences.readingSize} onChange={setReadingSize}
+          options={[{ value: 'standard', label: t('readingPreferences.standard') }, { value: 'larger', label: t('readingPreferences.larger') }, { value: 'extraLarge', label: t('readingPreferences.extraLarge') }]} />
+        <AppText variant="caption" tone="muted">{t('readingPreferences.readingSizeHint')}</AppText>
       </>}
     </AppModal>
   </View>

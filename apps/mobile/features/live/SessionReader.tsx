@@ -27,12 +27,12 @@ import { ReaderStatusControl } from './ReaderStatusControl'
 import { lifecycle } from './lifecycle'
 import { useScreenKeepAwake } from '../keepAwake/useScreenKeepAwake'
 import { useI18n } from '../i18n'
+import { languageAbbreviations as abbreviations } from './languageAbbreviations'
 
 import { readerScopeKey } from './explanationCue'
 import { useExplanationCue } from './useExplanationCue'
 import { ExplanationSheetContent } from './ExplanationSheetContent'
 
-const abbreviations = { en: 'EN', ru: 'RU', grabar: 'Գրբ', translit: 'TR' } as const
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
   useScreenKeepAwake('tarkman-live-reader')
   const { state, retry, dispatch, saved } = useReader(endpoints, id)

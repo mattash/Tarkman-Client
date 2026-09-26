@@ -34,6 +34,7 @@ function setup(durable = true, preferenceStore = preferences) {
   const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider scheme="light"><PreferencesProvider store={preferenceStore}><LibraryProvider controller={controller}>{children}</LibraryProvider></PreferencesProvider></ThemeProvider>
   return { store, api, controller, wrapper }
 }
+const languageRows = () => screen.getAllByRole('button').map(node => node.props.accessibilityLabel).filter(label => ['English', 'Русский', 'Գրաբար', 'Translit'].includes(label))
 it('opening Library and starters transfers nothing; deselect/Skip persists and quiet re-entry remains', async () => {
   const { wrapper, api, controller } = setup(); await render(<LibraryScreen />, { wrapper })
   await waitFor(() => expect(screen.getByText('Choose services to save')).toBeTruthy())
@@ -71,11 +72,11 @@ it('manual reader pins saved revision, opens occurrence-owned explanations, and 
   expect(screen.getByText('A synthetic note.')).toBeTruthy()
   api.bundle.mockResolvedValue(parseBundle(changed)); await act(async () => { await controller.request(701, true) })
   expect(screen.getByText('A synthetic note.')).toBeTruthy()
-  expect(screen.getByText(/Updated copy available/)).toBeTruthy()
+  expect(screen.getByText(/A newer version has been saved/)).toBeTruthy()
   api.bundle.mockRejectedValue(new LibraryError('unavailable')); await act(async () => { await controller.request(701, true) })
   expect(screen.queryByTestId('library-reader')).toBeNull()
   expect(screen.queryByText('A synthetic note.')).toBeNull()
-  expect(screen.getByText(/no longer publicly available/)).toBeTruthy()
+  expect(screen.getByText('This service is no longer available.')).toBeTruthy()
 })
 it('Settings requires confirmation and keeps preference and saved-service stores outside library removal', async () => {
   const { wrapper, controller } = setup(); await controller.request(701, true)
@@ -126,7 +127,7 @@ it('All/Saved filters one list, keeps service names, and offers a single primary
   expect(screen.queryByText(fixture.liturgy.name)).toBeNull()
   await fireEvent.press(screen.getByRole('radio', { name: 'Show services, All' }))
   await fireEvent.press(screen.getByText('Save for offline'))
-  await waitFor(() => expect(screen.getByText('Available offline')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('Saved on this device')).toBeTruthy())
   expect(screen.getAllByText(fixture.liturgy.name)).toHaveLength(1)
   expect(screen.queryByText('Not downloaded')).toBeNull()
   expect(screen.getByText('Open')).toBeTruthy()
@@ -159,7 +160,7 @@ it('save failures are humane and saved-only filtering excludes incomplete saves'
 })
 it.each<['size' | 'invalid', string]>([
   ['size', 'This service is too large to save.'],
-  ['invalid', 'This service couldn’t be saved because its content could not be validated.'],
+  ['invalid', 'Part of this service didn’t come through correctly, so it wasn’t saved.'],
 ])('%s save failures explain the reason without suggesting reconnection', async (code, message) => {
   const { wrapper, controller, api } = setup()
   api.bundle.mockRejectedValue(new LibraryError(code))
@@ -173,7 +174,7 @@ it.each<['size' | 'invalid', string]>([
 })
 it.each<['size' | 'invalid', string]>([
   ['size', 'This service is too large to save.'],
-  ['invalid', 'This service couldn’t be saved because its content could not be validated.'],
+  ['invalid', 'Part of this service didn’t come through correctly, so it wasn’t saved.'],
 ])('%s update failures explain the reason and keep the saved revision available through Open', async (code, message) => {
   const { wrapper, controller, api, store } = setup()
   await controller.request(701, true)
@@ -264,8 +265,8 @@ it('reader preserves live language labels/order and explains calendar variables'
   await controller.request(701, true)
   await render(<LiturgyReader />, { wrapper })
   await waitFor(() => expect(screen.getByTestId('library-reader')).toBeTruthy())
-  const labels = screen.getAllByRole('radio').filter(node => node.props.accessibilityLabel.startsWith('Reading languages,')).map(node => node.props.accessibilityLabel)
-  expect(labels).toEqual(['Reading languages, English', 'Reading languages, Գրաբար', 'Reading languages, Translit'])
+  await fireEvent.press(screen.getByTestId('library-reader-language'))
+  expect(languageRows()).toEqual(['English', 'Գրաբար', 'Translit'])
   expect(screen.getAllByText('This part changes according to the church calendar.').length).toBeGreaterThan(0)
 })
 
@@ -325,6 +326,21 @@ it('reader reuses Русский and the live reader’s selected language order
   const { wrapper, controller } = setup(true, { ...preferences, get: async () => JSON.stringify({ language: 'ru', selectedLanguages: ['ru', 'grabar', 'translit'], readingSize: 'standard', appearance: 'system', interfaceLanguage: 'en' }) })
   await controller.request(701, true)
   await render(<LiturgyReader />, { wrapper })
-  await waitFor(() => expect(screen.getByRole('radio', { name: 'Reading languages, Русский' })).toBeTruthy())
-  expect(screen.getAllByRole('radio').filter(node => node.props.accessibilityLabel.startsWith('Reading languages,')).map(node => node.props.accessibilityLabel)).toEqual(['Reading languages, Русский', 'Reading languages, Գրաբար', 'Reading languages, Translit'])
+  await waitFor(() => expect(screen.getByTestId('library-reader-language')).toBeTruthy())
+  expect(screen.getByTestId('library-reader-language')).toHaveTextContent(/RU/)
+  await fireEvent.press(screen.getByTestId('library-reader-language'))
+  expect(languageRows()).toEqual(['Русский', 'Գրաբար', 'Translit'])
+})
+
+it('reader keeps its controls in a pinned toolbar outside the scrolling text, like the live reader', async () => {
+  const { wrapper, controller } = setup()
+  await controller.request(701, true)
+  await render(<LiturgyReader />, { wrapper })
+  await waitFor(() => expect(screen.getByTestId('library-reader')).toBeTruthy())
+  const toolbar = screen.getByTestId('library-reader-toolbar')
+  expect(toolbar).toHaveTextContent(/EN/)
+  expect(screen.getByTestId('library-reader-details')).not.toHaveTextContent(/English|Standard|Reading online/)
+  expect(screen.getByTestId('library-reader-details')).toHaveTextContent(/Saved on this device/)
+  await fireEvent.press(screen.getByTestId('library-reader-preferences'))
+  expect(screen.getByRole('radio', { name: 'Reading size, Larger' })).toBeTruthy()
 })
