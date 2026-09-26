@@ -6,13 +6,11 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "npm run dev --prefix apps/web --",
-    "build": "npm run build --prefix apps/web --",
-    "preview": "npm run preview --prefix apps/web --",
-    "test": "npm run test --prefix apps/web --",
-    "test:coverage": "npm run test:coverage --prefix apps/web --",
-    "test:integration": "npm run test:integration --prefix apps/web --",
-    "typecheck": "npm run typecheck --prefix apps/web --",
+    "dev": "npm run web --prefix apps/mobile --",
+    "build": "npm run export:web --prefix apps/mobile --",
+    "test": "npm run test --prefix apps/mobile --",
+    "typecheck": "npm run typecheck --prefix apps/mobile --",
+    "lint": "npm run lint --prefix apps/mobile --",
     "mobile": "npm run start --prefix apps/mobile --",
     "mobile:ios": "npm run ios --prefix apps/mobile --",
     "mobile:android": "npm run android --prefix apps/mobile --",
@@ -20,10 +18,14 @@
     "mobile:export": "npm run export:web --prefix apps/mobile --",
     "mobile:typecheck": "npm run typecheck --prefix apps/mobile",
     "mobile:config": "npm run config --prefix apps/mobile",
-    "core:build": "node apps/web/node_modules/typescript/bin/tsc -p packages/tarkman-core/tsconfig.json",
+    "core:build": "node apps/mobile/node_modules/typescript/bin/tsc -p packages/tarkman-core/tsconfig.json",
     "core:test": "npm run core:build && node --test packages/tarkman-core/tests/*.test.mjs && npm run core:check",
     "core:check": "node packages/tarkman-core/scripts/check-boundary.mjs",
     "core:check-consumers": "node packages/tarkman-core/scripts/check-consumers.mjs",
-    "design:check": "npm run check --prefix packages/tarkman-design"
+    "design:check": "npm run check --prefix packages/tarkman-design",
+    "legacy-web:dev": "npm run dev --prefix apps/web --",
+    "legacy-web:build": "npm run build --prefix apps/web --",
+    "legacy-web:test": "npm run test --prefix apps/web --",
+    "legacy-web:typecheck": "npm run typecheck --prefix apps/web --"
   }
 }

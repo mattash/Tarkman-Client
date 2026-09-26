@@ -2,8 +2,9 @@
 
 Managed Expo SDK 57, React Native and Expo Router. The home route is a public, read-only live-session reader behind three tabs (Today, Services, Settings). The development-only `/gallery` route
 retains the Expo 05 static liturgy examples (`en`, `ru`, `grabar`, `translit`) and
-works without network configuration. The production website remains the
-separate Vite app in `../web`.
+works without network configuration. This app's Expo web export is the
+production website at `web.tarkman.app` (cutover #177); the Vite app in `../web`
+is deprecated.
 
 ## v1 platform scope
 
@@ -367,7 +368,7 @@ and both must agree:
 - `app.json` declares `applinks:web.tarkman.app`, and the Expo Router paths
   mirror the website's, so an opened link lands on the matching screen.
 
-`apps/web/app/__tests__/universal-links.test.ts` keeps the two in step: it fails
+`tests/universal-links.test.ts` keeps the two in step: it fails
 if the bundle identifier drifts, if the claimed paths stop matching the app's
 routes, if a display route is ever claimed, or if the JSON content type is
 dropped.
@@ -855,9 +856,9 @@ The screen requests a wake lock while active. Browser support, HTTPS, device sle
 settings and browser fullscreen/kiosk configuration still govern unattended use;
 fullscreen is not forced because browsers require a user gesture. No new packages,
 authentication, EAS configuration or Vercel routing changes are required. These
-routes ship with the Expo web build; the existing Vercel app remains the Vite app.
+routes ship with the Expo web build, which Vercel serves at `web.tarkman.app`.
 
-#### Local apps/web display review
+#### Local apps/web display review (deprecated Vite app)
 
 The shared fixture is synthetic and binds only to loopback. The active PR #171 runbook targets the Vite client
 in `apps/web`, not Expo web. From the repository root:
