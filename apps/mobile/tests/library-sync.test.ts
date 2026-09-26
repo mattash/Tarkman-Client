@@ -12,6 +12,56 @@ function setup() {
   const store = memoryStore(), api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn<(id: number, signal: AbortSignal, revision?: string) => Promise<Bundle | null>>(async () => bundle) }
   return { store, api, library: createLibrary('test', api, store, () => 1000) }
 }
+it('catalog success and unrelated local success do not clear a failed hydration', async () => {
+  const { library, store } = setup()
+  const hydrate = store.hydrate
+  store.hydrate = async () => { throw new Error('SQLite load failed') }
+  await library.refresh()
+  expect(library.getSnapshot()).toMatchObject({ storageError: 'storage', error: undefined, checkedAt: 1000 })
+  await library.remove(701)
+  await library.dismiss()
+  expect(library.getSnapshot().storageError).toBe('storage')
+  store.hydrate = hydrate
+  await library.hydrate()
+  expect(library.getSnapshot().storageError).toBeUndefined()
+})
+it('hydration recovery and removal of another ID do not clear a failed removal', async () => {
+  const { library, store, api } = setup()
+  const hydrate = store.hydrate, remove = store.remove
+  store.hydrate = async () => { throw new Error('SQLite load failed') }
+  store.remove = async () => { throw new Error('SQLite removal failed') }
+  await expect(library.remove(701)).rejects.toMatchObject({ code: 'storage' })
+  store.hydrate = hydrate
+  api.catalog.mockRejectedValue(new LibraryError('network'))
+  await library.refresh()
+  expect(library.getSnapshot()).toMatchObject({ storageError: 'storage', error: 'network' })
+  store.remove = remove
+  await library.remove(702)
+  expect(library.getSnapshot().storageError).toBe('storage')
+  await library.remove(701)
+  expect(library.getSnapshot().storageError).toBeUndefined()
+  expect(library.getSnapshot().error).toBe('network')
+})
+it('successful removal of all saved services clears outstanding removal failures', async () => {
+  const { library, store } = setup()
+  const remove = store.remove
+  store.remove = async () => { throw new Error('SQLite removal failed') }
+  await expect(library.remove(701)).rejects.toMatchObject({ code: 'storage' })
+  await expect(library.remove()).rejects.toMatchObject({ code: 'storage' })
+  store.remove = remove
+  await library.remove()
+  expect(library.getSnapshot().storageError).toBeUndefined()
+})
+it('dismissal failure survives catalog refresh and clears after a successful retry', async () => {
+  const { library, store } = setup()
+  const dismiss = store.dismiss
+  store.dismiss = async () => { throw new Error('SQLite dismissal failed') }
+  await library.dismiss(); await library.refresh()
+  expect(library.getSnapshot().storageError).toBe('storage')
+  store.dismiss = dismiss
+  await library.dismiss()
+  expect(library.getSnapshot()).toMatchObject({ storageError: undefined, dismissed: true })
+})
 it('entry, recommendation metadata and Skip never transfer content; dismissal survives controller recreation', async () => {
   const { library, api, store } = setup()
   await library.refresh(); await library.refresh(); await library.dismiss()

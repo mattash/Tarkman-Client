@@ -16,6 +16,6 @@ export function LibraryManagement() {
       <AppButton variant="destructive" onPress={() => { void controller.remove().then(() => setConfirm(false), () => undefined) }}>{t('library.clear')}</AppButton>
       <AppButton variant="quiet" onPress={() => setConfirm(false)}>{t('common.cancel')}</AppButton>
     </> : <AppButton variant="quiet" onPress={() => setConfirm(true)}>{t('library.clear')}</AppButton>)}
-    {state.error === 'storage' && <AppText accessibilityRole="alert">{t('library.errors.storage')}</AppText>}
+    {state.storageError && <AppText accessibilityRole="alert">{t('library.errors.storage')}</AppText>}
   </View>
 }

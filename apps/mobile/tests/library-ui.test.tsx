@@ -191,8 +191,9 @@ it.each<['size' | 'invalid', string]>([
   expect(store.rows.get('test:701')?.bundle?.revision).toBe(fixture.revision)
 })
 it('failed removal remains visible offline and retains the saved copy', async () => {
-  const { wrapper, controller, store } = setup()
+  const { wrapper, controller, store, api } = setup()
   await controller.request(701, true)
+  const remove = store.remove
   store.remove = async () => { throw new Error('SQLite removal failed') }
   mockNetwork.isConnected = false
   try {
@@ -203,6 +204,35 @@ it('failed removal remains visible offline and retains the saved copy', async ()
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t save changes on this device. Please try again.'))
     expect(screen.getByText('Open')).toBeTruthy()
     expect(controller.getSnapshot().items[0].bundle?.revision).toBe(fixture.revision)
+    api.catalog.mockRejectedValue(new LibraryError('network'))
+    await act(async () => { await controller.refresh(true) })
+    expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t save changes on this device. Please try again.')
+    expect(screen.queryByText(/Couldn’t check for new texts right now/)).toBeNull()
+    store.remove = remove
+    await fireEvent.press(screen.getByText('Remove saved service'))
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    expect(controller.getSnapshot().items).toEqual([])
+  } finally { mockNetwork.isConnected = true }
+})
+it('failed hydration followed by an offline catalog failure keeps the storage warning until local recovery', async () => {
+  const { wrapper, controller, store, api } = setup()
+  await store.commit('test', parseBundle(fixture), 1000, () => true)
+  const hydrate = store.hydrate
+  store.hydrate = async () => { throw new Error('SQLite load failed') }
+  api.catalog.mockRejectedValue(new LibraryError('network'))
+  mockNetwork.isConnected = false
+  try {
+    await render(<LibraryScreen />, { wrapper })
+    await waitFor(() => expect(controller.getSnapshot().error).toBe('network'))
+    expect(controller.getSnapshot().storageError).toBe('storage')
+    expect(screen.getByText(/You’re offline/)).toBeTruthy()
+    expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t save changes on this device. Please try again.')
+    expect(screen.queryByText(/Couldn’t check for new texts right now/)).toBeNull()
+    store.hydrate = hydrate
+    await act(async () => { await controller.hydrate() })
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByText('Open')).toBeTruthy()
+    expect(controller.getSnapshot().error).toBe('network')
   } finally { mockNetwork.isConnected = true }
 })
 it.each(['network', 'invalid', 'size', 'capacity', 'unsupported', 'cancelled', 'unavailable', 'storage'] as const)('known offline only suppresses a redundant network check error: %s', async code => {

@@ -62,6 +62,7 @@ export function LibraryScreen() {
     {offline && <AppText accessibilityLiveRegion="polite">{t('library.offline')}</AppText>}
     {!state.ready && <AppText>{t('library.loading')}</AppText>}
     {state.corrupt > 0 && <AppText accessibilityRole="alert">{t('library.corrupt')}</AppText>}
+    {state.storageError && <AppText accessibilityRole="alert">{t(`library.errors.${state.storageError}`)}</AppText>}
     {state.error && !(offline && state.error === 'network') && <AppText accessibilityRole="alert">{t(state.error === 'network' ? 'library.checkError' : `library.errors.${state.error}`)}</AppText>}
     {filter === 'saved' && state.ready && !savedItems.length ? <>
       <AppText variant="heading">{t('library.noDownloads')}</AppText>
@@ -93,7 +94,7 @@ export function LibraryScreen() {
         </>}
       </Surface>
     })}
-    {state.ready && state.checkedAt !== null && !visible.length && (filter !== 'saved' || savedItems.length > 0) && !state.loading && !state.error && !offline && <AppText>{t(query ? 'library.noMatches' : 'library.empty')}</AppText>}
+    {state.ready && state.checkedAt !== null && !visible.length && (filter !== 'saved' || savedItems.length > 0) && !state.loading && !state.error && !state.storageError && !offline && <AppText>{t(query ? 'library.noMatches' : 'library.empty')}</AppText>}
     {filter === 'all' && state.next !== null && <>
       <AppText tone="muted">{t('library.partial')}</AppText>
       <AppButton variant="secondary" loading={state.loading} disabled={offline} onPress={() => { void controller.refresh(true, true) }}>{t('library.more')}</AppButton>

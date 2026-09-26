@@ -4,6 +4,7 @@ import type { LibraryRepository, SavedItem } from './repository'
 export interface LibraryState {
   ready: boolean; items: SavedItem[]; catalog: CatalogItem[]; recommended: CatalogItem[]; dismissed: boolean
   corrupt: number; loading: boolean; next: number | null; checkedAt: number | null; error?: FailureCode
+  storageError?: 'storage'
   status: Record<number, 'downloading' | 'updating' | 'failed' | 'cancelled'>
   failures: Record<number, FailureCode>; revoked: number[]
 }
@@ -17,12 +18,19 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
   let active = 0, disposed = false, hydration: Promise<void> | undefined, metadata: Promise<void> | undefined
   let catalogController: AbortController | undefined
   const generations = new Map<number, number>()
+  // Only recovery of the failed local operation clears its warning.
+  const localFailures = new Set<'hydrate' | 'dismiss' | `remove:${number | 'all'}`>()
   const emit = (patch: Partial<LibraryState>) => { if (!disposed) { state = { ...state, ...patch }; listeners.forEach(l => l()) } }
+  const localFailure = (operation: Parameters<typeof localFailures.add>[0], failed: boolean) => {
+    if (failed) localFailures.add(operation)
+    else localFailures.delete(operation)
+    return localFailures.size ? 'storage' as const : undefined
+  }
   const epoch = (id: number) => generations.get(id) ?? 0
   const invalidate = (id: number) => { generations.set(id, epoch(id) + 1); jobs.get(id)?.controller.abort() }
   const item = (id: number) => state.items.find(i => i.id === id)
   function hydrate() {
-    if (!hydration) hydration = store.hydrate(environment).then(result => emit({ ...result, ready: true }), () => { hydration = undefined; emit({ ready: true, error: 'storage' }) })
+    if (!hydration) hydration = store.hydrate(environment).then(result => emit({ ...result, ready: true, storageError: localFailure('hydrate', false) }), () => { hydration = undefined; emit({ ready: true, storageError: localFailure('hydrate', true) }) })
     return hydration
   }
   function pump() {
@@ -40,8 +48,9 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
       await store.remove(environment, id)
       const status = { ...state.status }, failures = { ...state.failures }
       ids.forEach(i => { delete status[i]; delete failures[i] })
-      emit({ items: state.items.filter(i => !ids.has(i.id)), status, failures, ...(id === undefined ? { corrupt: 0 } : {}) })
-    } catch { emit({ error: 'storage' }); throw new LibraryError('storage') }
+      if (id === undefined) for (const operation of localFailures) { if (operation.startsWith('remove:')) localFailures.delete(operation) }
+      emit({ items: state.items.filter(i => !ids.has(i.id)), status, failures, storageError: localFailure(`remove:${id ?? 'all'}`, false), ...(id === undefined ? { corrupt: 0 } : {}) })
+    } catch { emit({ storageError: localFailure(`remove:${id ?? 'all'}`, true) }); throw new LibraryError('storage') }
   }
   async function refresh(force = false, more = false) {
     const started = cancellation
@@ -182,7 +191,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
     hydrate, refresh, remove, request,
     async sync() { const started = cancellation; await hydrate(); if (started === cancellation) await Promise.all(state.items.map(i => request(i.id, true))) },
-    async dismiss() { try { await store.dismiss(environment); emit({ dismissed: true }) } catch { emit({ error: 'storage' }) } },
+    async dismiss() { try { await store.dismiss(environment); emit({ dismissed: true, storageError: localFailure('dismiss', false) }) } catch { emit({ storageError: localFailure('dismiss', true) }) } },
     cancel,
     dispose() { cancel(); disposed = true; for (const job of queue.splice(0)) job.done(); listeners.clear() },
   }
