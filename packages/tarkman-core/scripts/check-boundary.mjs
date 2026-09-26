@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 // Repository verification uses web's locked compiler; core owns no tooling dependencies.
-import ts from '../../../apps/web/node_modules/typescript/lib/typescript.js'
+import ts from '../../../apps/mobile/node_modules/typescript/lib/typescript.js'
 import { checkPackage } from './check-package.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))

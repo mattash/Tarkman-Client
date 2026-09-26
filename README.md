@@ -1,6 +1,13 @@
 # Tarkman Client
 
-A modern React + Vite front-end for the [Tarkman](https://tarkman.app) platform – a digital companion for Armenian Church services that delivers real-time liturgical texts, translations, and explanations.
+Clients for the [Tarkman](https://tarkman.app) platform – a digital companion for Armenian Church services that delivers real-time liturgical texts, translations, and explanations.
+
+> **Production client:** `apps/mobile`, an Expo Router app for iOS and, via its web
+> export, `web.tarkman.app` (since the September 25, 2026 cutover, #177 / #194).
+> See [apps/mobile/README.md](apps/mobile/README.md).
+>
+> **Deprecated:** `apps/web`, the original React + Vite client. It no longer deploys
+> and is kept only for the rollback window; most of this README describes it.
 
 ---
 
@@ -44,10 +51,10 @@ A modern React + Vite front-end for the [Tarkman](https://tarkman.app) platform 
 git clone https://github.com/your-org/tarkman-client.git
 cd tarkman-client
 
-# install the web app dependencies
-npm ci --prefix apps/web
-# install mobile separately when needed (Node >=22.13)
+# install the production app (Node >=22.13)
 npm ci --prefix apps/mobile
+# install the deprecated Vite app only when touching it
+npm ci --prefix apps/web
 ```
 
 ### 3. Configure Environment Variables
@@ -137,46 +144,39 @@ and `npm ci --prefix apps/mobile` separately; each uses its own lockfile and
 The web app keeps React 18 and its original compatible dependency lock; the Expo
 app keeps React 19 isolated for native builds.
 
-## Mobile foundation
+## Mobile (production)
 
-`apps/mobile` is a separate TypeScript managed Expo app using Expo Router, with
-one placeholder home screen. No web screens have been migrated. Start it with
-`npm run mobile` from the root, or `cd apps/mobile && npm start`. v1 use is an iOS
-simulator or compatible Expo Go app. The `android` script remains an intentional
-internal/future emulator path, not a supported or released v1 target. The `ios`
-and `android` scripts start Metro; they do not create native projects or cloud builds.
+`apps/mobile` is the production Expo Router app. From the root, `npm run dev`
+starts it for the web, `npm run mobile` starts Metro, and `npm run build`,
+`npm test`, `npm run typecheck` and `npm run lint` run in `apps/mobile`. The
+deprecated Vite app's scripts are `npm run legacy-web:*`.
 
-See [mobile setup and EAS configuration](apps/mobile/README.md) and the
-[first iOS beta exit criteria](docs/beta-exit-criteria.md). EAS configuration
-belongs under `apps/mobile`; run any EAS commands there and do not run `eas init`
-merely to work on the existing project configuration. The old Vinxi `app.config.ts`
-lives exclusively under `apps/web`, outside Expo's app root.
-
-Mobile public environment placeholders are in `apps/mobile/.env.example`;
-see its README for development, preview, and production configuration.
-Web environment examples are under `apps/web`; integration-test setup uses
-`apps/web/.env.test.example`. Existing real `.env*` files are not moved or copied.
-If you have local settings at the old root, configure `apps/web/.env.local`
-yourself. The mobile placeholder requires no environment variables.
+See [mobile setup and EAS configuration](apps/mobile/README.md). EAS
+configuration belongs under `apps/mobile`; run any EAS commands there. Mobile
+public environment placeholders are in `apps/mobile/.env.example`.
 
 ---
 
 ## ☁️ Deployment
 
-Vercel uses the root `vercel.json`. Keep the Vercel project's **Root Directory at
-repository root** (blank / `.`), framework **Vite**, install command
-`npm ci --prefix apps/web`,
-build command `npm run build --prefix apps/web`, and output directory `apps/web/dist`. Remove any
-project-level overrides pointing to the old `dist` location. The existing SPA
-rewrite to `/index.html` is preserved. Keep web environment variables in the
-Vercel project settings. No deployment or remote settings are changed by this
-reorganization.
+Vercel uses the root `vercel.json` with the project's **Root Directory at
+repository root**. It installs `npm ci --prefix apps/mobile`, builds
+`npm run mobile:export`, and serves `apps/mobile/dist` with an SPA rewrite to
+`/index.html`. Merges to `main` deploy to production at `web.tarkman.app`.
 
-The web-only install isolates Vercel from Expo's Node requirement. The root
-manifest intentionally has no new Node engine constraint; runtime changes belong
-to [#68](https://github.com/mattash/Tarkman-Client/issues/68).
+`vercel.json` also:
 
-Other static hosts should also serve `apps/web/dist`.
+- serves `/.well-known/apple-app-site-association` as JSON for iOS universal links;
+- redirects legacy Vite paths still found in QR codes and bookmarks:
+  `/sessions/:id/explanations` → `/sessions/:id/parts`, `/login` → `/sign-in`,
+  and `/dashboard` and `/part/:id` → `/`. The redirects are temporary (307) so a
+  rollback is not fought by cached redirects.
+
+`apps/mobile/tests/universal-links.test.ts` covers both.
+
+**Rollback.** Until `apps/web` is removed, the last Vite production deployment
+(commit `8e57c50`, `tarkman-client-ieyoyof0a-mattashs-projects.vercel.app`) can be
+promoted back in Vercel. Record any change to that target in #177.
 
 ---
 

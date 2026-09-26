@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
-import ts from '../../../apps/web/node_modules/typescript/lib/typescript.js'
+import ts from '../../../apps/mobile/node_modules/typescript/lib/typescript.js'
 
 test('public inbound DTOs accept observed and future strings; commands stay closed', () => {
   const program = ts.createProgram([fileURLToPath(new URL('./contracts.types.ts', import.meta.url))], {

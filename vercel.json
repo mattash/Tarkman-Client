@@ -3,6 +3,28 @@
   "devCommand": "npm run web --prefix apps/mobile",
   "installCommand": "npm ci --prefix apps/mobile",
   "outputDirectory": "apps/mobile/dist",
+  "redirects": [
+    {
+      "source": "/sessions/:id(\\d+)/explanations",
+      "destination": "/sessions/:id/parts",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "/sign-in",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/part/:id",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
