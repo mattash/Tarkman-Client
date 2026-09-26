@@ -7,7 +7,7 @@ export interface LibraryState {
   status: Record<number, 'downloading' | 'updating' | 'failed' | 'cancelled'>
   failures: Record<number, FailureCode>; revoked: number[]
 }
-interface Job { id: number; completion: Promise<Bundle | undefined>; controller: AbortController; run(): Promise<void>; done(): void }
+interface Job { id: number; save: boolean; completion: Promise<Bundle | undefined>; controller: AbortController; run(): Promise<void>; done(): void }
 /** One environment per controller. Disposal permanently invalidates all its work. */
 export function createLibrary(environment: string, api: LibraryApi | null, store: LibraryRepository, now = Date.now) {
   let state: LibraryState = { ready: false, items: [], catalog: [], recommended: [], dismissed: false, corrupt: 0,
@@ -80,12 +80,19 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     return metadata
   }
   async function request(id: number, save: boolean): Promise<Bundle | undefined> {
-    const started = cancellation
+    const started = cancellation, requestedGeneration = epoch(id)
     await hydrate()
-    if (started !== cancellation) throw new LibraryError('cancelled')
+    if (started !== cancellation || requestedGeneration !== epoch(id)) throw new LibraryError('cancelled')
     if (disposed || !api || (save && !store.durable)) throw new LibraryError('unsupported')
     const existing = jobs.get(id)
-    if (existing) return existing.completion
+    if (existing) {
+      if (!save || existing.save) return existing.completion
+      // Online work cannot satisfy durable intent. Queue a normal saved request
+      // after it settles; duplicate waiters coalesce there and still use the cap.
+      await existing.completion
+      if (disposed || existing.controller.signal.aborted || started !== cancellation || requestedGeneration !== epoch(id)) return
+      return request(id, true)
+    }
     if (queue.length >= 100) { emit({ error: 'capacity' }); throw new LibraryError('capacity') }
     const generation = epoch(id), controller = new AbortController()
     const valid = () => !disposed && !controller.signal.aborted && epoch(id) === generation
@@ -93,7 +100,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     let resolveCompletion!: (bundle: Bundle | undefined) => void
     const completion = new Promise<Bundle | undefined>(resolve => { resolveCompletion = resolve })
     const promise = new Promise<void>(done => {
-      const job: Job = { id, completion, controller, done: () => { done(); resolveCompletion(result) }, run: async () => {
+      const job: Job = { id, save, completion, controller, done: () => { done(); resolveCompletion(result) }, run: async () => {
         try {
           if (!valid()) throw new LibraryError('cancelled')
           if (save) {

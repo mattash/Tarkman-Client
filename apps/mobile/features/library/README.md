@@ -52,7 +52,7 @@ need device verification.
 
 ## Storage, intent and sync
 
-`public-liturgy-library.db` is dedicated Expo SQLite storage, schema/user_version 1.
+`public-liturgy-library.db` is dedicated Expo SQLite storage, schema/user_version 2.
 `library_items` keys on normalized environment URL + liturgy ID. An explicit request
 records intent; a successful transaction replaces the entire validated payload,
 byte count, successful saved date and verification date together. Catalog identity,
@@ -60,6 +60,23 @@ revision, languages and occurrence metadata are contained in the complete bundle
 No TTL applies. Future unsupported schemas fail closed; corrupt rows are isolated
 and retained until deliberate removal. A corrupt row never deletes another download.
 Saved service snapshot storage and its seven-day TTL are untouched.
+
+Each atomic replacement also stores a local SHA-256 checksum (installed Expo
+Crypto) over the exact complete projected payload, environment, ID, byte count and
+saved timestamp, with a versioned domain marker. Hydration checks it before JSON
+parsing/contract validation; 304 handling rehydrates and verification checks again
+inside its transaction. Verification time is mutable bookkeeping, not part of the
+content checksum. Checksums/content are never logged or sent over the network.
+This detects local corruption, not malicious rewriting of both payload and checksum.
+Hydration reads one payload at a time, bounds each to 10 MiB in SQL before returning
+it to JS, and processes at most 100 MiB of payload per hydration, sequentially.
+
+The transactional v1→v2 migration adds a nullable checksum without backfilling:
+legacy payloads cannot be established as intact and are quarantined like corrupted
+rows. Intent-only rows and prompt dismissal survive. Quarantined copies cannot be
+read offline or satisfy 304. Recovery is an explicit Download from the catalog
+(which atomically replaces that row), or Remove all library downloads; unrelated
+valid downloads/environments remain intact. No automatic network migration occurs.
 
 All operations share a queue, and each replacement uses
 `withExclusiveTransactionAsync` with the transaction object's methods. See the
@@ -79,7 +96,11 @@ There is no production starter mapping: editorial verification remains outstandi
 Metadata refresh coalesces work, observes explicit continuation, and uses a five-minute
 successful-check cooldown except explicit Refresh/Load more. Offline/partial checks
 never assert freshness. Saved IDs absent from metadata still sync directly by ID.
-At most two bundle requests run; duplicate requests share their completion. 304
+At most two bundle requests run; duplicate requests share their completion. A Download arriving during Read online
+waits for that online job, then queues a normal durable request; duplicate durable
+waiters coalesce. This may require a second transfer, but Download cannot finish
+successfully before persistence. Cancellation, removal, disposal and authoritative
+unavailability discard the waiting durable request; retry remains explicit. 304
 requires an intact corresponding local revision, otherwise one unconditional retry.
 A changed catalog/download pair gets one unconditional per-item revalidation; a
 second changing revision fails. Equal revisions preserve the download timestamp.

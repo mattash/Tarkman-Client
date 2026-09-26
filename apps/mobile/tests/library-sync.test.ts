@@ -104,3 +104,43 @@ it('cancellation during storage hydration prevents subsequently starting queued 
   await rejected; await refreshed
   expect(api.bundle).not.toHaveBeenCalled(); expect(api.catalog).not.toHaveBeenCalled()
 })
+
+it('queues Download behind an in-flight Read online and coalesces durable waiters until commit', async () => {
+  const { library, api, store } = setup(), online = deferred<Bundle>(), saved = deferred<Bundle>()
+  api.bundle.mockReturnValueOnce(online.promise).mockReturnValueOnce(saved.promise)
+  const read = library.request(701, false); await ticks()
+  const download = library.request(701, true), duplicate = library.request(701, true)
+  let finished = false; void download.then(() => { finished = true })
+  await ticks(); expect(api.bundle).toHaveBeenCalledTimes(1); expect(store.rows.size).toBe(0)
+  online.resolve(bundle); expect(await read).toEqual(bundle); await ticks()
+  expect(api.bundle).toHaveBeenCalledTimes(2); expect(finished).toBe(false)
+  saved.resolve(bundle); await Promise.all([download, duplicate])
+  expect((await store.hydrate('test')).items[0].bundle).toEqual(bundle)
+  expect(finished).toBe(true)
+})
+it.each(['cancel', 'remove', 'clear', 'dispose'] as const)('%s discards durable follow-up queued behind Read online', async action => {
+  const { library, api, store } = setup(), online = deferred<Bundle>()
+  api.bundle.mockReturnValueOnce(online.promise)
+  const read = library.request(701, false); await ticks()
+  const download = library.request(701, true); await ticks()
+  if (action === 'remove') await library.remove(701)
+  else if (action === 'clear') await library.remove()
+  else library[action]()
+  online.resolve(bundle); await Promise.all([read, download])
+  expect(api.bundle).toHaveBeenCalledTimes(1)
+  expect((await store.hydrate('test')).items).toEqual([])
+  if (action !== 'dispose') {
+    await library.request(701, true)
+    expect((await store.hydrate('test')).items[0].bundle).toEqual(bundle)
+  }
+})
+it('removal during the durable follow-up prevents late persistence', async () => {
+  const { library, api, store } = setup(), online = deferred<Bundle>(), saved = deferred<Bundle>()
+  api.bundle.mockReturnValueOnce(online.promise).mockReturnValueOnce(saved.promise)
+  const read = library.request(701, false); await ticks()
+  const download = library.request(701, true); await ticks()
+  online.resolve(bundle); await read; await ticks()
+  expect(api.bundle).toHaveBeenCalledTimes(2)
+  await library.remove(701); saved.resolve(bundle); await download
+  expect((await store.hydrate('test')).items).toEqual([])
+})
