@@ -1,10 +1,11 @@
 # Public liturgy Library (client #190 / backend #452)
 
 Implementation scope is `apps/mobile`. Live service readers, session snapshots,
-authentication and control endpoints retain their existing behavior. No deployment
-or content publication is included. Production integration is **disabled**, even
-if the development flag is accidentally present in a production export. An explicit
-fixture-build override permits loopback only, for embedded native QA builds.
+authentication and control endpoints retain their existing behavior. Production
+integration is off unless a build sets the explicit `EXPO_PUBLIC_LIBRARY_ENABLED=1`
+switch (HTTPS only; see Platform and release status). The development test flag alone
+never enables a production export. An explicit fixture-build override permits loopback
+only, for embedded native QA builds.
 
 ## Contract and fixture provenance
 
@@ -130,14 +131,23 @@ Native iOS/Android use SQLite. Expo web intentionally uses no library SQLite imp
 provides online reading only, and cannot report a durable download. Web localStorage
 is used only for optional prompt dismissal. No service worker/PWA work is included.
 
-`EXPO_PUBLIC_LIBRARY_TEST_CAPABILITY=1` plus `EXPO_PUBLIC_LIBRARY_API_URL` enables
-**development-only** test integration. URL normalization rejects credentials, query,
-fragment and unsafe protocols; HTTP is limited to loopback in development. A release
-build always gets a null remote network capability. The additional explicit
-`EXPO_PUBLIC_LIBRARY_FIXTURE_BUILD=1` permits loopback-only fixture access in an
-embedded QA build, so offline cold start does not depend on Metro. Neither flag
-is set in repository build configuration. No `.env` file is required or added.
-Production enablement, real backend checks, real starter IDs, representative real
-sizes/latency, native bridge/cold-start/accessibility QA, and human review of the new
-English/Russian copy remain release gates. Existing reviewed locale choices are not
-expanded. See `qa/library-190.md` for the independent UI Operator handoff.
+**Production switch.** A release build (web export or native) reaches the Library only when
+`EXPO_PUBLIC_LIBRARY_ENABLED=1`. It then uses `EXPO_PUBLIC_LIBRARY_API_URL`, or falls back to the
+app's `EXPO_PUBLIC_API_URL` (`https://www.tarkman.app` in both Vercel and the EAS `production`
+environment). Release builds accept HTTPS only; loopback, plain HTTP and credentials disable it.
+The normalized URL also names the on-device storage environment. To turn the Library off, remove
+the variable and redeploy the web app or republish the iOS update. The switch is read when the
+bundle is built, so setting it alone changes nothing.
+
+Browser reading depends on the API's CORS allow-list. Production allows `https://web.tarkman.app`;
+Vercel preview origins are not allowed, so the Library only works on web at the production domain.
+
+**Testing.** `EXPO_PUBLIC_LIBRARY_TEST_CAPABILITY=1` plus `EXPO_PUBLIC_LIBRARY_API_URL` enables
+development-only integration. HTTP is limited to loopback in development. The additional explicit
+`EXPO_PUBLIC_LIBRARY_FIXTURE_BUILD=1` permits loopback-only fixture access in an embedded QA build,
+so offline cold start does not depend on Metro. None of these flags are set in repository build
+configuration, and no `.env` file is required or added.
+
+**Open editorial items:** there are no recommended starter IDs yet, so no starter invitation shows.
+Only the Divine Liturgy has Russian text; readers with Russian selected see the reader's existing
+choose-another-language prompt for the others. See `qa/library-190.md` for the independent UI Operator handoff.
