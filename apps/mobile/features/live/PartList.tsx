@@ -15,10 +15,12 @@ import { useI18n } from '../i18n'
 const READING_WIDTH = 1152
 
 export function PartList({ parts, currentKey, following, language, selectedLanguages, manual, open, switchLanguage,
-  browseSettled, browseMoved, browseMomentum, readingSize = 'standard', paused = false, header, compact = false }: {
+  browseSettled, browseMoved, browseMomentum, readingSize = 'standard', paused = false, header, compact = false, topPartChanged }: {
   parts: LivePart[]; currentKey?: string; following: boolean; language: Language; selectedLanguages: readonly Language[]
   browseSettled?(): void; browseMoved?(): void; browseMomentum?(): void; manual(dragging?: boolean): void; open(part: LivePart): void; switchLanguage?(language: Language): void; readingSize?: ReadingSize
   paused?: boolean; header?: ReactElement; compact?: boolean
+  /** The first part at least half on screen, for readers without a live position to explain. */
+  topPartChanged?(part: LivePart | undefined): void
 }) {
   const { fontScale } = useWindowDimensions()
   const [frameWidth, setFrameWidth] = useState(0)
@@ -48,11 +50,12 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
 
 
   // Rows are memoized and recycled; they reach the latest callbacks through this ref instead of new functions each render.
-  const actions = useRef({ manual, open, switchLanguage })
-  useEffect(() => { actions.current = { manual, open, switchLanguage } }, [manual, open, switchLanguage])
+  const actions = useRef({ manual, open, switchLanguage, topPartChanged })
+  useEffect(() => { actions.current = { manual, open, switchLanguage, topPartChanged } }, [manual, open, switchLanguage, topPartChanged])
   const { t } = useI18n()
   const stopFollowing = useCallback(() => actions.current.manual(), [])
   const openPart = useCallback((part: LivePart) => actions.current.open(part), [])
+  const reportTopPart = useCallback(({ viewableItems }: { viewableItems: { item: LivePart }[] }) => actions.current.topPartChanged?.(viewableItems[0]?.item), [])
   const readIn = useMemo(() => switchLanguage ? (value: Language) => actions.current.switchLanguage?.(value) : undefined, [switchLanguage])
 
   // FlashList measures rows as it goes and corrects its own scroll, so one request lands even on a part hundreds of rows
@@ -82,6 +85,7 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
       // Status pills live in the list header. FlashList keeps the first visible part anchored by default,
       // so a status change never moves prayer text.
       onScrollEndDrag={browseSettled} onMomentumScrollEnd={browseSettled} onMomentumScrollBegin={browseMomentum}
+      {...(topPartChanged ? { onViewableItemsChanged: reportTopPart, viewabilityConfig: { itemVisiblePercentThreshold: 50 } } : {})}
       onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y; browseMoved?.() }} scrollEventThrottle={100}
       ListHeaderComponent={header ? <View style={{ paddingHorizontal: gutter }}>{header}</View> : null}
       ListFooterComponent={<View style={{ height: spacing.xxl }} />}

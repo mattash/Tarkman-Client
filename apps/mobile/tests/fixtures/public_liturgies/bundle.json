@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "liturgy": {
+    "id": 701,
+    "name": "Synthetic service",
+    "description": null
+  },
+  "languages_available": [
+    "en",
+    "grabar",
+    "translit"
+  ],
+  "parts": [
+    {
+      "liturgy_part_id": 901,
+      "liturgy_id": 701,
+      "part_id": 801,
+      "position": 1,
+      "role": "choir",
+      "posture": null,
+      "page": null,
+      "text": {
+        "en": "Peace",
+        "grabar": "Խաղաղություն",
+        "translit": "Peace",
+        "ru": null,
+        "hy_east": null,
+        "hy_west": null
+      },
+      "requires_session_context": false,
+      "explanations": []
+    },
+    {
+      "liturgy_part_id": 902,
+      "liturgy_id": 701,
+      "part_id": 801,
+      "position": 2,
+      "role": "choir",
+      "posture": null,
+      "page": null,
+      "text": {
+        "en": "Peace",
+        "grabar": "Խաղաղություն",
+        "translit": "Peace",
+        "ru": null,
+        "hy_east": null,
+        "hy_west": null
+      },
+      "requires_session_context": false,
+      "explanations": [
+        {
+          "id": 1001,
+          "liturgy_part_id": 902,
+          "title": "Meaning",
+          "description": "A synthetic note."
+        }
+      ]
+    },
+    {
+      "liturgy_part_id": 903,
+      "liturgy_id": 701,
+      "part_id": 802,
+      "position": 3,
+      "role": "priest",
+      "posture": "stand",
+      "page": null,
+      "text": {
+        "en": null,
+        "grabar": "Խաղաղություն",
+        "translit": "Peace",
+        "ru": null,
+        "hy_east": null,
+        "hy_west": null
+      },
+      "requires_session_context": true,
+      "explanations": []
+    }
+  ],
+  "revision": "9717a46f8c3240847650a86b214fc52056cccfd31402b7dfdcc655c5aa02df88"
+}

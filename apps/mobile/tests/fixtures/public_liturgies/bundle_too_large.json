@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "error": {
+    "code": "bundle_too_large"
+  }
+}

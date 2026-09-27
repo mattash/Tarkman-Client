@@ -13,7 +13,7 @@ const names = {
   share: 'share-outline', copy: 'copy-outline', open: 'open-outline',
   people: 'people-outline',
   guide: 'help-circle-outline', tour: 'compass-outline',
-  scan: 'scan-outline', location: 'location-outline',
+  scan: 'scan-outline', location: 'location-outline', search: 'search-outline',
   // Tab glyphs are separate entries from explanation/preferences: they draw at 26pt and fill when selected.
   'tab-today': 'radio-outline', 'tab-today-selected': 'radio',
   'tab-services': 'book-outline', 'tab-services-selected': 'book',

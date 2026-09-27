@@ -1,3 +1,3 @@
-import { ServicesList } from '../../features/home/ServicesList'
+import { Services } from '../../features/library/Services'
 
-export default ServicesList
+export default Services

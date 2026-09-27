@@ -1,0 +1,26 @@
+{
+  "numPassedTests": 827,
+  "numFailedTests": 1,
+  "numPendingTests": 0,
+  "numPassedTestSuites": 64,
+  "numFailedTestSuites": 1,
+  "numPendingTestSuites": 0,
+  "librarySuites": {
+    "library-ui.test.tsx": {
+      "status": "passed",
+      "tests": 8
+    },
+    "library-contracts.test.ts": {
+      "status": "passed",
+      "tests": 25
+    },
+    "library-store.test.ts": {
+      "status": "passed",
+      "tests": 5
+    },
+    "library-sync.test.ts": {
+      "status": "passed",
+      "tests": 13
+    }
+  }
+}
