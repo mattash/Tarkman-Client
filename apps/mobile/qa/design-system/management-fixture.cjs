@@ -22,10 +22,13 @@ function calendarDate(value) {
 }
 const OPTION_KEYS = ['gospel', 'epistle', 'before_message', 'after_message']
 
-function createManagement({ enabled, owned, church }) {
+function createManagement({ enabled, owned, church, seed = [], onDeleted = () => {} }) {
   let nextId = 9101
   const receipts = new Map()
   const records = new Map()
+  const deleted = new Set()
+  // Existing fixture sessions become editable records; `current` stands in for the exact current occurrence.
+  for (const item of seed) records.set(item.id, { options: { gospel: '', epistle: '', before_message: '', after_message: '' }, status: 'active', revision: 1, current: item.liturgy_ids[0], ...item })
 
   function snapshot(record) {
     const liturgies = record.liturgy_ids.map((id, index) => {
@@ -34,19 +37,20 @@ function createManagement({ enabled, owned, church }) {
     })
     return { id: record.id, date: record.date, liturgy_ids: [...record.liturgy_ids], liturgies, options: { ...record.options },
       status: record.status, revision: record.revision, current_part_id: null, current_liturgy_part_id: null, cursor: null,
-      liturgy: liturgies.map(item => item.name).join(' · '), church_name: church }
+      liturgy: record.title ?? liturgies.map(item => item.name).join(' · '), church_name: church }
   }
   function listed(record) {
     const s = snapshot(record)
-    return { session: { id: s.id, liturgy: s.liturgy, church_name: church, date: s.date, status: s.status, revision: s.revision } }
+    const existing = owned.find(item => item.session.id === s.id)
+    return { session: { ...(existing?.session ?? {}), id: s.id, liturgy: s.liturgy, church_name: church, date: s.date, status: s.status, revision: s.revision } }
   }
-  function validate(session) {
+  function validate(session, partial = false, previous = []) {
     const errors = {}
-    if (!calendarDate(session?.date)) errors.date = ['must be a real calendar date (YYYY-MM-DD)']
+    if ((!partial || session?.date !== undefined) && !calendarDate(session?.date)) errors.date = ['must be a real calendar date (YYYY-MM-DD)']
     const ids = session?.liturgy_ids
-    if (!Array.isArray(ids) || ids.length === 0) errors.liturgy_ids = ['choose at least one liturgy']
+    if (partial && ids === undefined) { /* membership unchanged */ } else if (!Array.isArray(ids) || ids.length === 0) errors.liturgy_ids = ['choose at least one liturgy']
     else if (new Set(ids).size !== ids.length || ids.some(id => !Number.isSafeInteger(id) || id <= 0)) errors.liturgy_ids = ['must be distinct liturgy ids']
-    else if (ids.some(id => !CATALOG.some(item => item.id === id))) errors.liturgy_ids = ['includes a liturgy that is not available']
+    else if (ids.some(id => !previous.includes(id) && !CATALOG.some(item => item.id === id))) errors.liturgy_ids = ['includes a liturgy that is not available']
     for (const key of OPTION_KEYS) {
       const value = session?.options?.[key]
       if (value !== undefined && typeof value !== 'string') errors[`options.${key}`] = ['must be text']
@@ -58,7 +62,7 @@ function createManagement({ enabled, owned, church }) {
   /** Returns true when the request was a management route this fixture served. */
   async function handle(req, res, path, url, { json, error, authorized, requestJson }) {
     if (!enabled) return false
-    const coded = (status, code, extra = {}) => json(res, status, { error: code, code, ...extra })
+    const coded = (target, status, code, extra = {}) => json(target, status, { error: code, code, ...extra })
     if (path === '/s/new.json' && req.method === 'GET') {
       if (!authorized(req)) return error(res, 401, 'Sign in required.'), true
       return json(res, 200, { schema_version: 1, session_management_version: 1, time_zone: ZONE,
@@ -89,16 +93,64 @@ function createManagement({ enabled, owned, church }) {
       const errors = validate(input?.session)
       if (Object.keys(errors).length) return coded(res, 422, 'invalid_session', { errors_by_field: errors }), true
       const options = Object.fromEntries(OPTION_KEYS.map(option => [option, input.session.options?.[option] ?? '']))
-      const record = { id: nextId++, date: input.session.date, liturgy_ids: [...input.session.liturgy_ids], options, status: 'active', revision: 1 }
+      const record = { id: nextId++, date: input.session.date, liturgy_ids: [...input.session.liturgy_ids], options, status: 'active', revision: 1, current: input.session.liturgy_ids[0] }
       records.set(record.id, record)
       owned.push(listed(record))
       if (typeof key === 'string') receipts.set(key, { fingerprint, id: record.id, at: Date.now() })
       const body = { id: record.id, date: record.date, session: snapshot(record) }
       return json(res, 201, body), true
     }
+    const member = path.match(/^\/s\/(\d+)(\/edit|\/state|\/parts)?\.json$/)
+    if (member && deleted.has(Number(member[1]))) return coded(res, 404, 'session_not_found'), true
+    const editRoute = path.match(/^\/s\/(\d+)\/edit\.json$/)
+    if (editRoute && req.method === 'GET') {
+      if (!authorized(req)) return error(res, 401, 'Sign in required.'), true
+      const record = records.get(Number(editRoute[1]))
+      return record ? json(res, 200, { schema_version: 1, session: snapshot(record) }) : coded(res, 404, 'session_not_found'), true
+    }
+    const resource = path.match(/^\/s\/(\d+)\.json$/)
+    if (resource && (req.method === 'PATCH' || req.method === 'DELETE')) {
+      if (!authorized(req)) return error(res, 401, 'Sign in required.'), true
+      const record = records.get(Number(resource[1]))
+      if (!record) return coded(res, 404, 'session_not_found'), true
+      const input = await requestJson(req)
+      if (!Number.isSafeInteger(input?.expected_revision)) return coded(res, 400, 'invalid_precondition'), true
+      if (input.expected_revision !== record.revision) return coded(res, 409, 'stale_session', { session: snapshot(record) }), true
+      if (req.method === 'DELETE') {
+        records.delete(record.id); deleted.add(record.id)
+        const at = owned.findIndex(item => item.session.id === record.id)
+        if (at >= 0) owned.splice(at, 1)
+        onDeleted(record.id, record.revision + 1)
+        res.writeHead(200, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }); res.end()
+        return true
+      }
+      const changes = input.session ?? {}
+      const errors = validate(changes, true, record.liturgy_ids)
+      if (Object.keys(errors).length) return coded(res, 422, 'invalid_session', { errors_by_field: errors }), true
+      const ids = changes.liturgy_ids ?? record.liturgy_ids
+      if (!ids.includes(record.current) && input.confirm_cursor_reset !== true) {
+        const first = CATALOG.find(item => item.id === ids[0])
+        return coded(res, 409, 'cursor_reset_required', { revision: record.revision,
+          proposed_cursor: { liturgy_name: first?.name ?? `Liturgy ${ids[0]}`, role: 'priest', position: 1 } }), true
+      }
+      if (!ids.includes(record.current)) record.current = ids[0]
+      if (changes.date !== undefined) record.date = changes.date
+      if (changes.liturgy_ids) { record.liturgy_ids = [...changes.liturgy_ids]; delete record.title }
+      for (const key of OPTION_KEYS) if (changes.options && typeof changes.options[key] === 'string') record.options[key] = changes.options[key]
+      record.revision += 1
+      const index = owned.findIndex(item => item.session.id === record.id)
+      if (index >= 0) owned[index] = listed(record)
+      return json(res, 200, { session: snapshot(record) }), true
+    }
+    // Loopback-only QA control: another controller moved the session (a new revision), to show a stale save.
+    const bump = path.match(/^\/fixture\/sessions\/(\d+)\/bump$/)
+    if (bump && req.method === 'POST' && records.has(Number(bump[1]))) {
+      records.get(Number(bump[1])).revision += 1
+      return json(res, 200, { revision: records.get(Number(bump[1])).revision }), true
+    }
     return false
   }
-  return { handle, snapshot, records, listed }
+  return { handle, snapshot, records, listed, isDeleted: id => deleted.has(id) }
 }
 
 module.exports = { createManagement }

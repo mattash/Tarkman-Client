@@ -42,6 +42,7 @@ export function SessionForm({ draft, timeZone, editable, fields, focusRequest, c
     else optionRefs.current[first]?.focus()
   }, [focusRequest])
   const preview = isCalendarDate(draft.date) ? formatServiceDate(draft.date) : null
+  const help = timeZone ? t('sessionManagement.dateHelp', { example: '2026-10-04', zone: timeZone }) : t('sessionManagement.dateFormat', { example: '2026-10-04' })
 
   return <View style={{ gap: spacing.md }}>
     <Card>
@@ -52,14 +53,14 @@ export function SessionForm({ draft, timeZone, editable, fields, focusRequest, c
           <TextField ref={dateRef} label={t('sessionManagement.date')} value={draft.date} onChangeText={onDate} editable={editable}
             autoCapitalize="none" autoCorrect={false} keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
             placeholder="YYYY-MM-DD" maxLength={10} // i18n-ignore: a date format, not copy
-            accessibilityHint={fields.date ?? t('sessionManagement.dateHelp', { example: '2026-10-04', zone: timeZone ?? '' })} style={{ textAlign: 'center' }} />
+            accessibilityHint={fields.date ?? help} style={{ textAlign: 'center' }} />
         </View>
         <AppButton variant="secondary" size="card" icon="next" iconOnly accessibilityLabel={t('sessionManagement.nextDay')}
           disabled={!editable || !isCalendarDate(draft.date)} onPress={() => onDate(shiftDate(draft.date, 1))}>{t('sessionManagement.nextDay')}</AppButton>
       </View>
       {fields.date && <AppText tone="destructive" variant="caption" accessibilityRole="alert">{fields.date}</AppText>}
       {preview && <AppText variant="label" accessibilityLiveRegion="polite">{preview}</AppText>}
-      <AppText variant="caption" tone="muted">{t('sessionManagement.dateHelp', { example: '2026-10-04', zone: timeZone ?? '' })}</AppText>
+      <AppText variant="caption" tone="muted">{help}</AppText>
     </Card>
     <LiturgyPicker catalog={catalog} selected={draft.liturgies} editable={editable} error={fields.liturgy_ids} headingRef={liturgiesRef} onChange={onChange} />
     <Card>

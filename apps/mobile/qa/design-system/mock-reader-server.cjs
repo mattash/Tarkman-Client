@@ -86,7 +86,13 @@ const listed = { single: [session], several: [session, secondSession], none: [] 
 // My Sessions: the operator's owned sessions, newest date first. Created fixture sessions join this list.
 const owned = [session]
 const management = require('./management-fixture.cjs').createManagement({
-  enabled: process.env.FIXTURE_MANAGEMENT !== 'off', owned, church: 'Sample parish · local design fixture' })
+  enabled: process.env.FIXTURE_MANAGEMENT !== 'off', owned, church: 'Sample parish · local design fixture',
+  seed: [{ id: SESSION_ID, title: session.session.liturgy, date: session.session.date, liturgy_ids: [5001] }],
+  onDeleted: (id, revision) => {
+    for (const socket of cableServer?.clients ?? []) {
+      if (socket.readyState === 1 && socket.fixtureIdentifier) socket.send(JSON.stringify({ identifier: socket.fixtureIdentifier, message: { event: 'session_deleted', data: { session_id: id, revision } } }))
+    }
+  } })
 const explanationEdits = new Map()
 const presence = new Map()
 function presenceSnapshot(id, client) {

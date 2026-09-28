@@ -5,7 +5,7 @@ import { useCallback, useSyncExternalStore } from 'react'
  * Scoped to an API environment and account: another sign-in never sees, or reacts to, this notice.
  */
 export interface MutationNotice {
-  kind: 'created' | 'saved' | 'deleted'
+  kind: 'created' | 'saved' | 'deleted' | 'unavailable'
   scope: string
   session: { id: number; title: string; date: string | null }
   /** A creation confirmed by a same-key retry rather than by its first request. */
