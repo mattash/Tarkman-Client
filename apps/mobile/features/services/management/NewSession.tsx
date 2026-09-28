@@ -52,7 +52,7 @@ function NewSession({ scope }: { scope: string }) {
     announceMutation({ kind: 'created', scope, replayed: state.replayed, session: { id: session.id, title: session.title, date: session.date } })
     leaveToMySessions()
   }, [phase, state.created, state.replayed, scope])
-  useEffect(() => { if (checking) router.replace('/services') }, [checking])
+  useEffect(() => { if (checking) leaveToMySessions() }, [checking])
 
   function create() {
     // A today-dated session asks first; submit() validates, so an invalid draft never reaches the dialog.

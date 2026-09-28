@@ -64,7 +64,7 @@ export default function MyServicesScreen() {
           <AppButton variant="text" accessibilityLabel={t('sessionManagement.dismissLabel')} onPress={() => dismissMutation(notice)}>{t('sessionManagement.dismiss')}</AppButton>
         </View>
       </Card>}
-      {result.loading && <ActivityIndicator accessibilityLabel={t('myServices.loading')} />}
+      {(result.loading || (result.refreshing && result.services.length === 0)) && <ActivityIndicator accessibilityLabel={t('myServices.loading')} />}
       {result.error && <Card><AppText accessibilityRole="alert">{result.error}</AppText><AppButton variant="secondary" onPress={result.retry}>{t('common.retry')}</AppButton></Card>}
       {!result.loading && !result.refreshing && !result.error && result.services.length === 0 && <Card><AppText variant="heading">{t('myServices.noneTitle')}</AppText>
         <AppText tone="muted">{t('myServices.noneNote')}</AppText></Card>}
