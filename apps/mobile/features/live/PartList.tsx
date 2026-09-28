@@ -6,7 +6,7 @@ import { AppText } from '../../components/AppText'
 import { AppButton } from '../../components/AppButton'
 import { LiturgyText } from '../../components/LiturgyText'
 import { useTheme } from '../../design/ThemeProvider'
-import { readingSizes, spacing, type ReadingSize } from '../../design/tokens'
+import { readingSizes, spacing, touchTarget, type ReadingSize } from '../../design/tokens'
 import { sampleLanguages } from '../../design/samples'
 import { SwipeablePart } from './SwipeablePart'
 import type { LivePart } from './contracts'
@@ -88,7 +88,8 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
       {...(topPartChanged ? { onViewableItemsChanged: reportTopPart, viewabilityConfig: { itemVisiblePercentThreshold: 50 } } : {})}
       onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y; browseMoved?.() }} scrollEventThrottle={100}
       ListHeaderComponent={header ? <View style={{ paddingHorizontal: gutter }}>{header}</View> : null}
-      ListFooterComponent={<View style={{ height: spacing.xxl }} />}
+      // Room for the floating Return to live button, so the last part can scroll clear of it.
+      ListFooterComponent={<View style={{ height: spacing.xxl + touchTarget + spacing.lg }} />}
       ListEmptyComponent={<AppText style={{ padding: page, paddingHorizontal: page + gutter }}>{t('common.noReadingParts')}</AppText>}
       renderItem={({ item, index: itemIndex }) => <ReadingRow item={item} current={item.key === currentKey} past={index >= 0 && itemIndex < index}
         paused={paused} language={language} visibleLanguages={visibleLanguages} alternativesFrom={alternativesFrom} compare={compare}

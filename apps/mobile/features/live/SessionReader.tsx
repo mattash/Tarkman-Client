@@ -168,10 +168,13 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       // Role and posture travel with the route so part detail can draw its header before the part loads.
       open={item => router.push({ pathname: '/sessions/[id]/part/[partId]', params: { id: String(id), partId: String(item.id), key: item.key,
         role: item.role, service: title, ...(item.posture ? { posture: item.posture } : {}) } })} />}
-    {!following && <View testID="return-to-live" style={{ alignItems: 'center', gap: education.hintView ? spacing.md : spacing.xs, paddingHorizontal: spacing.md,
-      paddingTop: spacing.sm, paddingBottom: spacing.sm, backgroundColor: colors.background }}>
+    {/* Floats over the reading instead of reserving a bar, so landscape keeps the text visible; box-none lets scrolls pass through. */}
+    {!following && <View testID="return-to-live" pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center',
+      gap: education.hintView ? spacing.md : spacing.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
       {education.hintView}
-      {!accessibilitySize && !education.hintView && <AppText variant="caption" tone="muted">{showingSaved ? t('reader.showingSavedText') : manualPart !== undefined && manualPart !== part?.key ? t('reader.liveMovedOn') : t('reader.ownPace')}</AppText>}
+      {!accessibilitySize && !education.hintView && <View style={{ paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 999, backgroundColor: colors.background }}>
+        <AppText variant="caption" tone="muted">{showingSaved ? t('reader.showingSavedText') : manualPart !== undefined && manualPart !== part?.key ? t('reader.liveMovedOn') : t('reader.ownPace')}</AppText>
+      </View>}
       <AppButton icon="live" rounded accessibilityHint={showingSaved ? t('reader.returnToLiveSavedHint') : t('reader.returnToLiveHint')}
         onPress={() => { education.recordUse('return'); dispatch({ type: 'follow' }); retry() }}>{t('reader.returnToLive')}</AppButton>
     </View>}
