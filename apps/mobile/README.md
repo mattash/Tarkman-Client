@@ -434,6 +434,29 @@ fail the gate. Non-mobile PRs consume no macOS runner. macOS runners have
 materially higher cost than Linux, so compilation is limited to relevant PRs;
 the existing push-to-`main` checks remain unchanged.
 
+**Reusing a native compile (#204).** Only changes to native inputs trigger a
+compile: the workflow, `app.json`/`app.config.*`, `eas.json`, `.easignore`,
+`package.json`, the lockfile, plugins, `assets/icons/`, generated `ios/` or
+`android/` files, and for Android `scripts/check-store-config.mjs`.
+[`scripts/native-inputs.mjs`](scripts/native-inputs.mjs) defines that list and
+fingerprints those files in the PR's merge commit, per platform, together with
+the current ISO week. After a real compile succeeds, `ios-build` (or
+`android-build`) saves a marker keyed by that fingerprint in the PR's Actions
+cache. On a later commit, the changes job restores the marker and verifies its
+platform, result and fingerprint. If they match, the compile is skipped and the
+aggregate names the reused run. The aggregate still requires this head's
+bundle smoke check. Any mismatch, missing marker or cache error means a new
+compile. This covers native commits, base-branch updates to native inputs, and
+workflow or toolchain edits. The weekly salt forces at least one compile a week
+to pick up runner image drift. Markers are scoped to one PR and are never
+shared with another PR or `main`. The Debug iOS simulator build and the Android
+debug APK load JavaScript from Metro instead of embedding it, so JavaScript-only
+commits cannot change them. `npm run test:native-inputs` runs these scenarios
+on a scratch repository.
+To force a fresh compile without changing any inputs, delete the PR's
+`native-compile-ok-<platform>-*` entry under **Actions → Caches** and re-run
+the workflow.
+
 After merge, the owner must select the exact check **`ios-build`** from
 **GitHub Actions** in `main` branch protection/rulesets, alongside the existing
 required checks. Select the aggregate, not `ios-compile`. This repository change
@@ -894,7 +917,9 @@ scheme, permissions, not debuggable) and compile a debug APK for one ABI
 (`x86_64`) on JDK 17. The job uses no signing keys, EAS or Play secrets,
 dummy endpoints, `EXPO_NO_DOTENV=1` and no Sentry upload, and uploads the
 manifest, permission list and APK badging as the `android-compile-evidence`
-artifact. The owner selects **`android-build`** in branch protection;
+artifact. A successful compile is reused for later commits whose native
+inputs are unchanged, under the same rules as `ios-build` above. The owner
+selects **`android-build`** in branch protection;
 this change does not. A green check proves compilation, not device behavior.
 
 **Known Android limitations.** No Play release or AAB, `https://web.tarkman.app`
