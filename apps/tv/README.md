@@ -168,6 +168,17 @@ generates iOS profiles, so:
    `"credentialsSource": "local"` in the build profile, never committed).
 3. Do not replace or revoke mobile's iOS profiles or certificate.
 
+Created 2026-09-28 (kept outside the repository; never commit profiles or keys):
+
+| Profile | Type | Certificates / devices | Expires |
+| --- | --- | --- | --- |
+| Tarkman tvOS App Store (`bb36ca5d-…`) | tvOS App Store | iPhone Distribution (FHF872BAQR), exp. 2027-09-11 / none | 2027-09-10 |
+| Tarkman tvOS Development (`88bca019-…`) | tvOS App Development | 2 Apple Development certs / 1 Apple TV | 2027-09-28 |
+
+The App Store profile's distribution key is held by EAS, not locally, so store
+builds go through `eas build` from `apps/tv`. The development profile includes a
+certificate whose key is in the maintainer's keychain, for local device builds.
+
 ## App Store: add tvOS to the existing record
 
 These steps change the production record and need the release workflow's
@@ -202,5 +213,6 @@ Record each result separately. A simulator launch is not App Store acceptance.
 | Xcode 27.0 Release build, tvOS 27.0 simulator SDK (`app.tarkman`, `appletvsimulator`, min tvOS 16.4) | Pass, 2026-09-28 |
 | Launch on Apple TV 4K (3rd gen, 1080p) simulator, tvOS 27.0, production API | Pass, 2026-09-28: renders, completes a reader recovery, "No services right now." matches the API's empty response |
 | EAS project `@mesropash/tarkman-tv` created; updates URL embedded in prebuild | Done, 2026-09-28 |
-| Physical Apple TV build and launch | Not yet done (needs a tvOS development profile) |
+| tvOS App Store and Development provisioning profiles | Done, 2026-09-28 |
+| Physical Apple TV build and launch | Not yet done (profile ready; Apple TV must be paired with Xcode) |
 | TestFlight / App Store acceptance | Not yet done (needs release authorization) |
