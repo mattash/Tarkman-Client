@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { AccessibilityInfo, ActivityIndicator, Platform, View } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../../components/AppButton'
@@ -13,7 +13,7 @@ import { formatServiceDate, statusLabel } from '../../../features/services/api'
 import { useMyServices } from '../../../features/services/useMyServices'
 import { useI18n } from '../../../features/i18n'
 import { readerConfig } from '../../../features/live/config'
-import { dismissMutation, managementScope, useMutationNotice } from '../../../features/services/management/mutations'
+import { claimReconcile, dismissMutation, managementScope, useMutationNotice } from '../../../features/services/management/mutations'
 
 export default function MyServicesScreen() {
   const { state, authorizedFetch, signOut } = useAuth()
@@ -22,13 +22,10 @@ export default function MyServicesScreen() {
   const { t } = useI18n()
   const allLoaded = t('myServices.allLoaded')
   const notice = useMutationNotice(user ? managementScope(readerConfig().endpoints?.api, user.id) : null)
-  // Each confirmed write reconciles the owned list once, from page one.
-  const reconciled = useRef<number | null>(null)
+  // Each confirmed write reconciles the owned list once, from page one; a later mount just loads normally.
   const { reconcile } = result
   useEffect(() => {
-    if (!notice || reconciled.current === notice.sequence) return
-    reconciled.current = notice.sequence
-    void reconcile()
+    if (notice && claimReconcile(notice)) void reconcile()
   }, [notice, reconcile])
   const openControls = (service: { id: number; title: string; church?: string; date: string | null }) => {
     if (user) void recordRecentlyControlled({ sessionId: service.id, title: service.title, church: service.church ?? '', date: service.date }, user.id)
@@ -58,7 +55,7 @@ export default function MyServicesScreen() {
           onPress={() => router.push('/session-management/new')}>{t('sessionManagement.addSession')}</AppButton>
       </View>
       {notice && <Card testID="mutation-notice">
-        <AppText variant="heading" accessibilityRole="alert">{t(notice.kind === 'created' ? 'sessionManagement.created' : notice.kind === 'saved' ? 'sessionManagement.saved' : 'sessionManagement.deleted')}</AppText>
+        <AppText variant="heading" accessibilityRole="alert">{t(notice.kind === 'created' ? notice.replayed ? 'sessionManagement.replayed' : 'sessionManagement.created' : notice.kind === 'saved' ? 'sessionManagement.saved' : 'sessionManagement.deleted')}</AppText>
         <AppText tone="muted">{t('sessionManagement.summary', { title: notice.session.title, date: formatServiceDate(notice.session.date) ?? '' })}</AppText>
         {result.error && !result.refreshing && <AppText>{t('sessionManagement.refreshFailed')}</AppText>}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>

@@ -34,7 +34,7 @@ export interface SessionPatch { date?: string; liturgy_ids?: number[]; options?:
 
 export type ManagementErrorKind =
   | 'validation' | 'forbidden' | 'unavailable' | 'uncertain' | 'conflict' | 'creationDeleted'
-  | 'stale' | 'cursorReset' | 'notFound' | 'network'
+  | 'stale' | 'cursorReset' | 'notFound' | 'network' | 'rejected'
 export class ManagementError extends Error {
   constructor(readonly kind: ManagementErrorKind, message: string, readonly fields: Record<string, string[]> = {},
     readonly body: unknown = null) {

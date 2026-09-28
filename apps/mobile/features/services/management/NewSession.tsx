@@ -49,14 +49,14 @@ function NewSession({ scope }: { scope: string }) {
     if (phase !== 'created' || !state.created || announced.current) return
     announced.current = true
     const session = state.created
-    announceMutation({ kind: 'created', scope, session: { id: session.id, title: session.title, date: session.date } })
+    announceMutation({ kind: 'created', scope, replayed: state.replayed, session: { id: session.id, title: session.title, date: session.date } })
     leaveToMySessions()
-  }, [phase, state.created, scope])
+  }, [phase, state.created, state.replayed, scope])
   useEffect(() => { if (checking) router.replace('/services') }, [checking])
 
   function create() {
-    if (!bootstrap || !controller.validate()) return
-    if (state.draft.date === todayIn(bootstrap.timeZone, bootstrap.defaultDate)) setConfirmToday(true)
+    // A today-dated session asks first; submit() validates, so an invalid draft never reaches the dialog.
+    if (bootstrap && state.draft.date === todayIn(bootstrap.timeZone, bootstrap.defaultDate) && controller.validate()) setConfirmToday(true)
     else controller.submit()
   }
 

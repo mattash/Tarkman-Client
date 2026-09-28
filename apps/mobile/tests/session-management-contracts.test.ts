@@ -22,6 +22,8 @@ it('shifts days across month, leap-day, and DST boundaries without drifting', ()
   expect(shiftDate('2026-11-01', -1)).toBe('2026-10-31') // US DST ends
   expect(shiftDate('2024-02-28', 1)).toBe('2024-02-29')
   expect(shiftDate('2026-12-31', 1)).toBe('2027-01-01')
+  expect(shiftDate('0050-01-01', 1)).toBe('0050-01-02') // Date.UTC would map year 50 to 1950
+  expect(shiftDate('0001-01-01', -1)).toBe('0001-01-01')
 })
 
 it('computes today in the backend zone, near UTC midnight', () => {
@@ -83,6 +85,7 @@ it.each([
   [422, fixtures.validation, 'validation'], [403, {}, 'forbidden'], [409, fixtures.idempotencyConflict, 'conflict'],
   [409, fixtures.creationResultUnavailable, 'creationDeleted'], [500, {}, 'uncertain'], [502, undefined, 'uncertain'],
   [404, undefined, 'unavailable'], [405, {}, 'unavailable'], [406, {}, 'unavailable'],
+  [429, {}, 'network'], [408, {}, 'network'], [400, {}, 'rejected'], [409, { code: 'something_new' }, 'rejected'],
 ])('maps a create %s to %s', async (status, body, kind) => {
   const request = fetcher().mockResolvedValue(respond(status as number, body))
   await expect(createSession(request, { clientRequestId: 'k', setup, startedAt: 0 })).rejects.toMatchObject({ kind })

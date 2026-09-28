@@ -35,7 +35,10 @@ export function moveLiturgy(draft: SessionDraft, id: number, offset: -1 | 1): Se
 export function shiftDate(date: string, days: number): string {
   if (!isCalendarDate(date)) return date
   const [year, month, day] = date.split('-').map(Number)
-  const shifted = new Date(Date.UTC(year, month - 1, day + days))
+  // setUTCFullYear, unlike Date.UTC, keeps years 1–99 as written.
+  const shifted = new Date(0)
+  shifted.setUTCFullYear(year, month - 1, day + days)
+  if (shifted.getUTCFullYear() < 1 || shifted.getUTCFullYear() > 9999) return date
   return `${String(shifted.getUTCFullYear()).padStart(4, '0')}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}-${String(shifted.getUTCDate()).padStart(2, '0')}`
 }
 

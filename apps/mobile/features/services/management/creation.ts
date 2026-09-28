@@ -67,6 +67,8 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
       const bootstrap = await fetchBootstrap(fetcher, controller.signal)
       if (controller.signal.aborted) return
       bootstrapAt = now()
+      // A sent request is fixed: while its outcome is open the form keeps showing exactly what was sent.
+      if (snapshot.bootstrap && snapshot.phase !== 'editing') { set({ bootstrap: { ...bootstrap, defaultDate: snapshot.bootstrap.defaultDate } }); return }
       const defaults: SessionDraft = { date: bootstrap.defaultDate, liturgies: [], options: { ...EMPTY_OPTIONS, ...bootstrap.defaultOptions } }
       const { draft } = snapshot
       // Defaults only initialize: anything the person already changed stays exactly as they left it.
@@ -75,7 +77,10 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
       set({ bootstrap, draft: next, baseline: defaults, unavailable: false })
     } catch (error) {
       if (controller.signal.aborted || isUnauthorized(error)) return
-      set({ bootstrapError: error instanceof Error ? error.message : t('sessionManagement.loadFailed'), unavailable: isManagementError(error, 'unavailable') })
+      // Unsupported or forbidden is final for this form; anything else can be retried.
+      const final = isManagementError(error, 'unavailable') || isManagementError(error, 'forbidden')
+      set({ bootstrapError: isManagementError(error, 'forbidden') ? t('sessionManagement.createForbidden') : error instanceof Error ? error.message : t('sessionManagement.loadFailed'),
+        unavailable: final })
     } finally {
       if (bootstrapRequest === controller) { bootstrapRequest = null; set({ bootstrapLoading: false }) }
     }
@@ -89,7 +94,9 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
     const fields = { ...snapshot.fields }
     if (field) delete fields[field]
     if (draft.liturgies !== snapshot.draft.liturgies) delete fields.liturgy_ids
-    set({ draft, fields })
+    // Once every highlighted field is fixed, the summary no longer applies; server-wide notes are stale after an edit.
+    const settled = snapshot.errorKind === 'validation' && Object.keys(fields).length === 0
+    set({ draft, fields, ...(settled ? { error: null, errorKind: null, otherErrors: [] } : {}) })
   }
 
   async function send(request: CreateAttempt) {
@@ -135,7 +142,7 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
     getSnapshot: () => snapshot,
     /** For focus: loads the bootstrap once, and refreshes an old one without touching edited fields. */
     focus() {
-      if (!snapshot.bootstrap || now() - bootstrapAt > BOOTSTRAP_TTL_MS) void loadBootstrap()
+      if (!snapshot.bootstrap || (snapshot.phase === 'editing' && now() - bootstrapAt > BOOTSTRAP_TTL_MS)) void loadBootstrap()
     },
     retryBootstrap: () => loadBootstrap(),
     setDate: (date: string) => edit(draft => ({ ...draft, date }), 'date'),

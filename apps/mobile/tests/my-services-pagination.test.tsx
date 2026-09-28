@@ -195,3 +195,14 @@ it('reconciles after a mutation from page one, so a late load-more page can neve
   expect(result.current.nextCursor).toBe('fresh')
   expect(fetcher.mock.calls.map(call => call[0])).toEqual([first, later, first])
 })
+
+it('keeps the cursor chain when a reconciling refresh fails', async () => {
+  const fetcher = request().mockResolvedValueOnce(respond(200, envelope([9], 'next+/='))).mockRejectedValueOnce(new Error('Offline'))
+    .mockResolvedValueOnce(respond(200, envelope([8])))
+  const { result } = await renderHook(() => useMyServices(fetcher))
+  await waitFor(() => expect(result.current.loading).toBe(false))
+  await act(async () => { await result.current.reconcile() })
+  expect(result.current.error).toBe('Offline')
+  expect(result.current.nextCursor).toBe('next+/=')
+  expect(ids(result.current.services)).toEqual([9])
+})

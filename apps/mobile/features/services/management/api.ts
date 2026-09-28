@@ -26,9 +26,11 @@ async function failure(response: Response, write: boolean): Promise<ManagementEr
   if (response.status === 409 && code === 'creation_result_unavailable') return new ManagementError('creationDeleted', t('sessionManagement.creationDeleted'), {}, data)
   if (response.status === 409 && code === 'idempotency_conflict') return new ManagementError('conflict', t('sessionManagement.creationConflict'), {}, data)
   if (response.status >= 500 && write) return new ManagementError('uncertain', t('sessionManagement.uncertain'))
-  if (response.status >= 500) return new ManagementError('network', t('sessionManagement.loadFailed'))
-  // Generic 404/405/406, HTML, or an unknown code: this backend does not offer version-1 management.
-  return unavailableError()
+  if (response.status >= 500 || response.status === 408 || response.status === 429) return new ManagementError('network', t('sessionManagement.busy'))
+  // A generic 404/405/406 means this backend does not offer version-1 management.
+  if (response.status === 404 || response.status === 405 || response.status === 406) return unavailableError()
+  // Any other refusal (400, an unknown 409 code…) is a definite answer that was not applied.
+  return new ManagementError('rejected', t('sessionManagement.rejected'))
 }
 
 async function send(fetcher: Fetch, path: string, init: Parameters<Fetch>[1], write: boolean): Promise<Response> {

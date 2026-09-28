@@ -8,11 +8,15 @@ export interface MutationNotice {
   kind: 'created' | 'saved' | 'deleted'
   scope: string
   session: { id: number; title: string; date: string | null }
+  /** A creation confirmed by a same-key retry rather than by its first request. */
+  replayed?: boolean
   sequence: number
 }
 
 let latest: MutationNotice | null = null
 let sequence = 0
+/** The last notice My Sessions reconciled for; module-level so a remount does not reconcile again. */
+let reconciled = 0
 const listeners = new Set<() => void>()
 const notify = () => listeners.forEach(listener => listener())
 
@@ -32,7 +36,14 @@ export function dismissMutation(notice: MutationNotice) {
   notify()
 }
 
-/** Forget every notice, e.g. on sign-out. */
+/** True exactly once per notice: the first My Sessions to see it reconciles its list. */
+export function claimReconcile(notice: MutationNotice): boolean {
+  if (notice.sequence <= reconciled) return false
+  reconciled = notice.sequence
+  return true
+}
+
+/** Forget every notice; registered to run before sign-out. */
 export function clearMutations() {
   if (!latest) return
   latest = null

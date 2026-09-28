@@ -177,3 +177,32 @@ it('reports a catalog failure as retryable, not as an empty catalog', async () =
   await catalog.retry()
   expect(catalog.getSnapshot()).toMatchObject({ error: null, complete: true, liturgies: [{ id: 303 }] })
 })
+
+it('keeps showing exactly what was sent while an outcome is open, even across a stale bootstrap', async () => {
+  let clock = 0
+  const { fetcher, controller } = setup([new TypeError('Network request failed')], () => clock)
+  await ready(controller)
+  controller.submit(); await flush()
+  expect(controller.getSnapshot().phase).toBe('uncertain')
+  clock = 2 * 60 * 60 * 1000
+  fetcher.mockResolvedValueOnce(respond(200, { ...fixtures.bootstrap, defaults: { date: '2026-09-28', options: {} } }))
+  controller.focus(); await flush()
+  expect(controller.getSnapshot().draft.date).toBe('2026-09-27')
+  expect(fetcher.mock.calls.filter(([path]) => path === '/s/new.json')).toHaveLength(1)
+})
+
+it('clears the error summary once every highlighted field is fixed', async () => {
+  const { controller } = setup([])
+  controller.focus(); await flush()
+  controller.submit()
+  expect(controller.getSnapshot()).toMatchObject({ errorKind: 'validation', error: expect.any(String) })
+  controller.update(draft => addLiturgy(draft, liturgy))
+  expect(controller.getSnapshot()).toMatchObject({ errorKind: null, error: null, fields: {} })
+})
+
+it('treats a forbidden bootstrap as final, without a futile retry', async () => {
+  const fetcher = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValueOnce(respond(403, {}))
+  const controller = createCreationController(fetcher)
+  controller.focus(); await flush()
+  expect(controller.getSnapshot()).toMatchObject({ unavailable: true, bootstrapError: 'Your account cannot create sessions here.' })
+})

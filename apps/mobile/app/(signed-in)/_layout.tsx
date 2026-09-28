@@ -1,12 +1,16 @@
+import { useEffect } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { Redirect, Stack, usePathname } from 'expo-router'
 import { useTheme } from '../../design/ThemeProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useI18n } from '../../features/i18n'
+import { clearMutations } from '../../features/services/management/mutations'
 
 /** Guards every screen in this group: waits for stored sign-in to load, then sends signed-out visitors to sign in and back. */
 export default function SignedInLayout() {
-  const { state } = useAuth()
+  const { state, beforeSignOut } = useAuth()
+  // Management notices belong to one sign-in; none survives signing out.
+  useEffect(() => beforeSignOut(clearMutations), [beforeSignOut])
   const pathname = usePathname()
   const { colors } = useTheme()
   const { t } = useI18n()
