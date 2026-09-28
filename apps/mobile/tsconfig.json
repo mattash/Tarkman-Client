@@ -4,7 +4,12 @@
     "strict": true,
     "types": [
       "react"
-    ]
+    ],
+    "paths": {
+      "@tarkman/core": [
+        "./node_modules/@tarkman/core/src/index.ts"
+      ]
+    }
   },
   "include": [
     "**/*.ts",

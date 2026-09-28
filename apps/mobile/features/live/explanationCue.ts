@@ -1,14 +1,10 @@
-import { currentPart, type LiveExplanation, type LiveSession } from './contracts'
+import { explanationContextKey, explanationOwnerKey } from '@tarkman/reader'
+import { currentPart, type LiveExplanation } from './contracts'
 import type { Endpoints } from './config'
 import type { ReaderState } from './state'
 
+export { explanationContextKey, explanationOwnerKey }
 export const readerScopeKey = (endpoints: Endpoints, id: number) => JSON.stringify([endpoints.api, endpoints.cable, id])
-export const explanationOwnerKey = (id: number, key: string) => JSON.stringify([id, key])
-export function explanationContextKey(session: LiveSession): string | null {
-  if (session.contentContext != null) return JSON.stringify(['content', session.contentContext])
-  if (session.partsContext != null) return JSON.stringify(['parts', session.partsContext])
-  return null
-}
 export interface ExplanationItem { readonly id: number; readonly fingerprint: string }
 export interface ExplanationBatch {
   readonly readerScopeKey: string
