@@ -1,0 +1,32 @@
+const API = process.env.EXPO_PUBLIC_API_URL
+const headers = { Accept: 'application/json', 'Content-Type': 'application/json' }
+const signIn = await fetch(`${API}/users/sign_in`, { method: 'POST', headers, body: JSON.stringify({ user: { email: process.env.TARKMAN_QA_EMAIL, password: process.env.TARKMAN_QA_PASSWORD } }) })
+const auth = signIn.headers.get('authorization')
+console.log('sign_in', signIn.status, auth ? 'token received' : 'NO TOKEN')
+if (!auth) process.exit(1)
+const get = async path => { const r = await fetch(API + path, { headers: { ...headers, Authorization: auth } }); return { status: r.status, cache: r.headers.get('cache-control'), body: await r.json().catch(() => null) } }
+try {
+  const boot = await get('/s/new.json')
+  console.log('bootstrap', boot.status, boot.cache, JSON.stringify({ ...boot.body, defaults: { ...boot.body?.defaults, options: Object.keys(boot.body?.defaults?.options ?? {}) } }))
+  const all = []; let after = null, pages = 0, orderOk = true, forward = true
+  for (;;) {
+    const r = await get(`/s/liturgy_options.json?limit=50${after ? `&after_id=${after}` : ''}`)
+    pages++
+    if (r.status !== 200) { console.log('catalog page', pages, r.status, JSON.stringify(r.body)); break }
+    const ids = r.body.liturgies.map(l => l.id)
+    if (ids.some((id, i) => i && id <= ids[i - 1])) orderOk = false
+    all.push(...r.body.liturgies)
+    if (r.body.next_after_id === null) break
+    if (after !== null && r.body.next_after_id <= after) { forward = false; break }
+    after = r.body.next_after_id
+  }
+  const shapeOk = all.every(l => Number.isSafeInteger(l.id) && typeof l.name === 'string' && Number.isSafeInteger(l.occurrence_count) && Number.isSafeInteger(l.usage_count) && l.usage_count >= 0)
+  console.log('catalog', { pages, items: all.length, idOrderWithinPages: orderOk, continuationsForward: forward, shapeOk, keys: [...new Set(all.flatMap(Object.keys))] })
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+  const sorted = [...all].sort((a, b) => b.usage_count - a.usage_count || collator.compare(a.name, b.name) || a.id - b.id)
+  console.log('top by usage then name:'); for (const l of sorted.slice(0, 12)) console.log(`  ${l.usage_count}\t${l.name}`)
+  console.log('used:', all.filter(l => l.usage_count > 0).length, 'unused:', all.filter(l => !l.usage_count).length)
+} finally {
+  const out = await fetch(`${API}/users/sign_out`, { method: 'DELETE', headers: { ...headers, Authorization: auth } })
+  console.log('sign_out', out.status)
+}
