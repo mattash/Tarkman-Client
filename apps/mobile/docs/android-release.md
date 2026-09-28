@@ -195,3 +195,14 @@ current recovery arrangement, and requires a separately authorized operation.
 
 #192 remains open until that owner confirmation is recorded. Stage 3 rollout,
 physical QA, domain deployment, declarations and production approval remain #193.
+
+## Recovery acceptance completed
+
+The owner confirmed recovery access and accepted the handoff on September 28.
+An additional local upload-keystore/password backup was saved outside Git with
+owner-only permissions; its certificate matches the accepted Play draft. It was
+not separately encrypted by this operation. The local copy does not include the
+submission service-account JSON: existing EAS custody and owner recovery remain
+its recovery arrangement. No private credential contents are recorded here.
+Issue #192 is closed. The earlier outstanding-confirmation notes above are
+historical; stage 3 release gates remain open in #193.

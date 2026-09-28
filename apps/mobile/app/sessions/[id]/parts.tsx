@@ -13,7 +13,7 @@ export default function SessionReaderScreen() {
   const config = readerConfig()
   const { t } = useI18n()
   const leave = () => { if (router.canGoBack()) { router.back() } else { router.replace('/') } }
-  if (!config.endpoints || !Number.isInteger(sessionId) || sessionId <= 0) {
+  if (!config.endpoints || !Number.isSafeInteger(sessionId) || sessionId <= 0) {
     return <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
       <AppText accessibilityRole="alert">{config.endpoints ? t('common.serviceLinkInvalid') : config.error}</AppText>
       <AppButton variant="secondary" onPress={() => router.replace('/')}>{t('common.allServices')}</AppButton>
