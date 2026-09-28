@@ -95,9 +95,9 @@ function AddLiturgySheet({ visible, catalog, selected, openerRef, onAdd, onDismi
     {state.complete && state.liturgies.length > 0 && matches.length === 0 && <AppText tone="muted" accessibilityLiveRegion="polite">{t('sessionManagement.catalogNoMatches')}</AppText>}
     {matches.map(item => {
       const added = chosen.has(item.id)
-      return <AppButton key={item.id} variant="row" disabled={added}
+      return <AppButton key={item.id} variant="row" disabled={added} trailingIcon={added ? 'selected' : 'next'}
         accessibilityLabel={t(added ? 'sessionManagement.addedLabel' : 'sessionManagement.addLabel', { name: item.name })}
-        onPress={() => onAdd(item)}>{added ? t('sessionManagement.addedRow', { name: item.name }) : item.name}</AppButton>
+        onPress={() => onAdd(item)}>{item.name}</AppButton>
     })}
   </AppModal>
 }

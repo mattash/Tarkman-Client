@@ -11,6 +11,8 @@ export interface AppButtonProps extends Omit<PressableProps, 'children' | 'style
   children: string
   variant?: 'primary' | 'secondary' | 'secondaryDestructive' | 'quiet' | 'destructive' | 'row' | 'text'
   icon?: IconName
+  /** Row variant only: the trailing glyph, a chevron by default (e.g. a checkmark for a chosen row). */
+  trailingIcon?: IconName
   iconOnly?: boolean
   badgeCount?: number
   highlighted?: boolean
@@ -29,7 +31,7 @@ const sizes = {
   form: { minHeight: 52, radius: radii.action, label: 'action' },
   hero: { minHeight: 54, radius: radii.action, label: 'action' },
 } as const
-export function AppButton({ children, variant = 'primary', loading = false, icon, iconOnly = false, selected = false, highlighted = false, badgeCount, rounded = false, size = 'regular', disabled = false,
+export function AppButton({ children, variant = 'primary', loading = false, icon, trailingIcon = 'next', iconOnly = false, selected = false, highlighted = false, badgeCount, rounded = false, size = 'regular', disabled = false,
   labelMaxFontSizeMultiplier, labelNumberOfLines, accessibilityState, onFocus, onBlur, onPressIn, onPressOut, ...props }: AppButtonProps) {
   const { colors } = useTheme()
   const [focused, setFocused] = useState(false)
@@ -80,6 +82,6 @@ export function AppButton({ children, variant = 'primary', loading = false, icon
       <AppText variant="caption" accessible={false} maxFontSizeMultiplier={1.2}
         style={{ color: colors.onPrimary, ...typography.tab, fontSize: explanationCue ? 10 : typography.tab.fontSize }}>{badgeCount > 9 ? '9+' : String(badgeCount)}</AppText>
     </View>}
-    {variant === 'row' && <AppIcon name="next" color={colors.primary} size={18} />}
+    {variant === 'row' && <AppIcon name={trailingIcon} color={colors.primary} size={18} />}
   </Pressable>
 }
