@@ -7,7 +7,7 @@ name: Join the live service from Today
 - extendedWaitUntil:
     visible: "Sample Divine Liturgy · Lord’s Prayer"
     timeout: 30000
-- tapOn: "Read along"
+- tapOn: "Pray along"
 - extendedWaitUntil:
     visible: "All services"
     timeout: 30000

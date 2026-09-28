@@ -155,9 +155,15 @@ export function sessionWithState(session: LiveSession, update: SessionState, par
     status: update.status, message: update.message, posture: update.posture, date: update.date }
 }
 export type SessionEvent = { event: 'part_change' | 'status_change' | 'explanation_updated'; sessionId: number; state?: SessionState }
+  | { event: 'session_deleted'; sessionId: number; revision: number; state?: never }
 export function parseEvent(value: unknown): SessionEvent | null {
   try {
     const e = record(value), data = record(e.data)
+    // Terminal: `{ session_id, revision }` only, published after the deletion commits (mattash/Tarkman#454).
+    if (e.event === 'session_deleted') {
+      const id = positiveId(data.session_id), revision = data.revision
+      return id && typeof revision === 'number' && Number.isSafeInteger(revision) && revision > 0 ? { event: 'session_deleted', sessionId: id, revision } : null
+    }
     if (e.event !== 'part_change' && e.event !== 'status_change' && e.event !== 'explanation_updated') return null
     const id = positiveId(e.event === 'part_change' ? data.session : data.session_id)
     if (!id) return null

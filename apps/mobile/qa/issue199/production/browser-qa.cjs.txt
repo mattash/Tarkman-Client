@@ -1,0 +1,55 @@
+// Run from the repository root with EXPO_PUBLIC_API_URL, TARKMAN_QA_EMAIL and TARKMAN_QA_PASSWORD set, against a production-env
+// web export served with single-page fallback on 127.0.0.1:8096. Credentials are read from the environment only.
+// Read-only production check of the Add Liturgy sheet. Only GETs, sign-in and sign-out may reach the API.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE)
+const assert = require('node:assert/strict')
+const API = process.env.EXPO_PUBLIC_API_URL, APP = 'http://127.0.0.1:8096'
+const out = `${process.cwd()}/apps/mobile/qa/issue199/production`
+const cors = { 'access-control-allow-origin': APP, 'access-control-allow-headers': 'Accept, Authorization, Content-Type, X-Polling-Client', 'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS', 'access-control-expose-headers': 'Authorization' }
+;(async () => {
+  const browser = await chromium.launch()
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  const blocked = [], errors = []
+  page.on('pageerror', e => errors.push(e.message))
+  let catalog = null
+  await page.route(`${API}/**`, async route => {
+    const req = route.request(), url = new URL(req.url()), method = req.method()
+    if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
+    const allowed = method === 'GET' || (method === 'POST' && url.pathname === '/users/sign_in') || (method === 'DELETE' && url.pathname === '/users/sign_out')
+    if (!allowed) { blocked.push(`${method} ${url.pathname}`); return route.abort('blockedbyclient') }
+    const response = await route.fetch()
+    if (url.pathname === '/s/liturgy_options.json') catalog = [...(catalog ?? []), ...(await response.json()).liturgies]
+    await route.fulfill({ response, headers: { ...response.headers(), ...cors } })
+  })
+  await page.routeWebSocket(/wss:\/\/.*/, ws => ws.close())
+  await page.goto(`${APP}/sign-in?returnTo=%2Fsession-management%2Fnew`)
+  await page.getByLabel('Email', { exact: true }).fill(process.env.TARKMAN_QA_EMAIL)
+  await page.getByLabel('Password', { exact: true }).fill(process.env.TARKMAN_QA_PASSWORD)
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Liturgy' }).waitFor({ timeout: 30000 })
+  await page.getByRole('button', { name: 'Add Liturgy' }).click()
+  await page.getByRole('button', { name: 'Add Divine Liturgy', exact: true }).waitFor({ timeout: 30000 })
+  await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(400)
+  const shown = await page.getByTestId('modal-content').getByRole('button').evaluateAll(els => els.map(e => e.getAttribute('aria-label')))
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+  const expected = [...catalog].sort((a, b) => b.usage_count - a.usage_count || collator.compare(a.name, b.name) || a.id - b.id).map(l => `Add ${l.name}`)
+  assert.deepEqual(shown, expected, 'sheet order = usage desc, then title')
+  await page.screenshot({ path: `${out}/phone-sheet.png` })
+  await page.getByLabel('Filter by title').fill('divine')
+  await page.waitForTimeout(300)
+  const filtered = await page.getByTestId('modal-content').getByRole('button').evaluateAll(els => els.map(e => e.getAttribute('aria-label')))
+  assert.ok(filtered.length > 0 && filtered.every(label => /divine/i.test(label)), 'filter narrows to matching titles')
+  await page.screenshot({ path: `${out}/phone-sheet-filtered.png` })
+  await page.getByRole('button', { name: 'Add Divine Liturgy', exact: true }).click()
+  await page.getByLabel('Number 1 of 1: Divine Liturgy').waitFor()
+  await page.screenshot({ path: `${out}/phone-form.png`, clip: { x: 0, y: 0, width: 390, height: 844 } })
+  // Leave without creating: discard the draft, then sign out from My Sessions (no screenshot of real sessions).
+  await page.getByRole('button', { name: 'Cancel' }).first().click()
+  await page.getByRole('button', { name: 'Discard' }).click()
+  await page.getByRole('button', { name: 'Sign out' }).click()
+  await page.waitForTimeout(1500)
+  const result = { shownCount: shown.length, top5: shown.slice(0, 5).map(s => s.replace(/^Add /, '')), filtered: filtered.map(s => s.replace(/^Add |.* is already selected$/g, '')), blocked, errors }
+  console.log(JSON.stringify(result, null, 2))
+  require('node:fs').writeFileSync(`${out}/results.json`, JSON.stringify({ checkedAt: new Date().toISOString(), api: API, readOnly: true, orderMatchesUsageThenTitle: true, ...result }, null, 2) + '\n')
+  await browser.close()
+})().catch(e => { console.error(e.message); process.exit(1) })

@@ -7,6 +7,7 @@
 //   node apps/mobile/qa/design-system/mock-reader-server.cjs
 // FIXTURE_SERVICES=single (default) | several | none chooses what /services.json lists,
 // so the home screen's live, several-live and nothing-live states can each be checked.
+// FIXTURE_MANAGEMENT=off hides the synthetic session-management routes (an older backend).
 
 const http = require('node:http')
 const { URL } = require('node:url')
@@ -82,6 +83,16 @@ const secondSession = { session: {
   church_longitude: -71.1097,
 } }
 const listed = { single: [session], several: [session, secondSession], none: [] }[SCENARIO] ?? [session]
+// My Sessions: the operator's owned sessions, newest date first. Created fixture sessions join this list.
+const owned = [session]
+const management = require('./management-fixture.cjs').createManagement({
+  enabled: process.env.FIXTURE_MANAGEMENT !== 'off', owned, church: 'Sample parish · local design fixture',
+  seed: [{ id: SESSION_ID, title: session.session.liturgy, date: session.session.date, liturgy_ids: [5001] }],
+  onDeleted: (id, revision) => {
+    for (const socket of cableServer?.clients ?? []) {
+      if (socket.readyState === 1 && socket.fixtureIdentifier) socket.send(JSON.stringify({ identifier: socket.fixtureIdentifier, message: { event: 'session_deleted', data: { session_id: id, revision } } }))
+    }
+  } })
 const explanationEdits = new Map()
 const presence = new Map()
 function presenceSnapshot(id, client) {
@@ -162,7 +173,9 @@ async function route(req, res) {
     return res.end()
   }
 
-  const path = new URL(req.url, `http://${HOST}:${PORT}`).pathname
+  const url = new URL(req.url, `http://${HOST}:${PORT}`)
+  const path = url.pathname
+  if (await management.handle(req, res, path, url, { json, error, authorized, requestJson })) return
   const presenceRoute = path.match(/^\/s\/(\d+)\/controller_presence(?:\/([a-f\d-]+))?\.json$/i)
   if (presenceRoute) {
     if (!authorized(req)) return error(res, 401, 'Sign in required.')
@@ -207,7 +220,8 @@ async function route(req, res) {
   if (path === '/s.json') {
     if (!authorized(req)) return error(res, 401, 'Sign in required.')
     if (req.method !== 'GET') return error(res, 405, 'Use GET to list fixture services.')
-    return json(res, 200, { sessions: [session], page: { limit: 20, has_more: false, next_cursor: null } })
+    const sessions = [...owned].sort((a, b) => String(b.session.date).localeCompare(String(a.session.date)) || b.session.id - a.session.id)
+    return json(res, 200, { sessions, page: { limit: 20, has_more: false, next_cursor: null } })
   }
 
   if (path === '/services.json') return json(res, 200, listed.length ? listed : { message: 'No sessions today' })

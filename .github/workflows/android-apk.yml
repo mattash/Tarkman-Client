@@ -1,0 +1,98 @@
+# Builds a standalone Android test APK on demand (#191). The JavaScript bundle is
+# embedded, so the APK starts without Metro. It is signed with the generated
+# project's debug keystore: installable for testing, never for Google Play, and
+# it cannot update an EAS-signed install of app.tarkman (see apps/mobile/README.md).
+
+name: Android test APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: Public HTTPS API origin embedded in the APK
+        default: https://www.tarkman.app
+        required: true
+      actioncable_url:
+        description: Public WSS ActionCable URL embedded in the APK
+        default: wss://www.tarkman.app/cable
+        required: true
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    env:
+      CI: '1'
+      EXPO_NO_DOTENV: '1'
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+      EXPO_PUBLIC_ACTIONCABLE_URL: ${{ inputs.actioncable_url }}
+      EXPO_PUBLIC_SENTRY_ENVIRONMENT: preview
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+    steps:
+    - name: Require HTTPS/WSS endpoints
+      run: |
+        case "$EXPO_PUBLIC_API_URL" in https://*) ;; *) echo "api_url must use https://"; exit 1 ;; esac
+        case "$EXPO_PUBLIC_ACTIONCABLE_URL" in wss://*) ;; *) echo "actioncable_url must use wss://"; exit 1 ;; esac
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: 'npm'
+        cache-dependency-path: apps/mobile/package-lock.json
+    # React Native 0.86's Gradle build targets JDK 17.
+    - uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: '17'
+    - run: npm ci --prefix apps/mobile
+    - name: Clean Android prebuild
+      working-directory: apps/mobile
+      run: npx expo prebuild --platform android --clean --no-install
+    - name: Assemble release APK
+      working-directory: apps/mobile/android
+      run: |
+        # arm64-v8a covers current phones; x86_64 covers emulators.
+        ./gradlew :app:assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64 \
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+    - name: Verify and name the APK
+      working-directory: apps/mobile/android
+      run: |
+        apk=app/build/outputs/apk/release/app-release.apk
+        test -f "$apk"
+        build_tools=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)
+        badging=$("${build_tools}aapt2" dump badging "$apk")
+        echo "$badging" | grep -q "package: name='app.tarkman'"
+        if echo "$badging" | grep -q 'application-debuggable'; then
+          echo "Release APK is debuggable."
+          exit 1
+        fi
+        "${build_tools}apksigner" verify "$apk"
+        # The embedded bundle is what lets the APK start without Metro.
+        unzip -l "$apk" | grep -q 'assets/index.android.bundle'
+        mkdir -p "$RUNNER_TEMP/apk"
+        name="tarkman-test-${GITHUB_SHA::7}.apk"
+        cp "$apk" "$RUNNER_TEMP/apk/$name"
+        echo "$badging" | grep -E "^(package|sdkVersion|targetSdkVersion|application-label|uses-permission|native-code):" \
+          > "$RUNNER_TEMP/apk/badging.txt"
+        (cd "$RUNNER_TEMP/apk" && sha256sum "$name" > "$name.sha256")
+        cat "$RUNNER_TEMP/apk/badging.txt"
+        {
+          echo "### Android test APK"
+          echo "- Commit: \`$GITHUB_SHA\`"
+          echo "- API: \`$EXPO_PUBLIC_API_URL\`"
+          echo "- SHA-256: \`$(cut -d' ' -f1 "$RUNNER_TEMP/apk/$name.sha256")\`"
+          echo "- Debug-keystore signed: for testing only, not for Google Play."
+        } >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/upload-artifact@v6
+      with:
+        name: tarkman-android-test-apk
+        path: ${{ runner.temp }}/apk
+        retention-days: 30

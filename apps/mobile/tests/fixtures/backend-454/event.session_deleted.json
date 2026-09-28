@@ -1,0 +1,7 @@
+{
+  "event": "session_deleted",
+  "data": {
+    "session_id": 4008,
+    "revision": 4
+  }
+}

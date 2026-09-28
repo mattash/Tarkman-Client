@@ -9,14 +9,13 @@ is deprecated.
 ## v1 platform scope
 
 Tarkman mobile v1 supports **iOS**; the mobile web export remains supported as
-part of the web experience. Android is intentionally **unsupported for v1**:
-there is no Android device/emulator verification, store setup, or release plan.
-Android remains configured as an intentional internal/future path, but that
-configuration does not make it a supported v1 target or block an explicit
-Android build. Existing Android-specific code and configuration remain in place
-for a future, separately scoped Android effort. Before Android is released or
-otherwise supported, complete an Android verification plan covering the reader,
-part detail, service control, sheets, and back gesture.
+part of the web experience. Android status: **testable Android build; not yet a
+Play release** (#191, stage 1 of #189). The same app (`app.tarkman`) builds an
+installable APK from the `development` and `preview` EAS profiles, and CI
+compiles it; see [Android APK builds](#android-apk-builds--191). There is no
+Google Play listing, production AAB, or verified HTTPS App Link yet, and the
+device verification matrix (reader, part detail, service control, sheets, Back
+gesture) is tracked in #191 rather than claimed here.
 
 ## Develop and verify
 
@@ -49,8 +48,9 @@ in the pinned version. The stand-in currently returns a 402 × 2000 parent and
 heights, viewport calculations, or scroll positions. Keep this narrowly scoped
 stand-in unless a compatible FlashList test setup is deliberately adopted.
 
-Core is a source-linked `file:` dependency. After installing both apps, run
-`npm run core:test` and `npm run core:check-consumers` at repository root. The
+Core is a source-linked `file:` dependency. After installing mobile, run
+`npm run core:test` at repository root; `npm run core:check-consumers` also
+needs the legacy web install. The
 reader and gallery use core language types; their narrower response models match
 nullable Rails fields. Metro uses a package-scoped resolver so only core's
 NodeNext `.js` internals load from TypeScript source; app and third-party imports
@@ -86,7 +86,7 @@ status bar appearance and local font loading, without gating the router. A loadi
 - `TextField`: visible and accessible label, focus/error styling, native keyboard
   props, text scaling and disabled state. Return/submit behavior belongs to the
   caller; the gallery dismisses single-line keyboards on Done.
-- `AppModal`: native Modal presented as an iOS page sheet or Android bottom surface, with scrollable content,
+- `AppModal`: native Modal presented as an iOS page sheet or a 90%-height Android bottom surface (bounding its flexible scroll area), with scrollable content,
   safe-area padding and keyboard avoidance. Close button, backdrop, Android back,
   web Escape and accessibility escape dismiss it. Initial focus targets Close; callers
   pass an `openerRef` for return focus. Web uses host focus and RN Web’s focus trap;
@@ -404,9 +404,12 @@ awake for the operator.
 The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
 the Jest suite, the UI, interface-copy and font guards, `expo config`, the Expo web export, and
 an iOS config smoke check that prebuilds the native project and asserts the
-associated-domains entitlement and bundle identifier survive. The `build` matrix
-runs the web client's typecheck, build and tests on Node 22 and 24. The `design`
-job checks generated tokens and color contrast; `mobile` uses Node 24.
+associated-domains entitlement and bundle identifier survive. The `mobile` job
+also runs `npm run core:test` (shared core build, tests and boundary guard), which
+needs only the mobile install. The `design` job checks generated tokens and color
+contrast; `mobile` uses Node 24. The deprecated `apps/web` client is validated by
+the separate, non-required [Legacy web CI](../../.github/workflows/legacy-web.yml)
+workflow only when it or shared core changes.
 
 The smoke check runs last because `expo prebuild` rewrites `package.json`
 scripts; it catches a broken app config or config plugin in CI rather than
@@ -430,6 +433,37 @@ PR. Detection failures and failed, cancelled, or unexpectedly skipped compiles
 fail the gate. Non-mobile PRs consume no macOS runner. macOS runners have
 materially higher cost than Linux, so compilation is limited to relevant PRs;
 the existing push-to-`main` checks remain unchanged.
+
+**Reusing a native compile (#204).** Only changes to native inputs trigger a
+compile: the workflow, the classifier itself, `app.json`/`app.config.*`,
+`package.json`, the lockfile, plugins, `assets/icons/`, and platform-specific
+`ios/` or `android/` files. CI invokes Expo prebuild and Xcode/Gradle directly,
+without an EAS profile or archive upload. Consequently, `eas.json`, `.easignore`
+and the validation-only `scripts/check-store-config.mjs` do not invalidate
+these compiles. EAS packaging, submission, environment and profile settings
+are not applied to these CI builds; no semantic EAS field filter is needed.
+The unconditional Linux mobile job still runs `check:store-config`, Expo config
+and the iOS prebuild smoke check, and mobile changes still run both platform
+bundle smoke checks. If a config plugin or build step begins reading an excluded
+file, it must be added to the native inputs.
+[`scripts/native-inputs.mjs`](scripts/native-inputs.mjs) defines that list and
+fingerprints those files in the PR's merge commit, per platform, together with
+the current ISO week. After a real compile succeeds, `ios-build` (or
+`android-build`) saves a marker keyed by that fingerprint in the PR's Actions
+cache. On a later commit, the changes job restores the marker and verifies its
+platform, result and fingerprint. If they match, the compile is skipped and the
+aggregate names the reused run. The aggregate still requires this head's
+bundle smoke check. Any mismatch, missing marker or cache error means a new
+compile. This covers native commits, base-branch updates to native inputs, and
+workflow or toolchain edits. The weekly salt forces at least one compile a week
+to pick up runner image drift. Markers are scoped to one PR and are never
+shared with another PR or `main`. The Debug iOS simulator build and the Android
+debug APK load JavaScript from Metro instead of embedding it, so JavaScript-only
+commits cannot change them. `npm run test:native-inputs` runs these scenarios
+on a scratch repository.
+To force a fresh compile without changing any inputs, delete the PR's
+`native-compile-ok-<platform>-*` entry under **Actions → Caches** and re-run
+the workflow.
 
 After merge, the owner must select the exact check **`ios-build`** from
 **GitHub Actions** in `main` branch protection/rulesets, alongside the existing
@@ -601,7 +635,7 @@ plugins, so a new entitlement only appears after `expo prebuild --clean`.
 `https://www.tarkman.app/s/:id/explain`, the web projector display shows
 `https://web.tarkman.app/sessions/:id/explanations`, and reading links on
 `web.tarkman.app` work too. A found code is never entered silently: the scanner
-loads the service and waits for **Read along**, because a camera can pick up a
+loads the service and waits for **Pray along**, because a camera can pick up a
 code from across the room or from last week's slide.
 
 A scanned code is untrusted input, because a sticker in a public place can be
@@ -628,9 +662,10 @@ production session 4006 and need a production-configured build, while the
 `fixture-*.yaml` flows need the local fixture documented below and fail against
 production. Run one family or the other, never `maestro test maestro/`.
 
-`launch.yaml` loads the app and is reused by the others through `runFlow`. In
-development it points the development client at Metro on port 8081; a standalone
-build ignores that link and simply launches, so the same flows run against both.
+`launch.yaml` loads the app and is reused by the others through `runFlow`. On
+iOS it points the development client at Metro on port 8081; a standalone iOS
+build ignores that link and simply launches. The Android branch is for a
+dedicated development client and clears app data; see the Android instructions below.
 `read-a-service.yaml` opens a service by ID, changes language, opens a part and
 comes back. `part-link.yaml` opens a part straight from a link. Both are signed
 out and read-only, so no flow can change a live service and none needs
@@ -668,8 +703,8 @@ maestro test -s 1 apps/mobile/maestro/fixture-join.yaml \
   apps/mobile/maestro/fixture-controls.yaml
 ```
 
-`-s 1` runs the flows serially on one shard. Without it Maestro runs them in
-parallel, and the signed-in flows race each other over the single app instance.
+`-s 1` explicitly runs the flows serially on one shard. Keep this suite serial
+because the flows share one app instance and mutable fixture state.
 Grant the simulator camera before the first run (the scan fallback in
 `fixture-open-service.yaml` needs the scanner to open without the permission
 prompt covering it):
@@ -686,6 +721,218 @@ starts signed out; if a run stops mid-flow, sign out manually before rerunning.
 The fixture confirms the ActionCable subscription but never broadcasts, so
 these flows do not exercise live-following updates — that remains manual or
 production QA.
+
+### Android fixture run (internal test automation)
+
+This reuses the shared fixture flows, including `fixture-onboarding`; it does not
+add Android release support. Use a **dedicated test emulator/device**: Android's
+shared launch helper clears `app.tarkman` data before each flow (including sign-in,
+preferences and explanation read state) and grants camera again after the reset.
+It uses standalone `clearState` then `setPermissions`, leaving the app stopped
+until `openLink` cold-launches the development client into Metro. Resetting data
+also resets Expo's developer-menu preferences, so each launch waits up to 60 seconds
+for the first-run `Continue` control and taps it, then waits up to 15 seconds for
+`Close` (its Android content description). Before closing the menu, it scrolls to
+`Tools button` and turns it off: the reset enables this floating control, whose
+upper-right touch surface overlaps the reader's preferences button. It then taps
+`Close` before waiting for `Today`. This Android path requires a development client.
+Android dismisses the keyboard before manual-ID and sign-in submission.
+The iOS launch and keyboard behavior are unchanged. Android opens
+`tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081`, using
+`expo.scheme` from `app.json`; iOS retains its existing `exp+tarkman` link.
+The scanner uses manual session ID 9001; no camera image or production service
+is needed. Set the test device language to English and unlock it before running.
+
+Prerequisites: Node >=22.13, `npm ci --prefix apps/mobile`, Maestro CLI **2.10.0** on PATH,
+OpenJDK 17, Android SDK platform-tools/emulator, an existing AVD, and an installed
+**development client** with package `app.tarkman` matching this checkout's native
+dependencies. A release APK or Expo Go will not work. To build a client yourself,
+use a disposable checkout at this revision, run `npm ci` and
+`npx expo run:android --device --no-bundler` from its `apps/mobile` directory.
+That build generates native projects/APKs; keep them outside the review worktree.
+Alternatively install an independently built matching development APK from an
+external path with `adb -s SERIAL install -r /absolute/path/to/development.apk`.
+No PR-specific APK path, EAS operation, credentials or env file is required.
+
+From the repository root, select the SDK/JDK in your shell (these are this Mac's
+paths; use your own on another machine):
+
+```sh
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$HOME/.maestro/bin:$PATH"
+"$ANDROID_HOME/emulator/emulator" -list-avds
+# In its own terminal, only if the intended AVD is not already running:
+"$ANDROID_HOME/emulator/emulator" -avd YOUR_AVD_NAME
+```
+
+Start these prerequisites in **two separate foreground terminals**, from the
+repository root. Stop any prior fixture/Metro using Ctrl-C in their owning
+terminals first; do not reuse a Metro previously configured for production.
+Restart the fixture for each suite run to reset its mutable service state.
+
+```sh
+# Terminal 1: fresh single-service fixture on loopback port 8100
+FIXTURE_SERVICES=single node apps/mobile/qa/design-system/mock-reader-server.cjs
+```
+
+```sh
+# Terminal 2: fixture-only Metro on 8081, ignoring local env files and stale transforms
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_SENTRY_DSN= \
+EXPO_PUBLIC_API_URL=http://127.0.0.1:8100 \
+EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8100/cable \
+npm run mobile -- --dev-client --localhost --port 8081 --clear
+```
+
+In a third terminal with the SDK/JDK environment above:
+
+```sh
+adb devices -l
+npm run maestro:android --prefix apps/mobile -- --device emulator-5554
+# Substitute the exact serial from adb devices -l. With just one attached device:
+# npm run maestro:android --prefix apps/mobile
+```
+
+The runner honors `--device`, then `ANDROID_SERIAL`, otherwise requires exactly
+one ready device. It never boots or chooses an AVD by guesswork. It rejects
+missing/unready devices, non-debuggable/missing apps, SDK conflicts, unavailable
+Maestro or missing Java executable, unavailable Metro, and a fixture not listing
+its single active service at part 901 (position 1). The host Metro readiness check
+uses `http://localhost:8081/status` because Expo `--localhost` may listen only on
+IPv6 loopback (`::1`) on macOS. The fixture check stays at
+`http://127.0.0.1:8100/services.json`, and the Android Metro deep link stays at
+`http://127.0.0.1:8081` for `adb reverse`. Metro's status endpoint cannot
+prove which API URLs were bundled: the
+fresh Metro command above is mandatory. It sets `adb -s SERIAL reverse` for
+8081 and 8100, refuses conflicting mappings, grants Android camera permission,
+and runs only the six standalone fixture flows serially with `-s 1`.
+The wrapper option is `--device`; it invokes Maestro as
+`maestro test --udid SERIAL -s 1 ...`. This syntax, multiple flow paths,
+`--test-output-dir`, `--debug-output`, `--format JUNIT`, and `--output` were
+checked against saved Maestro 2.10.0 `test --help` output without executing
+Maestro in the Codex sandbox.
+
+Maestro runs from a printed temporary directory outside the checkout, with
+explicit artifact/debug directories and a JUnit `report.xml` there. A `TMPDIR`
+inside the repository is rejected. Screenshots/reports/logs stay out of the diff
+(Maestro may also use `~/.maestro`).
+The runner propagates failures and forwards Ctrl-C only to its own Maestro child.
+It does not own or kill the fixture, Metro, adb server or emulator. Stop your
+foreground servers with Ctrl-C when done. Camera permission and matching reverse
+mappings remain available for reruns; remove the mappings explicitly when finished:
+
+```sh
+adb -s emulator-5554 reverse --remove tcp:8081
+adb -s emulator-5554 reverse --remove tcp:8100
+npm run test:maestro-android --prefix apps/mobile
+```
+
+Keep dependency installs, native build output, Expo caches and Maestro artifacts
+out of the reviewed diff. A source/static check is not Android device-run evidence;
+the PM must run the suite on the selected development client and collect its output.
+### Android APK builds / #191
+
+For production AAB signing and an unpublished Play internal-track draft, see
+[Android release setup / #192](docs/android-release.md).
+
+Android uses the existing Expo app, package `app.tarkman`, EAS project and
+`runtimeVersion` policy. Nothing Android-specific lives in source control
+except app and EAS configuration: `android/` is generated by
+`expo prebuild` and ignored by Git.
+
+| Profile | Command (from `apps/mobile`) | Output |
+|---|---|---|
+| `development` | `eas build --platform android --profile development` | Development-client APK; needs Metro (`npm start -- --dev-client`) |
+| `preview` | `eas build --platform android --profile preview` | Standalone APK with the embedded bundle, `preview` update channel; starts without Metro |
+
+Both profiles are `buildType: "apk"` and internal distribution. Production
+settings are unchanged and not required for this stage. Install an EAS APK by
+opening its build page on the device, or with `adb install <file>.apk`.
+
+**Prerequisites.** EAS access to the `mesropash/tarkman` project and an Android
+upload keystore held by EAS. Reuse existing EAS Android credentials if they
+exist (`eas credentials --platform android`); otherwise the project owner lets
+EAS generate one on the first build. Never reset or replace an existing
+keystore, and keep keystores, passwords and service-account keys out of source
+control, logs, issues and `EXPO_PUBLIC_*` variables. No Google Play account is
+needed for an APK.
+
+**Replacing installs.** Development and preview builds share the package name,
+so each replaces the other. If two builds were signed with different keys,
+Android refuses the update; the only way forward is to uninstall, which deletes
+that device's saved services, preferences and sign-in. Tell testers that before
+asking them to uninstall.
+
+**Local compile** (JDK 17 and an Android SDK; `ANDROID_HOME` set):
+
+```sh
+cd apps/mobile
+npm ci
+npx expo export --platform android --clear --output-dir /tmp/tarkman-android-bundle
+npx expo prebuild --platform android --clean --no-install
+(cd android && ./gradlew :app:assembleDebug)
+```
+
+A debug APK loads JavaScript from Metro; use the `preview` profile (or
+`SENTRY_DISABLE_AUTO_UPLOAD=true eas build --platform android --profile preview --local`)
+for a standalone build. `expo prebuild` rewrites `package.json` scripts; discard
+that change.
+
+**Test APK without EAS.** The manually run **Android test APK** workflow
+(`.github/workflows/android-apk.yml`, Actions → *Android test APK* → *Run
+workflow*) runs a clean prebuild and `:app:assembleRelease` for `arm64-v8a`
+(phones) and `x86_64` (emulators), checks the package, that it is not
+debuggable, its signature and the embedded JavaScript bundle, and uploads
+`tarkman-test-<sha>.apk` with its SHA-256 and badging as the
+`tarkman-android-test-apk` artifact (30 days). It embeds the public endpoints
+given as inputs (default `https://www.tarkman.app`), sets the Sentry environment
+to `preview` without a DSN, and starts without Metro. The same build locally:
+
+```sh
+cd apps/mobile
+export EXPO_NO_DOTENV=1 SENTRY_DISABLE_AUTO_UPLOAD=true \
+  EXPO_PUBLIC_API_URL=https://www.tarkman.app \
+  EXPO_PUBLIC_ACTIONCABLE_URL=wss://www.tarkman.app/cable
+npx expo prebuild --platform android --clean --no-install
+(cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64)
+# android/app/build/outputs/apk/release/app-release.apk
+```
+
+That APK is signed with the generated project's debug keystore. It is for
+sideloaded testing only: it is not a Play upload, it is not bound to the
+`preview` EAS Update channel, and because its signature differs
+from EAS-built APKs, Android refuses to install it over one (or vice versa)
+without an uninstall, with the data loss described above.
+
+**Permissions.** The release manifest requests only `INTERNET`, `CAMERA`
+(QR scanning), foreground `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`
+(asked only when the reader looks for a nearby church) and `VIBRATE`, plus
+install-time permissions merged from libraries that never prompt:
+`ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `USE_BIOMETRIC`/`USE_FINGERPRINT`
+(SecureStore) and the app-private `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
+`android.blockedPermissions` in `app.json` removes microphone, background
+location, legacy external storage and `SYSTEM_ALERT_WINDOW`, including any a
+library manifest would merge in; `npm run check:store-config` guards the
+profiles and these blocks.
+
+**CI.** For every PR, the stable **`android-build`** check aggregates
+`android-changes`, `android-bundle-smoke` and `android-compile`, with the same
+rules as `ios-build`. Mobile changes export the Android JavaScript bundle on
+Linux. Config, dependency, icon, plugin or workflow changes also run a clean
+Android prebuild, check the merged release manifest (package, `tarkman`
+scheme, permissions, not debuggable) and compile a debug APK for one ABI
+(`x86_64`) on JDK 17. The job uses no signing keys, EAS or Play secrets,
+dummy endpoints, `EXPO_NO_DOTENV=1` and no Sentry upload, and uploads the
+manifest, permission list and APK badging as the `android-compile-evidence`
+artifact. A successful compile is reused for later commits whose native
+inputs are unchanged, under the same rules as `ios-build` above. The owner
+selects **`android-build`** in branch protection;
+this change does not. A green check proves compilation, not device behavior.
+
+**Known Android limitations.** No Play release or AAB, `https://web.tarkman.app`
+links are not verified App Links (they open the browser), and the device
+scenario matrix in #191 is not yet recorded.
 
 ### Known gaps
 
@@ -750,6 +997,57 @@ Native accessibility announces “All services loaded” once after a terminal
 load-more response, excluding initial complete lists and first-page recovery.
 Web retains its polite live region. Jest covers these transitions; native scrolling and assistive technology still
 need device verification against the paginated backend.
+
+## My Sessions: Add Session / #199
+
+My Sessions (the signed-in list, route `/services`) leads with **Add Session**, above every card
+and in every list state. It opens `app/(signed-in)/session-management/new.tsx`, which sits outside
+`services/[id]/_layout.tsx`: the form never starts a reader, controller presence, keep-awake or a
+live command. Modules live in `features/services/management/`:
+
+- `contracts.ts` validates the mattash/Tarkman#454 version-1 shapes: bootstrap (`GET /s/new.json`,
+  `schema_version`/`session_management_version` 1, `time_zone`, `defaults`, `limits`), the keyset
+  picker catalog (`GET /s/liturgy_options.json?limit&after_id&q`), and the canonical nested `session`.
+  Any other version, HTML, or a generic 404/405/406 reads as "management unavailable", never as an
+  empty form or a raw POST.
+- `api.ts` sends only `{ client_request_id, session: { date, liturgy_ids, options } }`.
+- `creation.ts` owns one draft: defaults initialize untouched fields only (a stale bootstrap is
+  refreshed on focus without overwriting edits); a synchronous in-flight lock; an uncertain outcome
+  (network, abort, 5xx, unreadable success) keeps the exact key and payload for **Retry safely**
+  within 24 hours and locks the form; 422 maps `errors_by_field` and focuses the first field.
+- `catalog.ts`/`LiturgyPicker.tsx`: server search and load-more; selections live in the draft, so
+  they survive searching and paging. The numbered order has labelled Move up/down/Remove controls.
+- `mutations.ts` announces a confirmed write, scoped to API environment and account; My Sessions
+  reconciles once via `useMyServices().reconcile()` (aborts any page in flight, resets the cursor
+  chain, fetches page one) and shows **Session created** with a separate **Open controls**.
+
+A today-dated creation asks for confirmation (it can appear to readers and become the current
+session immediately). The loopback fixture (`qa/design-system/mock-reader-server.cjs`) serves the
+synthetic management routes; `FIXTURE_MANAGEMENT=off` simulates an older backend. Browser evidence:
+[qa/issue199](qa/issue199/). The backend contract is not yet implemented, so real-backend and native
+device checks remain outstanding.
+
+## My Sessions: edit and delete / #200
+
+Each My Sessions card keeps **Open controls** as its main action, with secondary **Edit** and **Delete**
+(labels include the title and date). `app/(signed-in)/session-management/[id]/edit.tsx` reuses #199's
+form outside the live-control layout. `features/services/management/editing.ts` loads `GET /s/:id/edit.json`
+(keeping `selectable: false` liturgies), separates saved baseline from draft, and sends
+`PATCH /s/:id.json` with top-level `expected_revision` and only key-wise changes. A 409 `stale_session`
+keeps the draft for **Reload saved version** or **Review my changes on the saved version**; a 409
+`cursor_reset_required` asks before **Save and reset current part** (`confirm_cursor_reset` at the reviewed
+revision); an unknown PATCH outcome is reconciled from the saved snapshot, never resent.
+
+`deletion.ts` + `DeleteSessionDialog.tsx`: a fresh snapshot, a confirmation naming the exact session and
+date (Cancel first), one locked `DELETE` with the captured revision, and an empty 200 that is never parsed.
+Stale, typed 404 and unknown outcomes reconcile without deleting again. A confirmed deletion removes that ID
+from My Sessions (a late page cannot bring it back) and only its shortcuts.
+
+Live clients: a revision-checked `session_deleted` event, or a typed `session_not_found` read when the
+event was missed, makes the reader terminal (`ReaderState.deleted`): cable, polling, commands and
+controller presence stop, and the control screen, reader and named display show the service as
+unavailable. Owner-current display links keep their preset and re-resolve through discovery.
+Browser evidence: [qa/issue200](qa/issue200/).
 
 ## Interface languages / #123
 

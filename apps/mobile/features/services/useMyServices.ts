@@ -25,6 +25,8 @@ export function useMyServices(authorizedFetch: AuthContextValue['authorizedFetch
   const current = useRef(initialState)
   const active = useRef<AbortController | null>(null)
   const seenCursors = useRef(new Set<string>())
+  /** Confirmed-deleted IDs: no response, however late, can bring one back. */
+  const removed = useRef(new Set<number>())
   const update = useCallback((patch: Partial<ServicesState>) => {
     current.current = { ...current.current, ...patch }
     setState(current.current)
@@ -57,7 +59,7 @@ export function useMyServices(authorizedFetch: AuthContextValue['authorizedFetch
       // Failed requests preserve the chain; only an accepted replacement resets it.
       if (replacing) seenCursors.current = new Set()
       if (page.nextCursor !== null) seenCursors.current.add(page.nextCursor)
-      const services = replacing ? page.services : [...current.current.services, ...page.services]
+      const services = (replacing ? page.services : [...current.current.services, ...page.services]).filter(service => !removed.current.has(service.id))
       update({ services: [...new Map(services.map(service => [service.id, service])).values()], nextCursor: page.nextCursor,
         paginationComplete: !replacing && page.nextCursor === null })
     } catch (failure) {
@@ -79,7 +81,21 @@ export function useMyServices(authorizedFetch: AuthContextValue['authorizedFetch
     return () => { active.current?.abort(); active.current = null }
   }, [load, update])
 
+  /**
+   * After a confirmed create/edit/delete: supersede any in-flight page (an old load-more can never append
+   * afterwards) and fetch page one again in the server's order. As with any refresh, the cursor chain
+   * resets only when that replacement is accepted.
+   */
+  const reconcile = useCallback((removedId?: number) => {
+    active.current?.abort()
+    active.current = null
+    if (removedId !== undefined) removed.current.add(removedId)
+    update({ loadingMore: false, loadMoreError: null, services: current.current.services.filter(service => !removed.current.has(service.id)) })
+    return load('refresh')
+  }, [load, update])
+
   return { ...state,
+    reconcile,
     refresh: () => load('refresh'),
     retry: () => load(current.current.services.length ? 'refresh' : 'initial'),
     loadMore: () => load('more'),

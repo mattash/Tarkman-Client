@@ -1,6 +1,6 @@
 import { benchmarkMark, benchmarkContext, beginRecovery, benchmarkCable, inheritRecovery, type BenchmarkContext } from '../observability/latencyBenchmark'
 import type { SavedServiceInput } from '../offline/savedService'
-import type { ReaderApi } from './api'
+import { isSessionNotFound, type ReaderApi } from './api'
 import type { CableClient } from './cable'
 import { currentPart, parseEvent, sessionWithState, type SessionState, type LivePart, type LiveSession } from './contracts'
 import { explanationContextKey, explanationOwnerKey } from './explanationCue'
@@ -17,7 +17,7 @@ export interface ReaderCache {
 // One controller per mounted route/session. Cache writes never supply reader state. All async work
 // is generation-scoped and abortable; event bursts schedule at most one rerun.
 export function createReaderController(api: ReaderApi, cable: CableClient, cableUrl: string, lifecycle: Lifecycle, id: number | null, cache?: ReaderCache, loadExplanations = true) {
-  let state = { ...initialState }, alive = false, active = true, online = true, epoch = 0, queued = false
+  let state = { ...initialState }, alive = false, active = true, online = true, epoch = 0, queued = false, terminated = false
   let manifestContext: string | null = null, stateSupported: boolean | null = null
   let observedRevision = 0
   let invalidations = 0, queuedFull = false, partsFetchedAt: number | null = null
@@ -137,9 +137,19 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     accept(session, parts, services, generation, abort.signal, trace)
     return true
   }
+  /**
+   * The session is gone: invalidate every pending read, explanation and command refresh, stop the cable and
+   * polling, and never start them again for this ID. Authentication and navigation are left to the screen.
+   */
+  function terminate() {
+    if (terminated) return
+    terminated = true
+    stopResources()
+    dispatch({ type: 'deleted', message: t('common.serviceNoLongerAvailable') })
+  }
   /** Returns true for applied or already accepted publications. Never guess through a gap. */
   function applyPublication(update: SessionState): boolean {
-    if (!alive || !active || !online || update.id !== id) return false
+    if (!alive || !active || !online || terminated || update.id !== id) return false
     observedRevision = Math.max(observedRevision, update.revision)
     const base = state.session
     if (!base || base.revision == null || state.stale || request) return false
@@ -156,7 +166,7 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     return true
   }
   async function recover(reason = 'retry', mode: RecoveryMode = 'full') {
-    if (!alive || !active || !online) return
+    if (!alive || !active || !online || terminated) return
     cancelExplanations()
     if (request) {
       invalidations++; queued = true; queuedFull ||= mode === 'full'
@@ -200,8 +210,10 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
         if (fetchedParts) partsFetchedAt = Date.now()
         accept(after, parts, services, generation, abort.signal, trace)
       }
-    } catch {
+    } catch (error) {
       benchmarkMark('recovery.failed', { aborted: abort.signal.aborted }, trace)
+      // A typed missing-session answer is the fallback when the deletion event was missed.
+      if (alive && epoch === generation && isSessionNotFound(error)) { terminate(); return }
       if (alive && epoch === generation) dispatch({ type: 'failure', message: t('errors.refreshService') })
     } finally {
       benchmarkMark('recovery.end', {}, trace)
@@ -224,13 +236,21 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     polling = null
   }
   function startResources() {
-    if (!alive || !active || !online || polling) return
+    if (!alive || !active || !online || polling || terminated) return
     polling = setInterval(() => { void recover('poll') }, FULL_REFRESH_MS)
     if (id !== null) unsubscribe = cable.subscribe(cableUrl, id, {
       connected: () => { dispatch({ type: 'connection', connected: true }); benchmarkMark('cable.connected', {}, benchmarkContext(id)); void recover('connected', stateSupported ? 'navigation' : 'full') },
       disconnected: () => { dispatch({ type: 'connection', connected: false }); benchmarkMark('cable.disconnected', {}, benchmarkContext(id)); void recover('disconnected', stateSupported ? 'navigation' : 'full') },
       received: value => {
         const event = parseEvent(value)
+        if (event?.event === 'session_deleted') {
+          // Accept only a terminal revision beyond everything seen; an older or mismatched one prompts an authoritative read.
+          if (event.sessionId !== id) return
+          const seen = Math.max(observedRevision, state.session?.revision ?? 0)
+          if (event.revision > seen) terminate()
+          else { dispatch({ type: 'stale' }); void recover('cable', 'navigation') }
+          return
+        }
         if (event?.sessionId === id) {
           benchmarkCable(value, id)
           if (event.event === 'explanation_updated') dispatch({ type: 'explanationReset', status: 'invalid' })
@@ -261,10 +281,12 @@ export function createReaderController(api: ReaderApi, cable: CableClient, cable
     subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } },
     dispatch,
     retry: () => {
+      if (terminated) return
       if (id !== null && !state.connected) { stopResources(); startResources() }
       else void recover()
     },
     refreshAfterCommand: (update?: SessionState | void) => {
+      if (terminated) return
       if (update && applyPublication(update)) return
       if (id !== null && !state.connected) { stopResources(); startResources() }
       else { dispatch({ type: 'stale' }); void recover('command', 'navigation') }

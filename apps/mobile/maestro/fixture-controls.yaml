@@ -7,10 +7,10 @@ appId: app.tarkman
 name: Move the fixture service forward and back
 ---
 - runFlow: fixture-sign-in.yaml
-# Sign-in lands on My services (safeReturnTo's default), where the fixture
+# Sign-in lands on My Sessions (safeReturnTo's default), where the fixture
 # session is already listed.
 - extendedWaitUntil:
-    visible: "Your services"
+    visible: "My Sessions"
     timeout: 15000
 - assertVisible: "Sample Divine Liturgy · Lord’s Prayer"
 - tapOn: "Open controls.*"
@@ -29,8 +29,8 @@ name: Move the fixture service forward and back
     visible: "Part 1 of 3"
     timeout: 15000
 # Cleanup: leave the app signed out so the next flow starts signed out. The
-# control header's back button returns to My services, whose footer signs out.
-- tapOn: "My services"
+# control header's back button returns to My Sessions, whose footer signs out.
+- tapOn: "My Sessions"
 - tapOn: "Sign out"
 - extendedWaitUntil:
     visible: "Sign in"

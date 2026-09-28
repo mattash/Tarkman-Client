@@ -1,4 +1,4 @@
-# The fixture operator signs in from the About tab, lands on My services with
+# The fixture operator signs in from the About tab, lands on My Sessions with
 # their account and the fixture session listed, and signs out again. The account is
 # synthetic and only exists on the loopback fixture
 # (qa/design-system/mock-reader-server.cjs). Leaves the app signed out.
@@ -6,7 +6,7 @@ appId: app.tarkman
 name: Sign in and out as the fixture operator
 ---
 - runFlow: fixture-sign-in.yaml
-- assertVisible: "Your services"
+- assertVisible: "My Sessions"
 - assertVisible: "Signed in as Fixture operator"
 - assertVisible: "Sample Divine Liturgy · Lord’s Prayer"
 - tapOn: "Sign out"

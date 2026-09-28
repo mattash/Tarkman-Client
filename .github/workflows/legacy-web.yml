@@ -1,0 +1,61 @@
+# Validates the deprecated apps/web client only when it or shared core changes.
+# Not a required check: path-skipped workflows leave required checks pending.
+# Delete this workflow together with apps/web.
+
+name: Legacy web CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'apps/web/**'
+      - 'packages/tarkman-core/**'
+      - '.github/workflows/legacy-web.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'apps/web/**'
+      - 'packages/tarkman-core/**'
+      - '.github/workflows/legacy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: legacy-web-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: 'npm'
+        cache-dependency-path: |
+          apps/web/package-lock.json
+          apps/mobile/package-lock.json
+    - run: npm ci
+    - run: npm run typecheck
+    - run: npm run build
+    - name: Run tests
+      env:
+        VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        VITE_TEST_EMAIL: ${{ secrets.VITE_TEST_EMAIL }}
+        VITE_TEST_PASSWORD: ${{ secrets.VITE_TEST_PASSWORD }}
+      run: npm test
+    # Web remains a core consumer until it is removed; the probes need both installs.
+    - name: Core consumer compile probes
+      working-directory: .
+      run: |
+        npm ci --prefix apps/mobile
+        npm run core:check-consumers
