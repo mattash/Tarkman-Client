@@ -15,10 +15,10 @@ Inventory checked September 28, 2026:
 | Existing EAS project | `c76aa8c8-fb02-40b5-b4ae-8469b1bbeb47` |
 | Version / runtime | `0.1.1` / `appVersion` policy; EAS owns versionCode |
 | EAS access | Authenticated operator has Owner access to `mesropash` |
-| Selected production build | `38b63fc4-3947-47ba-a8be-4fd1e35d97da`, source `6efb5c4e5b0f56e00134e3134e30f0e78c65670b`, versionCode `2`; build finished September 28 at 17:34 UTC; local artifact validation passed, Play acceptance pending |
+| Selected production build | `38b63fc4-3947-47ba-a8be-4fd1e35d97da`, source `6efb5c4e5b0f56e00134e3134e30f0e78c65670b`, versionCode `2`; build finished September 28 at 17:34 UTC; local artifact validation passed; accepted by Play as an internal draft |
 | Publisher / Console app ID | St. John Armenian Church, organization account `8031576529416400534`; existing draft Tarkman app `4974777608134427797` already identifies `app.tarkman` |
 | Console operator | Mesrop Ash, Account owner; existing app reused without creating a duplicate or accepting new terms |
-| Play acceptance / internal draft | Not yet verified; configuration is not registration or upload evidence |
+| Play acceptance / internal draft | Console verified release `0.1.1`, versionCode `2`, **Draft**, internal track **Inactive** |
 | EAS signing credential | Existing default `Build Credentials 1vjAmhGihE`, JKS; inspected, not replaced |
 | Submission service account | Existing EAS-managed `tarkman-eas-publisher@fast-and-pray-91ff3.iam.gserviceaccount.com`; active, Tarkman-only read access plus Release apps to testing tracks; no account-wide or production-release grants |
 | Recovery | Signing and submission credentials are stored under EAS project → Credentials → Android → `app.tarkman`; owner-held backup/recovery location still needs confirmation |
@@ -32,8 +32,8 @@ Play App Signing is already in use (Console labels it Quantum-ready beta).
 The Console-provided Digital Asset Links JSON lists SHA-256
 `1D:24:05:04:F7:93:87:6D:5D:53:8A:7A:C0:EF:38:13:7B:F6:55:7A:8B:27:BD:9F:E4:1D:0A:0E:B6:38:2C:23`.
 A previous signing-key entry is dated September 13, 2026. No keys were changed.
-Before the first upload, Console says upload-certificate fingerprints will
-appear after the first bundle. Stage 3 must verify the applicable certificates
+After acceptance, Console displays upload SHA-1 and SHA-256 fingerprints
+matching the EAS certificate above. Stage 3 must verify the applicable certificates
 for Play-delivered App Links, including the existing signing-key history.
 Never put private keys, passwords or service-account JSON in Git, screenshots,
 issues, logs, client assets or `EXPO_PUBLIC_*` values.
@@ -136,7 +136,7 @@ AAB is 96,225,192 bytes, SHA-256
   verification. The signer matches the existing EAS upload SHA-256 above.
   JDK 26 jarsigner also reports the self-signed certificate, absent timestamp,
   and streaming JarInputStream manifest-order warnings; full JarFile payload
-  verification passed. Actual Play acceptance remains pending.
+  verification passed. Play subsequently accepted this exact artifact as an internal draft.
 - Permissions match the documented foreground camera/location and library
   permissions. No microphone, background location, legacy storage or overlay
   permission is present.
@@ -147,15 +147,23 @@ AAB is 96,225,192 bytes, SHA-256
   libraries have PT_LOAD alignment of at least 16 KB with matching offset/address
   congruence. This is static compatibility evidence, not a 16 KB device test.
 
-No Play upload or tester rollout has occurred. The owner must approve this exact
-build for internal-track draft submission. No replacement build is required for
-subsequent documentation-only changes.
+The owner explicitly approved upload of this exact build on September 28, 2026.
+EAS Submit succeeded using `android-internal` and EAS-managed service credentials:
+submission `b649b86a-cdac-49e0-ab52-c158427ed223`.
+Console independently confirmed release `0.1.1`, versionCode `2`, **Draft**;
+the internal track is **Inactive**. Bundle explorer artifact ID:
+`4860235120476847503`. No tester rollout, invitations or production release
+occurred. The build predates the later #206 merge; its source SHA above remains
+the authority for what was uploaded.
+
+[Accepted draft in Play Console](https://play.google.com/console/u/1/developers/8031576529416400534/app/4974777608134427797/tracks/internal-testing?releaseType=defaultReleases)
+· [EAS submission](https://expo.dev/accounts/mesropash/projects/tarkman/submissions/b649b86a-cdac-49e0-ab52-c158427ed223).
 
 ## Handoff evidence still required
 
 - Any account-verification restrictions encountered during upload.
 - Owner-held backup/recovery confirmation; retain the existing app setup and signing choices.
-- Accepted internal-track draft and remaining dashboard/account blockers.
+- Finish the listing/compliance dashboard tasks recorded above before distribution.
 - Stage 3 listing/compliance, testing eligibility, App Links and release approval.
 
 `check:store-config` runs in mobile CI without credentials and guards APK/AAB
