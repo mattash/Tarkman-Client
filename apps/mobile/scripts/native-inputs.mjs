@@ -21,6 +21,8 @@ export const mobilePathspecs = [
   'apps/mobile/',
   'packages/tarkman-core/',
   'packages/tarkman-design/',
+  'packages/tarkman-reader/',
+  'tools/metro/',
   '.github/workflows/node.js.yml',
 ]
 
@@ -94,6 +96,11 @@ export function isVersionOnlyChange(path, before, after) {
   }
 }
 
+/** The PR title tag that opts a PR into native compiles: iOS, Android and tvOS (apps/tv). */
+export function nativeBuildRequested(title = '') {
+  return /\[native-build\]/i.test(title)
+}
+
 export function classify({ platform, base, head, tree = 'HEAD', salt = '', title = '', git = runGit }) {
   assertPlatform(platform)
   // Disable rename detection so moving a file out of mobile still counts as a change.
@@ -101,7 +108,7 @@ export function classify({ platform, base, head, tree = 'HEAD', salt = '', title
   const changed = git(['diff', '--no-renames', '--name-only', `${base}...${head}`, '--', ...mobilePathspecs])
     .split('\n')
     .filter(Boolean)
-  const requested = /\[native-build\]/i.test(title)
+  const requested = nativeBuildRequested(title)
   const mergeBase = git(['merge-base', base, head]).trim()
   const native = changed.some(path => {
     if (!isNativeInput(path, platform)) return false

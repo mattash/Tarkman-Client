@@ -5,8 +5,16 @@
 - `apps/mobile` is the production client: a managed Expo Router app that ships
   to iOS and, as an Expo web export, to `web.tarkman.app` (cutover #177, PR #194).
   Root `npm run dev/build/test/typecheck/lint` run in `apps/mobile`; the
-  `mobile:*` scripts remain. See `apps/mobile/README.md`. Run all EAS commands
-  only in `apps/mobile`.
+  `mobile:*` scripts remain. See `apps/mobile/README.md`. Run mobile EAS
+  commands only in `apps/mobile`.
+- `apps/tv` is the read-only Apple TV app (Expo + react-native-tvos, #213). It
+  ships on the same App Store record as mobile (`app.tarkman`) but has its own
+  EAS project, update channels (`tv-*`) and lockfile. Run TV EAS commands only in
+  `apps/tv`, never with mobile's project or channels. Its scripts are `npm run tv:*`.
+  See `apps/tv/README.md`.
+- `packages/tarkman-reader` is the platform-free live reader engine both apps
+  bundle from source. It must not import React, React Native or Expo; its guard
+  is `npm run reader:check`. Mobile's `features/live/*` bind it to mobile copy.
 - `apps/web` is the **deprecated** Vite client. It no longer deploys anywhere; it is
   kept only until the post-cutover rollback window closes, then removed. Do not add
   features to it. Its scripts are `npm run legacy-web:*`. Everything below the
@@ -14,7 +22,8 @@
   (`app/`, `public/`, `.env*`, configs and `dist/`) are relative to `apps/web`.
 - Each app has its own `package-lock.json` and `node_modules`; there are no npm
   workspaces or root dependencies. Install with `npm ci --prefix apps/mobile`
-  (and `npm ci --prefix apps/web` only when touching the legacy app).
+  (`npm ci --prefix apps/tv` when touching TV or shared packages, and
+  `npm ci --prefix apps/web` only when touching the legacy app).
 - Vercel uses the repository root `vercel.json`: it builds `npm run mobile:export`,
   serves `apps/mobile/dist`, and redirects legacy Vite paths
   (`/sessions/:id/explanations`, `/login`, `/dashboard`, `/part/:id`).

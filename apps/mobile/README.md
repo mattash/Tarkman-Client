@@ -419,7 +419,8 @@ Swift/Objective-C/C++ with Xcode.
 For every PR to `main`, [Node.js CI](../../.github/workflows/node.js.yml) reports
 stable **`ios-build`** and **`android-build`** checks. Full native compilation is
 **opt-in**: add **`[native-build]`** anywhere in the PR title (case-insensitive)
-to request both platforms. For example: `[native-build] Upgrade Expo`.
+to request both platforms (and the tvOS compile for `apps/tv`, gated by `tv-build`).
+For example: `[native-build] Upgrade Expo`.
 Adding or removing the tag reruns CI through the `pull_request.edited` event.
 Without the tag, even native dependency/config changes skip full compilation.
 The regular mobile tests, lint, typecheck, store/config checks and iOS prebuild

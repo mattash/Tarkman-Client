@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Tarkman",
+    "slug": "tarkman-tv",
+    "owner": "mesropash",
+    "version": "0.1.0",
+    "platforms": [
+      "ios"
+    ],
+    "orientation": "landscape",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "app.tarkman",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "plugins": [
+      [
+        "@react-native-tvos/config-tv",
+        {
+          "isTV": true
+        }
+      ],
+      "./plugins/withSceneLifecycle"
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "970aa9d7-0c63-448e-aa5d-189625964c5a"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/970aa9d7-0c63-448e-aa5d-189625964c5a"
+    }
+  }
+}

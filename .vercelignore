@@ -12,4 +12,6 @@ apps/mobile/tests
 apps/web
 docs
 memory
-tools
+# The mobile Metro config loads tools/metro/single-react-native.js; ship only that folder.
+tools/*
+!tools/metro

@@ -1,0 +1,39 @@
+{
+  "name": "@tarkman/tv",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "EXPO_TV=1 expo start",
+    "tvos": "EXPO_TV=1 expo run:ios",
+    "prebuild:tvos": "EXPO_TV=1 expo prebuild --platform ios --clean",
+    "export:tvos": "EXPO_TV=1 expo export --platform ios",
+    "typecheck": "tsc --noEmit",
+    "config": "EXPO_TV=1 expo config --type public",
+    "check:identity": "node scripts/check-identity.mjs",
+    "check:runtime": "node scripts/check-runtime.mjs"
+  },
+  "dependencies": {
+    "@tarkman/core": "file:../../packages/tarkman-core",
+    "@tarkman/design": "file:../../packages/tarkman-design",
+    "@tarkman/reader": "file:../../packages/tarkman-reader",
+    "expo": "~57.0.25",
+    "expo-network": "~57.0.2",
+    "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.23",
+    "react": "19.2.3",
+    "react-native": "npm:react-native-tvos@0.86.3-0"
+  },
+  "devDependencies": {
+    "@react-native-tvos/config-tv": "0.1.6",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.0",
+    "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "react-native": "$react-native"
+  }
+}
