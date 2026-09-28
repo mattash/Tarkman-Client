@@ -435,9 +435,17 @@ materially higher cost than Linux, so compilation is limited to relevant PRs;
 the existing push-to-`main` checks remain unchanged.
 
 **Reusing a native compile (#204).** Only changes to native inputs trigger a
-compile: the workflow, `app.json`/`app.config.*`, `eas.json`, `.easignore`,
-`package.json`, the lockfile, plugins, `assets/icons/`, generated `ios/` or
-`android/` files, and for Android `scripts/check-store-config.mjs`.
+compile: the workflow, the classifier itself, `app.json`/`app.config.*`,
+`package.json`, the lockfile, plugins, `assets/icons/`, and platform-specific
+`ios/` or `android/` files. CI invokes Expo prebuild and Xcode/Gradle directly,
+without an EAS profile or archive upload. Consequently, `eas.json`, `.easignore`
+and the validation-only `scripts/check-store-config.mjs` do not invalidate
+these compiles. EAS packaging, submission, environment and profile settings
+are not applied to these CI builds; no semantic EAS field filter is needed.
+The unconditional Linux mobile job still runs `check:store-config`, Expo config
+and the iOS prebuild smoke check, and mobile changes still run both platform
+bundle smoke checks. If a config plugin or build step begins reading an excluded
+file, it must be added to the native inputs.
 [`scripts/native-inputs.mjs`](scripts/native-inputs.mjs) defines that list and
 fingerprints those files in the PR's merge commit, per platform, together with
 the current ISO week. After a real compile succeeds, `ios-build` (or
