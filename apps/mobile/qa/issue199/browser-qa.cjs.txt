@@ -36,6 +36,12 @@ async function signIn(page) {
   await page.getByRole('button', { name: 'Add Session' }).waitFor()
   await page.evaluate(() => document.fonts.ready)
 }
+/** Opens the Add Liturgy sheet and picks one liturgy from it. */
+async function pick(page, liturgy) {
+  await page.getByRole('button', { name: 'Add Liturgy' }).click()
+  await page.getByRole('button', { name: `Add ${liturgy}` }).click()
+  await page.getByRole('button', { name: `Add ${liturgy}` }).waitFor({ state: 'detached' })
+}
 async function overflow(page) {
   return page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)
 }
@@ -59,10 +65,22 @@ async function shot(page, name, whole = true) {
       await signIn(page)
       await shot(page, `${name}-my-sessions`, false)
       await page.getByRole('button', { name: 'Add Session' }).click()
-      await page.getByRole('button', { name: 'Add Divine Liturgy' }).waitFor()
+      await page.getByRole('button', { name: 'Add Liturgy' }).waitFor()
       await shot(page, `${name}-new-empty`)
-      await page.getByRole('button', { name: 'Add Divine Liturgy' }).click()
-      await page.getByRole('button', { name: 'Add Morning Service' }).click()
+      await pick(page, 'Divine Liturgy')
+      await pick(page, 'Morning Service')
+      // The sheet lists the whole catalog; the filter narrows it on the device.
+      await page.getByRole('button', { name: 'Add Liturgy' }).click()
+      await page.getByRole('button', { name: 'Add Blessing of Water' }).waitFor()
+      await shot(page, `${name}-sheet`, false)
+      if (name === 'phone') {
+        await page.getByLabel('Filter by title').fill('serv')
+        await page.waitForTimeout(200)
+        assert.equal(await page.getByRole('button', { name: 'Add Blessing of Water' }).count(), 0, 'the filter hides non-matching titles')
+        assert.equal(await page.getByRole('button', { name: 'Morning Service is already selected' }).count(), 1, 'selected titles stay visible, marked added')
+        await shot(page, `${name}-sheet-filtered`, false)
+        await page.getByLabel('Filter by title').fill('water')
+      }
       await page.getByRole('button', { name: 'Add Blessing of Water' }).click()
       await page.getByRole('button', { name: 'Move Blessing of Water up' }).click()
       await page.getByLabel('Gospel reading').fill('Հովհ. 1:1-17 · John 1:1-17')
@@ -70,12 +88,6 @@ async function shot(page, name, whole = true) {
       assert.equal(await page.getByText('Unsaved changes').count() > 0, true)
       await shot(page, `${name}-new-filled`)
       if (name === 'phone') {
-        await page.getByLabel('Search liturgies').fill('serv')
-        await page.getByRole('button', { name: 'Add Evening Service' }).waitFor()
-        await page.waitForTimeout(400)
-        assert.equal(await page.getByRole('button', { name: 'Add Divine Liturgy' }).count(), 0, 'server search replaced the results')
-        assert.equal(await page.getByLabel('Number 1 of 3: Divine Liturgy').count(), 1, 'selections survive searching')
-        await shot(page, `${name}-search`)
         await page.getByLabel('Service date').fill('2026-02-30')
         await page.getByRole('button', { name: 'Create Session' }).click()
         await page.getByText('Enter a real date as YYYY-MM-DD.').first().waitFor()
@@ -108,7 +120,7 @@ async function shot(page, name, whole = true) {
     } })
     await signIn(uncertain.page)
     await uncertain.page.getByRole('button', { name: 'Add Session' }).click()
-    await uncertain.page.getByRole('button', { name: 'Add Evening Service' }).click()
+    await pick(uncertain.page, 'Evening Service')
     await uncertain.page.getByRole('button', { name: 'Next day' }).click()
     await uncertain.page.getByRole('button', { name: 'Create Session' }).click()
     await uncertain.page.getByRole('button', { name: 'Retry safely' }).waitFor()
