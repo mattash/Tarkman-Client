@@ -58,7 +58,7 @@ function createManagement({ enabled, owned, church }) {
   /** Returns true when the request was a management route this fixture served. */
   async function handle(req, res, path, url, { json, error, authorized, requestJson }) {
     if (!enabled) return false
-    const coded = (status, code, extra = {}) => json(res, status, { error: code, code, ...extra })
+    const coded = (target, status, code, extra = {}) => json(target, status, { error: code, code, ...extra })
     if (path === '/s/new.json' && req.method === 'GET') {
       if (!authorized(req)) return error(res, 401, 'Sign in required.'), true
       return json(res, 200, { schema_version: 1, session_management_version: 1, time_zone: ZONE,
