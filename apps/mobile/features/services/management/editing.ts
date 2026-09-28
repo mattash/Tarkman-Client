@@ -24,6 +24,8 @@ export interface EditSnapshot {
   focusRequest: number
   /** The freshly authorized saved version after a stale save, awaiting review. */
   conflict: ManagedSession | null
+  /** Why `conflict` is shown: another save or live move, or this editor's own unconfirmed save that did not land. */
+  conflictReason: 'stale' | 'unconfirmed' | null
   reset: CursorReset | null
   /** The persisted result of this editor's last successful save. */
   committed: ManagedSession | null
@@ -31,7 +33,7 @@ export interface EditSnapshot {
 
 const blank: SessionDraft = { date: '', liturgies: [], options: EMPTY_OPTIONS }
 const initial: EditSnapshot = { loading: true, loadError: null, final: false, baseline: null, draft: blank, phase: 'editing', error: null, errorKind: null,
-  fields: {}, otherErrors: [], focusRequest: 0, conflict: null, reset: null, committed: null }
+  fields: {}, otherErrors: [], focusRequest: 0, conflict: null, conflictReason: null, reset: null, committed: null }
 
 export function draftOf(session: ManagedSession): SessionDraft {
   return { date: session.date, liturgies: session.liturgies.map(item => ({ ...item })), options: { ...EMPTY_OPTIONS, ...session.options } }
@@ -133,9 +135,10 @@ export function createEditController(fetcher: AuthContextValue['authorizedFetch'
         return
       }
       // Not (or not entirely) applied: keep the draft for explicit review against what is saved now.
-      set({ phase: 'editing', conflict: fresh, error: t('sessionManagement.uncertainReview'), errorKind: 'stale', loading: false })
+      set({ phase: 'editing', conflict: fresh, conflictReason: 'unconfirmed', error: t('sessionManagement.uncertainReview'), errorKind: 'stale', loading: false })
     } catch (error) {
-      if (disposed || isUnauthorized(error)) return
+      // A read superseded by another one is not an answer; the newer read decides.
+      if (disposed || isUnauthorized(error) || (error instanceof Error && error.name === 'AbortError')) return
       set({ phase: 'uncertain', error: t('sessionManagement.uncertain'), errorKind: 'uncertain', loading: false })
     }
   }
@@ -155,18 +158,19 @@ export function createEditController(fetcher: AuthContextValue['authorizedFetch'
       if (isUnauthorized(error)) { set({ phase: 'editing', error: t('signIn.expired') }); return }
       const kind = isManagementError(error) ? error.kind : 'uncertain'
       const message = error instanceof Error ? error.message : t('sessionManagement.uncertain')
-      if (kind === 'uncertain') { inFlight = false; await reconcile(); return }
+      // Still in flight while reconciling, so a focus reload cannot cancel the check.
+      if (kind === 'uncertain') { await reconcile(); return }
       if (kind === 'stale' && isManagementError(error)) {
         const body = error.body
         const fresh = await (async () => { try { return normalizeManagedSession(body) } catch { return read().catch(() => null) } })()
         if (disposed) return
-        set({ phase: 'editing', conflict: fresh, error: message, errorKind: kind, ...(fresh ? {} : { loadError: t('sessionManagement.loadFailed') }) })
+        set({ phase: 'editing', conflict: fresh, conflictReason: 'stale', error: message, errorKind: kind, ...(fresh ? {} : { loadError: t('sessionManagement.loadFailed') }) })
         return
       }
       if (kind === 'cursorReset' && isManagementError(error)) {
         const revision = revisionOf(error.body)
         // Without the reviewed revision there is nothing safe to confirm against: reload instead.
-        if (revision === null) { set({ phase: 'editing', error: t('sessionManagement.stale'), errorKind: 'stale', conflict: await read().catch(() => null) }); return }
+        if (revision === null) { set({ phase: 'editing', error: t('sessionManagement.stale'), errorKind: 'stale', conflictReason: 'stale', conflict: await read().catch(() => null) }); return }
         set({ phase: 'editing', reset: { revision, destination: destination(error.body) }, error: message, errorKind: kind })
         return
       }
@@ -208,15 +212,16 @@ export function createEditController(fetcher: AuthContextValue['authorizedFetch'
     reloadSaved() {
       const fresh = snapshot.conflict
       if (!fresh) return
-      set({ baseline: fresh, draft: draftOf(fresh), conflict: null, error: null, errorKind: null, fields: {} })
+      set({ baseline: fresh, draft: draftOf(fresh), conflict: null, conflictReason: null, error: null, errorKind: null, fields: {} })
     },
     /** Carry local changes onto the saved version for review; nothing is sent until Save changes. */
     reapply() {
       const { conflict, baseline, draft } = snapshot
       if (!conflict || !baseline) return
-      set({ baseline: conflict, draft: reapply(baseline, draft, conflict), conflict: null, error: null, errorKind: null })
+      set({ baseline: conflict, draft: reapply(baseline, draft, conflict), conflict: null, conflictReason: null, error: null, errorKind: null })
     },
-    reconcile,
+    /** "Check again" after an unknown outcome; never while another write or check is running. */
+    reconcile() { if (inFlight) return; inFlight = true; void reconcile().finally(() => { inFlight = false }) },
     dispose() { disposed = true; request?.abort() },
   }
 }

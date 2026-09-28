@@ -134,6 +134,11 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     <ReaderStatus state={state} retry={retry} showLive={false} savedCopy={showingSaved} />
     {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">{t('reader.currentPartUnavailable')}</AppText>}
   </View>
+  // Deleted is terminal, not a connection problem: no Retry, no saved copy standing in, just a way out.
+  if (state.deleted) return <View testID="reader-deleted" style={{ flex: 1, padding: spacing.lg, gap: spacing.lg, justifyContent: 'center' }}>
+    <AppText variant="heading" accessibilityRole="alert">{t('common.serviceNoLongerAvailable')}</AppText>
+    <AppButton variant="secondary" onPress={() => router.replace('/')}>{t('scan.backToToday')}</AppButton>
+  </View>
   return <View testID="reader-root" ref={root} {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string }) => { if (event.key === 'Escape') education.endTour() } } : {})} onLayout={() => setLayoutReady(true)} style={{ flex: 1 }}>
     <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
       paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>

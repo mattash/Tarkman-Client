@@ -45,7 +45,7 @@ it('refreshes after a stale revision and requires a new confirmation', async () 
   const { fetcher, controller } = setup(snapshot(17), respond(409, { code: 'stale_session' }), snapshot(18), emptyOk())
   controller.prepare(4008); await flush()
   controller.confirm(); await flush(); await flush()
-  expect(controller.getSnapshot()).toMatchObject({ phase: 'confirming', renewed: true, target: { revision: 18 } })
+  expect(controller.getSnapshot()).toMatchObject({ phase: 'confirming', error: expect.stringContaining('Nothing was deleted'), target: { revision: 18 } })
   expect(deletes(fetcher)).toHaveLength(1)
   controller.confirm(); await flush()
   expect(JSON.parse(String(deletes(fetcher)[1][1]?.body))).toEqual({ expected_revision: 18 })
@@ -60,7 +60,7 @@ it('reports a typed 404 as already unavailable, not as this request deleting it'
 
 it.each<[string, () => Response | Error, string]>([
   ['still exists', () => snapshot(17), 'confirming'],
-  ['is gone', () => respond(404, fixtures.sessionNotFound), 'gone'],
+  ['is gone (most likely deleted by this request)', () => respond(404, fixtures.sessionNotFound), 'deleted'],
   ['cannot be read', () => new TypeError('offline'), 'unknown'],
 ])('reconciles an unknown DELETE outcome when the session %s', async (_, read, phase) => {
   const { fetcher, controller } = setup(snapshot(), respond(503), read())
@@ -87,4 +87,17 @@ it('forgets only the deleted session shortcut for this account', async () => {
   await forgetRecentlyControlled(4008, 3, store)
   expect(readRecentlyControlled(await store.get(recentlyControlledKey(3))).map(item => item.sessionId)).toEqual([12])
   expect(readRecentlyControlled(await store.get(recentlyControlledKey(4))).map(item => item.sessionId)).toEqual([4008, 12])
+})
+
+it('keeps "nothing was deleted" when a re-read after a 409 fails', async () => {
+  const { controller } = setup(snapshot(17), respond(409, { code: 'stale_session' }), new TypeError('offline'))
+  controller.prepare(4008); await flush()
+  controller.confirm(); await flush(); await flush()
+  expect(controller.getSnapshot()).toMatchObject({ phase: 'idle', error: expect.stringContaining('Nothing was deleted') })
+})
+
+it('closes the confirmation when sign-in ends while preparing', async () => {
+  const { controller } = setup(Object.assign(new Error('expired'), { name: 'UnauthorizedError' }))
+  controller.prepare(4008); await flush()
+  expect(controller.getSnapshot()).toMatchObject({ phase: 'idle', error: null })
 })

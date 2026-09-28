@@ -124,7 +124,7 @@ it('reconciles an unknown save outcome from the saved snapshot instead of resend
   await missed.controller.load()
   missed.controller.setDate('2026-10-11')
   missed.controller.save(); await flush(); await flush()
-  expect(missed.controller.getSnapshot()).toMatchObject({ phase: 'editing', conflict: { revision: 17 }, draft: { date: '2026-10-11' } })
+  expect(missed.controller.getSnapshot()).toMatchObject({ phase: 'editing', conflict: { revision: 17 }, conflictReason: 'unconfirmed', draft: { date: '2026-10-11' } })
   expect(writes(missed.fetcher)).toHaveLength(1)
 })
 
@@ -145,4 +145,16 @@ it('shows loading and a retryable error without editable defaults', async () => 
   expect(controller.getSnapshot().draft.date).toBe('')
   pending.resolve(respond(503)); await flush()
   expect(controller.getSnapshot()).toMatchObject({ baseline: null, final: false, loadError: expect.any(String) })
+})
+
+it('a focus reload cannot cancel the check after an unknown save', async () => {
+  const check = deferred<Response>()
+  const { fetcher, controller } = setup(respond(200, snapshot()), new TypeError('Network request failed'), check.promise as unknown as Response)
+  await controller.load()
+  controller.setDate('2026-10-11')
+  controller.save(); await flush()
+  void controller.load()
+  check.resolve(respond(200, snapshot({ revision: 18, date: '2026-10-11' }))); await flush(); await flush()
+  expect(controller.getSnapshot()).toMatchObject({ phase: 'saved' })
+  expect(fetcher.mock.calls.filter(([path]) => path === '/s/4008/edit.json')).toHaveLength(2)
 })

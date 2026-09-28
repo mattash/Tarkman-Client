@@ -585,6 +585,8 @@ export const en = {
     saveChanges: 'Save changes',
     checkAgain: 'Check again',
     uncertainReview: 'Some of your changes may not have been saved. Review them against the saved version below.',
+    unconfirmedTitle: 'Your changes were not saved',
+    unconfirmedBody: 'We could not confirm the save, and the saved version does not include your changes. They are kept here for you to review.',
     conflictTitle: 'This session changed elsewhere',
     conflictBody: 'Someone saved or moved this session after you opened it. Your changes are kept here and have not been saved.',
     savedValue: 'Saved now: {value}',

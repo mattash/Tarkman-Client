@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AccessibilityInfo, ActivityIndicator, Platform, View } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../../components/AppButton'
@@ -33,6 +33,9 @@ export default function MyServicesScreen() {
   const deletion = useMemo(() => createDeletionController(authorizedFetch), [authorizedFetch])
   useEffect(() => () => deletion.dispose(), [deletion])
   const [deleting, setDeleting] = useState<{ id: number; title: string } | null>(null)
+  // Each row's Delete button, so focus returns to the one that opened the confirmation.
+  const deleteButtons = useRef(new Map<number, View | null>())
+  const deleteOpener = useRef<View | null>(null)
   const openControls = (service: { id: number; title: string; church?: string; date: string | null }) => {
     if (user) void recordRecentlyControlled({ sessionId: service.id, title: service.title, church: service.church ?? '', date: service.date }, user.id)
     router.push(`/services/${service.id}`)
@@ -85,8 +88,8 @@ export default function MyServicesScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <AppButton variant="secondary" size="card" accessibilityLabel={t('sessionManagement.editLabel', { title: service.title, date: formatServiceDate(service.date) ?? '' })}
             onPress={() => router.push(`/session-management/${service.id}/edit`)}>{t('sessionManagement.edit')}</AppButton>
-          <AppButton variant="secondaryDestructive" size="card" accessibilityLabel={t('sessionManagement.deleteLabel', { title: service.title, date: formatServiceDate(service.date) ?? '' })}
-            onPress={() => { setDeleting({ id: service.id, title: service.title }); deletion.prepare(service.id) }}>{t('sessionManagement.deleteAction')}</AppButton>
+          <AppButton ref={node => { deleteButtons.current.set(service.id, node) }} variant="secondaryDestructive" size="card" accessibilityLabel={t('sessionManagement.deleteLabel', { title: service.title, date: formatServiceDate(service.date) ?? '' })}
+            onPress={() => { deleteOpener.current = deleteButtons.current.get(service.id) ?? null; setDeleting({ id: service.id, title: service.title }); deletion.prepare(service.id) }}>{t('sessionManagement.deleteAction')}</AppButton>
         </View>
       </Card></View>}
     ListFooterComponent={<View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg, marginTop: spacing.lg }}>
@@ -100,7 +103,7 @@ export default function MyServicesScreen() {
       )}
       <AppButton variant="secondary" onPress={signOut}>{t('common.signOut')}</AppButton>
       {user && scope && <DeleteSessionDialog controller={deletion} scope={scope} userId={user.id} fallbackTitle={deleting?.title}
-        onFinished={() => setDeleting(null)} />}
+        openerRef={deleteOpener} onFinished={() => setDeleting(null)} />}
     </View>}
   />
 }

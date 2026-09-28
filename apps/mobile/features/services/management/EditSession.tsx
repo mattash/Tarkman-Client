@@ -12,11 +12,13 @@ import { useI18n } from '../../i18n'
 import { readerConfig } from '../../live/config'
 import { formatServiceDate } from '../api'
 import { createCatalogController } from './catalog'
-import { OPTION_KEYS, type ManagedSession } from './contracts'
+import { OPTION_KEYS, setupDiff, setupOf, type ManagedSession } from './contracts'
 import { createDeletionController } from './deletion'
 import { DeleteSessionDialog } from './DeleteSessionDialog'
-import { todayIn, type SessionDraft } from './draft'
+import { type SessionDraft } from './draft'
+import { useManagementToday } from './zone'
 import { createEditController, draftOf, isEditDirty, pendingChanges } from './editing'
+import { draftSetup } from './draft'
 import { FormShell } from './FormShell'
 import { announceMutation, managementScope } from './mutations'
 import { leaveToMySessions } from './NewSession'
@@ -63,13 +65,13 @@ function EditSession({ scope, userId, sessionId }: { scope: string; userId: numb
   }, [phase, state.committed, scope])
   useEffect(() => { if (leaving) leaveToMySessions() }, [leaving])
 
-  const today = todayIn(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', '')
+  const today = useManagementToday(authorizedFetch)
   const movesToday = !!baseline && state.draft.date !== baseline.date && (state.draft.date === today || baseline.date === today)
   const changes = pendingChanges(state)
 
   const footer = baseline && !state.final ? <>
     {phase === 'uncertain'
-      ? <AppButton size="hero" loading={state.loading} onPress={() => void controller.reconcile()}>{t('sessionManagement.checkAgain')}</AppButton>
+      ? <AppButton size="hero" loading={state.loading} onPress={controller.reconcile}>{t('sessionManagement.checkAgain')}</AppButton>
       : <AppButton size="hero" loading={phase === 'saving'} disabled={!editable || !changes} onPress={controller.save}>{t('sessionManagement.saveChanges')}</AppButton>}
   </> : undefined
 
@@ -81,9 +83,9 @@ function EditSession({ scope, userId, sessionId }: { scope: string; userId: numb
       <AppButton variant="secondary" onPress={leaveToMySessions}>{t('common.myServices')}</AppButton>
     </Card>}
     {state.conflict && baseline && <Card testID="edit-conflict">
-      <AppText variant="heading" accessibilityRole="alert">{t('sessionManagement.conflictTitle')}</AppText>
-      <AppText>{t('sessionManagement.conflictBody')}</AppText>
-      <ConflictSummary saved={state.conflict} draft={state.draft} />
+      <AppText variant="heading" accessibilityRole="alert">{t(state.conflictReason === 'unconfirmed' ? 'sessionManagement.unconfirmedTitle' : 'sessionManagement.conflictTitle')}</AppText>
+      <AppText>{t(state.conflictReason === 'unconfirmed' ? 'sessionManagement.unconfirmedBody' : 'sessionManagement.conflictBody')}</AppText>
+      <ConflictSummary base={baseline} saved={state.conflict} draft={state.draft} />
       <AppButton onPress={controller.reapply}>{t('sessionManagement.reapply')}</AppButton>
       <AppButton variant="secondaryDestructive" onPress={controller.reloadSaved}>{t('sessionManagement.reloadSaved')}</AppButton>
     </Card>}
@@ -112,15 +114,16 @@ function EditSession({ scope, userId, sessionId }: { scope: string; userId: numb
   </FormShell>
 }
 
-/** Side by side: what is saved now, and what this draft would change. */
-function ConflictSummary({ saved, draft }: { saved: ManagedSession; draft: SessionDraft }) {
+/** Only the fields this person changed: what is saved now beside their change. Others' edits are not "yours". */
+function ConflictSummary({ base, saved, draft }: { base: ManagedSession; saved: ManagedSession; draft: SessionDraft }) {
   const { t } = useI18n()
   const current = draftOf(saved)
+  const mine = setupDiff(setupOf(base), draftSetup(draft)) ?? {}
   const rows: [string, string, string][] = []
-  if (current.date !== draft.date) rows.push([t('sessionManagement.date'), formatServiceDate(current.date) ?? current.date, formatServiceDate(draft.date) ?? draft.date])
+  if (mine.date !== undefined) rows.push([t('sessionManagement.date'), formatServiceDate(current.date) ?? current.date, formatServiceDate(draft.date) ?? draft.date])
   const names = (list: typeof draft.liturgies) => list.map(item => item.name).join(' · ')
-  if (names(current.liturgies) !== names(draft.liturgies)) rows.push([t('sessionManagement.selected'), names(current.liturgies), names(draft.liturgies)])
-  for (const key of OPTION_KEYS) if (current.options[key] !== draft.options[key]) rows.push([t(`sessionManagement.${key}`), current.options[key], draft.options[key]])
+  if (mine.liturgy_ids) rows.push([t('sessionManagement.selected'), names(current.liturgies), names(draft.liturgies)])
+  for (const key of OPTION_KEYS) if (mine.options && key in mine.options) rows.push([t(`sessionManagement.${key}`), current.options[key], draft.options[key]])
   return <View style={{ gap: spacing.sm }}>
     {rows.map(([label, now, mine]) => <View key={label} style={{ gap: 2 }}>
       <AppText variant="label">{label}</AppText>

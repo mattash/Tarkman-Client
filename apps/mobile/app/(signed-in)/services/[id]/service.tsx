@@ -28,7 +28,11 @@ const INSTEAD: KnownSessionStatus[] = ['showing_gospel', 'showing_epistle', 'sho
 export default function ServiceSheet() {
   const { sessionId, presence, state, controls, commands, part, offline, announcing, expected, run, holds, errorMessage, setSheetOpen, invalid } = useServiceControl()
   // A session deleted while this sheet is open: close it, so the control screen's unavailable notice shows.
-  useEffect(() => { if (invalid && router.canGoBack()) router.back() }, [invalid])
+  useEffect(() => {
+    if (!invalid) return
+    if (router.canGoBack()) router.back()
+    else router.replace(`/services/${sessionId}`)
+  }, [invalid, sessionId])
   const { colors } = useTheme()
   const { t } = useI18n()
   const { preferences } = usePreferences()

@@ -15,10 +15,13 @@ export interface DeletionSnapshot {
   target: ManagedSession | null
   sessionId: number | null
   error: string | null
-  /** Set when the confirmation was refreshed after a conflict or unknown outcome and must be confirmed again. */
-  renewed: boolean
 }
-const initial: DeletionSnapshot = { phase: 'idle', target: null, sessionId: null, error: null, renewed: false }
+const initial: DeletionSnapshot = { phase: 'idle', target: null, sessionId: null, error: null }
+/**
+ * Why a snapshot is being read: before the first confirmation; after a definite 409 (nothing was deleted);
+ * or after an unknown DELETE outcome, where a missing session means this request most likely deleted it.
+ */
+type ReadMode = 'prepare' | 'stale' | 'uncertain'
 
 export function createDeletionController(fetcher: AuthContextValue['authorizedFetch']) {
   let snapshot = initial
@@ -29,18 +32,25 @@ export function createDeletionController(fetcher: AuthContextValue['authorizedFe
   const listeners = new Set<() => void>()
   const set = (patch: Partial<DeletionSnapshot>) => { if (disposed) return; snapshot = { ...snapshot, ...patch }; listeners.forEach(listener => listener()) }
 
-  async function read(sessionId: number, epoch: number, renewed: boolean, message: string | null) {
+  async function read(sessionId: number, epoch: number, mode: ReadMode, message: string | null) {
     request?.abort()
     const controller = new AbortController()
     request = controller
     try {
       const target = await fetchEditSnapshot(fetcher, sessionId, controller.signal)
       if (epoch !== generation) return
-      set({ phase: 'confirming', target, error: message, renewed })
+      set({ phase: 'confirming', target, error: message })
     } catch (error) {
-      if (epoch !== generation || controller.signal.aborted || isUnauthorized(error)) return
-      if (isManagementError(error, 'notFound')) { set({ phase: 'gone', target: null, error: t('sessionManagement.alreadyUnavailable') }); return }
-      set({ phase: renewed ? 'unknown' : 'idle', error: renewed ? t('sessionManagement.deleteUnknown') : error instanceof Error ? error.message : t('sessionManagement.loadFailed') })
+      if (epoch !== generation || controller.signal.aborted) return
+      if (isUnauthorized(error)) { set(initial); return }
+      if (isManagementError(error, 'notFound')) {
+        if (mode === 'uncertain') set({ phase: 'deleted' })
+        else set({ phase: 'gone', target: null, error: t('sessionManagement.alreadyUnavailable') })
+        return
+      }
+      if (mode === 'uncertain') { set({ phase: 'unknown', error: t('sessionManagement.deleteUnknown') }); return }
+      const reason = error instanceof Error ? error.message : t('sessionManagement.loadFailed')
+      set({ phase: 'idle', target: null, error: mode === 'stale' ? `${t('sessionManagement.deleteStale')} ${reason}` : reason })
     } finally {
       if (request === controller) request = null
     }
@@ -53,8 +63,8 @@ export function createDeletionController(fetcher: AuthContextValue['authorizedFe
     prepare(sessionId: number) {
       if (locked) return
       const epoch = ++generation
-      set({ phase: 'preparing', sessionId, target: null, error: null, renewed: false })
-      void read(sessionId, epoch, false, null)
+      set({ phase: 'preparing', sessionId, target: null, error: null })
+      void read(sessionId, epoch, 'prepare', null)
     },
     /** Cancel before submission sends nothing. */
     cancel() {
@@ -76,8 +86,8 @@ export function createDeletionController(fetcher: AuthContextValue['authorizedFe
         } catch (error) {
           if (isUnauthorized(error)) { set(initial); return }
           if (isManagementError(error, 'notFound')) { set({ phase: 'gone', error: t('sessionManagement.alreadyUnavailable') }); return }
-          if (isManagementError(error, 'stale')) { await read(target.id, epoch, true, t('sessionManagement.deleteStale')); return }
-          if (isManagementError(error, 'uncertain')) { await read(target.id, epoch, true, t('sessionManagement.deleteUncertain')); return }
+          if (isManagementError(error, 'stale')) { await read(target.id, epoch, 'stale', t('sessionManagement.deleteStale')); return }
+          if (isManagementError(error, 'uncertain')) { await read(target.id, epoch, 'uncertain', t('sessionManagement.deleteUncertain')); return }
           set({ phase: 'confirming', error: error instanceof Error ? error.message : t('sessionManagement.rejected') })
         } finally {
           locked = false
@@ -90,7 +100,7 @@ export function createDeletionController(fetcher: AuthContextValue['authorizedFe
       if (locked || sessionId === null) return
       const epoch = ++generation
       set({ phase: 'preparing', error: null })
-      void read(sessionId, epoch, true, t('sessionManagement.deleteUncertain'))
+      void read(sessionId, epoch, 'uncertain', t('sessionManagement.deleteUncertain'))
     },
     reset() { if (!locked) { generation++; set(initial) } },
     dispose() { disposed = true; generation++; request?.abort() },

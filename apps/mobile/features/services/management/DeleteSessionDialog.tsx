@@ -9,7 +9,8 @@ import { forgetLastReading } from '../../progress/lastReading'
 import { forgetRecentlyControlled } from '../../progress/recentlyControlled'
 import { formatServiceDate } from '../api'
 import type { DeletionController } from './deletion'
-import { todayIn } from './draft'
+import { useManagementToday } from './zone'
+import { useAuth } from '../../auth/AuthProvider'
 import { announceMutation } from './mutations'
 
 export interface DeleteSessionDialogProps {
@@ -44,7 +45,9 @@ export function DeleteSessionDialog({ controller, scope, userId, fallbackTitle, 
 
   const visible = phase === 'preparing' || phase === 'confirming' || phase === 'deleting' || phase === 'unknown' || (phase === 'idle' && !!state.error)
   const date = target ? formatServiceDate(target.date) ?? target.date : null
-  const today = !!target && target.date === todayIn(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', '')
+  const { authorizedFetch } = useAuth()
+  const todayDate = useManagementToday(authorizedFetch)
+  const today = !!target && target.date === todayDate
   return <AppModal visible={visible} onDismiss={controller.cancel} title={t('sessionManagement.deleteTitle')} dismissLabel={t('common.cancel')} openerRef={openerRef}>
     {phase === 'preparing' && <ActivityIndicator accessibilityLabel={t('sessionManagement.deletePreparing')} />}
     {state.error && <AppText tone={phase === 'confirming' ? 'default' : 'destructive'} accessibilityRole="alert">{state.error}</AppText>}
