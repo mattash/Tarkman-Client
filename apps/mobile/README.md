@@ -449,6 +449,9 @@ shared with another PR or `main`. The Debug iOS simulator build and the Android
 debug APK load JavaScript from Metro instead of embedding it, so JavaScript-only
 commits cannot change them. `npm run test:native-inputs` runs these scenarios
 on a scratch repository.
+To force a fresh compile without changing any inputs, delete the PR's
+`native-compile-ok-<platform>-*` entry under **Actions → Caches** and re-run
+the workflow.
 
 After merge, the owner must select the exact check **`ios-build`** from
 **GitHub Actions** in `main` branch protection/rulesets, alongside the existing
