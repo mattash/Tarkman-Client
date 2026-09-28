@@ -29,13 +29,15 @@ npm run core:test
 npm run core:check-consumers
 ```
 
-`core:build` and `core:check` can also run separately after web's install.
+`core:build` and `core:check` can also run separately after mobile's install.
 Core tests build only core with its own strict, platform-free tsconfig and use
-Node's test runner. The compiler and AST guard explicitly use web's locked
+Node's test runner. The compiler and AST guard explicitly use mobile's locked
 app-local TypeScript; there is no global compiler lookup or tooling download.
 Consumer compile probes require both installs and use each app's own compiler.
 Core is independently checked, but is not a standalone installable verification
-toolchain: a fresh checkout must install web before building/testing core.
+toolchain: a fresh checkout must install mobile before building/testing core.
+CI runs `core:test` in the required `mobile` job and `core:check-consumers`
+in the path-filtered Legacy web CI workflow.
 Do not run a root or core install.
 
 Domain types originate from `apps/web/app/types`; language labels and helpers

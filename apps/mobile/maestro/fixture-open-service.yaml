@@ -9,12 +9,26 @@ appId: app.tarkman
     id: "today-scan"
 - tapOn:
     id: "scan-session-id"
-- tapOn:
-    id: "session-id"
+# Android autoFocus opens the keyboard and can occlude the already-focused field.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: "session-id"
 - inputText: "9001"
-# The numeric keypad covers the button, so submit with its Go key, which is what the
-# field's return key is configured to do.
-- tapOn: "Go"
+# Keep iOS's existing keyboard submission. Android IMEs may expose only an icon.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: "Go"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+      - tapOn: "Open session"
 - extendedWaitUntil:
     visible: "All services"
     timeout: 30000

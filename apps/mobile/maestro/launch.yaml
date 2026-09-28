@@ -1,11 +1,47 @@
-# Loads the app. Development builds must be pointed at Metro; a standalone build
-# ignores the link and simply launches, so the same flows run against both.
+# Loads the development client from Metro. Android uses the configured app
+# scheme and adb reverse; retain the existing iOS launch sequence.
 appId: app.tarkman
 ---
-- launchApp:
-    clearState: false
-- openLink:
-    link: exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          clearState: false
+      - openLink:
+          link: exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      # Dedicated test device: reset preferences, explanation read state and sign-in.
+      # Leave the app stopped so the development-client deep link is a cold launch.
+      - clearState
+      - setPermissions:
+          permissions:
+            camera: allow
+      - openLink:
+          link: tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
+      # Resetting data also resets the required dev client's first-run preferences.
+      - extendedWaitUntil:
+          visible: "Continue"
+          timeout: 60000
+      - tapOn:
+          text: "Continue"
+      - extendedWaitUntil:
+          visible: "Close"
+          timeout: 15000
+      # clearState restores Expo's Tools button to enabled. Its upper-right
+      # touch surface overlaps reader-preferences even when Maestro sees the
+      # reader underneath it. Turn it off before closing the developer menu.
+      - scrollUntilVisible:
+          element:
+            text: "Tools button"
+          direction: DOWN
+      - tapOn: "Tools button"
+      # Maestro's text selector also matches Android contentDescription.
+      - tapOn:
+          text: "Close"
 - tapOn:
     text: "Open"
     optional: true

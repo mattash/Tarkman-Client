@@ -9,6 +9,9 @@
       "environment": "development",
       "env": {
         "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "development"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "preview": {
@@ -17,6 +20,9 @@
       "environment": "preview",
       "env": {
         "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "preview"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
