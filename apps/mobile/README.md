@@ -731,6 +731,32 @@ A debug APK loads JavaScript from Metro; use the `preview` profile (or
 for a standalone build. `expo prebuild` rewrites `package.json` scripts; discard
 that change.
 
+**Test APK without EAS.** The manually run **Android test APK** workflow
+(`.github/workflows/android-apk.yml`, Actions → *Android test APK* → *Run
+workflow*) runs a clean prebuild and `:app:assembleRelease` for `arm64-v8a`
+(phones) and `x86_64` (emulators), checks the package, that it is not
+debuggable, its signature and the embedded JavaScript bundle, and uploads
+`tarkman-test-<sha>.apk` with its SHA-256 and badging as the
+`tarkman-android-test-apk` artifact (30 days). It embeds the public endpoints
+given as inputs (default `https://www.tarkman.app`), sets the Sentry environment
+to `preview` without a DSN, and starts without Metro. The same build locally:
+
+```sh
+cd apps/mobile
+export EXPO_NO_DOTENV=1 SENTRY_DISABLE_AUTO_UPLOAD=true \
+  EXPO_PUBLIC_API_URL=https://www.tarkman.app \
+  EXPO_PUBLIC_ACTIONCABLE_URL=wss://www.tarkman.app/cable
+npx expo prebuild --platform android --clean --no-install
+(cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64)
+# android/app/build/outputs/apk/release/app-release.apk
+```
+
+That APK is signed with the generated project's debug keystore. It is for
+sideloaded testing only: it is not a Play upload, it is not bound to the
+`preview` EAS Update channel, and because its signature differs
+from EAS-built APKs, Android refuses to install it over one (or vice versa)
+without an uninstall, with the data loss described above.
+
 **Permissions.** The release manifest requests only `INTERNET`, `CAMERA`
 (QR scanning), foreground `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`
 (asked only when the reader looks for a nearby church) and `VIBRATE`.
