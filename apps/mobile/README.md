@@ -416,54 +416,49 @@ scripts; it catches a broken app config or config plugin in CI rather than
 during a release build. It generates native configuration but does not compile
 Swift/Objective-C/C++ with Xcode.
 
-For every PR to `main`, [Node.js CI](../../.github/workflows/node.js.yml) also
-reports the stable **`ios-build`** check. The inexpensive Linux `ios-changes` job
-compares the PR against its merge base. Changes under `apps/mobile/**`,
-`packages/tarkman-core/**`, `packages/tarkman-design/**`, or to the workflow
-itself trigger `ios-compile` on macOS 26. That job uses Node 24, a clean
-`npm ci --prefix apps/mobile`, clean Expo iOS prebuild with `--no-install`,
-CocoaPods installation, and an unsigned Debug `xcodebuild` of the generated
-`ios/Tarkman.xcworkspace` / `Tarkman` scheme for a generic iOS Simulator.
-It compiles without launching or signing the app, API credentials, or production
-service tests. Generated `ios/` files stay on the runner.
+For every PR to `main`, [Node.js CI](../../.github/workflows/node.js.yml) reports
+stable **`ios-build`** and **`android-build`** checks. Full native compilation is
+**opt-in**: add **`[native-build]`** anywhere in the PR title (case-insensitive)
+to request both platforms. For example: `[native-build] Upgrade Expo`.
+Adding or removing the tag reruns CI through the `pull_request.edited` event.
+Without the tag, even native dependency/config changes skip full compilation.
+The regular mobile tests, lint, typecheck, store/config checks and iOS prebuild
+smoke check still run; mobile changes also run both JavaScript bundle checks.
+The tag requests those bundles even on an otherwise non-mobile PR.
 
-The Linux `ios-build` aggregate passes only after a successful compile, or after
-successful change detection intentionally skips compilation for a non-mobile
-PR. Detection failures and failed, cancelled, or unexpectedly skipped compiles
-fail the gate. Non-mobile PRs consume no macOS runner. macOS runners have
-materially higher cost than Linux, so compilation is limited to relevant PRs;
-the existing push-to-`main` checks remain unchanged.
+When requested, iOS compiles on macOS 26 using Node 24, a clean dependency
+install, Expo prebuild, CocoaPods and unsigned Debug `xcodebuild` for a generic
+iOS Simulator. Android checks the merged release manifest and compiles a debug
+APK. These jobs do not launch, sign or submit a release. The aggregate gates
+accept intentional opt-out, but still reject detection failures, failed bundles,
+and failed/cancelled/unexpectedly skipped builds when compilation was requested.
+The existing push-to-`main` validation remains unchanged.
 
-**Reusing a native compile (#204).** Only changes to native inputs trigger a
-compile: the workflow, the classifier itself, `app.json`/`app.config.*`,
-`package.json`, the lockfile, plugins, `assets/icons/`, and platform-specific
-`ios/` or `android/` files. CI invokes Expo prebuild and Xcode/Gradle directly,
-without an EAS profile or archive upload. Consequently, `eas.json`, `.easignore`
-and the validation-only `scripts/check-store-config.mjs` do not invalidate
-these compiles. EAS packaging, submission, environment and profile settings
-are not applied to these CI builds; no semantic EAS field filter is needed.
-The unconditional Linux mobile job still runs `check:store-config`, Expo config
-and the iOS prebuild smoke check, and mobile changes still run both platform
-bundle smoke checks. If a config plugin or build step begins reading an excluded
-file, it must be added to the native inputs.
-[`scripts/native-inputs.mjs`](scripts/native-inputs.mjs) defines that list and
-fingerprints those files in the PR's merge commit, per platform, together with
-the current ISO week. After a real compile succeeds, `ios-build` (or
-`android-build`) saves a marker keyed by that fingerprint in the PR's Actions
-cache. On a later commit, the changes job restores the marker and verifies its
-platform, result and fingerprint. If they match, the compile is skipped and the
-aggregate names the reused run. The aggregate still requires this head's
-bundle smoke check. Any mismatch, missing marker or cache error means a new
-compile. This covers native commits, base-branch updates to native inputs, and
-workflow or toolchain edits. The weekly salt forces at least one compile a week
-to pick up runner image drift. Markers are scoped to one PR and are never
-shared with another PR or `main`. The Debug iOS simulator build and the Android
-debug APK load JavaScript from Metro instead of embedding it, so JavaScript-only
-commits cannot change them. `npm run test:native-inputs` runs these scenarios
-on a scratch repository.
-To force a fresh compile without changing any inputs, delete the PR's
-`native-compile-ok-<platform>-*` entry under **Actions → Caches** and re-run
-the workflow.
+**Native input classification and reuse (#204).** Native inputs include the
+workflow, classifier, `app.json`/`app.config.*`, `package.json`, lockfiles,
+plugins, icons and platform-specific `ios/` or `android/` files. A change only
+to `expo.version` in `app.json` or the root `version` in `package.json` is reported
+as non-native when both versions are valid numeric `major.minor.patch` strings.
+Missing/invalid JSON or versions and other field changes retain native
+classification. Classification is informational; the title tag controls builds.
+
+CI invokes Expo prebuild and Xcode/Gradle directly, without an EAS profile or
+archive upload. `eas.json`, `.easignore` and the validation-only store checker
+are excluded from native fingerprints. If a plugin/build step starts consuming
+one of these files, it must be added back to the inputs.
+
+[`scripts/native-inputs.mjs`](scripts/native-inputs.mjs) fingerprints complete
+native input files in the PR merge commit, per platform and ISO week. Versions
+remain in the fingerprint because an explicitly requested build should verify
+the actual generated version/runtime metadata. A successful compile saves a
+marker in that PR's Actions cache. A subsequent tagged run reuses it only when
+platform, result and fingerprint match; missing/mismatched markers require a
+fresh compile. Base native changes and workflow/toolchain edits invalidate the
+marker, and the weekly salt refreshes opted-in builds for runner image drift.
+Markers never cross PRs. To force a fresh tagged build, delete its
+`native-compile-ok-<platform>-*` cache entry and rerun the workflow.
+`npm run test:native-inputs` covers classification, fingerprints, opt-in decisions
+and aggregate failure handling.
 
 After merge, the owner must select the exact check **`ios-build`** from
 **GitHub Actions** in `main` branch protection/rulesets, alongside the existing
@@ -919,7 +914,7 @@ profiles and these blocks.
 **CI.** For every PR, the stable **`android-build`** check aggregates
 `android-changes`, `android-bundle-smoke` and `android-compile`, with the same
 rules as `ios-build`. Mobile changes export the Android JavaScript bundle on
-Linux. Config, dependency, icon, plugin or workflow changes also run a clean
+Linux. Adding `[native-build]` to the PR title also requests a clean
 Android prebuild, check the merged release manifest (package, `tarkman`
 scheme, permissions, not debuggable) and compile a debug APK for one ABI
 (`x86_64`) on JDK 17. The job uses no signing keys, EAS or Play secrets,

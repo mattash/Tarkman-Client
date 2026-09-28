@@ -6,10 +6,12 @@
 //
 // Usage (from the repository root, in a full-history checkout of the PR merge commit):
 //   node apps/mobile/scripts/native-inputs.mjs --platform ios --base <sha> --head <sha> [--tree HEAD] [--salt <text>]
-// Prints mobile=, native= and fingerprint= lines, suitable for $GITHUB_OUTPUT.
+// Add --title <PR title> to opt in with [native-build].
+// Prints mobile=, native=, requested= and fingerprint= lines, suitable for $GITHUB_OUTPUT.
 
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
+import { isDeepStrictEqual } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
 export const platforms = ['ios', 'android']
@@ -72,16 +74,48 @@ export function fingerprint(treeListing, platform, salt = '') {
   return hash.digest('hex')
 }
 
-export function classify({ platform, base, head, tree = 'HEAD', salt = '', git = runGit }) {
+// Only valid numeric release-version edits receive this exception. Missing/invalid
+// JSON or versions, file additions/deletions, and every other field remain native.
+export function isVersionOnlyChange(path, before, after) {
+  if (!['apps/mobile/app.json', 'apps/mobile/package.json'].includes(path)) return false
+  try {
+    const previous = JSON.parse(before)
+    const next = JSON.parse(after)
+    const a = path.endsWith('/app.json') ? previous.expo : previous
+    const b = path.endsWith('/app.json') ? next.expo : next
+    const version = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
+    if (typeof a?.version !== 'string' || typeof b?.version !== 'string' ||
+        !version.test(a.version) || !version.test(b.version) || a.version === b.version) return false
+    delete a.version
+    delete b.version
+    return isDeepStrictEqual(previous, next)
+  } catch {
+    return false
+  }
+}
+
+export function classify({ platform, base, head, tree = 'HEAD', salt = '', title = '', git = runGit }) {
   assertPlatform(platform)
   // Disable rename detection so moving a file out of mobile still counts as a change.
   // Git pathspecs avoid API pagination and changed-file count limits.
   const changed = git(['diff', '--no-renames', '--name-only', `${base}...${head}`, '--', ...mobilePathspecs])
     .split('\n')
     .filter(Boolean)
+  const requested = /\[native-build\]/i.test(title)
+  const mergeBase = git(['merge-base', base, head]).trim()
+  const native = changed.some(path => {
+    if (!isNativeInput(path, platform)) return false
+    if (!['apps/mobile/app.json', 'apps/mobile/package.json'].includes(path)) return true
+    try {
+      return !isVersionOnlyChange(path, git(['show', `${mergeBase}:${path}`]), git(['show', `${head}:${path}`]))
+    } catch {
+      return true
+    }
+  })
   return {
-    mobile: changed.length > 0,
-    native: changed.some(path => isNativeInput(path, platform)),
+    mobile: changed.length > 0 || requested,
+    native,
+    requested,
     fingerprint: fingerprint(git(['ls-tree', '-r', '--full-tree', tree]), platform, salt),
   }
 }
