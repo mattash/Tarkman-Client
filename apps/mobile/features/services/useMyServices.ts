@@ -79,7 +79,20 @@ export function useMyServices(authorizedFetch: AuthContextValue['authorizedFetch
     return () => { active.current?.abort(); active.current = null }
   }, [load, update])
 
+  /**
+   * After a confirmed create/edit/delete: supersede any in-flight page (an old load-more can never append
+   * afterwards), forget the cursor chain, and fetch page one again in the server's order.
+   */
+  const reconcile = useCallback(() => {
+    active.current?.abort()
+    active.current = null
+    seenCursors.current = new Set()
+    update({ nextCursor: null, loadingMore: false, loadMoreError: null, paginationComplete: false })
+    return load('refresh')
+  }, [load, update])
+
   return { ...state,
+    reconcile,
     refresh: () => load('refresh'),
     retry: () => load(current.current.services.length ? 'refresh' : 'initial'),
     loadMore: () => load('more'),

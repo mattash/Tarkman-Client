@@ -751,6 +751,35 @@ load-more response, excluding initial complete lists and first-page recovery.
 Web retains its polite live region. Jest covers these transitions; native scrolling and assistive technology still
 need device verification against the paginated backend.
 
+## My Sessions: Add Session / #199
+
+My Sessions (the signed-in list, route `/services`) leads with **Add Session**, above every card
+and in every list state. It opens `app/(signed-in)/session-management/new.tsx`, which sits outside
+`services/[id]/_layout.tsx`: the form never starts a reader, controller presence, keep-awake or a
+live command. Modules live in `features/services/management/`:
+
+- `contracts.ts` validates the mattash/Tarkman#454 version-1 shapes: bootstrap (`GET /s/new.json`,
+  `schema_version`/`session_management_version` 1, `time_zone`, `defaults`, `limits`), the keyset
+  picker catalog (`GET /s/liturgy_options.json?limit&after_id&q`), and the canonical nested `session`.
+  Any other version, HTML, or a generic 404/405/406 reads as "management unavailable", never as an
+  empty form or a raw POST.
+- `api.ts` sends only `{ client_request_id, session: { date, liturgy_ids, options } }`.
+- `creation.ts` owns one draft: defaults initialize untouched fields only (a stale bootstrap is
+  refreshed on focus without overwriting edits); a synchronous in-flight lock; an uncertain outcome
+  (network, abort, 5xx, unreadable success) keeps the exact key and payload for **Retry safely**
+  within 24 hours and locks the form; 422 maps `errors_by_field` and focuses the first field.
+- `catalog.ts`/`LiturgyPicker.tsx`: server search and load-more; selections live in the draft, so
+  they survive searching and paging. The numbered order has labelled Move up/down/Remove controls.
+- `mutations.ts` announces a confirmed write, scoped to API environment and account; My Sessions
+  reconciles once via `useMyServices().reconcile()` (aborts any page in flight, resets the cursor
+  chain, fetches page one) and shows **Session created** with a separate **Open controls**.
+
+A today-dated creation asks for confirmation (it can appear to readers and become the current
+session immediately). The loopback fixture (`qa/design-system/mock-reader-server.cjs`) serves the
+synthetic management routes; `FIXTURE_MANAGEMENT=off` simulates an older backend. Browser evidence:
+[qa/issue199](qa/issue199/). The backend contract is not yet implemented, so real-backend and native
+device checks remain outstanding.
+
 ## Interface languages / #123
 
 Interface copy (buttons, statuses, errors, sheets, Settings and VoiceOver labels) lives in typed catalogs under

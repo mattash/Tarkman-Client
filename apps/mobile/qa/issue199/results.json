@@ -1,0 +1,26 @@
+[
+  {
+    "name": "phone",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "name": "dark",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "name": "desktop",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "name": "uncertain-retry",
+    "errors": [],
+    "posts": 2
+  },
+  {
+    "name": "unavailable",
+    "errors": []
+  }
+]
