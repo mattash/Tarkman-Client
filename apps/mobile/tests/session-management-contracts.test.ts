@@ -44,7 +44,9 @@ it('reads the version-1 bootstrap and rejects any other version or shape as unav
 
 it('reads keyset catalog pages and rejects malformed ones', () => {
   expect(normalizeLiturgyOptions(fixtures.liturgyPage1)).toEqual({ nextAfterId: 202,
-    liturgies: [{ id: 101, name: 'Divine Liturgy', selectable: true }, { id: 202, name: 'Morning Service', selectable: true }] })
+    liturgies: [{ id: 101, name: 'Divine Liturgy', selectable: true, usageCount: null }, { id: 202, name: 'Morning Service', selectable: true, usageCount: null }] })
+  const counted = normalizeLiturgyOptions({ ...fixtures.liturgyPage2, liturgies: [{ id: 1, name: 'A', usage_count: 4 }, { id: 2, name: 'B', usage_count: -1 }, { id: 3, name: 'C', usage_count: '9' }] })
+  expect(counted.liturgies.map(item => item.usageCount)).toEqual([4, null, null])
   expect(normalizeLiturgyOptions(fixtures.liturgyPage2).nextAfterId).toBeNull()
   for (const body of [{ ...fixtures.liturgyPage1, next_after_id: 'x' }, { ...fixtures.liturgyPage1, liturgies: [{ id: 'a', name: 'A' }] },
     { liturgies: [], next_after_id: null }, { schema_version: 1, liturgies: null, next_after_id: null }]) {

@@ -14,7 +14,11 @@ export type SessionOptions = Record<OptionKey, string>
 
 export interface ManagementLimits { maxLiturgies: number | null; optionMaxLength: Partial<Record<OptionKey, number>> }
 export interface ManagementBootstrap { timeZone: string; defaultDate: string; defaultOptions: SessionOptions; limits: ManagementLimits }
-export interface LiturgyOption { id: number; name: string; selectable: boolean }
+export interface LiturgyOption {
+  id: number; name: string; selectable: boolean
+  /** How many of this account's sessions used it (`usage_count`), when the backend sends it; drives the sheet's order. */
+  usageCount?: number | null
+}
 export interface LiturgyOptionsPage { liturgies: LiturgyOption[]; nextAfterId: number | null }
 export interface ManagedSession {
   id: number
@@ -104,7 +108,11 @@ export function normalizeLiturgyOptions(value: unknown): LiturgyOptionsPage {
     const data = record(value)
     if (data.schema_version !== SCHEMA_VERSION || !Array.isArray(data.liturgies)) throw unavailableError()
     const next = data.next_after_id === null ? null : id(data.next_after_id)
-    return { liturgies: data.liturgies.map(item => ({ ...liturgy(item), selectable: true })), nextAfterId: next }
+    return { liturgies: data.liturgies.map(item => {
+      const usage = record(item).usage_count
+      // Optional and advisory: a missing or malformed count only loses the ordering, never the choice.
+      return { ...liturgy(item), selectable: true, usageCount: typeof usage === 'number' && Number.isSafeInteger(usage) && usage >= 0 ? usage : null }
+    }), nextAfterId: next }
   })
 }
 

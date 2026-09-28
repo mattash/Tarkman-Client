@@ -17,6 +17,15 @@ export interface CatalogSnapshot {
 
 const initial: CatalogSnapshot = { liturgies: [], loading: false, error: null, unavailable: false, complete: false }
 
+const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+/**
+ * The sheet's order, matching the backend's session form (`Liturgy.by_user_frequency`): most used by this
+ * account first, then by title. Without usage counts it is simply alphabetical.
+ */
+export function byUsageThenTitle(a: LiturgyOption, b: LiturgyOption): number {
+  return (b.usageCount ?? 0) - (a.usageCount ?? 0) || collator.compare(a.name, b.name) || a.id - b.id
+}
+
 /** Case- and accent-insensitive title match for the Add Liturgy sheet's filter. */
 export function matchesTitle(name: string, query: string): boolean {
   const fold = (value: string) => value.normalize('NFD').replace(/\p{Mn}/gu, '').toLocaleLowerCase()
@@ -55,7 +64,7 @@ export function createCatalogController(fetcher: AuthContextValue['authorizedFet
         if (after !== null && result.nextAfterId <= after) throw new Error(t('sessionManagement.catalogFailed'))
         after = result.nextAfterId
       }
-      set({ liturgies: [...liturgies.values()], complete: true })
+      set({ liturgies: [...liturgies.values()].sort(byUsageThenTitle), complete: true })
     } catch (error) {
       if (epoch !== generation || controller.signal.aborted || isUnauthorized(error)) return
       // A failed load is never shown as an empty catalog.
