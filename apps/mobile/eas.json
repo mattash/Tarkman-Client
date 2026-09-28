@@ -30,6 +30,9 @@
       "channel": "production",
       "environment": "production",
       "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production"
       }
@@ -42,6 +45,12 @@
     }
   },
   "submit": {
+    "android-internal": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    },
     "production": {
       "ios": {
         "appleTeamId": "FHF872BAQR",
