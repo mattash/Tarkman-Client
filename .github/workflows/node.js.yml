@@ -121,6 +121,8 @@ jobs:
       run: |
         # The fingerprint covers the checked-out merge commit, so base updates count. The ISO
         # week bounds runner image and toolchain drift: a native PR compiles at least weekly.
+        # The default shell has no pipefail; a failed script must fail detection, not empty its outputs.
+        set -o pipefail
         node apps/mobile/scripts/native-inputs.mjs --platform ios \
           --base "$BASE_SHA" --head "$HEAD_SHA" --tree HEAD --salt "$(date -u +%G-W%V)" \
           | tee -a "$GITHUB_OUTPUT"
@@ -311,6 +313,8 @@ jobs:
       run: |
         # The fingerprint covers the checked-out merge commit, so base updates count. The ISO
         # week bounds runner image and toolchain drift: a native PR compiles at least weekly.
+        # The default shell has no pipefail; a failed script must fail detection, not empty its outputs.
+        set -o pipefail
         node apps/mobile/scripts/native-inputs.mjs --platform android \
           --base "$BASE_SHA" --head "$HEAD_SHA" --tree HEAD --salt "$(date -u +%G-W%V)" \
           | tee -a "$GITHUB_OUTPUT"
