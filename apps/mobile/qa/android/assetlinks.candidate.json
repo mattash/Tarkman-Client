@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.tarkman",
+      "sha256_cert_fingerprints": [
+        "1D:24:05:04:F7:93:87:6D:5D:53:8A:7A:C0:EF:38:13:7B:F6:55:7A:8B:27:BD:9F:E4:1D:0A:0E:B6:38:2C:23"
+      ]
+    }
+  }
+]

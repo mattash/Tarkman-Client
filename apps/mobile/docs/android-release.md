@@ -173,3 +173,25 @@ It does not check remote credentials, publisher enrollment or Play acceptance.
 References (rechecked September 28, 2026):
 [Expo Android submission](https://docs.expo.dev/submit/android/),
 [Google app setup](https://support.google.com/googleplay/android-developer/answer/9859152?hl=en).
+
+## September 28 closure follow-up
+
+Read-only Console recheck: internal 0.1.1 remains Draft and Inactive. Production
+is Inactive; the app dashboard still gates closed/open testing and production on
+initial setup. Internal testing is offered separately before completing that setup.
+The production page offering Create new release is not evidence of final eligibility.
+The remaining account-level verification check and stage 3 execution evidence are
+tracked in the [beta release packet](../qa/android/RELEASE.md).
+
+Owner-controlled recovery confirmation is still outstanding. Existing EAS project
+credentials are a verified operational location, not proof of an independent owner
+backup. The owner should confirm the nonsecret vault/location and recovery custodian
+for the upload keystore/passwords and submission credential, plus account recovery.
+Do not paste credentials into this document or an issue. EAS documents an owner
+[credential download flow](https://docs.expo.dev/app-signing/app-credentials/);
+no export, reset, key replacement or access expansion was performed here.
+A Play upload-key reset is a recovery option, not a substitute for confirming the
+current recovery arrangement, and requires a separately authorized operation.
+
+#192 remains open until that owner confirmation is recorded. Stage 3 rollout,
+physical QA, domain deployment, declarations and production approval remain #193.
