@@ -537,7 +537,10 @@ jobs:
     # Exactly one react-native install (the fork), matching mobile's React Native and React.
     - run: npm run check:runtime
     - run: npm run check:identity
+    - run: npm run lint
     - run: npm run typecheck
+    # Includes the synthetic end-to-end reader flow, which asserts the TV only reads.
+    - run: npm test
     - name: Shared reader boundary and Metro guard
       working-directory: .
       run: npm run reader:check && npm run metro:test
