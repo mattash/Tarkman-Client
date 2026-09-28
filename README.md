@@ -151,9 +151,13 @@ starts it for the web, `npm run mobile` starts Metro, and `npm run build`,
 `npm test`, `npm run typecheck` and `npm run lint` run in `apps/mobile`. The
 deprecated Vite app's scripts are `npm run legacy-web:*`.
 
-See [mobile setup and EAS configuration](apps/mobile/README.md). EAS
-configuration belongs under `apps/mobile`; run any EAS commands there. Mobile
+See [mobile setup and EAS configuration](apps/mobile/README.md). Mobile EAS
+configuration belongs under `apps/mobile`; run mobile EAS commands there. Mobile
 public environment placeholders are in `apps/mobile/.env.example`.
+
+The read-only Apple TV app lives in `apps/tv` with its own install, EAS project
+and update channels; see [the TV README](apps/tv/README.md) and the `tv:*` scripts.
+Both apps bundle the live reader engine from `packages/tarkman-reader`.
 
 ---
 

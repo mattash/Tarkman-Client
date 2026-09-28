@@ -1,4 +1,4 @@
-# This workflow validates the active Expo client, shared core and design packages.
+# This workflow validates the active Expo clients (mobile and TV), shared core, reader and design packages.
 # The deprecated apps/web client is checked separately by legacy-web.yml.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
@@ -489,3 +489,110 @@ jobs:
       with:
         path: ${{ runner.temp }}/native-compile-marker/android.json
         key: native-compile-ok-android-${{ needs.android-changes.outputs.fingerprint }}
+
+  tv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+    defaults:
+      run:
+        working-directory: apps/tv
+    env:
+      CI: '1'
+      EXPO_NO_DOTENV: '1'
+      EXPO_PUBLIC_API_URL: https://reader.invalid
+      EXPO_PUBLIC_ACTIONCABLE_URL: wss://reader.invalid/cable
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: 'npm'
+        cache-dependency-path: apps/tv/package-lock.json
+    - run: npm ci
+    - run: npm ls --all
+    - run: npx expo-doctor
+    # Exactly one react-native install (the fork), matching mobile's React Native and React.
+    - run: npm run check:runtime
+    - run: npm run check:identity
+    - run: npm run typecheck
+    - name: Shared reader boundary and Metro guard
+      working-directory: .
+      run: npm run reader:check && npm run metro:test
+    # The Metro guard fails this export if react/react-native resolve outside apps/tv/node_modules.
+    - name: Export tvOS JavaScript bundle
+      run: |
+        npm run export:tvos -- --clear --no-bytecode --output-dir "$RUNNER_TEMP/tarkman-tv-bundle"
+        grep -q TVFocusGuideView "$RUNNER_TEMP"/tarkman-tv-bundle/_expo/static/js/ios/*.js
+    - name: tvOS config smoke check
+      run: |
+        npm run prebuild:tvos -- --no-install
+        grep -q 'SDKROOT = appletvos' ios/Tarkman.xcodeproj/project.pbxproj
+        grep -q 'TARGETED_DEVICE_FAMILY = 3' ios/Tarkman.xcodeproj/project.pbxproj
+        grep -q 'platform :tvos' ios/Podfile
+        grep -q 'app.tarkman' ios/Tarkman.xcodeproj/project.pbxproj
+        # tvOS 27 SDK apps without a scene manifest trap at launch (plugins/withSceneLifecycle.js).
+        grep -q 'UIApplicationSceneManifest' ios/Tarkman/Info.plist
+        grep -q 'SceneDelegate.swift in Sources' ios/Tarkman.xcodeproj/project.pbxproj
+    - name: Detect TV-relevant changes
+      id: changes
+      if: github.event_name == 'pull_request'
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      working-directory: .
+      run: |
+        set -o pipefail
+        if git diff --quiet "$BASE_SHA...$HEAD_SHA" -- apps/tv packages/tarkman-reader packages/tarkman-core packages/tarkman-design tools/metro .github/workflows/node.js.yml; then
+          echo changed=false >> "$GITHUB_OUTPUT"
+        else
+          echo changed=true >> "$GITHUB_OUTPUT"
+        fi
+
+  # Unsigned tvOS simulator compile, only when TV or its shared inputs change. Signed device
+  # and App Store builds belong to the release workflow in apps/tv/README.md, not CI.
+  tv-compile:
+    needs: tv
+    if: needs.tv.outputs.changed == 'true'
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      CI: '1'
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      EXPO_NO_DOTENV: '1'
+      EXPO_PUBLIC_API_URL: https://reader.invalid
+      EXPO_PUBLIC_ACTIONCABLE_URL: wss://reader.invalid/cable
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+        cache: 'npm'
+        cache-dependency-path: apps/tv/package-lock.json
+    - run: npm ci --prefix apps/tv
+    - name: Clean tvOS prebuild
+      working-directory: apps/tv
+      run: npm run prebuild:tvos -- --no-install
+    - name: Install tvOS pods
+      working-directory: apps/tv/ios
+      run: pod install
+    - name: Compile unsigned tvOS simulator app
+      working-directory: apps/tv
+      run: |
+        xcodebuild -version
+        xcodebuild -workspace ios/Tarkman.xcworkspace -scheme Tarkman \
+          -configuration Debug -sdk appletvsimulator \
+          -destination 'generic/platform=tvOS Simulator' \
+          -derivedDataPath "$RUNNER_TEMP/tarkman-tv-build" \
+          EXPO_TV=1 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build

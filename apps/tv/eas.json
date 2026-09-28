@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "env": {
+        "EXPO_TV": "1"
+      }
+    },
+    "development-simulator": {
+      "extends": "base",
+      "distribution": "internal",
+      "environment": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "tv-preview",
+      "environment": "preview"
+    },
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "channel": "tv-production",
+      "environment": "production",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleTeamId": "FHF872BAQR",
+        "ascAppId": "6810790124"
+      }
+    }
+  }
+}
