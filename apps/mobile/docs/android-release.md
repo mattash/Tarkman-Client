@@ -15,7 +15,7 @@ Inventory checked September 28, 2026:
 | Existing EAS project | `c76aa8c8-fb02-40b5-b4ae-8469b1bbeb47` |
 | Version / runtime | `0.1.1` / `appVersion` policy; EAS owns versionCode |
 | EAS access | Authenticated operator has Owner access to `mesropash` |
-| Selected production build | `38b63fc4-3947-47ba-a8be-4fd1e35d97da`, source `6efb5c4e5b0f56e00134e3134e30f0e78c65670b`, versionCode `2`; build started, acceptance pending |
+| Selected production build | `38b63fc4-3947-47ba-a8be-4fd1e35d97da`, source `6efb5c4e5b0f56e00134e3134e30f0e78c65670b`, versionCode `2`; build finished September 28 at 17:34 UTC; local artifact validation passed, Play acceptance pending |
 | Publisher / Console app ID | St. John Armenian Church, organization account `8031576529416400534`; existing draft Tarkman app `4974777608134427797` already identifies `app.tarkman` |
 | Console operator | Mesrop Ash, Account owner; existing app reused without creating a duplicate or accepting new terms |
 | Play acceptance / internal draft | Not yet verified; configuration is not registration or upload evidence |
@@ -124,11 +124,37 @@ Production public endpoints verified in EAS: `https://www.tarkman.app` and
 the existing remote keystore and a clean checkout, excluding unrelated local
 artifacts.
 
+## Production artifact validation
+
+Build `38b63fc4-3947-47ba-a8be-4fd1e35d97da` completed successfully. The selected
+AAB is 96,225,192 bytes, SHA-256
+`9319e78e41c4d0ecd437bd98076e3937ebaea2603d42bad971ebb5691636d02c`.
+
+- Bundletool 1.18.3 validation passed; manifest is `app.tarkman`, version `0.1.1`,
+  versionCode `2`, min SDK 24, target/compile SDK 36, not debuggable.
+- All 1,486 payload entries passed Java JarFile cryptographic signature
+  verification. The signer matches the existing EAS upload SHA-256 above.
+  JDK 26 jarsigner also reports the self-signed certificate, absent timestamp,
+  and streaming JarInputStream manifest-order warnings; full JarFile payload
+  verification passed. Actual Play acceptance remains pending.
+- Permissions match the documented foreground camera/location and library
+  permissions. No microphone, background location, legacy storage or overlay
+  permission is present.
+- The embedded Android bundle contains the expected production API and cable
+  endpoint strings. Manifest update channel is `production` with the existing
+  EAS project URL.
+- Bundle config requests `PAGE_ALIGNMENT_16K`; all 58 packaged 64-bit native
+  libraries have PT_LOAD alignment of at least 16 KB with matching offset/address
+  congruence. This is static compatibility evidence, not a 16 KB device test.
+
+No Play upload or tester rollout has occurred. The owner must approve this exact
+build for internal-track draft submission. No replacement build is required for
+subsequent documentation-only changes.
+
 ## Handoff evidence still required
 
 - Any account-verification restrictions encountered during upload.
 - Owner-held backup/recovery confirmation; retain the existing app setup and signing choices.
-- Exact production build ID/SHA/versionCode/hash and release-artifact inspection.
 - Accepted internal-track draft and remaining dashboard/account blockers.
 - Stage 3 listing/compliance, testing eligibility, App Links and release approval.
 
