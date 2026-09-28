@@ -65,6 +65,33 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "web.tarkman.app",
+              "pathPattern": "/sessions/.*/parts"
+            },
+            {
+              "scheme": "https",
+              "host": "web.tarkman.app",
+              "pathPattern": "/sessions/.*/parts/"
+            },
+            {
+              "scheme": "https",
+              "host": "web.tarkman.app",
+              "pathPattern": "/sessions/.*/part/.*"
+            }
+          ]
+        }
       ]
     },
     "web": {
