@@ -586,7 +586,6 @@ export const en = {
     addLiturgyHint: 'Opens a list of liturgies you can add',
     filterLiturgies: 'Filter by title',
     filterPlaceholder: 'Type part of a title',
-    addedRow: '{name} · Added',
     addedAt: '{name} added as number {position}.',
     liturgiesHelp: 'Liturgies are served in this order. Use the arrows to reorder them.',
     catalogLoading: 'Loading liturgies',

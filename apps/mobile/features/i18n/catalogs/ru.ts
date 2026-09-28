@@ -594,7 +594,6 @@ export const ru: Catalog = {
     addLiturgyHint: 'Открывает список литургий, которые можно добавить',
     filterLiturgies: 'Фильтр по названию',
     filterPlaceholder: 'Введите часть названия',
-    addedRow: '{name} · добавлено',
     addedAt: '{name} добавлено под номером {position}.',
     liturgiesHelp: 'Литургии совершаются в этом порядке. Меняйте его стрелками.',
     catalogLoading: 'Загрузка литургий',
