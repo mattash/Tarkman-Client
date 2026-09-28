@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals'
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { fireEvent, render, screen, within } from '@testing-library/react-native'
 import { Platform } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { AppButton } from '../components/AppButton'
@@ -184,8 +184,31 @@ describe('native primitives', () => {
       await render(<AppModal visible title="Reading" onDismiss={() => {}} />, { wrapper })
       expect(screen.getByTestId('app-modal')).toHaveProp('presentationStyle', 'pageSheet')
       expect(screen.getByTestId('app-modal')).toHaveProp('allowSwipeDismissal', true)
-      expect(screen.getByTestId('modal-shell')).toHaveStyle({ flex: 1, maxHeight: '100%' })
+      expect(screen.getByTestId('modal-shell')).toHaveStyle({ flex: 1, height: undefined, maxHeight: '100%' })
       expect(screen.getByTestId('modal-content')).toHaveStyle({ flex: 1 })
+    } finally { Platform.OS = previous }
+  })
+  it.each(['android', 'web'] as const)('keeps %s sheet children in a flexible scroll area with platform-specific shell sizing', async platform => {
+    const previous = Platform.OS
+    Platform.OS = platform
+    const select = jest.fn()
+    try {
+      await render(<AppModal visible title="Reading language" onDismiss={() => {}}>
+        <AppButton onPress={select}>English</AppButton>
+        <AppButton>Armenian</AppButton>
+      </AppModal>, { wrapper })
+      // Jest does not run native layout: enforce the bounded Android parent
+      // contract that prevents flex content from collapsing on the device.
+      expect(screen.getByTestId('modal-shell')).toHaveStyle({ height: platform === 'android' ? '90%' : undefined, maxHeight: '90%', flex: undefined })
+      const content = screen.getByTestId('modal-content')
+      expect(content).toHaveStyle({ flex: 1 })
+      expect(content).toHaveProp('keyboardShouldPersistTaps', 'handled')
+      expect(content).toHaveProp('keyboardDismissMode', 'on-drag')
+      expect(within(content).getByRole('button', { name: 'Armenian' })).toBeOnTheScreen()
+      await fireEvent.press(within(content).getByRole('button', { name: 'English' }))
+      expect(select).toHaveBeenCalledTimes(1)
+      expect(screen.getByTestId('app-modal')).toHaveProp('presentationStyle', 'overFullScreen')
+      expect(screen.getByTestId('app-modal')).toHaveProp('animationType', 'none')
     } finally { Platform.OS = previous }
   })
   it('leads with Cancel and trails the commit action when a sheet has one', async () => {

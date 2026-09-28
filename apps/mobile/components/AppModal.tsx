@@ -33,7 +33,8 @@ export function AppModal({ visible, onDismiss, title, children, openerRef, heade
     onDismiss={restore} onRequestClose={onDismiss} statusBarTranslucent={!ios}>
     <KeyboardAvoidingView behavior={ios ? 'padding' : 'height'} style={{ flex: 1, justifyContent: ios ? 'flex-start' : 'flex-end', backgroundColor: ios ? colors.overlay : colors.backdrop }}>
       {!ios && <Pressable accessible={false} focusable={false} importantForAccessibility="no" testID="modal-backdrop" onPress={onDismiss} style={{ position: 'absolute', inset: 0 }} />}
-      <View testID="modal-shell" accessibilityViewIsModal onAccessibilityEscape={onDismiss} style={{ backgroundColor: colors.overlay, flex: ios ? 1 : undefined, maxHeight: ios ? '100%' : '90%', width: '100%', maxWidth: 680,
+      {/* Android needs a bounded height so the flex ScrollView cannot collapse to the header. */}
+      <View testID="modal-shell" accessibilityViewIsModal onAccessibilityEscape={onDismiss} style={{ backgroundColor: colors.overlay, flex: ios ? 1 : undefined, height: Platform.OS === 'android' ? '90%' : undefined, maxHeight: ios ? '100%' : '90%', width: '100%', maxWidth: 680,
         alignSelf: 'center', borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
         paddingTop: spacing.lg, paddingBottom: Math.max(insets.bottom, spacing.lg), paddingLeft: Math.max(insets.left, spacing.lg), paddingRight: Math.max(insets.right, spacing.lg), gap: spacing.md }}>
         {/* iOS convention: a lone Done trails the title; with a commit action, Cancel leads and the commit trails. */}
