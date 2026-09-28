@@ -188,3 +188,17 @@ it.each([-80, -220])('opens the swiped part, not the live part, after a %s point
   await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
   expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ partId: '52', role: 'deacon' }) }))
 })
+
+
+it.each([
+  { id: '9007199254740993', partId: '52' },
+  { id: '9', partId: '9007199254740993' },
+])('rejects an unsafe reader identifier before requesting part data: %j', async params => {
+  mockParams = params
+  const request = jest.fn<typeof fetch>()
+  globalThis.fetch = request
+  await render(<PartDetailScreen />, { wrapper })
+  expect(request).not.toHaveBeenCalled()
+  expect(screen.getByRole('alert')).toBeOnTheScreen()
+  expect(screen.queryByTestId('part-role')).toBeNull()
+})

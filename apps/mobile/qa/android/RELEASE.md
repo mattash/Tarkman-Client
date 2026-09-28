@@ -56,7 +56,8 @@ association file in this directory: domain deployment needs separate approval.
 | /sessions/4006/status/display | Browser |
 | /display-links/example | Browser |
 | Invalid, zero, negative or unsafe integer IDs | Safe invalid-route behavior, no control privilege |
-| Different host, HTTP, encoded separators or extra path segments | No accidental reader claim; test explicitly |
+| Different host or HTTP | Not claimed by the HTTPS host filter; explicit app delivery rejected |
+| Encoded separators, malformed IDs or extra part-path segments | Legacy OS glob may dispatch to the app; native reader validation rejects navigation |
 
 Inspect the generated Android manifest, not only app.json. A broad /sessions
 prefix or catch-all host is unacceptable. Android pathPattern uses simple glob
@@ -137,3 +138,23 @@ behavior and public support route. Keep credentials out of this packet.
 A lower-versionCode binary is not an ordinary Play rollback. Prepare a tested
 higher-versionCode hotfix and use only release controls the Console actually offers.
 Keep #193 open through verified public availability unless the owner changes scope.
+
+## Reader App Links implementation (review pending)
+
+Android config now requests verification only for HTTPS web.tarkman.app reader
+list/detail paths. API-24-compatible simple globs exclude the known display/status
+routes in the matrix above. These globs cannot validate numeric IDs and the detail
+glob can dispatch a malformed suffix; +native-intent rejects these URLs before
+navigation. It preserves existing custom schemes, occurrence/context parameters
+and iOS handling. Invalid Android web intents return to Today; they do not acquire
+reader or management access. Scanner parsing and web redirects are unchanged.
+
+Local validation: generated prebuild manifest contains only the three expected
+reader patterns and retains tarkman. The installed Android API 35 framework's
+simple-glob method passed a 12-case reader/display matrix on the host JVM. This is
+algorithm validation, not minimum-API/device association evidence. Jest covers
+valid/invalid URL routing, unsafe IDs, query overrides and preserved contexts.
+
+No assetlinks file has been deployed and no Play-installed association verified.
+Before building this native change, select a new app version/runtime and exact
+source SHA; the current 0.1.1 accepted artifact does not contain these filters.

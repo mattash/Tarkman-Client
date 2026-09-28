@@ -33,7 +33,7 @@ export default function PartDetailScreen() {
   const { id, partId, key: readKey, role: listedRole, posture: listedPosture, service } = useLocalSearchParams<{ id?: string; partId?: string; key?: string; role?: string; posture?: string; service?: string }>()
   const sessionId = Number(id), part = Number(partId)
   const config = readerConfig()
-  const valid = config.endpoints && Number.isInteger(sessionId) && sessionId > 0 && Number.isInteger(part) && part > 0
+  const valid = config.endpoints && Number.isSafeInteger(sessionId) && sessionId > 0 && Number.isSafeInteger(part) && part > 0
   const [state, setState] = useState<PartState>({ explanations: [], loading: true, explanationError: false })
   const [attempt, setAttempt] = useState(0)
   const api = config.endpoints?.api
