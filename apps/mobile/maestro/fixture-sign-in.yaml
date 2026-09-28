@@ -26,6 +26,11 @@ appId: app.tarkman
 - tapOn:
     id: "sign-in-password"
 - inputText: "fixture-only-password"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
 - tapOn:
     id: "sign-in-submit"
 # iOS may offer to save the synthetic fixture password; dismiss it so the

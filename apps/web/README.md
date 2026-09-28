@@ -9,6 +9,9 @@ Do not add features here; fix bugs in `apps/mobile`. The root scripts for this
 app are `npm run legacy-web:*`, and the repository [README](../../README.md) and
 `CLAUDE.md` still document it under their legacy sections.
 
-When removing this app, also delete the `build` job in
-`.github/workflows/node.js.yml`, which still builds and tests it, and update the
-branch protection rule that requires its `build (22.x)` and `build (24.x)` checks.
+[Legacy web CI](../../.github/workflows/legacy-web.yml) typechecks, builds and
+tests this app on Node 24, and runs the core consumer compile probes, only when
+`apps/web/**`, `packages/tarkman-core/**` or that workflow changes (or when run
+manually). It is intentionally not a required check (#205). When removing this
+app, delete that workflow and the `web` entries in
+`packages/tarkman-core/scripts/check-consumers.mjs` and `check-package.mjs`.
