@@ -122,7 +122,7 @@ function ConflictSummary({ base, saved, draft }: { base: ManagedSession; saved: 
   const rows: [string, string, string][] = []
   if (mine.date !== undefined) rows.push([t('sessionManagement.date'), formatServiceDate(current.date) ?? current.date, formatServiceDate(draft.date) ?? draft.date])
   const names = (list: typeof draft.liturgies) => list.map(item => item.name).join(' · ')
-  if (mine.liturgy_ids) rows.push([t('sessionManagement.selected'), names(current.liturgies), names(draft.liturgies)])
+  if (mine.liturgy_ids) rows.push([t('sessionManagement.liturgies'), names(current.liturgies), names(draft.liturgies)])
   for (const key of OPTION_KEYS) if (mine.options && key in mine.options) rows.push([t(`sessionManagement.${key}`), current.options[key], draft.options[key]])
   return <View style={{ gap: spacing.sm }}>
     {rows.map(([label, now, mine]) => <View key={label} style={{ gap: 2 }}>
