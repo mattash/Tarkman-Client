@@ -8,6 +8,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches: [ "main" ]
 
 concurrency:
@@ -78,6 +79,7 @@ jobs:
     outputs:
       mobile: ${{ steps.changes.outputs.mobile }}
       native: ${{ steps.changes.outputs.native }}
+      requested: ${{ steps.changes.outputs.requested }}
       fingerprint: ${{ steps.changes.outputs.fingerprint }}
       compile: ${{ steps.reuse.outputs.compile }}
       reused-run: ${{ steps.reuse.outputs.reused-run }}
@@ -92,19 +94,20 @@ jobs:
       env:
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
         # The fingerprint covers the checked-out merge commit, so base updates count. The ISO
-        # week bounds runner image and toolchain drift: a native PR compiles at least weekly.
+        # week bounds runner image and toolchain drift: opted-in builds refresh at least weekly.
         # The default shell has no pipefail; a failed script must fail detection, not empty its outputs.
         set -o pipefail
         node apps/mobile/scripts/native-inputs.mjs --platform ios \
-          --base "$BASE_SHA" --head "$HEAD_SHA" --tree HEAD --salt "$(date -u +%G-W%V)" \
+          --base "$BASE_SHA" --head "$HEAD_SHA" --tree HEAD --title "$PR_TITLE" --salt "$(date -u +%G-W%V)" \
           | tee -a "$GITHUB_OUTPUT"
     # A marker is saved only by ios-build after a real ios-compile succeeded for this
     # fingerprint. PR caches are scoped to the PR, so a marker never crosses PRs.
     - name: Look up a prior iOS compile for these native inputs
       id: marker
-      if: steps.changes.outputs.native == 'true'
+      if: steps.changes.outputs.requested == 'true'
       uses: actions/cache/restore@v5
       with:
         path: ${{ runner.temp }}/native-compile-marker/ios.json
@@ -112,13 +115,13 @@ jobs:
     - name: Decide whether to compile
       id: reuse
       env:
-        NATIVE_CHANGED: ${{ steps.changes.outputs.native }}
+        BUILD_REQUESTED: ${{ steps.changes.outputs.requested }}
         FINGERPRINT: ${{ steps.changes.outputs.fingerprint }}
         CACHE_HIT: ${{ steps.marker.outputs.cache-hit }}
         MARKER: ${{ runner.temp }}/native-compile-marker/ios.json
       run: |
         compile=false
-        if [ "$NATIVE_CHANGED" = true ]; then
+        if [ "$BUILD_REQUESTED" = true ]; then
           compile=true
           # Fail closed: any missing, unreadable or mismatched marker means compile again.
           if [ "$CACHE_HIT" = true ] && [ -f "$MARKER" ] && \
@@ -130,6 +133,8 @@ jobs:
           else
             echo "No verified iOS compile for native fingerprint $FINGERPRINT; compiling."
           fi
+        else
+          echo "Native compile not requested; add [native-build] to the PR title to enable it."
         fi
         echo "compile=$compile" >> "$GITHUB_OUTPUT"
 
@@ -216,7 +221,7 @@ jobs:
       env:
         CHANGES_RESULT: ${{ needs.ios-changes.result }}
         MOBILE_CHANGED: ${{ needs.ios-changes.outputs.mobile }}
-        NATIVE_CHANGED: ${{ needs.ios-changes.outputs.native }}
+        BUILD_REQUESTED: ${{ needs.ios-changes.outputs.requested }}
         COMPILE_NEEDED: ${{ needs.ios-changes.outputs.compile }}
         REUSED_RUN: ${{ needs.ios-changes.outputs.reused-run }}
         BUNDLE_RESULT: ${{ needs.ios-bundle-smoke.result }}
@@ -226,20 +231,20 @@ jobs:
           echo "Mobile change detection did not succeed."
           exit 1
         fi
-        if [ "$MOBILE_CHANGED" = false ] && [ "$NATIVE_CHANGED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
+        if [ "$MOBILE_CHANGED" = false ] && [ "$BUILD_REQUESTED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
            [ "$BUNDLE_RESULT" = skipped ] && [ "$COMPILE_RESULT" = skipped ]; then
           echo "No mobile-relevant changes; iOS validation intentionally skipped."
-        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$BUILD_REQUESTED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
              [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = skipped ]; then
-          echo "Linux iOS JavaScript bundle smoke check succeeded; no native compile needed."
-        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = true ] && [ "$COMPILE_NEEDED" = true ] && \
+          echo "Linux iOS JavaScript bundle smoke check succeeded; native compile not requested (enable with [native-build] in the PR title)."
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_NEEDED" = true ] && \
              [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = success ]; then
           echo "Linux iOS bundle smoke check and unsigned iOS simulator compile succeeded."
-        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = true ] && [ "$COMPILE_NEEDED" = false ] && \
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_NEEDED" = false ] && \
              [ -n "$REUSED_RUN" ] && [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = skipped ]; then
           echo "iOS bundle smoke check succeeded; native inputs are identical to the successful compile in $REUSED_RUN."
         else
-          echo "Unexpected iOS validation outcomes: mobile=$MOBILE_CHANGED native=$NATIVE_CHANGED compile-needed=$COMPILE_NEEDED bundle=$BUNDLE_RESULT compile=$COMPILE_RESULT."
+          echo "Unexpected iOS validation outcomes: mobile=$MOBILE_CHANGED requested=$BUILD_REQUESTED compile-needed=$COMPILE_NEEDED bundle=$BUNDLE_RESULT compile=$COMPILE_RESULT."
           exit 1
         fi
     - name: Write the iOS compile marker
@@ -270,6 +275,7 @@ jobs:
     outputs:
       mobile: ${{ steps.changes.outputs.mobile }}
       native: ${{ steps.changes.outputs.native }}
+      requested: ${{ steps.changes.outputs.requested }}
       fingerprint: ${{ steps.changes.outputs.fingerprint }}
       compile: ${{ steps.reuse.outputs.compile }}
       reused-run: ${{ steps.reuse.outputs.reused-run }}
@@ -284,19 +290,20 @@ jobs:
       env:
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
         # The fingerprint covers the checked-out merge commit, so base updates count. The ISO
-        # week bounds runner image and toolchain drift: a native PR compiles at least weekly.
+        # week bounds runner image and toolchain drift: opted-in builds refresh at least weekly.
         # The default shell has no pipefail; a failed script must fail detection, not empty its outputs.
         set -o pipefail
         node apps/mobile/scripts/native-inputs.mjs --platform android \
-          --base "$BASE_SHA" --head "$HEAD_SHA" --tree HEAD --salt "$(date -u +%G-W%V)" \
+          --base "$BASE_SHA" --head "$HEAD_SHA" --tree HEAD --title "$PR_TITLE" --salt "$(date -u +%G-W%V)" \
           | tee -a "$GITHUB_OUTPUT"
     # A marker is saved only by android-build after a real android-compile succeeded for this
     # fingerprint. PR caches are scoped to the PR, so a marker never crosses PRs.
     - name: Look up a prior Android compile for these native inputs
       id: marker
-      if: steps.changes.outputs.native == 'true'
+      if: steps.changes.outputs.requested == 'true'
       uses: actions/cache/restore@v5
       with:
         path: ${{ runner.temp }}/native-compile-marker/android.json
@@ -304,13 +311,13 @@ jobs:
     - name: Decide whether to compile
       id: reuse
       env:
-        NATIVE_CHANGED: ${{ steps.changes.outputs.native }}
+        BUILD_REQUESTED: ${{ steps.changes.outputs.requested }}
         FINGERPRINT: ${{ steps.changes.outputs.fingerprint }}
         CACHE_HIT: ${{ steps.marker.outputs.cache-hit }}
         MARKER: ${{ runner.temp }}/native-compile-marker/android.json
       run: |
         compile=false
-        if [ "$NATIVE_CHANGED" = true ]; then
+        if [ "$BUILD_REQUESTED" = true ]; then
           compile=true
           # Fail closed: any missing, unreadable or mismatched marker means compile again.
           if [ "$CACHE_HIT" = true ] && [ -f "$MARKER" ] && \
@@ -322,6 +329,8 @@ jobs:
           else
             echo "No verified Android compile for native fingerprint $FINGERPRINT; compiling."
           fi
+        else
+          echo "Native compile not requested; add [native-build] to the PR title to enable it."
         fi
         echo "compile=$compile" >> "$GITHUB_OUTPUT"
 
@@ -444,7 +453,7 @@ jobs:
       env:
         CHANGES_RESULT: ${{ needs.android-changes.result }}
         MOBILE_CHANGED: ${{ needs.android-changes.outputs.mobile }}
-        NATIVE_CHANGED: ${{ needs.android-changes.outputs.native }}
+        BUILD_REQUESTED: ${{ needs.android-changes.outputs.requested }}
         COMPILE_NEEDED: ${{ needs.android-changes.outputs.compile }}
         REUSED_RUN: ${{ needs.android-changes.outputs.reused-run }}
         BUNDLE_RESULT: ${{ needs.android-bundle-smoke.result }}
@@ -454,20 +463,20 @@ jobs:
           echo "Mobile change detection did not succeed."
           exit 1
         fi
-        if [ "$MOBILE_CHANGED" = false ] && [ "$NATIVE_CHANGED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
+        if [ "$MOBILE_CHANGED" = false ] && [ "$BUILD_REQUESTED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
            [ "$BUNDLE_RESULT" = skipped ] && [ "$COMPILE_RESULT" = skipped ]; then
           echo "No mobile-relevant changes; Android validation intentionally skipped."
-        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$BUILD_REQUESTED" = false ] && [ "$COMPILE_NEEDED" = false ] && \
              [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = skipped ]; then
-          echo "Android JavaScript bundle smoke check succeeded; no native compile needed."
-        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = true ] && [ "$COMPILE_NEEDED" = true ] && \
+          echo "Android JavaScript bundle smoke check succeeded; native compile not requested (enable with [native-build] in the PR title)."
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_NEEDED" = true ] && \
              [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = success ]; then
           echo "Android bundle smoke check, release manifest check and debug APK compile succeeded."
-        elif [ "$MOBILE_CHANGED" = true ] && [ "$NATIVE_CHANGED" = true ] && [ "$COMPILE_NEEDED" = false ] && \
+        elif [ "$MOBILE_CHANGED" = true ] && [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_NEEDED" = false ] && \
              [ -n "$REUSED_RUN" ] && [ "$BUNDLE_RESULT" = success ] && [ "$COMPILE_RESULT" = skipped ]; then
           echo "Android bundle smoke check succeeded; native inputs are identical to the successful compile in $REUSED_RUN."
         else
-          echo "Unexpected Android validation outcomes: mobile=$MOBILE_CHANGED native=$NATIVE_CHANGED compile-needed=$COMPILE_NEEDED bundle=$BUNDLE_RESULT compile=$COMPILE_RESULT."
+          echo "Unexpected Android validation outcomes: mobile=$MOBILE_CHANGED requested=$BUILD_REQUESTED compile-needed=$COMPILE_NEEDED bundle=$BUNDLE_RESULT compile=$COMPILE_RESULT."
           exit 1
         fi
     - name: Write the Android compile marker
