@@ -126,6 +126,21 @@ stable **`tv-build`** check passes when the compile was not requested and was sk
 or requested and succeeded. It fails on any other outcome. Unlike mobile,
 tv-compile has no fingerprint reuse: each tagged run compiles.
 
+Signed build for a paired Apple TV (development profile installed in Xcode):
+
+```sh
+xcodebuild -workspace ios/Tarkman.xcworkspace -scheme Tarkman -configuration Release -sdk appletvos \
+  -destination 'id=<apple-tv-udid>' -derivedDataPath ios/build-device EXPO_TV=1 \
+  DEVELOPMENT_TEAM=FHF872BAQR CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Development" \
+  PROVISIONING_PROFILE_SPECIFIER="Tarkman tvOS Development" build
+xcrun devicectl device install app --device <apple-tv-udid> ios/build-device/Build/Products/Release-appletvos/Tarkman.app
+xcrun devicectl device process launch --device <apple-tv-udid> app.tarkman
+```
+
+The Apple TV must be paired (Settings → Remotes and Devices → Remote App and Devices,
+then Xcode → Devices and Simulators) and have Developer Mode on (Settings →
+Privacy & Security). Any tvOS at or above the 16.4 deployment target works.
+
 Unsigned simulator build without Expo CLI (as CI does it):
 
 ```sh
@@ -214,5 +229,5 @@ Record each result separately. A simulator launch is not App Store acceptance.
 | Launch on Apple TV 4K (3rd gen, 1080p) simulator, tvOS 27.0, production API | Pass, 2026-09-28: renders, completes a reader recovery, "No services right now." matches the API's empty response |
 | EAS project `@mesropash/tarkman-tv` created; updates URL embedded in prebuild | Done, 2026-09-28 |
 | tvOS App Store and Development provisioning profiles | Done, 2026-09-28 |
-| Physical Apple TV build and launch | Not yet done (profile ready; Apple TV must be paired with Xcode) |
+| Physical Apple TV: signed Release build (Tarkman tvOS Development), install and launch on Apple TV 4K (2nd gen), tvOS 26.6 | Pass, 2026-09-28: process alive after launch; screen to be confirmed by the maintainer |
 | TestFlight / App Store acceptance | Not yet done (needs release authorization) |
