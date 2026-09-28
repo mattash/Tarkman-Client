@@ -131,9 +131,8 @@ function createManagement({ enabled, owned, church, seed = [], onDeleted = () =>
       if (Object.keys(errors).length) return coded(res, 422, 'invalid_session', { errors_by_field: errors }), true
       const ids = changes.liturgy_ids ?? record.liturgy_ids
       if (!ids.includes(record.current) && input.confirm_cursor_reset !== true) {
-        const first = CATALOG.find(item => item.id === ids[0])
-        return coded(res, 409, 'cursor_reset_required', { revision: record.revision,
-          proposed_cursor: { liturgy_name: first?.name ?? `Liturgy ${ids[0]}`, role: 'priest', position: 1 } }), true
+        return coded(res, 409, 'cursor_reset_required', { revision: record.revision, session: snapshot(record),
+          proposed_cursor: { part_id: null, liturgy_part_id: null, liturgy_id: ids[0], position: 1 } }), true
       }
       if (!ids.includes(record.current)) record.current = ids[0]
       if (changes.date !== undefined) record.date = changes.date

@@ -597,6 +597,8 @@ export const en = {
     resetTitle: 'Reset the current part?',
     resetBody: 'This change removes the part the session is on now. Saving will move the session to the first remaining part.',
     resetDestination: 'It would move to: {destination}',
+    resetDestinationPart: '{liturgy}, part {position}',
+    resetDestinationPosition: 'part {position}',
     reviseSelection: 'Cancel and revise',
     saveAndReset: 'Save and reset current part',
     edit: 'Edit',

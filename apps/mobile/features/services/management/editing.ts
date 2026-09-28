@@ -55,14 +55,22 @@ export function reapply(previous: ManagedSession, draft: SessionDraft, fresh: Ma
   return { date: changes.date ?? base.date, liturgies: changes.liturgy_ids ? draft.liturgies.map(item => fresh.liturgies.find(saved => saved.id === item.id) ?? item) : base.liturgies, options }
 }
 
+/**
+ * The documented 409 body carries `proposed_cursor: { part_id, liturgy_part_id, liturgy_id, position }` (the first
+ * remaining occurrence) beside the current `session` snapshot, whose liturgies name it.
+ */
 function destination(value: unknown): string | null {
   if (!value || typeof value !== 'object') return null
   const data = value as Record<string, unknown>
-  const proposed = [data.proposed_cursor, data.proposed_current_part, data.destination].find(item => item && typeof item === 'object') as Record<string, unknown> | undefined
+  const proposed = data.proposed_cursor && typeof data.proposed_cursor === 'object' ? data.proposed_cursor as Record<string, unknown> : null
   if (!proposed) return null
-  const parts = [proposed.liturgy_name, proposed.role ?? proposed.part_role, typeof proposed.position === 'number' ? `#${proposed.position}` : null]
-    .filter((item): item is string => typeof item === 'string' && !!item.trim())
-  return parts.length ? parts.join(' · ') : null
+  const liturgies = data.session && typeof data.session === 'object' && Array.isArray((data.session as Record<string, unknown>).liturgies)
+    ? (data.session as { liturgies: unknown[] }).liturgies : []
+  const liturgy = liturgies.find((item): item is { id: number; name: string } =>
+    !!item && typeof item === 'object' && (item as { id?: unknown }).id === proposed.liturgy_id && typeof (item as { name?: unknown }).name === 'string')
+  const position = typeof proposed.position === 'number' && Number.isSafeInteger(proposed.position) && proposed.position > 0 ? proposed.position : null
+  if (liturgy && position) return t('sessionManagement.resetDestinationPart', { liturgy: liturgy.name, position })
+  return liturgy?.name ?? (position ? t('sessionManagement.resetDestinationPosition', { position }) : null)
 }
 function revisionOf(value: unknown): number | null {
   if (!value || typeof value !== 'object') return null

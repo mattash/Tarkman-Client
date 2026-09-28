@@ -92,3 +92,8 @@ it('distinguishes the typed 404 marker from a generic route 404', async () => {
   await expect(generic.session(7, new AbortController().signal)).rejects.not.toMatchObject({ name: 'SessionNotFound' })
   await expect(generic.state!(7, new AbortController().signal)).resolves.toBeNull()
 })
+
+it('parses the backend deletion-event fixture', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  expect(parseEvent(require('./fixtures/backend-454/event.session_deleted.json'))).toEqual({ event: 'session_deleted', sessionId: 4008, revision: 4 })
+})

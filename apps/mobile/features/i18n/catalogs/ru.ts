@@ -605,6 +605,8 @@ export const ru: Catalog = {
     resetTitle: 'Сбросить текущую часть?',
     resetBody: 'Это изменение убирает часть, на которой сейчас находится служба. После сохранения служба перейдёт к первой оставшейся части.',
     resetDestination: 'Служба перейдёт к: {destination}',
+    resetDestinationPart: '{liturgy}, часть {position}',
+    resetDestinationPosition: 'часть {position}',
     reviseSelection: 'Отменить и исправить',
     saveAndReset: 'Сохранить и сбросить текущую часть',
     edit: 'Изменить',

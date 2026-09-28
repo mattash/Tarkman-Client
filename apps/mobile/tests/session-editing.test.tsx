@@ -95,12 +95,13 @@ it('reload saved version discards local changes', async () => {
 })
 
 it('asks before resetting the current part and confirms only at the reviewed revision', async () => {
-  const reset = { code: 'cursor_reset_required', revision: 18, proposed_cursor: { liturgy_name: 'Morning Service', role: 'priest', position: 1 } }
+  const reset = { code: 'cursor_reset_required', revision: 18, session: fixtures.managedSession({ revision: 18 }),
+    proposed_cursor: { part_id: 55, liturgy_part_id: 505, liturgy_id: 202, position: 1 } }
   const { fetcher, controller } = setup(respond(200, snapshot()), respond(409, reset), respond(409, reset))
   await controller.load()
   controller.update(draft => removeLiturgy(draft, 101))
   controller.save(); await flush()
-  expect(controller.getSnapshot().reset).toEqual({ revision: 18, destination: 'Morning Service · priest · #1' })
+  expect(controller.getSnapshot().reset).toEqual({ revision: 18, destination: 'Morning Service, part 1' })
   expect(body(fetcher)).not.toHaveProperty('confirm_cursor_reset')
   controller.cancelReset()
   expect(controller.getSnapshot().reset).toBeNull()
@@ -157,4 +158,19 @@ it('a focus reload cannot cancel the check after an unknown save', async () => {
   check.resolve(respond(200, snapshot({ revision: 18, date: '2026-10-11' }))); await flush(); await flush()
   expect(controller.getSnapshot()).toMatchObject({ phase: 'saved' })
   expect(fetcher.mock.calls.filter(([path]) => path === '/s/4008/edit.json')).toHaveLength(2)
+})
+
+it('uses the backend fixtures for stale and cursor-reset answers', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const backend = (name: string): unknown => require(`./fixtures/backend-454/${name}.json`)
+  const reset = setup(respond(200, backend('edit.response')), respond(409, backend('error.cursor_reset_required.409')))
+  await reset.controller.load()
+  reset.controller.update(draft => removeLiturgy(draft, 31))
+  reset.controller.save(); await flush()
+  expect(reset.controller.getSnapshot().reset).toEqual({ revision: 3, destination: 'Divine Liturgy, part 1' })
+  const stale = setup(respond(200, backend('edit.response')), respond(409, backend('error.stale_session.409')))
+  await stale.controller.load()
+  stale.controller.setDate('2026-10-11')
+  stale.controller.save(); await flush()
+  expect(stale.controller.getSnapshot()).toMatchObject({ conflict: { revision: 3 }, conflictReason: 'stale', draft: { date: '2026-10-11' } })
 })
