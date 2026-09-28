@@ -1,6 +1,6 @@
 import { expect, it, jest } from '@jest/globals'
 import type { AuthContextValue } from '../features/auth/AuthProvider'
-import { createCatalogController, matchesTitle } from '../features/services/management/catalog'
+import { byUsageThenTitle, createCatalogController, matchesTitle } from '../features/services/management/catalog'
 import { createCreationController, isDirty, RETRY_WINDOW_MS } from '../features/services/management/creation'
 import { addLiturgy } from '../features/services/management/draft'
 import { deferred, respond } from './auth-helpers'
@@ -158,7 +158,8 @@ it('loads every catalog page once, so the sheet filter covers the whole catalog'
   catalog.ensureLoaded(); catalog.ensureLoaded(); await flush()
   expect(fetcher.mock.calls.map(([path]) => path)).toEqual(['/s/liturgy_options.json?limit=50', '/s/liturgy_options.json?limit=50&after_id=202'])
   expect(catalog.getSnapshot()).toMatchObject({ complete: true, error: null })
-  expect(catalog.getSnapshot().liturgies.map(item => item.id)).toEqual([101, 202, 303])
+  // Without usage counts, alphabetical.
+  expect(catalog.getSnapshot().liturgies.map(item => item.name)).toEqual(['Divine Liturgy', 'Evening Service', 'Morning Service'])
   catalog.ensureLoaded(); await flush()
   expect(fetcher).toHaveBeenCalledTimes(2)
 })
@@ -170,6 +171,15 @@ it('refuses a continuation that does not move forward', async () => {
   catalog.ensureLoaded(); await flush()
   expect(catalog.getSnapshot()).toMatchObject({ complete: false, error: expect.any(String), liturgies: [] })
   expect(fetcher).toHaveBeenCalledTimes(2)
+})
+
+it('orders by this account\'s usage, most used first, then by title, like the backend form', () => {
+  const items = [
+    { id: 1, name: 'Vespers', selectable: true, usageCount: 2 }, { id: 2, name: 'Divine Liturgy', selectable: true, usageCount: 9 },
+    { id: 3, name: 'Blessing of Water', selectable: true, usageCount: 2 }, { id: 4, name: 'Anthem', selectable: true, usageCount: null },
+    { id: 5, name: 'Hour 10', selectable: true, usageCount: 0 }, { id: 6, name: 'Hour 9', selectable: true, usageCount: 0 },
+  ]
+  expect([...items].sort(byUsageThenTitle).map(item => item.name)).toEqual(['Divine Liturgy', 'Blessing of Water', 'Vespers', 'Anthem', 'Hour 9', 'Hour 10'])
 })
 
 it('filters titles locally, ignoring case, accents and word order', () => {

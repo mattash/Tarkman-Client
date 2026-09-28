@@ -71,7 +71,9 @@ function createManagement({ enabled, owned, church }) {
       const after = Number(url.searchParams.get('after_id') ?? 0)
       const query = (url.searchParams.get('q') ?? '').toLowerCase()
       const matches = CATALOG.filter(item => item.id > after && item.name.toLowerCase().includes(query))
-      const page = matches.slice(0, limit)
+      // Per-account usage, as the backend form's by_user_frequency counts it; the client sorts by it.
+      const usage = id => [...records.values()].filter(record => record.liturgy_ids.includes(id)).length
+      const page = matches.slice(0, limit).map(item => ({ ...item, usage_count: usage(item.id) }))
       return json(res, 200, { schema_version: 1, liturgies: page, next_after_id: matches.length > limit ? page.at(-1).id : null }), true
     }
     if (path === '/s.json' && req.method === 'POST') {
