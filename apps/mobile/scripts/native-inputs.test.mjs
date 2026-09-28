@@ -4,7 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { classify, fingerprint, isNativeInput, isVersionOnlyChange } from './native-inputs.mjs'
+import { classify, fingerprint, isNativeInput, isVersionOnlyChange, nativeBuildRequested } from './native-inputs.mjs'
 
 test('classifies shared and platform-specific native inputs', () => {
   for (const path of [
@@ -244,4 +244,28 @@ test('title opt-in controls both compile decisions and aggregate gates', t => {
     }
     assert.notEqual(check({ CHANGES_RESULT: 'failure' }), 0)
   }
+  // apps/tv: the same tag requests tv-compile, and the stable tv-build gate enforces the outcome.
+  assert.equal(nativeBuildRequested('[Native-Build] tvOS'), true)
+  assert.equal(nativeBuildRequested('native-build tvOS'), false)
+  assert.equal(nativeBuildRequested(undefined), false)
+  assert.match(workflow, /\n  tv-compile:\n    needs: tv\n    if: needs\.tv\.outputs\.requested == 'true'\n/)
+  const request = runBlock('tv', 'Read the native build request')
+  const requestOutput = join(dir, 'tv-request')
+  const ask = title => {
+    writeFileSync(requestOutput, '')
+    const cwd = new URL('../../../', import.meta.url).pathname
+    const result = spawnSync('bash', ['-e', '-c', request], { cwd, env: { ...process.env, PR_TITLE: title, GITHUB_OUTPUT: requestOutput }, encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    return readFileSync(requestOutput, 'utf8')
+  }
+  assert.match(ask('[native-build] tvOS'), /^requested=true$/m)
+  assert.match(ask('tvOS'), /^requested=false$/m)
+  assert.match(ask(''), /^requested=false$/m)
+  const tvGate = runBlock('tv-build', 'Verify tvOS compile outcome')
+  const tvCheck = overrides => spawnSync('bash', ['-e', '-c', tvGate], { env: { ...process.env, TV_RESULT: 'success', BUILD_REQUESTED: 'false', COMPILE_RESULT: 'skipped', ...overrides } }).status
+  assert.equal(tvCheck({}), 0)
+  assert.equal(tvCheck({ BUILD_REQUESTED: 'true', COMPILE_RESULT: 'success' }), 0)
+  for (const failure of ['failure', 'cancelled', 'skipped']) assert.notEqual(tvCheck({ BUILD_REQUESTED: 'true', COMPILE_RESULT: failure }), 0)
+  assert.notEqual(tvCheck({ COMPILE_RESULT: 'success' }), 0)
+  assert.notEqual(tvCheck({ TV_RESULT: 'failure' }), 0)
 })

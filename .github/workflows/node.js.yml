@@ -505,7 +505,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      changed: ${{ steps.changes.outputs.changed }}
+      requested: ${{ steps.request.outputs.requested }}
     defaults:
       run:
         working-directory: apps/tv
@@ -517,13 +517,20 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
-        fetch-depth: 0
         persist-credentials: false
     - uses: actions/setup-node@v7
       with:
         node-version: 24.x
         cache: 'npm'
         cache-dependency-path: apps/tv/package-lock.json
+    # The same [native-build] PR title tag that opts mobile into native compiles also requests tv-compile.
+    - name: Read the native build request
+      id: request
+      working-directory: .
+      env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |
+        node --input-type=module -e "import { nativeBuildRequested } from './apps/mobile/scripts/native-inputs.mjs'; console.log('requested=' + nativeBuildRequested(process.env.PR_TITLE))" | tee -a "$GITHUB_OUTPUT"
     - run: npm ci
     - run: npm ls --all
     - run: npx expo-doctor
@@ -549,26 +556,12 @@ jobs:
         # tvOS 27 SDK apps without a scene manifest trap at launch (plugins/withSceneLifecycle.js).
         grep -q 'UIApplicationSceneManifest' ios/Tarkman/Info.plist
         grep -q 'SceneDelegate.swift in Sources' ios/Tarkman.xcodeproj/project.pbxproj
-    - name: Detect TV-relevant changes
-      id: changes
-      if: github.event_name == 'pull_request'
-      env:
-        BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      working-directory: .
-      run: |
-        set -o pipefail
-        if git diff --quiet "$BASE_SHA...$HEAD_SHA" -- apps/tv packages/tarkman-reader packages/tarkman-core packages/tarkman-design tools/metro .github/workflows/node.js.yml; then
-          echo changed=false >> "$GITHUB_OUTPUT"
-        else
-          echo changed=true >> "$GITHUB_OUTPUT"
-        fi
 
-  # Unsigned tvOS simulator compile, only when TV or its shared inputs change. Signed device
-  # and App Store builds belong to the release workflow in apps/tv/README.md, not CI.
+  # Unsigned tvOS simulator compile, opt-in with [native-build] in the PR title (like ios-compile).
+  # Signed device and App Store builds belong to the release workflow in apps/tv/README.md, not CI.
   tv-compile:
     needs: tv
-    if: needs.tv.outputs.changed == 'true'
+    if: needs.tv.outputs.requested == 'true'
     runs-on: macos-26
     timeout-minutes: 60
     permissions:
@@ -605,3 +598,30 @@ jobs:
           -destination 'generic/platform=tvOS Simulator' \
           -derivedDataPath "$RUNNER_TEMP/tarkman-tv-build" \
           EXPO_TV=1 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
+  # Require this stable check, not the conditional macOS job.
+  tv-build:
+    name: tv-build
+    needs: [tv, tv-compile]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - name: Verify tvOS compile outcome
+      env:
+        TV_RESULT: ${{ needs.tv.result }}
+        BUILD_REQUESTED: ${{ needs.tv.outputs.requested }}
+        COMPILE_RESULT: ${{ needs.tv-compile.result }}
+      run: |
+        if [ "$TV_RESULT" != success ]; then
+          echo "TV validation did not succeed."
+          exit 1
+        fi
+        if [ "$BUILD_REQUESTED" = false ] && [ "$COMPILE_RESULT" = skipped ]; then
+          echo "TV checks, tvOS bundle and prebuild succeeded; native compile not requested (enable with [native-build] in the PR title)."
+        elif [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_RESULT" = success ]; then
+          echo "TV checks and unsigned tvOS simulator compile succeeded."
+        else
+          echo "Unexpected tvOS validation outcomes: tv=$TV_RESULT requested=$BUILD_REQUESTED compile=$COMPILE_RESULT."
+          exit 1
+        fi
