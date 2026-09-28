@@ -248,7 +248,7 @@ test('title opt-in controls both compile decisions and aggregate gates', t => {
   assert.equal(nativeBuildRequested('[Native-Build] tvOS'), true)
   assert.equal(nativeBuildRequested('native-build tvOS'), false)
   assert.equal(nativeBuildRequested(undefined), false)
-  assert.match(workflow, /\n  tv-compile:\n    needs: tv\n    if: needs\.tv\.outputs\.requested == 'true'\n/)
+  assert.match(workflow, /\n {2}tv-compile:\n {4}needs: tv\n {4}if: needs\.tv\.outputs\.requested == 'true'\n/)
   const request = runBlock('tv', 'Read the native build request')
   const requestOutput = join(dir, 'tv-request')
   const ask = title => {
