@@ -16,6 +16,12 @@ jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => '00000000-0000-4000-
 
 const LIST = 'GET /s.json?pagination=cursor&limit=20'
 const CATALOG = 'GET /s/liturgy_options.json?limit=50'
+const CATALOG_2 = 'GET /s/liturgy_options.json?limit=50&after_id=202'
+/** Opens the Add Liturgy sheet and picks one liturgy from it. */
+async function pick(name: string) {
+  await fireEvent.press(await screen.findByRole('button', { name: 'Add Liturgy' }))
+  await fireEvent.press(await screen.findByRole('button', { name: `Add ${name}` }))
+}
 const listed = (ids: number[]) => ({ sessions: ids.map(id => ({ session: { id, liturgy: `Service ${id}`, date: '2030-10-04' } })), page: { limit: 20, has_more: false, next_cursor: null } })
 
 async function renderApp(request: typeof fetch, initialUrl = '/services') {
@@ -53,18 +59,26 @@ it('creates a session in the chosen order, returns to My Sessions, and offers Op
     [LIST]: () => respond(200, listed(++lists === 1 ? [] : [4008])),
     'GET /s/new.json': () => respond(200, fixtures.bootstrap),
     [CATALOG]: () => respond(200, fixtures.liturgyPage1),
+    [CATALOG_2]: () => respond(200, fixtures.liturgyPage2),
     'POST /s.json': () => respond(201, fixtures.created),
   })
   const app = await renderApp(request)
   await fireEvent.press(await screen.findByRole('button', { name: 'Add Session' }))
   await waitFor(() => expect(app.getPathname()).toBe('/session-management/new'))
-  expect(await screen.findByText('Divine Liturgy')).toBeOnTheScreen()
-  // Opening the form wrote nothing.
+  expect(await screen.findByRole('button', { name: 'Add Liturgy' })).toBeOnTheScreen()
+  // Opening the form wrote nothing, and the catalog loads only when the sheet opens.
+  expect(request.mock.calls.some(([path]) => String(path).includes('liturgy_options'))).toBe(false)
   expect(request.mock.calls.filter(([, init]) => init?.method && init.method !== 'GET')).toHaveLength(0)
   await fireEvent.changeText(screen.getByLabelText('Service date'), '2030-10-04')
-  await fireEvent.press(screen.getByRole('button', { name: 'Add Divine Liturgy' }))
+  await pick('Divine Liturgy')
+  // The sheet filters locally by title, across every page of the catalog.
+  await fireEvent.press(screen.getByRole('button', { name: 'Add Liturgy' }))
+  expect(await screen.findByRole('button', { name: 'Add Evening Service' })).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Divine Liturgy is already selected' })).toBeDisabled()
+  await fireEvent.changeText(screen.getByLabelText('Filter by title'), 'morn')
+  expect(screen.queryByRole('button', { name: 'Add Evening Service' })).toBeNull()
   await fireEvent.press(screen.getByRole('button', { name: 'Add Morning Service' }))
-  expect(screen.getByRole('button', { name: 'Morning Service is already selected' })).toBeDisabled()
+  expect(request.mock.calls.filter(([path]) => String(path).includes('liturgy_options'))).toHaveLength(2)
   await fireEvent.press(screen.getByRole('button', { name: 'Move Morning Service up' }))
   expect(screen.getByLabelText('Number 1 of 2: Morning Service')).toBeOnTheScreen()
   await fireEvent.changeText(screen.getByLabelText('Gospel reading'), 'Հովհ. 1:1-17')
@@ -87,10 +101,11 @@ it('confirms before creating a session dated today, and Cancel sends nothing', a
     [LIST]: () => respond(200, listed([])),
     'GET /s/new.json': () => respond(200, { ...fixtures.bootstrap, defaults: { date: today, options: {} } }),
     [CATALOG]: () => respond(200, fixtures.liturgyPage1),
+    [CATALOG_2]: () => respond(200, fixtures.liturgyPage2),
     'POST /s.json': () => respond(201, fixtures.created),
   })
   await renderApp(request, '/session-management/new')
-  await fireEvent.press(await screen.findByRole('button', { name: 'Add Divine Liturgy' }))
+  await pick('Divine Liturgy')
   await fireEvent.press(screen.getByRole('button', { name: 'Create Session' }))
   expect(await screen.findByText('Create a session for today?')).toBeOnTheScreen()
   await fireEvent.press(screen.getAllByRole('button', { name: 'Cancel' }).at(-1)!)
@@ -108,11 +123,12 @@ it('keeps input and shows field errors after a 422', async () => {
   const request = fakeApi({
     'GET /s/new.json': () => respond(200, fixtures.bootstrap),
     [CATALOG]: () => respond(200, fixtures.liturgyPage1),
+    [CATALOG_2]: () => respond(200, fixtures.liturgyPage2),
     'POST /s.json': () => respond(422, fixtures.validation),
   })
   await renderApp(request, '/session-management/new')
   await fireEvent.changeText(await screen.findByLabelText('Service date'), '2030-10-04')
-  await fireEvent.press(await screen.findByRole('button', { name: 'Add Morning Service' }))
+  await pick('Morning Service')
   await act(async () => { await fireEvent.press(screen.getByRole('button', { name: 'Create Session' })) })
   expect(await screen.findByText('Morning Service is no longer available.')).toBeOnTheScreen()
   expect(screen.getByText('is too long (maximum is 500 characters)')).toBeOnTheScreen()

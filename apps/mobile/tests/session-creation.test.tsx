@@ -1,6 +1,6 @@
 import { expect, it, jest } from '@jest/globals'
 import type { AuthContextValue } from '../features/auth/AuthProvider'
-import { createCatalogController } from '../features/services/management/catalog'
+import { createCatalogController, matchesTitle } from '../features/services/management/catalog'
 import { createCreationController, isDirty, RETRY_WINDOW_MS } from '../features/services/management/creation'
 import { addLiturgy } from '../features/services/management/draft'
 import { deferred, respond } from './auth-helpers'
@@ -151,28 +151,39 @@ it('shows the bootstrap failure on its own, distinguishing unavailable from retr
   expect(controller.getSnapshot().bootstrap).not.toBeNull()
 })
 
-it('pages and searches the catalog on the server, dropping obsolete results', async () => {
-  const slow = deferred<Response>()
+it('loads every catalog page once, so the sheet filter covers the whole catalog', async () => {
   const fetcher = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValueOnce(respond(200, fixtures.liturgyPage1))
-    .mockResolvedValueOnce(respond(200, fixtures.liturgyPage2)).mockReturnValueOnce(slow.promise).mockResolvedValueOnce(respond(200, fixtures.liturgyEmpty))
+    .mockResolvedValueOnce(respond(200, fixtures.liturgyPage2))
   const catalog = createCatalogController(fetcher)
-  catalog.start(); await flush()
-  expect(catalog.getSnapshot()).toMatchObject({ nextAfterId: 202, complete: false })
-  await catalog.loadMore()
+  catalog.ensureLoaded(); catalog.ensureLoaded(); await flush()
+  expect(fetcher.mock.calls.map(([path]) => path)).toEqual(['/s/liturgy_options.json?limit=50', '/s/liturgy_options.json?limit=50&after_id=202'])
+  expect(catalog.getSnapshot()).toMatchObject({ complete: true, error: null })
   expect(catalog.getSnapshot().liturgies.map(item => item.id)).toEqual([101, 202, 303])
-  expect(catalog.getSnapshot().complete).toBe(true)
-  catalog.search('Even')
-  catalog.search('zzz')
-  slow.resolve(respond(200, fixtures.liturgySearch)); await flush()
-  expect(fetcher.mock.calls.map(([path]) => path)).toEqual(['/s/liturgy_options.json?limit=50', '/s/liturgy_options.json?limit=50&after_id=202',
-    '/s/liturgy_options.json?limit=50&q=Even', '/s/liturgy_options.json?limit=50&q=zzz'])
-  expect(catalog.getSnapshot()).toMatchObject({ query: 'zzz', liturgies: [], complete: true, error: null })
+  catalog.ensureLoaded(); await flush()
+  expect(fetcher).toHaveBeenCalledTimes(2)
+})
+
+it('refuses a continuation that does not move forward', async () => {
+  const fetcher = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValueOnce(respond(200, fixtures.liturgyPage1))
+    .mockResolvedValue(respond(200, { ...fixtures.liturgyPage2, next_after_id: 202 }))
+  const catalog = createCatalogController(fetcher)
+  catalog.ensureLoaded(); await flush()
+  expect(catalog.getSnapshot()).toMatchObject({ complete: false, error: expect.any(String), liturgies: [] })
+  expect(fetcher).toHaveBeenCalledTimes(2)
+})
+
+it('filters titles locally, ignoring case, accents and word order', () => {
+  expect(matchesTitle('Divine Liturgy', 'liturgy div')).toBe(true)
+  expect(matchesTitle('Service of the Washing of Feet', 'WASH feet')).toBe(true)
+  expect(matchesTitle('Café Vespers', 'cafe')).toBe(true)
+  expect(matchesTitle('Morning Service', 'evening')).toBe(false)
+  expect(matchesTitle('Morning Service', '   ')).toBe(true)
 })
 
 it('reports a catalog failure as retryable, not as an empty catalog', async () => {
   const fetcher = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValueOnce(respond(500)).mockResolvedValueOnce(respond(200, fixtures.liturgyPage2))
   const catalog = createCatalogController(fetcher)
-  catalog.start(); await flush()
+  catalog.ensureLoaded(); await flush()
   expect(catalog.getSnapshot()).toMatchObject({ error: expect.any(String), complete: false, unavailable: false })
   await catalog.retry()
   expect(catalog.getSnapshot()).toMatchObject({ error: null, complete: true, liturgies: [{ id: 303 }] })
