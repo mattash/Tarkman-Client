@@ -780,6 +780,28 @@ synthetic management routes; `FIXTURE_MANAGEMENT=off` simulates an older backend
 [qa/issue199](qa/issue199/). The backend contract is not yet implemented, so real-backend and native
 device checks remain outstanding.
 
+## My Sessions: edit and delete / #200
+
+Each My Sessions card keeps **Open controls** as its main action, with secondary **Edit** and **Delete**
+(labels include the title and date). `app/(signed-in)/session-management/[id]/edit.tsx` reuses #199's
+form outside the live-control layout. `features/services/management/editing.ts` loads `GET /s/:id/edit.json`
+(keeping `selectable: false` liturgies), separates saved baseline from draft, and sends
+`PATCH /s/:id.json` with top-level `expected_revision` and only key-wise changes. A 409 `stale_session`
+keeps the draft for **Reload saved version** or **Review my changes on the saved version**; a 409
+`cursor_reset_required` asks before **Save and reset current part** (`confirm_cursor_reset` at the reviewed
+revision); an unknown PATCH outcome is reconciled from the saved snapshot, never resent.
+
+`deletion.ts` + `DeleteSessionDialog.tsx`: a fresh snapshot, a confirmation naming the exact session and
+date (Cancel first), one locked `DELETE` with the captured revision, and an empty 200 that is never parsed.
+Stale, typed 404 and unknown outcomes reconcile without deleting again. A confirmed deletion removes that ID
+from My Sessions (a late page cannot bring it back) and only its shortcuts.
+
+Live clients: a revision-checked `session_deleted` event, or a typed `session_not_found` read when the
+event was missed, makes the reader terminal (`ReaderState.deleted`): cable, polling, commands and
+controller presence stop, and the control screen, reader and named display show the service as
+unavailable. Owner-current display links keep their preset and re-resolve through discovery.
+Browser evidence: [qa/issue200](qa/issue200/).
+
 ## Interface languages / #123
 
 Interface copy (buttons, statuses, errors, sheets, Settings and VoiceOver labels) lives in typed catalogs under
