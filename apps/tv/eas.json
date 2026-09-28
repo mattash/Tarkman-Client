@@ -14,7 +14,8 @@
       "environment": "development",
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "tv-development"
     },
     "preview": {
       "extends": "base",

@@ -131,14 +131,12 @@ TV has **its own EAS project**, separate from mobile's
 binary. Both projects submit to the same App Store Connect app; the Expo project is
 not the App Store record.
 
-One-time setup, by the owner (creates a project on expo.dev):
-
-```sh
-cd apps/tv
-npx eas-cli init            # owner mesropash, slug tarkman-tv; writes extra.eas.projectId
-npx eas-cli update:configure # writes updates.url for the TV project only
-npm run check:identity
-```
+The project is **`@mesropash/tarkman-tv`**
+(`970aa9d7-0c63-448e-aa5d-189625964c5a`, created 2026-09-28 with `eas init`).
+Its updates URL is `https://u.expo.dev/970aa9d7-…`, and builds embed it with
+`EXUpdatesEnabled` and runtime version = app version. Channels are
+`tv-development`, `tv-preview` and `tv-production`. Publish TV updates only from
+`apps/tv`, for example `npx eas-cli update --channel tv-preview` with `EXPO_TV=1`.
 
 `check:identity` fails if TV points at mobile's project or updates URL, uses a
 non-`tv-` channel or one of mobile's channels, omits `EXPO_TV=1` from a build
@@ -192,5 +190,6 @@ Record each result separately. A simulator launch is not App Store acceptance.
 | `expo-doctor` | 21/21 pass, 2026-09-28 |
 | Xcode 27.0 Release build, tvOS 27.0 simulator SDK (`app.tarkman`, `appletvsimulator`, min tvOS 16.4) | Pass, 2026-09-28 |
 | Launch on Apple TV 4K (3rd gen, 1080p) simulator, tvOS 27.0, production API | Pass, 2026-09-28: renders, completes a reader recovery, "No services right now." matches the API's empty response |
+| EAS project `@mesropash/tarkman-tv` created; updates URL embedded in prebuild | Done, 2026-09-28 |
 | Physical Apple TV build and launch | Not yet done (needs a tvOS development profile) |
 | TestFlight / App Store acceptance | Not yet done (needs release authorization) |
