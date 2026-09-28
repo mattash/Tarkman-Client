@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { classify, fingerprint, isNativeInput } from './native-inputs.mjs'
+import { classify, fingerprint, isNativeInput, isVersionOnlyChange } from './native-inputs.mjs'
 
 test('classifies shared and platform-specific native inputs', () => {
   for (const path of [
@@ -63,13 +63,13 @@ test('reuses a compile only while the merged native inputs are unchanged', t => 
     git(['-c', 'user.name=CI', '-c', 'user.email=ci@example.invalid', 'merge', '-q', '--no-ff', '-m', 'merge', head])
     return git(['rev-parse', 'HEAD']).trim()
   }
-  const run = (platform, base, head) => classify({ platform, base, head, tree: merge(base, head), git })
+  const run = (platform, base, head, title = '') => classify({ platform, base, head, title, tree: merge(base, head), git })
 
   git(['init', '-q', '-b', 'main'])
   write('.github/workflows/node.js.yml', 'on: pull_request\n')
-  write('apps/mobile/package.json', '{"dependencies":{}}\n')
+  write('apps/mobile/package.json', '{"version":"0.1.0","dependencies":{}}\n')
   write('apps/mobile/package-lock.json', '{}\n')
-  write('apps/mobile/app.json', '{}\n')
+  write('apps/mobile/app.json', '{"expo":{"version":"0.1.1"}}\n')
   write('apps/mobile/eas.json', '{"build":{"production":{}},"submit":{}}\n')
   write('apps/mobile/.easignore', 'node_modules/\n')
   write('apps/mobile/scripts/check-store-config.mjs', '// store assertions\n')
@@ -83,6 +83,25 @@ test('reuses a compile only while the merged native inputs are unchanged', t => 
   const docs = run('ios', main, commit('docs'))
   assert.equal(docs.mobile, false)
   assert.equal(docs.native, false)
+
+  // PR #217: valid version-only edits are informational, not native changes.
+  git(['checkout', '-q', '-b', 'version', main])
+  write('apps/mobile/app.json', '{"expo":{"version":"0.2.0"}}\n')
+  write('apps/mobile/package.json', '{"version":"0.2.0","dependencies":{}}\n')
+  const versionHead = commit('bump versions')
+  for (const platform of ['ios', 'android']) {
+    const result = run(platform, main, versionHead)
+    assert.equal(result.mobile, true)
+    assert.equal(result.native, false)
+    assert.equal(result.requested, false)
+    // Explicit builds must still fingerprint the actual shipped metadata.
+    assert.notEqual(result.fingerprint, run(platform, main, main).fingerprint)
+    assert.equal(run(platform, main, versionHead, '[NATIVE-BUILD] Release').requested, true)
+    assert.equal(run(platform, main, versionHead, 'native-build Release').requested, false)
+    const forced = run(platform, main, main, 'Docs [native-build]')
+    assert.equal(forced.mobile, true)
+    assert.equal(forced.requested, true)
+  }
 
   // PR #207: production AAB packaging, internal draft submission, assertions and docs.
   git(['checkout', '-q', '-b', 'store', main])
@@ -115,6 +134,8 @@ test('reuses a compile only while the merged native inputs are unchanged', t => 
   const first = run('ios', main, nativeHead)
   assert.equal(first.mobile, true)
   assert.equal(first.native, true)
+  assert.equal(first.requested, false)
+  assert.equal(run('ios', main, nativeHead, '[native-build]').requested, true)
   assert.notEqual(first.fingerprint, run('ios', main, main).fingerprint)
 
   // A JavaScript-only follow-up is still a native PR, but matches the compiled inputs.
@@ -165,5 +186,62 @@ test('mobile CI validates store settings even when both native compiles are skip
   assert.doesNotMatch(mobileJob, /^\s+if:/m)
   for (const command of ['npm run check:store-config', 'npm run config', 'npx expo prebuild --platform ios --clean --no-install']) {
     assert.ok(mobileJob.includes(command), command)
+  }
+})
+
+
+test('version exception fails closed for invalid versions and other native edits', () => {
+  const app = value => JSON.stringify({ expo: value })
+  const before = app({ version: '0.1.1', plugins: ['expo-camera'] })
+  assert.equal(isVersionOnlyChange('apps/mobile/app.json', before, app({ plugins: ['expo-camera'], version: '0.2.0' })), true)
+  for (const after of ['{', '{}', app({ version: 'banana', plugins: ['expo-camera'] }), app({ version: '0.2.0', plugins: [] }), app({ version: '0.2.0', ios: { buildNumber: '2' }, plugins: ['expo-camera'] })]) {
+    assert.equal(isVersionOnlyChange('apps/mobile/app.json', before, after), false)
+  }
+  assert.equal(isVersionOnlyChange('apps/mobile/package.json', '{"version":"0.1.0","dependencies":{}}', '{"version":"0.2.0","dependencies":{"expo":"58"}}'), false)
+  assert.equal(isVersionOnlyChange('apps/mobile/package-lock.json', '{"version":"0.1.0"}', '{"version":"0.2.0"}'), false)
+})
+
+// Execute the actual workflow shell bodies so opt-out and failure handling cannot
+// silently diverge between the classifier, reuse decision and required gates.
+test('title opt-in controls both compile decisions and aggregate gates', t => {
+  const workflow = readFileSync(new URL('../../../.github/workflows/node.js.yml', import.meta.url), 'utf8')
+  assert.match(workflow, /types: \[opened, synchronize, reopened, edited\]/)
+  const dir = mkdtempSync(join(tmpdir(), 'native-policy-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const runBlock = (job, step) => {
+    const jobText = workflow.split(`\n  ${job}:\n`)[1].split(/\n {2}[a-z][a-z-]+:\n/)[0]
+    const body = jobText.split(`    - name: ${step}\n`)[1].split('      run: |\n')[1]
+    return body.split(/\n(?= {0,6}\S)/)[0].split('\n').map(line => line.slice(8)).join('\n')
+  }
+  for (const platform of ['ios', 'android']) {
+    const label = platform === 'ios' ? 'iOS' : 'Android'
+    const decision = runBlock(`${platform}-changes`, 'Decide whether to compile')
+    const gate = runBlock(`${platform}-build`, `Verify ${label} compile outcome`)
+    const output = join(dir, `${platform}-output`)
+    const marker = join(dir, `${platform}.json`)
+    const decide = (requested, data, cacheHit = 'true') => {
+      writeFileSync(output, '')
+      writeFileSync(marker, JSON.stringify(data))
+      const result = spawnSync('bash', ['-e', '-c', decision], { env: { ...process.env, BUILD_REQUESTED: requested, FINGERPRINT: 'fp', CACHE_HIT: cacheHit, MARKER: marker, GITHUB_OUTPUT: output }, encoding: 'utf8' })
+      assert.equal(result.status, 0, result.stderr)
+      return readFileSync(output, 'utf8')
+    }
+    const valid = { platform, result: 'success', fingerprint: 'fp', run_url: 'https://example.invalid/run', head_sha: 'abc' }
+    assert.match(decide('false', {}), /compile=false/)
+    assert.match(decide('true', {}, 'false'), /compile=true/)
+    assert.match(decide('true', valid), /compile=false/)
+    assert.match(decide('true', { ...valid, fingerprint: 'different' }), /compile=true/)
+    assert.match(decide('true', { ...valid, result: 'failure' }), /compile=true/)
+    assert.match(decide('true', { ...valid, platform: 'other' }), /compile=true/)
+    const check = overrides => spawnSync('bash', ['-e', '-c', gate], { env: { ...process.env, CHANGES_RESULT: 'success', MOBILE_CHANGED: 'true', BUILD_REQUESTED: 'false', COMPILE_NEEDED: 'false', REUSED_RUN: '', BUNDLE_RESULT: 'success', COMPILE_RESULT: 'skipped', ...overrides } }).status
+    assert.equal(check({}), 0)
+    assert.equal(check({ BUILD_REQUESTED: 'true', COMPILE_NEEDED: 'true', COMPILE_RESULT: 'success' }), 0)
+    assert.equal(check({ BUILD_REQUESTED: 'true', REUSED_RUN: valid.run_url }), 0)
+    assert.notEqual(check({ BUILD_REQUESTED: 'true' }), 0)
+    for (const failure of ['failure', 'cancelled', 'skipped']) {
+      assert.notEqual(check({ BUILD_REQUESTED: 'true', COMPILE_NEEDED: 'true', COMPILE_RESULT: failure }), 0)
+      assert.notEqual(check({ BUNDLE_RESULT: failure }), 0)
+    }
+    assert.notEqual(check({ CHANGES_RESULT: 'failure' }), 0)
   }
 })
