@@ -206,3 +206,18 @@ it('treats a forbidden bootstrap as final, without a futile retry', async () => 
   controller.focus(); await flush()
   expect(controller.getSnapshot()).toMatchObject({ unavailable: true, bootstrapError: 'Your account cannot create sessions here.' })
 })
+
+it.each([429, 408, 400])('keeps the held key when a safe retry is answered %s', async status => {
+  const { fetcher, controller } = setup([new TypeError('Network request failed'), respond(status, {})])
+  await ready(controller)
+  controller.submit(); await flush()
+  const held = controller.pendingAttempt()
+  controller.retrySafely(); await flush()
+  expect(controller.getSnapshot().phase).toBe('uncertain')
+  expect(controller.pendingAttempt()).toBe(held)
+  fetcher.mockResolvedValueOnce(respond(200, fixtures.replayed))
+  controller.retrySafely(); await flush()
+  const keys = posts(fetcher).map(([, init]) => JSON.parse(String(init?.body)).client_request_id)
+  expect(new Set(keys).size).toBe(1)
+  expect(controller.getSnapshot().phase).toBe('created')
+})

@@ -99,7 +99,7 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
     set({ draft, fields, ...(settled ? { error: null, errorKind: null, otherErrors: [] } : {}) })
   }
 
-  async function send(request: CreateAttempt) {
+  async function send(request: CreateAttempt, retry = false) {
     inFlight = true
     set({ phase: 'pending', error: null, errorKind: null, otherErrors: [] })
     try {
@@ -116,6 +116,11 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
       const kind = isManagementError(error) ? error.kind : 'uncertain'
       const message = error instanceof Error ? error.message : t('sessionManagement.uncertain')
       if (kind === 'uncertain') { set({ phase: 'uncertain', error: message, errorKind: kind }); return }
+      // A busy, refused or unreadable answer to a retry says nothing about the first request, which may
+      // have been saved: keep its key so the only way forward is another same-key retry or checking the list.
+      if (retry && (kind === 'network' || kind === 'rejected' || kind === 'unavailable' || kind === 'validation')) {
+        set({ phase: 'uncertain', error: `${message} ${t('sessionManagement.uncertain')}`, errorKind: 'uncertain' }); return
+      }
       // A definite answer: the server did not keep this attempt, so the next deliberate Create gets a fresh key.
       attempt = null
       if (kind === 'validation' && isManagementError(error)) {
@@ -161,7 +166,7 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
       if (inFlight || snapshot.phase !== 'uncertain' || !attempt) return
       if (now() - attempt.startedAt >= RETRY_WINDOW_MS) { set({ phase: 'expired', error: t('sessionManagement.expired'), errorKind: 'uncertain' }); return }
       inFlight = true
-      void send(attempt)
+      void send(attempt, true)
     },
     /** The request key currently held for a safe retry, for tests and diagnostics. */
     pendingAttempt: () => attempt,

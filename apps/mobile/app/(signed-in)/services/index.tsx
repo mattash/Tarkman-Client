@@ -66,7 +66,7 @@ export default function MyServicesScreen() {
       </Card>}
       {result.loading && <ActivityIndicator accessibilityLabel={t('myServices.loading')} />}
       {result.error && <Card><AppText accessibilityRole="alert">{result.error}</AppText><AppButton variant="secondary" onPress={result.retry}>{t('common.retry')}</AppButton></Card>}
-      {!result.loading && !result.error && result.services.length === 0 && <Card><AppText variant="heading">{t('myServices.noneTitle')}</AppText>
+      {!result.loading && !result.refreshing && !result.error && result.services.length === 0 && <Card><AppText variant="heading">{t('myServices.noneTitle')}</AppText>
         <AppText tone="muted">{t('myServices.noneNote')}</AppText></Card>}
     </View>}
     renderItem={({ item: service }) => <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', marginTop: spacing.lg }}><Card>
