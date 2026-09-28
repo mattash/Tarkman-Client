@@ -21,8 +21,14 @@ function guardReactNative(appRoot, expected, resolve) {
   const actual = packageName(appRoot)
   if (actual !== expected) throw new Error(`${appRoot} installs ${actual} as react-native; expected ${expected}. Run npm ci in this app.`)
   const modules = fs.realpathSync(path.join(appRoot, 'node_modules')) + path.sep
+  const packages = path.resolve(appRoot, '../../packages') + path.sep
+  const appOrigin = path.join(appRoot, 'package.json')
   return (context, moduleName, platform) => {
-    const result = resolve(context, moduleName, platform)
+    // packages/* have no node_modules: their bare imports resolve as if the app made them, never
+    // from a node_modules that happens to sit above the repository.
+    const bare = !moduleName.startsWith('.') && !path.isAbsolute(moduleName)
+    const fromShared = bare && context.originModulePath.startsWith(packages)
+    const result = resolve(fromShared ? { ...context, originModulePath: appOrigin } : context, moduleName, platform)
     const match = guarded.exec(moduleName)
     if (match && result.type === 'sourceFile') {
       const file = fs.realpathSync(result.filePath)
