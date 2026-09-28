@@ -1,0 +1,67 @@
+{
+  "id": 4008,
+  "date": "2026-10-04",
+  "user_id": 7,
+  "liturgy_id": null,
+  "current_part_id": 187,
+  "current_liturgy_part_id": 901,
+  "current_posture": null,
+  "status": "active",
+  "status_message": null,
+  "options": {
+    "gospel": "John 1:1-17",
+    "epistle": "",
+    "before_message": "Welcome!",
+    "after_message": "Have a blessed Sunday!"
+  },
+  "revision": 0,
+  "lent": false,
+  "mercy_notes": null,
+  "requiem_notes": null,
+  "session_views_count": 0,
+  "created_at": "2026-10-01T17:02:03.000Z",
+  "updated_at": "2026-10-01T17:02:03.000Z",
+  "session": {
+    "id": 4008,
+    "date": "2026-10-04",
+    "user_id": 7,
+    "liturgy_ids": [
+      12,
+      31
+    ],
+    "liturgies": [
+      {
+        "id": 12,
+        "name": "Divine Liturgy",
+        "position": 1,
+        "selectable": true
+      },
+      {
+        "id": 31,
+        "name": "Parish Vespers",
+        "position": 2,
+        "selectable": true
+      }
+    ],
+    "options": {
+      "gospel": "John 1:1-17",
+      "epistle": "",
+      "before_message": "Welcome!",
+      "after_message": "Have a blessed Sunday!"
+    },
+    "status": "active",
+    "status_message": null,
+    "revision": 0,
+    "current_part_id": 187,
+    "current_liturgy_part_id": 901,
+    "cursor": {
+      "part_id": 187,
+      "liturgy_part_id": 901,
+      "liturgy_id": 12,
+      "position": 1
+    },
+    "created_at": "2026-10-01T17:02:03.000Z",
+    "updated_at": "2026-10-01T17:02:03.000Z"
+  },
+  "replayed": true
+}

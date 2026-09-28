@@ -1,0 +1,5 @@
+{
+  "error": "The session created by this request no longer exists",
+  "code": "creation_result_unavailable",
+  "session_id": 4008
+}

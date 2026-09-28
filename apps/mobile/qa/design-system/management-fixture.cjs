@@ -67,7 +67,7 @@ function createManagement({ enabled, owned, church, seed = [], onDeleted = () =>
       if (!authorized(req)) return error(res, 401, 'Sign in required.'), true
       return json(res, 200, { schema_version: 1, session_management_version: 1, time_zone: ZONE,
         defaults: { date: today(), options: { gospel: '', epistle: '', before_message: '', after_message: '' } },
-        limits: { max_liturgies: 10, option_max_length: { gospel: 2000, epistle: 2000, before_message: 2000, after_message: 2000 } } }), true
+        limits: { liturgy_ids: { min: 1, max: 20 }, options: Object.fromEntries(OPTION_KEYS.map(key => [key, { max_length: 2000 }])) } }), true
     }
     if (path === '/s/liturgy_options.json' && req.method === 'GET') {
       if (!authorized(req)) return error(res, 401, 'Sign in required.'), true

@@ -7,7 +7,8 @@ export const bootstrap = {
   session_management_version: 1,
   time_zone: 'America/Los_Angeles',
   defaults: { date: '2026-09-27', options: { gospel: '', epistle: '', before_message: '', after_message: '' } },
-  limits: { max_liturgies: 10, option_max_length: { gospel: 500, epistle: 500, before_message: 2000, after_message: 2000 } },
+  limits: { liturgy_ids: { min: 1, max: 10 },
+    options: { gospel: { max_length: 500 }, epistle: { max_length: 500 }, before_message: { max_length: 2000 }, after_message: { max_length: 2000 } } },
 }
 
 export const liturgyPage1 = {

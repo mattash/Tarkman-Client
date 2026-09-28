@@ -1,0 +1,60 @@
+{
+  "error": "This edit removes the current reading position; confirm a cursor reset",
+  "code": "cursor_reset_required",
+  "revision": 3,
+  "current_part_id": 244,
+  "cursor": {
+    "part_id": 244,
+    "liturgy_part_id": 955,
+    "liturgy_id": 31,
+    "position": 43
+  },
+  "session": {
+    "id": 4008,
+    "date": "2026-10-04",
+    "user_id": 7,
+    "liturgy_ids": [
+      12,
+      31
+    ],
+    "liturgies": [
+      {
+        "id": 12,
+        "name": "Divine Liturgy",
+        "position": 1,
+        "selectable": true
+      },
+      {
+        "id": 31,
+        "name": "Parish Vespers",
+        "position": 2,
+        "selectable": true
+      }
+    ],
+    "options": {
+      "gospel": "John 1:1-17",
+      "epistle": "",
+      "before_message": "Welcome!",
+      "after_message": "Have a blessed Sunday!"
+    },
+    "status": "active",
+    "status_message": null,
+    "revision": 3,
+    "current_part_id": 244,
+    "current_liturgy_part_id": 955,
+    "cursor": {
+      "part_id": 244,
+      "liturgy_part_id": 955,
+      "liturgy_id": 31,
+      "position": 43
+    },
+    "created_at": "2026-10-01T17:02:03.000Z",
+    "updated_at": "2026-10-01T17:02:03.000Z"
+  },
+  "proposed_cursor": {
+    "part_id": 187,
+    "liturgy_part_id": 901,
+    "liturgy_id": 12,
+    "position": 1
+  }
+}

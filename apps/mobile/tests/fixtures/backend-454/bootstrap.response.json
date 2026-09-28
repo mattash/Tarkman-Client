@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "session_management_version": 1,
+  "time_zone": "America/Los_Angeles",
+  "defaults": {
+    "date": "2026-10-04",
+    "options": {
+      "gospel": "",
+      "epistle": "",
+      "before_message": "Welcome!",
+      "after_message": "Have a blessed Sunday!"
+    }
+  },
+  "limits": {
+    "liturgy_ids": { "min": 1, "max": 20 },
+    "options": {
+      "gospel": { "max_length": 20000 },
+      "epistle": { "max_length": 20000 },
+      "before_message": { "max_length": 5000 },
+      "after_message": { "max_length": 5000 }
+    },
+    "liturgy_options": { "default_limit": 50, "max_limit": 100, "max_query_length": 100 },
+    "idempotency_window_seconds": 86400
+  },
+  "discovery": { "today_sessions_public": true, "current_session": "newest_created_today" }
+}
