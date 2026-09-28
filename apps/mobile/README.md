@@ -48,8 +48,9 @@ in the pinned version. The stand-in currently returns a 402 × 2000 parent and
 heights, viewport calculations, or scroll positions. Keep this narrowly scoped
 stand-in unless a compatible FlashList test setup is deliberately adopted.
 
-Core is a source-linked `file:` dependency. After installing both apps, run
-`npm run core:test` and `npm run core:check-consumers` at repository root. The
+Core is a source-linked `file:` dependency. After installing mobile, run
+`npm run core:test` at repository root; `npm run core:check-consumers` also
+needs the legacy web install. The
 reader and gallery use core language types; their narrower response models match
 nullable Rails fields. Metro uses a package-scoped resolver so only core's
 NodeNext `.js` internals load from TypeScript source; app and third-party imports
@@ -403,9 +404,12 @@ awake for the operator.
 The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
 the Jest suite, the UI, interface-copy and font guards, `expo config`, the Expo web export, and
 an iOS config smoke check that prebuilds the native project and asserts the
-associated-domains entitlement and bundle identifier survive. The `build` matrix
-runs the web client's typecheck, build and tests on Node 22 and 24. The `design`
-job checks generated tokens and color contrast; `mobile` uses Node 24.
+associated-domains entitlement and bundle identifier survive. The `mobile` job
+also runs `npm run core:test` (shared core build, tests and boundary guard), which
+needs only the mobile install. The `design` job checks generated tokens and color
+contrast; `mobile` uses Node 24. The deprecated `apps/web` client is validated by
+the separate, non-required [Legacy web CI](../../.github/workflows/legacy-web.yml)
+workflow only when it or shared core changes.
 
 The smoke check runs last because `expo prebuild` rewrites `package.json`
 scripts; it catches a broken app config or config plugin in CI rather than
