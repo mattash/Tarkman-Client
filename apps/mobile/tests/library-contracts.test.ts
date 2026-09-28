@@ -100,6 +100,22 @@ it('embedded fixture builds can test native offline cold start without opening r
   expect(libraryConfiguration(false, '1', 'http://127.0.0.1:4190', undefined).api).toBeNull()
 })
 
+it('release builds reach the Library only through the explicit HTTPS production switch', () => {
+  const release = (enabled?: string, apiUrl?: string, raw?: string) => libraryConfiguration(false, undefined, raw, undefined, enabled, apiUrl)
+  expect(release('1', 'https://www.tarkman.app')).toMatchObject({ environment: 'https://www.tarkman.app' })
+  expect(release('1', 'https://www.tarkman.app').api).not.toBeNull()
+  // The Library URL overrides the app API URL and names the storage environment.
+  expect(release('1', 'https://www.tarkman.app', 'https://library.example.test').environment).toBe('https://library.example.test')
+  // Switch absent or off: disabled even with a valid production API URL.
+  expect(release(undefined, 'https://www.tarkman.app')).toEqual({ environment: 'disabled', api: null })
+  expect(release('0', 'https://www.tarkman.app')).toEqual({ environment: 'disabled', api: null })
+  // Never plain HTTP, loopback or credentials in a release build.
+  expect(release('1', 'http://www.tarkman.app').api).toBeNull()
+  expect(release('1', 'http://127.0.0.1:4190').api).toBeNull()
+  expect(release('1', 'https://user:secret@www.tarkman.app').api).toBeNull()
+  expect(release('1', undefined).api).toBeNull()
+})
+
 it('accepts omitted-content continuations only when they advance, retaining nonempty cursor rules', () => {
   expect(parseCatalog(omitted)).toEqual(omitted)
   expect(parseCatalog(omitted, 699)).toEqual(omitted)
