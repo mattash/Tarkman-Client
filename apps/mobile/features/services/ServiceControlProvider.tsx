@@ -51,9 +51,10 @@ const ServiceControlContext = createContext<ServiceControlValue | null>(null)
 export function ServiceControlProvider({ sessionId, children }: { sessionId: number; children: ReactNode }) {
   const { authorizedFetch } = useAuth()
   const config = readerConfig()
-  const presence = useControllerPresence(sessionId, config.endpoints?.api)
   const valid = Number.isInteger(sessionId) && sessionId > 0
   const { state, retry, refreshAfterCommand } = useReader(config.endpoints ?? { api: '', cable: '' }, valid ? sessionId : null, false)
+  // A deleted session ends this controller's presence lifecycle; no heartbeat or recovery continues for it.
+  const presence = useControllerPresence(sessionId, state.deleted ? undefined : config.endpoints?.api)
   const controls = useControls(refreshAfterCommand)
   const [sheetOpen, setSheetOpen] = useState(false)
   // The snapshot a command was sent against, so a refused move names where the service is only once the screen has caught up.
@@ -64,7 +65,8 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
   const resynced = state.updatedAt !== sentAgainst && !state.refreshing
   const value: ServiceControlValue = {
     sessionId, presence,
-    invalid: !config.endpoints ? config.error ?? t('control.cannotOpen') : valid ? null : t('common.serviceLinkInvalid'),
+    invalid: !config.endpoints ? config.error ?? t('control.cannotOpen') : !valid ? t('common.serviceLinkInvalid')
+      : state.deleted ? t('common.serviceNoLongerAvailable') : null,
     state, retry, controls,
     commands: createServiceControls(authorizedFetch, state.session?.revision),
     part, index,
@@ -74,6 +76,8 @@ export function ServiceControlProvider({ sessionId, children }: { sessionId: num
     announcing: state.session?.status === 'showing_custom',
     expected: part?.id ?? null,
     run: (name, command) => {
+      // No command for a deleted session, even from a sheet that has not closed yet.
+      if (state.deleted) return Promise.resolve(false)
       benchmarkMark('control.tap', { direction: name, expected_part_id: part?.id }, benchmarkContext(sessionId))
       setSentAgainst(state.updatedAt)
       return controls.run(name, command)

@@ -1,0 +1,146 @@
+// Browser QA for My Sessions edit/delete and deleted-session recovery (issue #200).
+// Same setup as qa/issue199/browser-qa.cjs.txt: the loopback fixture on 127.0.0.1:8100, a web export built for
+// https://reader.invalid served with single-page fallback on 127.0.0.1:8095. Rename to .cjs and run from the repository root.
+// The session_deleted frame is sent by this harness through the intercepted ActionCable socket, standing in for the
+// backend's post-commit broadcast; the fixture's typed 404 covers the missed-event path. Synthetic data only.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const assert = require('node:assert/strict')
+const out = process.env.QA_OUT || `${process.cwd()}/apps/mobile/qa/issue200`
+const APP = 'http://127.0.0.1:8095', FIXTURE = 'http://127.0.0.1:8100'
+const AUTH = { Authorization: 'Bearer fixture-access-token', 'Content-Type': 'application/json', Accept: 'application/json' }
+const results = []
+
+async function api(method, path, body) {
+  const response = await fetch(FIXTURE + path, { method, headers: AUTH, body: body ? JSON.stringify(body) : undefined })
+  return response.status === 200 && method === 'DELETE' ? null : response.json()
+}
+async function open(browser, { width = 390, height = 844, colorScheme = 'light' } = {}) {
+  const page = await browser.newPage({ viewport: { width, height }, colorScheme })
+  const errors = [], sockets = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error' && !/Failed to load resource/.test(message.text())) errors.push(message.text()) })
+  await page.route('https://reader.invalid/**', async route => {
+    const url = new URL(route.request().url())
+    await route.fulfill({ response: await route.fetch({ url: FIXTURE + url.pathname + url.search }) })
+  })
+  await page.routeWebSocket('wss://reader.invalid/cable', ws => {
+    sockets.push(ws)
+    ws.send(JSON.stringify({ type: 'welcome' }))
+    ws.onMessage(data => { const frame = JSON.parse(data); if (frame.command === 'subscribe') { ws.identifier = frame.identifier; ws.send(JSON.stringify({ identifier: frame.identifier, type: 'confirm_subscription' })) } })
+  })
+  const broadcast = (event, data) => { for (const ws of sockets) if (ws.identifier) ws.send(JSON.stringify({ identifier: ws.identifier, message: { event, data } })) }
+  return { page, errors, broadcast }
+}
+async function signIn(page, returnTo = '/services') {
+  await page.goto(`${APP}/sign-in?returnTo=${encodeURIComponent(returnTo)}`)
+  await page.getByLabel('Email', { exact: true }).fill('operator@example.test')
+  await page.getByLabel('Password', { exact: true }).fill('fixture-only-password')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await page.evaluate(() => document.fonts.ready)
+}
+async function shot(page, name, whole = true) {
+  await page.waitForTimeout(300)
+  const size = page.viewportSize()
+  if (whole) {
+    const extra = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll('div')].map(el => el.scrollHeight - el.clientHeight)))
+    if (extra > 0) { await page.setViewportSize({ width: size.width, height: size.height + extra }); await page.waitForTimeout(250) }
+  }
+  await page.screenshot({ path: `${out}/${name}.png` })
+  if (whole) await page.setViewportSize(size)
+}
+const overflow = page => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)
+
+;(async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    // A multi-liturgy session to edit, created through the synthetic API.
+    const created = await api('POST', '/s.json', { client_request_id: '00000000-0000-4000-8000-0000000000aa',
+      session: { date: '2026-10-04', liturgy_ids: [5001, 5002, 5003], options: { gospel: 'John 1:1-17', epistle: '', before_message: 'Welcome.', after_message: '' } } })
+    const id = created.session.id, title = created.session.liturgy
+
+    const { page, errors } = await open(browser)
+    await signIn(page)
+    await page.getByRole('button', { name: new RegExp(`^Edit ${title}`) }).waitFor()
+    await shot(page, 'phone-row-actions', false)
+
+    // Edit, while another controller moves the session: a stale save keeps the draft for review.
+    await page.getByRole('button', { name: new RegExp(`^Edit ${title}`) }).click()
+    await page.getByLabel('Gospel reading').waitFor()
+    await shot(page, 'phone-edit-loaded')
+    await page.getByLabel('After-service message').fill('Go in peace. Coffee hour follows in the hall.')
+    await page.getByRole('button', { name: 'Move Evening Service up' }).click()
+    await api('POST', `/fixture/sessions/${id}/bump`)
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByText('This session changed elsewhere', { exact: true }).waitFor()
+    await shot(page, 'phone-edit-conflict')
+    await page.getByRole('button', { name: 'Review my changes on the saved version' }).click()
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByText('Session saved').waitFor()
+    await shot(page, 'phone-edit-saved', false)
+    const afterSave = await api('GET', `/s/${id}/edit.json`)
+    assert.deepEqual(afterSave.session.liturgy_ids, [5001, 5003, 5002])
+    assert.equal(afterSave.session.options.after_message, 'Go in peace. Coffee hour follows in the hall.')
+
+    // Removing the current occurrence asks first; Save and reset is explicit.
+    await page.getByRole('button', { name: new RegExp(`^Edit Divine Liturgy`) }).first().click()
+    await page.getByRole('button', { name: 'Remove Divine Liturgy' }).click()
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByText('Reset the current part?').waitFor()
+    await shot(page, 'phone-cursor-reset', false)
+    await page.getByRole('button', { name: 'Save and reset current part' }).click()
+    await page.getByText('Session saved').waitFor()
+
+    // Delete from the row: a fresh snapshot, the exact name and date, Cancel first.
+    await page.getByRole('button', { name: /^Delete Evening Service · Morning Service/ }).click()
+    await page.getByRole('button', { name: /permanently$/ }).waitFor()
+    await shot(page, 'phone-delete-confirm', false)
+    await page.getByRole('button', { name: /permanently$/ }).click()
+    await page.getByText('Session deleted').waitFor()
+    assert.equal(await page.getByRole('button', { name: /^Delete Evening Service · Morning Service/ }).count(), 0)
+    await shot(page, 'phone-deleted', false)
+    results.push({ name: 'phone-edit-delete', errors, overflow: await overflow(page) })
+    await page.close()
+
+    // Dark and desktop editor layouts.
+    for (const [name, width, height, colorScheme] of [['dark', 390, 844, 'dark'], ['desktop', 1280, 900, 'light']]) {
+      const next = await api('POST', '/s.json', { client_request_id: `00000000-0000-4000-8000-0000000000${name === 'dark' ? 'bb' : 'cc'}`,
+        session: { date: '2026-10-11', liturgy_ids: [5002, 5004], options: { gospel: 'Luke 2:1-20', epistle: 'Hebrews 1:1-12', before_message: '', after_message: '' } } })
+      const view = await open(browser, { width, height, colorScheme })
+      await signIn(view.page, `/session-management/${next.session.id}/edit`)
+      await view.page.getByLabel('Gospel reading').waitFor()
+      await view.page.getByLabel('Service date').fill('2026-10-12')
+      await shot(view.page, `${name}-edit`)
+      results.push({ name: `${name}-edit`, errors: view.errors, overflow: await overflow(view.page) })
+      await view.page.close()
+    }
+
+    // Live deletion: an open controller and a named display become unavailable; another session is unaffected.
+    const controller = await open(browser)
+    await signIn(controller.page, '/services/9001')
+    await controller.page.getByRole('button', { name: /Next/ }).first().waitFor({ timeout: 20000 }).catch(() => {})
+    await controller.page.waitForTimeout(1500)
+    await shot(controller.page, 'phone-control-before', false)
+    const display = await open(browser, { width: 1280, height: 720 })
+    await display.page.goto(`${APP}/sessions/9001/display`)
+    await display.page.waitForTimeout(2500)
+    const other = await api('GET', '/s.json?pagination=cursor&limit=20')
+    const owner = await open(browser)
+    await signIn(owner.page)
+    await owner.page.getByRole('button', { name: /^Delete Sample Divine Liturgy/ }).click()
+    await owner.page.getByRole('button', { name: /permanently$/ }).click()
+    await owner.page.getByText('Session deleted').waitFor()
+    // The backend's post-commit terminal event, on the existing session stream.
+    controller.broadcast('session_deleted', { session_id: 9001, revision: 2 })
+    display.broadcast('session_deleted', { session_id: 9001, revision: 2 })
+    await controller.page.getByText('This service is no longer available.').first().waitFor()
+    await display.page.getByText('This service is no longer available.').first().waitFor()
+    await shot(controller.page, 'phone-control-deleted', false)
+    await shot(display.page, 'display-deleted', false)
+    assert.equal(await controller.page.getByRole('button', { name: /^Next/ }).count(), 0, 'no commands for a deleted session')
+    results.push({ name: 'live-deletion', errors: [...controller.errors, ...display.errors, ...owner.errors], remaining: other.sessions.length - 1 })
+  } finally {
+    await browser.close()
+    require('node:fs').writeFileSync(`${out}/results.json`, JSON.stringify(results, null, 2) + '\n')
+    console.log(JSON.stringify(results, null, 2))
+  }
+})().catch(error => { console.error(error); process.exit(1) })

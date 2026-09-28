@@ -1,9 +1,9 @@
 import { isUnauthorized, type AuthContextValue } from '../../auth/AuthProvider'
 import { t } from '../../i18n'
 import {
-  errorCode, fieldErrors, ManagementError, normalizeBootstrap, normalizeCreateResult, normalizeLiturgyOptions,
-  setupPayload, unavailableError, type CreateResult, type LiturgyOptionsPage, 
-  type ManagementBootstrap, type SessionSetup,
+  errorCode, fieldErrors, ManagementError, normalizeBootstrap, normalizeCreateResult, normalizeEditSnapshot, normalizeLiturgyOptions,
+  normalizeManagedSession, setupPayload, unavailableError, type CreateResult, type LiturgyOptionsPage, type ManagedSession,
+  type ManagementBootstrap, type SessionPatch, type SessionSetup,
 } from './contracts'
 
 type Fetch = AuthContextValue['authorizedFetch']
@@ -69,4 +69,27 @@ export async function createSession(fetcher: Fetch, attempt: CreateAttempt): Pro
     body: JSON.stringify({ client_request_id: attempt.clientRequestId, session: setupPayload(attempt.setup) }) }, true)
   if (response.status !== 201 && response.status !== 200) throw await failure(response, true)
   return normalizeCreateResult(await body(response), response.status)
+}
+
+export function fetchEditSnapshot(fetcher: Fetch, sessionId: number, signal: AbortSignal): Promise<ManagedSession> {
+  return read(fetcher, `/s/${sessionId}/edit.json`, signal, normalizeEditSnapshot)
+}
+
+export async function updateSession(fetcher: Fetch, sessionId: number, expectedRevision: number, changes: SessionPatch,
+  confirmCursorReset = false): Promise<ManagedSession> {
+  const payload: Record<string, unknown> = { expected_revision: expectedRevision, session: changes }
+  if (confirmCursorReset) payload.confirm_cursor_reset = true
+  const response = await send(fetcher, `/s/${sessionId}.json`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(payload) }, true)
+  if (!response.ok) throw await failure(response, true)
+  try { return normalizeManagedSession(await body(response)) } catch {
+    throw new ManagementError('uncertain', t('sessionManagement.uncertain'))
+  }
+}
+
+/** The documented success is HTTP 200 with an empty body, so a success body is never parsed. */
+export async function deleteSession(fetcher: Fetch, sessionId: number, expectedRevision: number): Promise<void> {
+  const response = await send(fetcher, `/s/${sessionId}.json`, { method: 'DELETE', headers: JSON_HEADERS,
+    body: JSON.stringify({ expected_revision: expectedRevision }) }, true)
+  if (response.status === 200 || response.status === 204) return
+  throw await failure(response, true)
 }

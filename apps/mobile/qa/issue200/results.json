@@ -1,0 +1,22 @@
+[
+  {
+    "name": "phone-edit-delete",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "name": "dark-edit",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "name": "desktop-edit",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "name": "live-deletion",
+    "errors": [],
+    "remaining": 2
+  }
+]

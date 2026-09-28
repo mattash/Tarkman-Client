@@ -9,10 +9,13 @@ export interface ReaderState {
   explanationProvenance: ExplanationProvenance
   loading: boolean; refreshing: boolean; error: string | null; explanationError: boolean; explanationsLoading: boolean
   stale: boolean; connected: boolean; listed: boolean; following: boolean; updatedAt: number | null
+  /** Terminal: the session was deleted. Nothing may present it as live again in this generation. */
+  deleted: boolean
 }
 export const initialState: ReaderState = { services: [], session: null, parts: [], explanations: [], explanationProvenance: idle, loading: true, refreshing: false,
-  error: null, explanationError: false, explanationsLoading: false, stale: true, connected: false, listed: true, following: true, updatedAt: null }
+  error: null, explanationError: false, explanationsLoading: false, stale: true, connected: false, listed: true, following: true, updatedAt: null, deleted: false }
 export type ReaderAction = { type: 'manual' | 'follow' | 'refresh' | 'stale' } | { type: 'connection'; connected: boolean }
+  | { type: 'deleted'; message: string }
   | { type: 'explanationReset'; status: 'idle' | 'invalid' }
   | { type: 'explanationStart'; ownerKey: string; contextKey: string | null; requestId: number }
   | { type: 'explanations'; explanations: LiveExplanation[]; failed: boolean; ownerKey: string; requestId: number }
@@ -28,7 +31,11 @@ export function canRetainExplanations(state: ReaderState, owner: string | null, 
     state.listed && state.session?.status === 'active'
 }
 export function readerReducer(state: ReaderState, action: ReaderAction): ReaderState {
+  // Deletion is terminal for this reader: no later action (a late recovery, publication, or reconnect) can revive it.
+  if (state.deleted && action.type !== 'manual' && action.type !== 'follow') return state
   switch (action.type) {
+    case 'deleted': return { ...state, ...clearProof(state, 'invalid'), deleted: true, session: null, parts: [], loading: false, refreshing: false,
+      stale: true, connected: false, error: action.message }
     case 'manual': return { ...state, following: false }
     case 'follow': return { ...state, following: true }
     case 'refresh': {

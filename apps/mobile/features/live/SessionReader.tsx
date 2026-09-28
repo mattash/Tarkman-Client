@@ -53,7 +53,8 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const activeOpener = useRef<View>(null)
   const [manualPart, setManualPart] = useState<string | undefined>(undefined)
   // Storage is a render fallback only; live state and its position channel stay authoritative.
-  const showingSaved = !state.loading && !!state.error && state.parts.length === 0 && saved != null && saved.session.id === id
+  // A deleted session shows its unavailable notice; a saved copy never silently stands in for it.
+  const showingSaved = !state.deleted && !state.loading && !!state.error && state.parts.length === 0 && saved != null && saved.session.id === id
   const following = !showingSaved && state.following
   const savedExplanations = showingSaved ? saved.explanations?.items ?? [] : []
   const part = state.session ? currentPart(state.session, state.parts) : undefined
@@ -132,6 +133,11 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     {church && <AppText variant="caption" tone="muted">{church}</AppText>}
     <ReaderStatus state={state} retry={retry} showLive={false} savedCopy={showingSaved} />
     {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">{t('reader.currentPartUnavailable')}</AppText>}
+  </View>
+  // Deleted is terminal, not a connection problem: no Retry, no saved copy standing in, just a way out.
+  if (state.deleted) return <View testID="reader-deleted" style={{ flex: 1, padding: spacing.lg, gap: spacing.lg, justifyContent: 'center' }}>
+    <AppText variant="heading" accessibilityRole="alert">{t('common.serviceNoLongerAvailable')}</AppText>
+    <AppButton variant="secondary" onPress={() => router.replace('/')}>{t('scan.backToToday')}</AppButton>
   </View>
   return <View testID="reader-root" ref={root} {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string }) => { if (event.key === 'Escape') education.endTour() } } : {})} onLayout={() => setLayoutReady(true)} style={{ flex: 1 }}>
     <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
