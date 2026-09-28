@@ -1,8 +1,8 @@
 // Classifies a PR's mobile changes and fingerprints each platform's native build inputs
 // for CI (#204). A successful iOS or Android compile is recorded under the fingerprint of
 // the tree it built; a later run of the same PR with an identical fingerprint may reuse
-// that result instead of compiling again. Anything not listed here is treated as
-// JavaScript, which the Linux bundle smoke checks validate on every head.
+// that result instead of compiling again. Other changes retain the Linux bundle
+// smoke checks and the unconditional mobile validation job on every head.
 //
 // Usage (from the repository root, in a full-history checkout of the PR merge commit):
 //   node apps/mobile/scripts/native-inputs.mjs --platform ios --base <sha> --head <sha> [--tree HEAD] [--salt <text>]
@@ -24,10 +24,14 @@ export const mobilePathspecs = [
 
 // Native build inputs shared by both platforms. The workflow pins the runners and
 // toolchains, and this script decides what is native, so both count as inputs.
+// CI runs Expo prebuild + xcodebuild/Gradle directly, without an EAS profile.
+// eas.json and .easignore affect EAS builds/uploads, not these compiles. The
+// check-store-config script only asserts configuration in the Linux mobile job.
+// If prebuild/plugins start consuming those files, add them back as inputs.
 const sharedNativePatterns = [
   /^\.github\/workflows\/node\.js\.yml$/,
   /^apps\/mobile\/scripts\/native-inputs\.mjs$/,
-  /^apps\/mobile\/(app\.json|eas\.json|\.easignore|package\.json|package-lock\.json|npm-shrinkwrap\.json)$/,
+  /^apps\/mobile\/(app\.json|package\.json|package-lock\.json|npm-shrinkwrap\.json)$/,
   /^apps\/mobile\/app\.config\.[^/]+$/,
   /^apps\/mobile\/app\.plugin\.[^/]+$/,
   /^apps\/mobile\/(plugins|config-plugins|assets\/icons)\//,
@@ -35,7 +39,7 @@ const sharedNativePatterns = [
 
 const platformNativePatterns = {
   ios: [/^apps\/mobile\/ios\//],
-  android: [/^apps\/mobile\/android\//, /^apps\/mobile\/scripts\/check-store-config\.mjs$/],
+  android: [/^apps\/mobile\/android\//],
 }
 
 export function isNativeInput(path, platform) {
