@@ -759,7 +759,10 @@ without an uninstall, with the data loss described above.
 
 **Permissions.** The release manifest requests only `INTERNET`, `CAMERA`
 (QR scanning), foreground `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`
-(asked only when the reader looks for a nearby church) and `VIBRATE`.
+(asked only when the reader looks for a nearby church) and `VIBRATE`, plus
+install-time permissions merged from libraries that never prompt:
+`ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `USE_BIOMETRIC`/`USE_FINGERPRINT`
+(SecureStore) and the app-private `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
 `android.blockedPermissions` in `app.json` removes microphone, background
 location, legacy external storage and `SYSTEM_ALERT_WINDOW`, including any a
 library manifest would merge in; `npm run check:store-config` guards the
