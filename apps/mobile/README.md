@@ -930,9 +930,11 @@ inputs are unchanged, under the same rules as `ios-build` above. The owner
 selects **`android-build`** in branch protection;
 this change does not. A green check proves compilation, not device behavior.
 
-**Known Android limitations.** No Play release or AAB, `https://web.tarkman.app`
-links are not verified App Links (they open the browser), and the device
-scenario matrix in #191 is not yet recorded.
+**Known Android limitations.** A production AAB was accepted as an internal draft
+under #192; no tester or public Play release has occurred. `https://web.tarkman.app`
+links are not verified Android App Links. The device scenario matrix is not yet
+recorded. See the [stage 3 beta/release packet](qa/android/RELEASE.md) for the exact
+artifact baseline, pending physical QA, App Links and owner approval gates.
 
 ### Known gaps
 
