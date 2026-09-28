@@ -5,6 +5,7 @@ name: Replay reading controls with real sheets
 - runFlow: fixture-open-service.yaml
 - tapOn:
     id: reader-preferences
+- assertVisible: "Appearance"
 - tapOn:
     text: "Tour reading controls|Resume tour"
 - assertVisible: "Step 1 of 4|Step 2 of 4|Step 3 of 4|Step 4 of 4"

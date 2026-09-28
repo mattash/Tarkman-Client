@@ -85,7 +85,7 @@ status bar appearance and local font loading, without gating the router. A loadi
 - `TextField`: visible and accessible label, focus/error styling, native keyboard
   props, text scaling and disabled state. Return/submit behavior belongs to the
   caller; the gallery dismisses single-line keyboards on Done.
-- `AppModal`: native Modal presented as an iOS page sheet or Android bottom surface, with scrollable content,
+- `AppModal`: native Modal presented as an iOS page sheet or a 90%-height Android bottom surface (bounding its flexible scroll area), with scrollable content,
   safe-area padding and keyboard avoidance. Close button, backdrop, Android back,
   web Escape and accessibility escape dismiss it. Initial focus targets Close; callers
   pass an `openerRef` for return focus. Web uses host focus and RN Web’s focus trap;
@@ -600,7 +600,7 @@ plugins, so a new entitlement only appears after `expo prebuild --clean`.
 `https://www.tarkman.app/s/:id/explain`, the web projector display shows
 `https://web.tarkman.app/sessions/:id/explanations`, and reading links on
 `web.tarkman.app` work too. A found code is never entered silently: the scanner
-loads the service and waits for **Read along**, because a camera can pick up a
+loads the service and waits for **Pray along**, because a camera can pick up a
 code from across the room or from last week's slide.
 
 A scanned code is untrusted input, because a sticker in a public place can be
@@ -627,9 +627,10 @@ production session 4006 and need a production-configured build, while the
 `fixture-*.yaml` flows need the local fixture documented below and fail against
 production. Run one family or the other, never `maestro test maestro/`.
 
-`launch.yaml` loads the app and is reused by the others through `runFlow`. In
-development it points the development client at Metro on port 8081; a standalone
-build ignores that link and simply launches, so the same flows run against both.
+`launch.yaml` loads the app and is reused by the others through `runFlow`. On
+iOS it points the development client at Metro on port 8081; a standalone iOS
+build ignores that link and simply launches. The Android branch is for a
+dedicated development client and clears app data; see the Android instructions below.
 `read-a-service.yaml` opens a service by ID, changes language, opens a part and
 comes back. `part-link.yaml` opens a part straight from a link. Both are signed
 out and read-only, so no flow can change a live service and none needs
@@ -667,8 +668,8 @@ maestro test -s 1 apps/mobile/maestro/fixture-join.yaml \
   apps/mobile/maestro/fixture-controls.yaml
 ```
 
-`-s 1` runs the flows serially on one shard. Without it Maestro runs them in
-parallel, and the signed-in flows race each other over the single app instance.
+`-s 1` explicitly runs the flows serially on one shard. Keep this suite serial
+because the flows share one app instance and mutable fixture state.
 Grant the simulator camera before the first run (the scan fallback in
 `fixture-open-service.yaml` needs the scanner to open without the permission
 prompt covering it):
@@ -686,6 +687,115 @@ The fixture confirms the ActionCable subscription but never broadcasts, so
 these flows do not exercise live-following updates — that remains manual or
 production QA.
 
+### Android fixture run (internal test automation)
+
+This reuses the shared fixture flows, including `fixture-onboarding`; it does not
+add Android release support. Use a **dedicated test emulator/device**: Android's
+shared launch helper clears `app.tarkman` data before each flow (including sign-in,
+preferences and explanation read state) and grants camera again after the reset.
+It uses standalone `clearState` then `setPermissions`, leaving the app stopped
+until `openLink` cold-launches the development client into Metro. Resetting data
+also resets Expo's developer-menu preferences, so each launch waits up to 60 seconds
+for the first-run `Continue` control and taps it, then waits up to 15 seconds for
+`Close` (its Android content description). Before closing the menu, it scrolls to
+`Tools button` and turns it off: the reset enables this floating control, whose
+upper-right touch surface overlaps the reader's preferences button. It then taps
+`Close` before waiting for `Today`. This Android path requires a development client.
+Android dismisses the keyboard before manual-ID and sign-in submission.
+The iOS launch and keyboard behavior are unchanged. Android opens
+`tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081`, using
+`expo.scheme` from `app.json`; iOS retains its existing `exp+tarkman` link.
+The scanner uses manual session ID 9001; no camera image or production service
+is needed. Set the test device language to English and unlock it before running.
+
+Prerequisites: Node >=22.13, `npm ci --prefix apps/mobile`, Maestro CLI **2.10.0** on PATH,
+OpenJDK 17, Android SDK platform-tools/emulator, an existing AVD, and an installed
+**development client** with package `app.tarkman` matching this checkout's native
+dependencies. A release APK or Expo Go will not work. To build a client yourself,
+use a disposable checkout at this revision, run `npm ci` and
+`npx expo run:android --device --no-bundler` from its `apps/mobile` directory.
+That build generates native projects/APKs; keep them outside the review worktree.
+Alternatively install an independently built matching development APK from an
+external path with `adb -s SERIAL install -r /absolute/path/to/development.apk`.
+No PR-specific APK path, EAS operation, credentials or env file is required.
+
+From the repository root, select the SDK/JDK in your shell (these are this Mac's
+paths; use your own on another machine):
+
+```sh
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$HOME/.maestro/bin:$PATH"
+"$ANDROID_HOME/emulator/emulator" -list-avds
+# In its own terminal, only if the intended AVD is not already running:
+"$ANDROID_HOME/emulator/emulator" -avd YOUR_AVD_NAME
+```
+
+Start these prerequisites in **two separate foreground terminals**, from the
+repository root. Stop any prior fixture/Metro using Ctrl-C in their owning
+terminals first; do not reuse a Metro previously configured for production.
+Restart the fixture for each suite run to reset its mutable service state.
+
+```sh
+# Terminal 1: fresh single-service fixture on loopback port 8100
+FIXTURE_SERVICES=single node apps/mobile/qa/design-system/mock-reader-server.cjs
+```
+
+```sh
+# Terminal 2: fixture-only Metro on 8081, ignoring local env files and stale transforms
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_SENTRY_DSN= \
+EXPO_PUBLIC_API_URL=http://127.0.0.1:8100 \
+EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8100/cable \
+npm run mobile -- --dev-client --localhost --port 8081 --clear
+```
+
+In a third terminal with the SDK/JDK environment above:
+
+```sh
+adb devices -l
+npm run maestro:android --prefix apps/mobile -- --device emulator-5554
+# Substitute the exact serial from adb devices -l. With just one attached device:
+# npm run maestro:android --prefix apps/mobile
+```
+
+The runner honors `--device`, then `ANDROID_SERIAL`, otherwise requires exactly
+one ready device. It never boots or chooses an AVD by guesswork. It rejects
+missing/unready devices, non-debuggable/missing apps, SDK conflicts, unavailable
+Maestro or missing Java executable, unavailable Metro, and a fixture not listing
+its single active service at part 901 (position 1). The host Metro readiness check
+uses `http://localhost:8081/status` because Expo `--localhost` may listen only on
+IPv6 loopback (`::1`) on macOS. The fixture check stays at
+`http://127.0.0.1:8100/services.json`, and the Android Metro deep link stays at
+`http://127.0.0.1:8081` for `adb reverse`. Metro's status endpoint cannot
+prove which API URLs were bundled: the
+fresh Metro command above is mandatory. It sets `adb -s SERIAL reverse` for
+8081 and 8100, refuses conflicting mappings, grants Android camera permission,
+and runs only the six standalone fixture flows serially with `-s 1`.
+The wrapper option is `--device`; it invokes Maestro as
+`maestro test --udid SERIAL -s 1 ...`. This syntax, multiple flow paths,
+`--test-output-dir`, `--debug-output`, `--format JUNIT`, and `--output` were
+checked against saved Maestro 2.10.0 `test --help` output without executing
+Maestro in the Codex sandbox.
+
+Maestro runs from a printed temporary directory outside the checkout, with
+explicit artifact/debug directories and a JUnit `report.xml` there. A `TMPDIR`
+inside the repository is rejected. Screenshots/reports/logs stay out of the diff
+(Maestro may also use `~/.maestro`).
+The runner propagates failures and forwards Ctrl-C only to its own Maestro child.
+It does not own or kill the fixture, Metro, adb server or emulator. Stop your
+foreground servers with Ctrl-C when done. Camera permission and matching reverse
+mappings remain available for reruns; remove the mappings explicitly when finished:
+
+```sh
+adb -s emulator-5554 reverse --remove tcp:8081
+adb -s emulator-5554 reverse --remove tcp:8100
+npm run test:maestro-android --prefix apps/mobile
+```
+
+Keep dependency installs, native build output, Expo caches and Maestro artifacts
+out of the reviewed diff. A source/static check is not Android device-run evidence;
+the PM must run the suite on the selected development client and collect its output.
 ### Android APK builds / #191
 
 Android uses the existing Expo app, package `app.tarkman`, EAS project and
