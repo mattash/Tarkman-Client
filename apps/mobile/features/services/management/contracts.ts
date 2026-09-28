@@ -88,17 +88,24 @@ function liturgy(value: unknown): LiturgyOption {
   return { id: id(data.id), name: data.name, selectable: data.selectable !== false }
 }
 
+function optionalRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
 export function normalizeBootstrap(value: unknown): ManagementBootstrap {
   return strict(() => {
     const data = record(value)
     if (data.schema_version !== SCHEMA_VERSION || data.session_management_version !== SESSION_MANAGEMENT_VERSION) throw unavailableError()
     const defaults = record(data.defaults)
     if (typeof data.time_zone !== 'string' || !data.time_zone.trim() || !isCalendarDate(defaults.date)) throw unavailableError()
-    const limits = data.limits === undefined || data.limits === null ? {} : record(data.limits)
-    const lengths = limits.option_max_length === undefined || limits.option_max_length === null ? {} : record(limits.option_max_length)
+    // Limits are advisory (the server validates): `liturgy_ids: { max }` and `options: { <key>: { max_length } }`.
+    const limits = optionalRecord(data.limits)
+    const liturgyLimits = optionalRecord(limits.liturgy_ids)
+    const optionLimits = optionalRecord(limits.options)
+    const maxLength = (key: OptionKey) => positiveInteger(optionalRecord(optionLimits[key]).max_length)
     return { timeZone: data.time_zone, defaultDate: defaults.date, defaultOptions: options(defaults.options),
-      limits: { maxLiturgies: positiveInteger(limits.max_liturgies),
-        optionMaxLength: Object.fromEntries(OPTION_KEYS.flatMap(key => positiveInteger(lengths[key]) ? [[key, lengths[key] as number]] : [])) } }
+      limits: { maxLiturgies: positiveInteger(liturgyLimits.max),
+        optionMaxLength: Object.fromEntries(OPTION_KEYS.flatMap(key => maxLength(key) ? [[key, maxLength(key) as number]] : [])) } }
   })
 }
 

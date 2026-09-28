@@ -1,0 +1,13 @@
+{
+  "client_request_id": "3f0c1f8e-7a55-4d0b-9f6e-2b9a4c1d7e10",
+  "session": {
+    "date": "2026-10-04",
+    "liturgy_ids": [12, 31],
+    "options": {
+      "gospel": "John 1:1-17",
+      "epistle": "",
+      "before_message": "Welcome!",
+      "after_message": "Have a blessed Sunday!"
+    }
+  }
+}

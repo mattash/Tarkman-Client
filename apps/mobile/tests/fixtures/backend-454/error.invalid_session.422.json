@@ -1,0 +1,20 @@
+{
+  "error": "Session is invalid",
+  "code": "invalid_session",
+  "errors": {
+    "date": [
+      "must be a valid calendar date (YYYY-MM-DD)"
+    ],
+    "options.gospel": [
+      "must be a string or null"
+    ]
+  },
+  "errors_by_field": {
+    "date": [
+      "must be a valid calendar date (YYYY-MM-DD)"
+    ],
+    "options.gospel": [
+      "must be a string or null"
+    ]
+  }
+}
