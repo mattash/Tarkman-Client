@@ -40,19 +40,19 @@ it.each(['ios', 'android', 'web'] as const)('announces pagination completion onc
     await screen.findByText('Divine Liturgy')
     expect(announce).not.toHaveBeenCalled()
     await fireEvent(screen.getByTestId('my-services-list'), 'endReached')
-    expect(await screen.findByText('All services loaded')).toBeOnTheScreen()
-    expect(screen.getByText('All services loaded').props.accessibilityLiveRegion).toBe('polite')
+    expect(await screen.findByText('All sessions loaded')).toBeOnTheScreen()
+    expect(screen.getByText('All sessions loaded').props.accessibilityLiveRegion).toBe('polite')
     expect(announce).toHaveBeenCalledTimes(platform === 'web' ? 0 : 1)
-    if (platform !== 'web') expect(announce).toHaveBeenCalledWith('All services loaded')
+    if (platform !== 'web') expect(announce).toHaveBeenCalledWith('All sessions loaded')
     await fireEvent(screen.getByTestId('my-services-list'), 'endReached')
     await fireEvent(screen.getByTestId('my-services-list'), 'refresh')
     await screen.findByRole('alert')
     expect(announce).toHaveBeenCalledTimes(platform === 'web' ? 0 : 1)
     await fireEvent.press(screen.getByRole('button', { name: 'Retry' }))
-    await screen.findByRole('button', { name: 'Load more services' })
+    await screen.findByRole('button', { name: 'Load more sessions' })
     expect(announce).toHaveBeenCalledTimes(platform === 'web' ? 0 : 1)
     await fireEvent(screen.getByTestId('my-services-list'), 'endReached')
-    await screen.findByText('All services loaded')
+    await screen.findByText('All sessions loaded')
     expect(announce).toHaveBeenCalledTimes(platform === 'web' ? 0 : 2)
   } finally {
     announce.mockRestore()
@@ -65,7 +65,7 @@ it.each([services, { error: 'No sessions found' }, { sessions: [], page: { limit
   try {
     await renderApp(memoryStore({ [AUTH_KEY]: storedAuth() }).store,
       fakeApi({ 'GET /s.json?pagination=cursor&limit=20': () => respond(200, body) }))
-    await screen.findByText(body.sessions?.length ? 'Divine Liturgy' : 'No services yet')
+    await screen.findByText(body.sessions?.length ? 'Divine Liturgy' : 'No sessions yet')
     expect(announce).not.toHaveBeenCalled()
   } finally { announce.mockRestore() }
 })

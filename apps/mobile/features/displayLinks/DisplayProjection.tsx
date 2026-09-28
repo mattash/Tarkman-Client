@@ -61,6 +61,8 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
   const messageText = message?.kind === 'message' ? message.body ?? message.title : null
   const messageClock = useProjectionClock(`${sessionId}/${part?.key}/${message?.kind === 'message' ? message.title : message?.kind}/${messageText}`, available && message?.kind === 'message')
 
+  // A deleted named session is final here; an owner-current link's discovery replaces this projection on its own.
+  if (state.deleted) return <DisplayNotice testID="display-session-deleted" title={t('common.serviceNoLongerAvailable')} />
   if (!session) return <DisplayNotice testID={state.error ? 'display-projection-unavailable' : 'display-projection-loading'}
     busy={!state.error} title={t(state.error ? 'display.projectionUnavailable' : 'display.loading')}
     detail={state.error ? t('display.retrying') : undefined} />

@@ -26,7 +26,13 @@ const INSTEAD: KnownSessionStatus[] = ['showing_gospel', 'showing_epistle', 'sho
 
 /** Everything occasional: status, pause, announcement and jumping to a part. Next and Back are never here. */
 export default function ServiceSheet() {
-  const { sessionId, presence, state, controls, commands, part, offline, announcing, expected, run, holds, errorMessage, setSheetOpen } = useServiceControl()
+  const { sessionId, presence, state, controls, commands, part, offline, announcing, expected, run, holds, errorMessage, setSheetOpen, invalid } = useServiceControl()
+  // A session deleted while this sheet is open: close it, so the control screen's unavailable notice shows.
+  useEffect(() => {
+    if (!invalid) return
+    if (router.canGoBack()) router.back()
+    else router.replace(`/services/${sessionId}`)
+  }, [invalid, sessionId])
   const { colors } = useTheme()
   const { t } = useI18n()
   const { preferences } = usePreferences()

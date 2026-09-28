@@ -31,6 +31,13 @@ export function saveLastReading(reading: LastReading, store: KeyValueAdapter = p
   return store.set(LAST_READING_KEY, JSON.stringify(reading)).catch(() => { /* Losing a bookmark must never interrupt reading. */ })
 }
 
+/** Drops the "continue reading" shortcut only when it points at this confirmed-deleted session. */
+export function forgetLastReading(sessionId: number, store: KeyValueAdapter = preferencesStore): Promise<void> {
+  return store.get(LAST_READING_KEY).then(raw => {
+    if (readLastReading(raw)?.sessionId === sessionId) return store.remove(LAST_READING_KEY)
+  }).catch(() => { /* A stale shortcut resolves to the unavailable notice; it never revives the session. */ }).then(() => {})
+}
+
 export function useLastReading(store: KeyValueAdapter = preferencesStore) {
   const [reading, setReading] = useState<LastReading | null>(null)
   const reload = useCallback(() => {

@@ -155,16 +155,16 @@ it('lists every service on the Services tab', async () => {
   expect(retry).toHaveBeenCalled()
 })
 
-it('keeps sign-in on the About tab, and My services only when signed in', async () => {
+it('keeps sign-in on the About tab, and My Sessions only when signed in', async () => {
   await render(<About />, { wrapper })
   expect(screen.getByText(/developed by Fr\. Mesrop Ash and St\. John Armenian Church/)).toBeOnTheScreen()
-  expect(screen.queryByRole('button', { name: /My services/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /My Sessions/ })).toBeNull()
   await fireEvent.press(screen.getByRole('button', { name: /^Sign in/ }))
   expect(mockPush).toHaveBeenCalledWith('/sign-in')
   mockAuth.current = { status: 'signedIn', user: { id: 7, name: 'Deacon', email: 'deacon@example.test' } }
   await render(<About />, { wrapper })
   expect(screen.getByText('Signed in as Deacon')).toBeOnTheScreen()
-  await fireEvent.press(screen.getByRole('button', { name: /^My services/ }))
+  await fireEvent.press(screen.getByRole('button', { name: /^My Sessions/ }))
   expect(mockPush).toHaveBeenCalledWith('/services')
 })
 
@@ -173,7 +173,7 @@ it('keeps Settings to reading choices now that the account lives on About', asyn
   await render(<Settings />, { wrapper })
   expect(screen.queryByText('Account')).toBeNull()
   expect(screen.queryByRole('button', { name: /^Sign in/ })).toBeNull()
-  expect(screen.queryByRole('button', { name: /^My services/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /^My Sessions/ })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
 })
 

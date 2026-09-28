@@ -7,7 +7,7 @@ const names = {
   back: 'chevron-back', next: 'chevron-forward', up: 'chevron-up', down: 'chevron-down', languages: 'language-outline',
   explanation: 'book-outline', book: 'book-outline', preferences: 'options-outline', close: 'close-outline',
   selected: 'checkmark', checkbox: 'checkbox-outline', unchecked: 'square-outline',
-  more: 'ellipsis-horizontal', live: 'sync-outline', alert: 'alert-circle-outline',
+  add: 'add', more: 'ellipsis-horizontal', live: 'sync-outline', alert: 'alert-circle-outline',
   paused: 'pause', offline: 'cloud-offline-outline', connected: 'radio-button-on',
   broadcast: 'radio', ended: 'checkmark', help: 'help', refresh: 'refresh',
   share: 'share-outline', copy: 'copy-outline', open: 'open-outline',

@@ -1,0 +1,152 @@
+// Browser QA for My Sessions → Add Session (issue #199). Rename to .cjs and run from the repository root:
+//   node apps/mobile/qa/design-system/mock-reader-server.cjs &
+//   CI=1 EXPO_PUBLIC_API_URL=https://reader.invalid EXPO_PUBLIC_ACTIONCABLE_URL=wss://reader.invalid/cable \
+//     npx --prefix apps/mobile expo export --platform web --clear --output-dir <export>
+//   serve <export> with single-page fallback on 127.0.0.1:8095, then: node browser-qa.cjs
+// API requests to https://reader.invalid are proxied to the synthetic loopback fixture on 127.0.0.1:8100.
+// No production host, account, or worship service is contacted.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const assert = require('node:assert/strict')
+const out = process.env.QA_OUT || `${process.cwd()}/apps/mobile/qa/issue199`
+const APP = 'http://127.0.0.1:8095', FIXTURE = 'http://127.0.0.1:8100'
+const results = []
+
+async function open(browser, { width, height, colorScheme = 'light', intercept } = {}) {
+  const page = await browser.newPage({ viewport: { width, height }, colorScheme })
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error' && !/Failed to load resource/.test(message.text())) errors.push(message.text()) })
+  await page.route('https://reader.invalid/**', async route => {
+    const request = route.request(), url = new URL(request.url())
+    if (intercept) { const handled = await intercept(route, url, request); if (handled) return }
+    const response = await route.fetch({ url: FIXTURE + url.pathname + url.search })
+    await route.fulfill({ response })
+  })
+  await page.routeWebSocket('wss://reader.invalid/cable', ws => {
+    ws.send(JSON.stringify({ type: 'welcome' }))
+    ws.onMessage(data => { const frame = JSON.parse(data); if (frame.command === 'subscribe') ws.send(JSON.stringify({ identifier: frame.identifier, type: 'confirm_subscription' })) })
+  })
+  return { page, errors }
+}
+async function signIn(page) {
+  await page.goto(`${APP}/sign-in?returnTo=%2Fservices`)
+  await page.getByLabel('Email', { exact: true }).fill('operator@example.test')
+  await page.getByLabel('Password', { exact: true }).fill('fixture-only-password')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Session' }).waitFor()
+  await page.evaluate(() => document.fonts.ready)
+}
+/** Opens the Add Liturgy sheet and picks one liturgy from it. */
+async function pick(page, liturgy) {
+  await page.getByRole('button', { name: 'Add Liturgy' }).click()
+  await page.getByRole('button', { name: `Add ${liturgy}` }).click()
+  await page.getByRole('button', { name: `Add ${liturgy}` }).waitFor({ state: 'detached' })
+}
+async function overflow(page) {
+  return page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1)
+}
+/** The form scrolls inside its own view, so a whole-form capture grows the viewport to that view's content first. */
+async function shot(page, name, whole = true) {
+  await page.waitForTimeout(250)
+  const size = page.viewportSize()
+  if (whole) {
+    const extra = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll('div')].map(el => el.scrollHeight - el.clientHeight)))
+    if (extra > 0) { await page.setViewportSize({ width: size.width, height: size.height + extra }); await page.waitForTimeout(250) }
+  }
+  await page.screenshot({ path: `${out}/${name}.png` })
+  if (whole) await page.setViewportSize(size)
+}
+
+;(async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    for (const [name, width, height, colorScheme] of [['phone', 390, 844, 'light'], ['dark', 390, 844, 'dark'], ['desktop', 1280, 900, 'light']]) {
+      const { page, errors } = await open(browser, { width, height, colorScheme })
+      await signIn(page)
+      await shot(page, `${name}-my-sessions`, false)
+      await page.getByRole('button', { name: 'Add Session' }).click()
+      await page.getByRole('button', { name: 'Add Liturgy' }).waitFor()
+      await shot(page, `${name}-new-empty`)
+      await pick(page, 'Divine Liturgy')
+      await pick(page, 'Morning Service')
+      // The sheet lists the whole catalog; the filter narrows it on the device.
+      await page.getByRole('button', { name: 'Add Liturgy' }).click()
+      await page.getByRole('button', { name: 'Add Blessing of Water' }).waitFor()
+      await shot(page, `${name}-sheet`, false)
+      if (name === 'phone') {
+        await page.getByLabel('Filter by title').fill('serv')
+        await page.waitForTimeout(200)
+        assert.equal(await page.getByRole('button', { name: 'Add Blessing of Water' }).count(), 0, 'the filter hides non-matching titles')
+        assert.equal(await page.getByRole('button', { name: 'Morning Service is already selected' }).count(), 1, 'selected titles stay visible, marked added')
+        await shot(page, `${name}-sheet-filtered`, false)
+        await page.getByLabel('Filter by title').fill('water')
+      }
+      await page.getByRole('button', { name: 'Add Blessing of Water' }).click()
+      await page.getByRole('button', { name: 'Move Blessing of Water up' }).click()
+      await page.getByLabel('Gospel reading').fill('Հովհ. 1:1-17 · John 1:1-17')
+      await page.getByLabel('Before-service message').fill('Welcome. Please silence your phones.\nThe service begins at 10:00.')
+      assert.equal(await page.getByText('Unsaved changes').count() > 0, true)
+      await shot(page, `${name}-new-filled`)
+      if (name === 'phone') {
+        await page.getByLabel('Service date').fill('2026-02-30')
+        await page.getByRole('button', { name: 'Create Session' }).click()
+        await page.getByText('Enter a real date as YYYY-MM-DD.').first().waitFor()
+        await shot(page, `${name}-invalid-date`)
+      }
+      // Default date is today in the fixture zone: creation asks for confirmation first.
+      if (name === 'phone') {
+        const today = await page.evaluate(() => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date()))
+        await page.getByLabel('Service date').fill(today)
+      }
+      await page.getByRole('button', { name: 'Create Session' }).click()
+      await page.getByText('Create a session for today?').waitFor()
+      await shot(page, `${name}-today-confirm`, false)
+      await page.getByRole('button', { name: 'Create Session' }).last().click()
+      await page.getByText('Session created').waitFor()
+      await page.getByText('Divine Liturgy · Blessing of Water · Morning Service').first().waitFor()
+      await shot(page, `${name}-created`, false)
+      results.push({ name, errors, overflow: await overflow(page) })
+      await page.close()
+    }
+
+    // Unknown outcome: the POST never answers. Same key and payload on Retry safely.
+    const posts = []
+    let failFirst = true
+    const uncertain = await open(browser, { width: 390, height: 844, intercept: async (route, url, request) => {
+      if (url.pathname !== '/s.json' || request.method() !== 'POST') return false
+      posts.push(request.postData())
+      if (failFirst) { failFirst = false; await route.abort('connectionreset'); return true }
+      return false
+    } })
+    await signIn(uncertain.page)
+    await uncertain.page.getByRole('button', { name: 'Add Session' }).click()
+    await pick(uncertain.page, 'Evening Service')
+    await uncertain.page.getByRole('button', { name: 'Next day' }).click()
+    await uncertain.page.getByRole('button', { name: 'Create Session' }).click()
+    await uncertain.page.getByRole('button', { name: 'Retry safely' }).waitFor()
+    await shot(uncertain.page, 'phone-uncertain')
+    await uncertain.page.getByRole('button', { name: 'Retry safely' }).click()
+    await uncertain.page.getByText('Session created').waitFor()
+    assert.equal(posts.length, 2)
+    assert.equal(posts[0], posts[1], 'the retry repeats the exact request')
+    results.push({ name: 'uncertain-retry', errors: uncertain.errors, posts: posts.length })
+    await uncertain.page.close()
+
+    // An older backend: the form explains, offers no write, and the list still works.
+    const old = await open(browser, { width: 390, height: 844, intercept: async (route, url) => {
+      if (url.pathname === '/s/new.json' || url.pathname === '/s/liturgy_options.json') { await route.fulfill({ status: 404, contentType: 'text/html', body: '<h1>Not found</h1>' }); return true }
+      return false
+    } })
+    await signIn(old.page)
+    await old.page.getByRole('button', { name: 'Add Session' }).click()
+    await old.page.getByText(/does not offer session management/).waitFor()
+    assert.equal(await old.page.getByRole('button', { name: 'Create Session' }).count(), 0)
+    await shot(old.page, 'phone-unavailable', false)
+    results.push({ name: 'unavailable', errors: old.errors })
+    await old.page.close()
+  } finally {
+    await browser.close()
+    require('node:fs').writeFileSync(`${out}/results.json`, JSON.stringify(results, null, 2) + '\n')
+    console.log(JSON.stringify(results, null, 2))
+  }
+})().catch(error => { console.error(error); process.exit(1) })

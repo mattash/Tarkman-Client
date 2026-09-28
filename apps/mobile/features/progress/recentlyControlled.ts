@@ -50,6 +50,15 @@ export function recordRecentlyControlled(entry: Omit<ControlledService, 'control
   }).catch(() => { /* A missing bookmark is not a control failure. */ }).then(() => {})
 }
 
+/** Removes one confirmed-deleted session's shortcut for this account only; other entries and accounts are untouched. */
+export function forgetRecentlyControlled(sessionId: number, userId: number, store: KeyValueAdapter = preferencesStore): Promise<void> {
+  return store.get(recentlyControlledKey(userId)).then(raw => {
+    const current = readRecentlyControlled(raw)
+    const next = current.filter(service => service.sessionId !== sessionId)
+    if (next.length !== current.length) return store.set(recentlyControlledKey(userId), JSON.stringify(next))
+  }).catch(() => { /* A stale shortcut resolves to the unavailable notice; it never revives the session. */ }).then(() => {})
+}
+
 export function useRecentlyControlled(userId: number | null, store: KeyValueAdapter = preferencesStore) {
   const [services, setServices] = useState<ControlledService[]>([])
   const reload = useCallback(() => {

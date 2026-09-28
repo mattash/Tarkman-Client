@@ -1,5 +1,5 @@
 # Helper, not a standalone check: signs in as the fixture operator and lands on
-# My services (safeReturnTo's default). Performs no cleanup, so callers that need
+# My Sessions (safeReturnTo's default). Performs no cleanup, so callers that need
 # a signed-in session can continue; standalone flows must sign out themselves. Requires the app to run
 # against qa/design-system/mock-reader-server.cjs, whose operator account is
 # synthetic and only serves that loopback process.

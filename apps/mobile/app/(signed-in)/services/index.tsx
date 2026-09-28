@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list'
-import { useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AccessibilityInfo, ActivityIndicator, Platform, View } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../../components/AppButton'
@@ -12,6 +12,10 @@ import { recordRecentlyControlled } from '../../../features/progress/recentlyCon
 import { formatServiceDate, statusLabel } from '../../../features/services/api'
 import { useMyServices } from '../../../features/services/useMyServices'
 import { useI18n } from '../../../features/i18n'
+import { readerConfig } from '../../../features/live/config'
+import { claimReconcile, dismissMutation, managementScope, useMutationNotice } from '../../../features/services/management/mutations'
+import { createDeletionController } from '../../../features/services/management/deletion'
+import { DeleteSessionDialog } from '../../../features/services/management/DeleteSessionDialog'
 
 export default function MyServicesScreen() {
   const { state, authorizedFetch, signOut } = useAuth()
@@ -19,6 +23,23 @@ export default function MyServicesScreen() {
   const user = state.status === 'signedIn' ? state.user : null
   const { t } = useI18n()
   const allLoaded = t('myServices.allLoaded')
+  const notice = useMutationNotice(user ? managementScope(readerConfig().endpoints?.api, user.id) : null)
+  // Each confirmed write reconciles the owned list once, from page one; a later mount just loads normally.
+  const { reconcile } = result
+  useEffect(() => {
+    if (notice && claimReconcile(notice)) void reconcile(notice.kind === 'deleted' || notice.kind === 'unavailable' ? notice.session.id : undefined)
+  }, [notice, reconcile])
+  const scope = user ? managementScope(readerConfig().endpoints?.api, user.id) : null
+  const deletion = useMemo(() => createDeletionController(authorizedFetch), [authorizedFetch])
+  useEffect(() => () => deletion.dispose(), [deletion])
+  const [deleting, setDeleting] = useState<{ id: number; title: string } | null>(null)
+  // Each row's Delete button, so focus returns to the one that opened the confirmation.
+  const deleteButtons = useRef(new Map<number, View | null>())
+  const deleteOpener = useRef<View | null>(null)
+  const openControls = (service: { id: number; title: string; church?: string; date: string | null }) => {
+    if (user) void recordRecentlyControlled({ sessionId: service.id, title: service.title, church: service.church ?? '', date: service.date }, user.id)
+    router.push(`/services/${service.id}`)
+  }
   useEffect(() => {
     if (result.paginationComplete && Platform.OS !== 'web') {
       AccessibilityInfo.announceForAccessibility(allLoaded)
@@ -37,30 +58,52 @@ export default function MyServicesScreen() {
       </View>
       <AppText variant="title">{t('myServices.title')}</AppText>
       {user && <AppText tone="muted">{t('common.signedInAs', { name: user.name || user.email })}</AppText>}
-      {result.loading && <ActivityIndicator accessibilityLabel={t('myServices.loading')} />}
+      {/* Always above the cards, whatever state the list is in: creation has its own availability check. */}
+      <View style={{ alignSelf: 'flex-start' }}>
+        <AppButton testID="add-session" size="tier" icon="add" accessibilityHint={t('sessionManagement.addSessionHint')}
+          onPress={() => router.push('/session-management/new')}>{t('sessionManagement.addSession')}</AppButton>
+      </View>
+      {notice && <Card testID="mutation-notice">
+        <AppText variant="heading" accessibilityRole="alert">{t(notice.kind === 'created' ? notice.replayed ? 'sessionManagement.replayed' : 'sessionManagement.created'
+          : notice.kind === 'saved' ? 'sessionManagement.saved' : notice.kind === 'deleted' ? 'sessionManagement.deleted' : 'sessionManagement.alreadyUnavailable')}</AppText>
+        <AppText tone="muted">{t('sessionManagement.summary', { title: notice.session.title, date: formatServiceDate(notice.session.date) ?? '' })}</AppText>
+        {result.error && !result.refreshing && <AppText>{t('sessionManagement.refreshFailed')}</AppText>}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {(notice.kind === 'created' || notice.kind === 'saved') && <AppButton size="tier" accessibilityLabel={t('myServices.openControlsLabel', { title: notice.session.title })}
+            onPress={() => openControls(notice.session)}>{t('myServices.openControls')}</AppButton>}
+          <AppButton variant="text" accessibilityLabel={t('sessionManagement.dismissLabel')} onPress={() => dismissMutation(notice)}>{t('sessionManagement.dismiss')}</AppButton>
+        </View>
+      </Card>}
+      {(result.loading || (result.refreshing && result.services.length === 0)) && <ActivityIndicator accessibilityLabel={t('myServices.loading')} />}
       {result.error && <Card><AppText accessibilityRole="alert">{result.error}</AppText><AppButton variant="secondary" onPress={result.retry}>{t('common.retry')}</AppButton></Card>}
-      {!result.loading && !result.error && result.services.length === 0 && <Card><AppText variant="heading">{t('myServices.noneTitle')}</AppText>
+      {!result.loading && !result.refreshing && !result.error && result.services.length === 0 && <Card><AppText variant="heading">{t('myServices.noneTitle')}</AppText>
         <AppText tone="muted">{t('myServices.noneNote')}</AppText></Card>}
     </View>}
     renderItem={({ item: service }) => <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', marginTop: spacing.lg }}><Card>
         <AppText variant="heading">{service.title}</AppText>
         <AppText tone="muted">{[service.church, formatServiceDate(service.date)].filter(Boolean).join(' · ')}</AppText>
         <AppText variant="caption">{statusLabel(service.status)}</AppText>
-        <AppButton size="tier" accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })} onPress={() => {
-          if (user) void recordRecentlyControlled({ sessionId: service.id, title: service.title, church: service.church, date: service.date }, user.id)
-          router.push(`/services/${service.id}`)
-        }}>{t('myServices.openControls')}</AppButton>
+        <AppButton size="tier" accessibilityLabel={t('myServices.openControlsLabel', { title: service.title })} onPress={() => openControls(service)}>{t('myServices.openControls')}</AppButton>
+        {/* Secondary, and visually apart from Open controls: editing never enters the live-control route. */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <AppButton variant="secondary" size="card" accessibilityLabel={t('sessionManagement.editLabel', { title: service.title, date: formatServiceDate(service.date) ?? '' })}
+            onPress={() => router.push(`/session-management/${service.id}/edit`)}>{t('sessionManagement.edit')}</AppButton>
+          <AppButton ref={node => { deleteButtons.current.set(service.id, node) }} variant="secondaryDestructive" size="card" accessibilityLabel={t('sessionManagement.deleteLabel', { title: service.title, date: formatServiceDate(service.date) ?? '' })}
+            onPress={() => { deleteOpener.current = deleteButtons.current.get(service.id) ?? null; setDeleting({ id: service.id, title: service.title }); deletion.prepare(service.id) }}>{t('sessionManagement.deleteAction')}</AppButton>
+        </View>
       </Card></View>}
     ListFooterComponent={<View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg, marginTop: spacing.lg }}>
       {result.loadingMore && <ActivityIndicator accessibilityLabel={t('myServices.loadingMore')} />}
       {result.loadMoreError && <Card><AppText accessibilityRole="alert">{result.loadMoreError}</AppText>
         <AppButton variant="secondary" accessibilityLabel={t('myServices.retryMoreLabel')} onPress={result.retryLoadMore}>{t('common.retry')}</AppButton></Card>}
-      {!result.loading && !result.error && !result.loadingMore && !result.loadMoreError && result.services.length > 0 && (
+      {!result.loading && !result.refreshing && !result.error && !result.loadingMore && !result.loadMoreError && result.services.length > 0 && (
         result.nextCursor
           ? <AppButton variant="quiet" onPress={result.loadMore}>{t('myServices.loadMore')}</AppButton>
           : <AppText accessibilityLiveRegion="polite" tone="muted">{allLoaded}</AppText>
       )}
       <AppButton variant="secondary" onPress={signOut}>{t('common.signOut')}</AppButton>
+      {user && scope && <DeleteSessionDialog controller={deletion} scope={scope} userId={user.id} fallbackTitle={deleting?.title}
+        openerRef={deleteOpener} onFinished={() => setDeleting(null)} />}
     </View>}
   />
 }
