@@ -9,7 +9,7 @@ import { useMenuBack } from '../hooks'
 import { useI18n } from '../i18n'
 import type { ReaderTransport } from '../reader'
 import type { SavedDisplayV1 } from '../savedDisplay'
-import { colors, safe, space } from '../theme'
+import { safe, space } from '../theme'
 import { DisplayScreen } from './DisplayScreen'
 
 const UNAVAILABLE_RECHECK_MS = 5 * 60_000
@@ -113,6 +113,6 @@ function Frame({ children, actions }: { children: ReactNode; actions: ReactNode 
 }
 
 const styles = StyleSheet.create({
-  frame: { flex: 1, backgroundColor: colors.surfaceCanvas },
-  actions: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', paddingHorizontal: safe.horizontal, paddingBottom: safe.vertical },
+  frame: { flex: 1, },
+  actions: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: safe.horizontal, paddingBottom: safe.vertical },
 })

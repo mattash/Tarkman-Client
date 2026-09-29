@@ -25,6 +25,7 @@
     "@tarkman/reader": "file:../../packages/tarkman-reader",
     "expo": "~57.0.26",
     "expo-font": "~57.0.4",
+    "expo-glass-effect": "~57.0.4",
     "expo-keep-awake": "~57.0.2",
     "expo-localization": "~57.0.2",
     "expo-network": "~57.0.2",

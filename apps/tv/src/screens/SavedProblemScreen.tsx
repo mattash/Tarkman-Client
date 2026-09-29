@@ -38,7 +38,7 @@ export function SavedProblemScreen({ reason, onSetup, onErase, onServices, onRet
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfaceCanvas, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical, gap: space.lg },
+  screen: { flex: 1, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical, gap: space.lg },
   title: { color: colors.textPrimary, fontSize: type.title, fontWeight: '700' },
   body: { color: colors.textSecondary, fontSize: type.heading, maxWidth: 1400 },
   actions: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },

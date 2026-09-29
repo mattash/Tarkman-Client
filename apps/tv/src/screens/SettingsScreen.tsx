@@ -38,7 +38,7 @@ export function SettingsScreen({ onDone, onChangeDisplay, onReset }: { onDone():
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfaceCanvas },
+  screen: { flex: 1, },
   content: { paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical, gap: space.md },
   title: { color: colors.textPrimary, fontSize: type.title, fontWeight: '700' },
   row: { gap: space.xs },
