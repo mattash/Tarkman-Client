@@ -64,16 +64,16 @@ export function fakeServer() {
       if (directoryFail) return json({ error: 'boom' }, 500)
       if (path === '/public/churches') {
         const params = new URL(url).searchParams
-        const query = (params.get('query') ?? '').toLowerCase(), limit = Number(params.get('limit') ?? 20), offset = Number(params.get('cursor') ?? 0)
-        const matches = churches.filter(c => !query || `${c.name} ${c.locality ?? ''}`.toLowerCase().includes(query))
-        const page = matches.slice(offset, offset + limit)
-        return json({ churches: page.map(c => ({ id: c.id, name: c.name, locality: c.locality ?? null, secret_note: 'must not surface' })),
-          next_cursor: offset + limit < matches.length ? String(offset + limit) : null })
+        const query = (params.get('q') ?? '').toLowerCase(), perPage = Number(params.get('per_page') ?? 25), pageNo = Number(params.get('page') ?? 1)
+        const matches = churches.filter(c => !query || c.name.toLowerCase().includes(query))
+        const page = matches.slice((pageNo - 1) * perPage, pageNo * perPage)
+        return json({ schema_version: 1, churches: page.map(c => ({ id: c.id, name: c.name, locality: c.locality ?? null, secret_note: 'must not surface' })),
+          pagination: { page: pageNo, per_page: perPage, total_count: matches.length, next_page: pageNo * perPage < matches.length ? pageNo + 1 : null } })
       }
       const id = decodeURIComponent(path.split('/')[3])
       const church = churches.find(c => c.id === id)
-      if (!church) return json({ error: 'not_found' }, 404)
-      return json({ church: { id: church.id, name: church.name, locality: church.locality ?? null },
+      if (!church) return json({ error: 'church_not_found' }, 404)
+      return json({ schema_version: 1, church: { id: church.id, name: church.name, locality: church.locality ?? null },
         display_links: (churchLinks.get(id) ?? []).map(l => ({ id: l.id, title: l.title, token: l.token, owner_email: 'must@not.surface' })) })
     }
     const linkMatch = /^\/display_links\/([^/]+)$/.exec(path)

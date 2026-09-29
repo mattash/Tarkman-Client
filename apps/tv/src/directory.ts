@@ -1,9 +1,9 @@
 /**
  * Client for the public church/display directory (backend mattash/Tarkman#457).
  *
- * The backend contract is not final: the routes and DTOs below are this client's PROPOSED v1 and
- * live only in this file, so adopting the backend's final names is a local change. See
- * apps/tv/docs/church-display.md for the full proposal and the fixtures the tests use.
+ * Implements backend contract v1 (mattash/Tarkman#457, PR #459; docs/public-church-discovery.md in that
+ * repo). Routes, DTO parsing and error mapping live only in this file. The app sees an opaque cursor;
+ * here it is the next page number. See apps/tv/docs/church-display.md and the fixtures the tests use.
  *
  * Everything is unauthenticated and read-only. A launch reference is a display-link token, which is
  * a public capability once published; it is never logged and only ever sent to the existing token read.
@@ -53,14 +53,16 @@ export function normalizeChurch(value: unknown): DirectoryChurch | null {
 export function normalizeChurchPage(value: unknown): DirectoryChurchPage | null {
   const raw = record(value)
   if (!raw || !Array.isArray(raw.churches)) return null
-  const next = raw.next_cursor
-  if (next !== undefined && next !== null && identifier(next) === null) return null
+  const pagination = raw.pagination === undefined ? {} : record(raw.pagination)
+  if (!pagination) return null
+  const next = pagination.next_page
+  if (next !== undefined && next !== null && !(typeof next === 'number' && Number.isSafeInteger(next) && next > 0)) return null
   const seen = new Set<string>(), churches: DirectoryChurch[] = []
   for (const item of raw.churches) {
     const church = normalizeChurch(item)
     if (church && !seen.has(church.id)) { seen.add(church.id); churches.push(church) }
   }
-  return { churches, nextCursor: typeof next === 'string' ? next : next === undefined || next === null ? null : String(next) }
+  return { churches, nextCursor: typeof next === 'number' ? String(next) : null }
 }
 export function normalizeLinks(value: unknown): DirectoryLinks | null {
   const raw = record(value)
@@ -83,15 +85,16 @@ export function createPublicDirectoryApi({ base, request = fetch, pageSize = 20 
       if (signal.aborted) throw error
       throw new DirectoryError('unavailable', 'directory request failed')
     }
+    // 429 (rate limited) and 5xx are transient; the saved choice is kept and the caller retries.
     if (response.status === 404) throw new DirectoryError('not_found', 'not found')
     if (!response.ok) throw new DirectoryError('unavailable', `directory status ${response.status}`)
     try { return await response.json() } catch { throw new DirectoryError('unavailable', 'directory reply unreadable') }
   }
   return {
     async churches(query, cursor, signal) {
-      const params = [`limit=${pageSize}`]
-      if (query.trim()) params.push(`query=${encodeURIComponent(query.trim())}`)
-      if (cursor) params.push(`cursor=${encodeURIComponent(cursor)}`)
+      const params = [`per_page=${pageSize}`]
+      if (query.trim()) params.push(`q=${encodeURIComponent(query.trim().slice(0, 100))}`)
+      if (cursor) params.push(`page=${encodeURIComponent(cursor)}`)
       const page = normalizeChurchPage(await get(`${CHURCHES_PATH}?${params.join('&')}`, signal))
       if (!page) throw new DirectoryError('unavailable', 'directory reply malformed')
       return page

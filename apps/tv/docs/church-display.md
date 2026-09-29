@@ -49,75 +49,30 @@ Honest limits, to confirm on a device (see the checklist):
 Recovery is never silent. An unreadable record is not deleted on read, and a
 storage read failure is treated as "unreadable", never as "nothing saved".
 
-## Public directory contract (proposal for backend #457)
+## Public directory contract (backend v1, mattash/Tarkman#457 / #459)
 
-The backend contract is not final. This is the client's **proposed v1**. It is
-isolated in `src/directory.ts` (routes, DTO parsing and error mapping), so
-adopting different names or shapes is a local change plus fixture updates in
-`tests/fakeServer.ts`.
-
-All requests are anonymous `GET`s (`credentials: 'omit'`, `cache: 'no-store'`,
+Implemented by the backend and documented there in `docs/public-church-discovery.md`. The client's
+side is isolated in `src/directory.ts` (routes, DTO parsing and error mapping), with fixtures in
+`tests/fakeServer.ts`. All requests are anonymous `GET`s (`credentials: 'omit'`, `cache: 'no-store'`,
 no redirects).
 
-### `GET /public/churches?limit=20&query=…&cursor=…`
-
-```json
-{
-  "churches": [
-    { "id": "c_8fj2", "name": "St. John Armenian Church", "locality": "Southfield, MI" }
-  ],
-  "next_cursor": "opaque-or-null"
-}
-```
-
-- Includes eligible churches with **no live service**.
-- `id` is a stable opaque identifier (string or positive integer), never the
-  display name. `locality` is optional disambiguation.
-- `query` matches name and locality, case-insensitively. Deterministic order.
-  `cursor` is opaque and only ever echoed back.
-- Only these fields are read; anything else in a reply is ignored.
-
-### `GET /public/churches/:id/display_links`
-
-```json
-{
-  "church": { "id": "c_8fj2", "name": "St. John Armenian Church", "locality": "Southfield, MI" },
-  "display_links": [
-    { "id": "dl_41", "title": "Sanctuary", "token": "public-launch-token" }
-  ]
-}
-```
-
-- Only **intentionally published** links. A link that can be opened with a known
-  token is not thereby enumerable.
-- `404` for an unknown or unlisted church; `200` with an empty list for a church
-  with no published links; `5xx` is transient.
-- `token` is the launch reference used with the **existing**
-  `GET /display_links/:token` and `GET /s/:user_id/current.json`. Publishing a
-  link makes its token a public capability; the client never logs it.
-- Order is deterministic (for example by title, then id).
-
-### Semantics the client relies on
-
-- **Choosing** validates the token with the existing token read. Only a
-  successful read (`200`) is saved. `404/403` means "unavailable", `410` means
-  "expired", anything else means "could not check", and none of those saves.
-- **Unpublishing** should only remove a link from discovery. Whether it also
-  revokes saved access is the backend's call; the client treats the token read
-  as the authority, so a revoked link becomes "unavailable" and a merely
-  unlisted one keeps working.
-- Cached directory data must not resurrect a revoked link; launch always
-  re-reads the token with `no-store`.
-- `user_id` from the token read identifies the operator whose current service
-  the display follows, as it does for display links today.
-
-### Open questions for #457
-
-1. Final route names, and the church identity (one church may have several
-   operators; renamed churches must keep their id).
-2. The exact publication flag and who may publish or unpublish.
-3. Whether unpublishing revokes existing tokens (client works either way).
-4. Pagination and search limits, and abuse protection.
+- `GET /public/churches?q=&page=1&per_page=25` returns `{ schema_version, churches: [{id, name,
+  locality}], pagination: { page, per_page, total_count, next_page } }`. `q` is a case-insensitive
+  substring of the church **name** only (max 100 chars); `per_page` is 1-50. The app passes an opaque
+  cursor, which the client maps to the next page number. Churches with no live service are listed.
+- `GET /public/churches/:id/display_links` returns `{ church, display_links: [{id, church_id, title,
+  token, launch_path, user_id, mode, ...}] }`. The client reads only `id`, `title` and `token`;
+  everything else is ignored by an allowlist.
+- Publication is opt-in (`display_links.published_at`, set with `display_link[published]` by the
+  owner or an admin). Existing links are **not** published, so the directory is empty until someone
+  publishes one. Unpublishing only removes discovery; the token keeps working.
+- Errors: `400 invalid_parameter`, `404 church_not_found` (unknown or currently unlisted church),
+  `429 rate_limited` (60 requests/minute/IP; treated as transient), 5xx transient. Success replies are
+  cached for 30 seconds, errors are `no-store`.
+- **Choosing** validates the token with the existing token read; only a `200` is saved. `404/403`
+  means "unavailable", `410` means "expired", anything else means "could not check", and none of those
+  saves. The token read is authoritative: a link that is unpublished but not revoked keeps working.
+- `user_id` from the token read identifies the operator whose current service the display follows.
 
 ## Automated checks
 
@@ -147,14 +102,14 @@ module**, so build fresh:
 git switch <this branch>
 npm ci --prefix apps/tv
 cd apps/tv
+export LANG=en_US.UTF-8   # CocoaPods fails on a non-UTF-8 locale
 npm run prebuild:tvos      # regenerates ios/; autolinks expo-secure-store for tvOS
 npm run tvos               # build and launch (simulator), or build to the Apple TV from Xcode
 ```
 
-1. **Reconcile with #457.** Compare the final backend contract with the
-   proposal above and update `src/directory.ts` and `tests/fakeServer.ts`
-   first. Point `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_ACTIONCABLE_URL` at the
-   server that implements it.
+1. **Publish a display link** on the backend (`display_link[published]=true`), or the
+   directory is empty. Point `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_ACTIONCABLE_URL` at the
+   deployed server (for example `https://www.tarkman.app` and `wss://www.tarkman.app/cable`).
 2. **Setup with the Siri Remote alone:** Set up a church display → church →
    display. Confirm focus is visible and predictable, Back/Menu restores focus
    to the church left, and the on-screen keyboard works for search (search is
