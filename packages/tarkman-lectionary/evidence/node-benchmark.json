@@ -1,0 +1,37 @@
+{
+  "runtime": "v26.8.1",
+  "platform": "darwin/arm64",
+  "samples": 10,
+  "medians": {
+    "moduleMs": 1.3099589999999992,
+    "firstLookupMs": 7.8280829999999995,
+    "cachedLookupMs": 0.008174667,
+    "parsePackMs": 1.1145083299999998,
+    "loadedAtStartup": 0,
+    "moduleHeapBytes": 94048,
+    "lookupHeapBytes": 3121224,
+    "retainedHeapBytes": 1940432
+  },
+  "packs": [
+    {
+      "file": "2026-en.json",
+      "bytes": 451875,
+      "gzipBytes": 50793
+    },
+    {
+      "file": "2026-hy.json",
+      "bytes": 557887,
+      "gzipBytes": 58183
+    },
+    {
+      "file": "2027-en.json",
+      "bytes": 453823,
+      "gzipBytes": 51289
+    },
+    {
+      "file": "2027-hy.json",
+      "bytes": 559909,
+      "gzipBytes": 58719
+    }
+  ]
+}

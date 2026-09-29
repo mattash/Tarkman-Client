@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { AccessibilityInfo, findNodeHandle, Platform, TextInput, View } from 'react-native'
 import { AppButton } from '../../../components/AppButton'
 import { AppText } from '../../../components/AppText'
@@ -20,13 +20,14 @@ export interface SessionFormProps {
   /** Each increment moves focus to the first field with an error. */
   focusRequest: number
   catalog: CatalogController
+  readingAssistant?: ReactNode
   onDate(date: string): void
   onOption(key: OptionKey, value: string): void
   onChange(update: (draft: SessionDraft) => SessionDraft): void
 }
 
 /** The controlled setup form shared by New Session and Edit Session: date, ordered liturgies, readings and messages. */
-export function SessionForm({ draft, timeZone, editable, fields, focusRequest, catalog, onDate, onOption, onChange }: SessionFormProps) {
+export function SessionForm({ draft, timeZone, editable, fields, focusRequest, catalog, readingAssistant, onDate, onOption, onChange }: SessionFormProps) {
   const { t } = useI18n()
   const dateRef = useRef<TextInput>(null)
   const liturgiesRef = useRef<View>(null)
@@ -66,6 +67,7 @@ export function SessionForm({ draft, timeZone, editable, fields, focusRequest, c
     <Card>
       <AppText variant="heading">{t('sessionManagement.readings')}</AppText>
       <AppText tone="muted">{t('sessionManagement.readingsHelp')}</AppText>
+      {readingAssistant}
       {OPTION_KEYS.map(key => <TextField key={key} ref={input => { optionRefs.current[key] = input }} label={t(`sessionManagement.${key}`)}
         value={draft.options[key]} onChangeText={value => onOption(key, value)} editable={editable} error={fields[key]}
         multiline={key === 'before_message' || key === 'after_message'} style={key === 'before_message' || key === 'after_message' ? { minHeight: 96 } : undefined} />)}

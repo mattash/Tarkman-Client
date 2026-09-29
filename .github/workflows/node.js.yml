@@ -51,6 +51,15 @@ jobs:
     - name: Shared core tests
       working-directory: .
       run: npm run core:test
+    - name: Bundled lectionary integrity and consumer contract
+      working-directory: .
+      run: npm run lectionary:test
+    - name: Pinned Python lectionary parity
+      working-directory: .
+      run: |
+        curl -fL --retry 3 https://codeload.github.com/andylitalo/armenian-lectionary/tar.gz/38302406bce0f0dd7c4e09d3e20ba762c15a7418 -o "$RUNNER_TEMP/lectionary-source.tar.gz"
+        node packages/tarkman-lectionary/scripts/dump-consumer.cjs > "$RUNNER_TEMP/lectionary-consumer.json"
+        python3 packages/tarkman-lectionary/scripts/generate.py "$RUNNER_TEMP/lectionary-source.tar.gz" --check --consumer-results "$RUNNER_TEMP/lectionary-consumer.json"
     - run: npm run check:ui
     - run: npm run check:i18n
     - run: npm run check:fonts
