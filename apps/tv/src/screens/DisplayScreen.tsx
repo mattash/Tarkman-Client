@@ -20,7 +20,7 @@ interface Props {
   config?: DisplayPreferences
   /**
    * A saved church display: nothing but the display's own content. No badge, cue, hint or options, and
-   * Select does nothing; Menu calls onBack (which opens the management screen).
+   * Select does nothing; Menu is handled by the caller (a saved display opens its management screen).
    */
   bare?: boolean
 }
@@ -35,7 +35,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
   const online = useOnline()
   const { display: localDisplay } = usePreferences()
   const display = config ?? localDisplay
-  const { state } = useReader(endpoints, id, transport, { loadExplanations: !!config?.show_explanations })
+  const { state } = useReader(endpoints, id, transport, { loadExplanations: !bare && !!config?.show_explanations })
   const { width, height, fontScale } = useWindowDimensions()
   const view = describeDisplay({ state, config: display, sessionId: id, width, height, fontScale, spacing: space, t: displayText })
   const occurrence = displayOccurrence(state, id)
@@ -43,7 +43,6 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
   const [optionsOpen, setOptionsOpen] = useState(false)
   const closeOptions = useCallback(() => setOptionsOpen(false), [])
   useMenuBack(optionsOpen, closeOptions)
-  useMenuBack(bare, onBack)
 
   // Remote scrolling makes this occurrence manual; the next reading returns to the configured movement.
   const [scrolledOccurrence, setScrolledOccurrence] = useState<string | null>(null)

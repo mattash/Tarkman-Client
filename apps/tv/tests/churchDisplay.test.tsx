@@ -39,10 +39,10 @@ function seed() {
   server.addChurch({ id: 'c2', name: 'Holy Cross', locality: null }, [])
 }
 
-async function launch<S extends KeyValueAdapter = ReturnType<typeof memoryStore>>(store: S = memoryStore() as unknown as S) {
+async function launch<S extends KeyValueAdapter = ReturnType<typeof memoryStore>>(store: S = memoryStore() as unknown as S, request: unknown = server.request) {
   const view = await render(
     <I18nProvider initial="en"><PreferencesProvider><SavedDisplayProvider store={store}>
-      <Launch endpoints={endpoints} transport={server.transport} request={server.request as unknown as typeof fetch} />
+      <Launch endpoints={endpoints} transport={server.transport} request={request as typeof fetch} />
     </SavedDisplayProvider></PreferencesProvider></I18nProvider>)
   await flush()
   return { view, store }
@@ -269,6 +269,24 @@ describe('following', () => {
   })
 })
 
+describe('setup cancellation', () => {
+  it('backing out while a display is being checked never saves it or changes screen', async () => {
+    seed()
+    let release!: () => void
+    const gate = new Promise<void>(resolve => { release = resolve })
+    const slow = (input: RequestInfo | URL, init?: RequestInit) => String(input).includes('/display_links/tok1') ? gate.then(() => server.request(input, init)) : server.request(input, init)
+    const { store } = await launch(memoryStore(), slow)
+    await press('display-setup')
+    await press('church-c1')
+    await press('link-l1') // the check hangs
+    await press('links-back')
+    expect(has('church-c1')).toBe(true)
+    await act(async () => { release() }); await flush()
+    expect(stored(store)).toBeNull()
+    expect(has('church-c1')).toBe(true) // still on the church list, nothing navigated
+  })
+})
+
 describe('unavailable and unreadable', () => {
   it('shows an unavailable display with retry, change and reset, and preserves the saved identity', async () => {
     seed()
@@ -330,6 +348,38 @@ describe('unavailable and unreadable', () => {
     await press('church-c1')
     await press('link-l1')
     expect(stored(store)?.version).toBe(1)
+    expect(has('display-link-waiting')).toBe(true)
+  })
+
+  const flakyStore = () => {
+    const base = savedStore()
+    const control = { failing: true }
+    const flaky: KeyValueAdapter & { data: Map<string, string> } = {
+      data: base.data, set: base.set, remove: base.remove,
+      get: async key => { if (control.failing) throw new Error('keychain locked'); return base.get(key) },
+    }
+    return { base, control, flaky }
+  }
+
+  it('treats a storage read failure as retryable and never offers to erase or replace the record', async () => {
+    seed()
+    const { base, control, flaky } = flakyStore()
+    await launch(flaky)
+    expect(has('problem-retry')).toBe(true)
+    expect(has('problem-erase') || has('problem-setup')).toBe(false)
+    expect(stored(base)?.link.token).toBe('tok1') // untouched
+    control.failing = false
+    await press('problem-retry')
+    expect(has('display-link-waiting')).toBe(true) // the saved display opened
+  })
+
+  it('recovers from a storage read failure by itself, with nobody at the TV', async () => {
+    seed()
+    const { control, flaky } = flakyStore()
+    await launch(flaky)
+    expect(has('problem-retry')).toBe(true)
+    control.failing = false
+    await tick(30_000)
     expect(has('display-link-waiting')).toBe(true)
   })
 

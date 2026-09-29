@@ -1,15 +1,18 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import type { DisplayLinkConfig, Endpoints } from '@tarkman/reader'
 import { FocusButton } from '../components/FocusButton'
 import { Notice } from '../components/Notice'
 import { ResetControl } from '../components/ResetControl'
 import { useCurrentSession, useLinkConfig } from '../displayLinks'
+import { useMenuBack } from '../hooks'
 import { useI18n } from '../i18n'
 import type { ReaderTransport } from '../reader'
 import type { SavedDisplayV1 } from '../savedDisplay'
 import { colors, safe, space } from '../theme'
 import { DisplayScreen } from './DisplayScreen'
+
+const UNAVAILABLE_RECHECK_MS = 5 * 60_000
 
 interface Props {
   endpoints: Endpoints
@@ -35,6 +38,16 @@ export function SavedDisplayScreen(props: Props) {
   const { endpoints, saved, transport, request } = props
   const [attempt, setAttempt] = useState(0)
   const link = useLinkConfig(endpoints, saved.link.token, transport, request, attempt)
+  // In every state Menu opens the management screen, so Back behaves the same wherever the TV is.
+  useMenuBack(true, props.onManage)
+  // A removed or expired link is authoritative, but an unattended TV still looks again from time to
+  // time (a mis-deploy or a proxy answering 403/404 should not freeze it until someone visits).
+  const terminal = link.terminal
+  useEffect(() => {
+    if (!terminal) return
+    const timer = setTimeout(() => setAttempt(value => value + 1), UNAVAILABLE_RECHECK_MS)
+    return () => clearTimeout(timer)
+  }, [terminal, attempt])
 
   if (link.terminal) {
     const expired = link.terminal === 'expired'
@@ -66,8 +79,7 @@ function CurrentDisplay({ config, ...props }: Props & { config: DisplayLinkConfi
   const current = useCurrentSession(endpoints, config.user_id, request)
   const session = current.data
   if (session) {
-    return <DisplayScreen key={session.id} endpoints={endpoints} transport={transport} id={session.id} config={config} bare
-      onBack={props.onManage} />
+    return <DisplayScreen key={session.id} endpoints={endpoints} transport={transport} id={session.id} config={config} bare onBack={props.onManage} />
   }
   return (
     <Frame actions={<ChangeActions {...props} />}>

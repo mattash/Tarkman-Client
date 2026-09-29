@@ -13,11 +13,13 @@ export interface SavedDisplayV1 { version: 1; savedAt: number; church: SavedChur
 /**
  * `corrupt` cannot be parsed or fails validation; `newer` was written by a later app version. Neither is
  * deleted on read: the viewer chooses to set up again or erase it, so nothing disappears silently.
+ * `unavailable` is a storage read that threw (a locked or busy Keychain): the record may be fine, so it
+ * is retried rather than offered for erasing.
  */
 export type SavedDisplayLoad =
   | { kind: 'none' }
   | { kind: 'saved'; record: SavedDisplayV1 }
-  | { kind: 'unreadable'; reason: 'corrupt' | 'newer' }
+  | { kind: 'unreadable'; reason: 'corrupt' | 'newer' | 'unavailable' }
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
@@ -42,7 +44,7 @@ export function newSavedDisplay(church: SavedChurch, link: SavedLink, now: numbe
 
 export async function loadSavedDisplay(store: KeyValueAdapter): Promise<SavedDisplayLoad> {
   let stored: string | null
-  try { stored = await store.get(SAVED_DISPLAY_KEY) } catch { return { kind: 'unreadable', reason: 'corrupt' } }
+  try { stored = await store.get(SAVED_DISPLAY_KEY) } catch { return { kind: 'unreadable', reason: 'unavailable' } }
   if (stored === null) return { kind: 'none' }
   let parsed: unknown
   try { parsed = JSON.parse(stored) } catch { return { kind: 'unreadable', reason: 'corrupt' } }

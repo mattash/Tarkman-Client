@@ -20,7 +20,7 @@ export const en = {
   churches: {
     title: 'Choose your church',
     intro: 'Pick the church where this TV is installed.',
-    searchPlaceholder: 'Church name or city',
+    searchPlaceholder: 'Church name',
     search: 'Search',
     showAll: 'Show all churches',
     loading: 'Loading churches…',
@@ -75,6 +75,8 @@ export const en = {
     title: 'This TV’s saved display can’t be used',
     corrupt: 'The saved church display is damaged, so it was not opened.',
     newer: 'The saved church display was made by a newer version of this app, so it was not opened.',
+    unavailable: 'This TV couldn’t read its saved church display just now. It has not been changed.',
+    retry: 'Try again',
     setup: 'Choose a display again',
     erase: 'Erase it and start over',
     eraseFailed: 'Couldn’t erase it. Try again.',

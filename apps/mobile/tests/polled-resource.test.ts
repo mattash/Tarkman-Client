@@ -53,3 +53,21 @@ it('bounds an unresponsive request so a kiosk cannot stall', async () => {
   expect(resource.getSnapshot().error?.message).toBe('timeout')
   stop()
 })
+
+it('polls again when a stopped resource is started again', async () => {
+  const { lifecycle, set } = fakeLifecycle()
+  const load = jest.fn<(signal: AbortSignal) => Promise<string>>().mockResolvedValue('value')
+  const resource = createPolledResource(load, 1000, lifecycle)
+  const first = resource.start()
+  set(true, true)
+  await jest.advanceTimersByTimeAsync(0)
+  first()
+  const calls = load.mock.calls.length
+  const second = resource.start()
+  set(true, true)
+  await jest.advanceTimersByTimeAsync(0)
+  expect(load.mock.calls.length).toBe(calls + 1)
+  await jest.advanceTimersByTimeAsync(1000)
+  expect(load.mock.calls.length).toBe(calls + 2)
+  second()
+})

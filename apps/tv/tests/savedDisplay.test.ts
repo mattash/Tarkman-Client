@@ -31,7 +31,7 @@ describe('saved display', () => {
   })
   it('treats a storage read failure as unreadable rather than as nothing saved', async () => {
     const store = { get: async () => { throw new Error('keychain locked') }, set: async () => {}, remove: async () => {} }
-    expect(await loadSavedDisplay(store)).toEqual({ kind: 'unreadable', reason: 'corrupt' })
+    expect(await loadSavedDisplay(store)).toEqual({ kind: 'unreadable', reason: 'unavailable' })
   })
   it('does not report a save it cannot read back, and leaves the old record alone', async () => {
     const store = memoryStore()

@@ -1,4 +1,4 @@
-import { useCallback, useReducer } from 'react'
+import { useCallback, useEffect, useReducer } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { createPublicDirectoryApi } from './directory'
@@ -63,6 +63,12 @@ export function Navigator({ endpoints, transport, request, initialRoot = { name:
   const back = useCallback(() => dispatch({ type: 'back' }), [])
   useMenuBack(canGoBack(state), back)
   const route = currentRoute(state)
+  const manage = useCallback(() => dispatch({ type: 'push', route: { name: 'savedManage' } }), [])
+  // A read that failed at launch and later succeeds moves off the problem screen by itself.
+  const readable = saved.load.kind !== 'unreadable'
+  useEffect(() => {
+    if (route.name === 'savedProblem' && readable) dispatch({ type: 'root', route: saved.load.kind === 'saved' ? { name: 'savedDisplay' } : { name: 'services' } })
+  }, [route.name, readable, saved.load.kind])
   const push = (next: Route) => dispatch({ type: 'push', route: next })
   const directory = createPublicDirectoryApi({ base: endpoints.api, request })
   // A saved or erased display becomes the new root, so Back can never return into a stale setup flow.
@@ -74,13 +80,13 @@ export function Navigator({ endpoints, transport, request, initialRoot = { name:
     case 'settings': return <SettingsScreen onDone={back} onChangeDisplay={() => push({ name: 'churches' })} onReset={reset} />
     case 'savedDisplay':
       return saved.load.kind === 'saved' ? <SavedDisplayScreen endpoints={endpoints} saved={saved.load.record} transport={transport} request={request}
-        onManage={() => push({ name: 'savedManage' })} onChangeDisplay={() => push({ name: 'churches' })} onBrowseServices={() => push({ name: 'services' })} onSettings={() => push({ name: 'settings' })} onReset={reset} /> : null
+        onManage={manage} onChangeDisplay={() => push({ name: 'churches' })} onBrowseServices={() => push({ name: 'services' })} onSettings={() => push({ name: 'settings' })} onReset={reset} /> : null
     case 'savedManage':
       return saved.load.kind === 'saved' ? <SavedManageScreen saved={saved.load.record} onChange={() => push({ name: 'churches' })}
         onBrowse={() => push({ name: 'services' })} onSettings={() => push({ name: 'settings' })} onReset={reset} /> : null
     case 'savedProblem':
       return <SavedProblemScreen reason={saved.load.kind === 'unreadable' ? saved.load.reason : 'corrupt'} onSetup={() => push({ name: 'churches' })}
-        onServices={() => push({ name: 'services' })} onErase={reset} />
+        onServices={() => push({ name: 'services' })} onErase={reset} onRetry={saved.retry} />
     case 'churches': return <ChurchesScreen api={directory} preferredId={state.lastChurchId} onBack={back} onChoose={church => push({ name: 'churchLinks', churchId: church.id })} />
     case 'churchLinks': return <ChurchLinksScreen api={directory} linkApi={displayLinkApi(endpoints.api, request)} churchId={route.churchId} onBack={back}
       onSaved={() => dispatch({ type: 'root', route: { name: 'savedDisplay' } })} />

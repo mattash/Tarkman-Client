@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native'
 import { InvalidDisplayLinkError, type DisplayLinkApi } from '@tarkman/reader'
 import { FocusButton } from '../components/FocusButton'
@@ -8,6 +8,9 @@ import { useSavedDisplay } from '../saved'
 import { SavedDisplayStorageError } from '../savedDisplay'
 import { colors, safe, space, type } from '../theme'
 import { useLoad } from '../useLoad'
+
+/** A hung token check must not hold setup on "Checking…" until the OS gives up. */
+const CHECK_TIMEOUT_MS = 12000
 
 interface Props {
   api: PublicDirectoryApi
@@ -30,17 +33,27 @@ export function ChurchLinksScreen({ api, linkApi, churchId, onSaved, onBack }: P
   const [busy, setBusy] = useState<string | null>(null)
   const [problem, setProblem] = useState<'unavailable' | 'checkFailed' | 'saveFailed' | null>(null)
   const current = saved.load.kind === 'saved' ? saved.load.record : null
+  // Leaving this screen (Back) cancels a check in flight, so a late reply can never save or navigate.
+  const check = useRef<AbortController | null>(null)
+  useEffect(() => () => { check.current?.abort(); check.current = null }, [])
 
   async function choose(link: DirectoryLink) {
     if (result.status !== 'ready' || busy) return
     setBusy(link.id); setProblem(null)
+    const abort = new AbortController()
+    check.current = abort
+    const timeout = setTimeout(() => abort.abort(), CHECK_TIMEOUT_MS)
     try {
-      await linkApi.link(link.token)
+      await linkApi.link(link.token, abort.signal)
+      if (abort.signal.aborted) throw new Error('cancelled')
       await saved.save(result.data.church, link)
       onSaved()
     } catch (error) {
+      if (check.current !== abort) return // the screen is gone; nothing to report
       setBusy(null)
       setProblem(error instanceof InvalidDisplayLinkError ? 'unavailable' : error instanceof SavedDisplayStorageError ? 'saveFailed' : 'checkFailed')
+    } finally {
+      clearTimeout(timeout)
     }
   }
 

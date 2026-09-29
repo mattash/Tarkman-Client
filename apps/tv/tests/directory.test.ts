@@ -44,6 +44,17 @@ describe('directory contract', () => {
     expect(init).toMatchObject({ credentials: 'omit', redirect: 'error', cache: 'no-store' })
     expect(init?.method).toBeUndefined()
   })
+  it('does not guess at a reply that declares another schema version', () => {
+    expect(normalizeChurchPage({ schema_version: 2, churches: [] })).toBeNull()
+    expect(normalizeChurchPage({ schema_version: 1, churches: [] })).not.toBeNull()
+    expect(normalizeLinks({ schema_version: 2, church: { id: 'c1', name: 'Church' }, display_links: [] })).toBeNull()
+  })
+  it('truncates a long search by characters, so an emoji is never cut in half', async () => {
+    const request = jest.fn(async (input: RequestInfo | URL) => { void input; return json({ churches: [], pagination: { next_page: null } }) })
+    const client = createPublicDirectoryApi({ base: 'https://api.test', request: request as unknown as typeof fetch })
+    await expect(client.churches('😀'.repeat(101), null, signal)).resolves.toBeDefined()
+    expect(decodeURIComponent(String(request.mock.calls[0][0]).split('q=')[1].split('&')[0])).toBe('😀'.repeat(100))
+  })
   it('maps failures: 404 is an unknown church, everything else is unavailable', async () => {
     const kind = async (handler: () => Response | Promise<Response>) => api(handler).links('c1', signal).catch((error: unknown) => (error as DirectoryError).kind)
     expect(await kind(() => json({}, 404))).toBe('not_found')

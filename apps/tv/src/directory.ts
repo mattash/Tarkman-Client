@@ -42,6 +42,11 @@ function label(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 && value.length <= MAX_FIELD ? value.trim() : null
 }
 
+/** A reply that declares a schema other than v1 is not guessed at; an absent version is read as v1. */
+function supportedSchema(raw: Record<string, unknown>): boolean {
+  return raw.schema_version === undefined || raw.schema_version === 1
+}
+
 /** Only the allowlisted fields survive, so a public reply can never smuggle management data into the app. */
 export function normalizeChurch(value: unknown): DirectoryChurch | null {
   const raw = record(value)
@@ -52,7 +57,7 @@ export function normalizeChurch(value: unknown): DirectoryChurch | null {
 }
 export function normalizeChurchPage(value: unknown): DirectoryChurchPage | null {
   const raw = record(value)
-  if (!raw || !Array.isArray(raw.churches)) return null
+  if (!raw || !Array.isArray(raw.churches) || !supportedSchema(raw)) return null
   const pagination = raw.pagination === undefined ? {} : record(raw.pagination)
   if (!pagination) return null
   const next = pagination.next_page
@@ -66,6 +71,7 @@ export function normalizeChurchPage(value: unknown): DirectoryChurchPage | null 
 }
 export function normalizeLinks(value: unknown): DirectoryLinks | null {
   const raw = record(value)
+  if (raw && !supportedSchema(raw)) return null
   const church = normalizeChurch(raw?.church)
   if (!raw || !church || !Array.isArray(raw.display_links)) return null
   const seen = new Set<string>(), links: DirectoryLink[] = []
@@ -93,7 +99,7 @@ export function createPublicDirectoryApi({ base, request = fetch, pageSize = 20 
   return {
     async churches(query, cursor, signal) {
       const params = [`per_page=${pageSize}`]
-      if (query.trim()) params.push(`q=${encodeURIComponent(query.trim().slice(0, 100))}`)
+      if (query.trim()) params.push(`q=${encodeURIComponent(Array.from(query.trim()).slice(0, 100).join(''))}`)
       if (cursor) params.push(`page=${encodeURIComponent(cursor)}`)
       const page = normalizeChurchPage(await get(`${CHURCHES_PATH}?${params.join('&')}`, signal))
       if (!page) throw new DirectoryError('unavailable', 'directory reply malformed')
