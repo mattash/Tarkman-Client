@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View, useTVEventHandler, useWindowDimensions } from 'react-native'
+import { StyleSheet, Text, View, useTVEventHandler, useWindowDimensions } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
 import { createManualPosition, createPageGroup, describeDisplay, displayOccurrence, independentDuration, projectionDuration,
-  sessionQrLayout, statusPostureKey, statusTextScale, type DisplayLanguage, type Endpoints } from '@tarkman/reader'
+  sessionQrLayout, statusPostureKey, statusTextScale, type DisplayLanguage, type DisplayPreferences, type Endpoints } from '@tarkman/reader'
 import { DisplayOptions } from '../components/DisplayOptions'
 import { FreshnessBadge } from '../components/FreshnessBadge'
+import { Notice } from '../components/Notice'
 import { ProjectionText, type ScrollMetrics } from '../components/ProjectionText'
 import { freshness, isConfirmedLive } from '../freshness'
 import { useKeepAwakeWhile, useMenuBack, useOnline, useProjectionClock } from '../hooks'
@@ -13,18 +14,28 @@ import { usePreferences } from '../preferences'
 import { useReader, type ReaderTransport } from '../reader'
 import { colors, space, type } from '../theme'
 
-interface Props { endpoints: Endpoints; id: number; onBack(): void; transport?: ReaderTransport }
+interface Props {
+  endpoints: Endpoints; id: number; onBack(): void; transport?: ReaderTransport
+  /** A saved church display's configuration. It replaces this TV's local options, which then do not apply. */
+  config?: DisplayPreferences
+  /**
+   * A saved church display: nothing but the display's own content. No badge, cue, hint or options, and
+   * Select does nothing; Menu is handled by the caller (a saved display opens its management screen).
+   */
+  bare?: boolean
+}
 
 /**
  * apps/mobile's session display on Apple TV. What to show comes from the shared describeDisplay; this
  * screen only renders it and adds the remote: Select opens display options, Up/Down scrolls the current
  * reading by hand (until the next reading), Menu closes options or goes back.
  */
-export function DisplayScreen({ endpoints, id, onBack, transport }: Props) {
+export function DisplayScreen({ endpoints, id, onBack, transport, config, bare = false }: Props) {
   const { t } = useI18n()
   const online = useOnline()
-  const { display } = usePreferences()
-  const { state } = useReader(endpoints, id, transport)
+  const { display: localDisplay } = usePreferences()
+  const display = config ?? localDisplay
+  const { state } = useReader(endpoints, id, transport, { loadExplanations: !bare && !!config?.show_explanations })
   const { width, height, fontScale } = useWindowDimensions()
   const view = describeDisplay({ state, config: display, sessionId: id, width, height, fontScale, spacing: space, t: displayText })
   const occurrence = displayOccurrence(state, id)
@@ -53,7 +64,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport }: Props) {
 
   useTVEventHandler(event => {
     if (optionsOpen || !event) return
-    if (event.eventType === 'select' || event.eventType === 'playPause') { setOptionsOpen(true); return }
+    if (!bare && (event.eventType === 'select' || event.eventType === 'playPause')) { setOptionsOpen(true); return }
     const direction = event.eventType === 'down' || event.eventType === 'swipeDown' ? 1 : event.eventType === 'up' || event.eventType === 'swipeUp' ? -1 : 0
     if (!direction || !projection?.part || projection.message) return
     const deepest = [...metrics.current.values()].reduce((a, b) => b.maximum > a.maximum ? b : a, { maximum: 0, viewport: 0 })
@@ -69,12 +80,14 @@ export function DisplayScreen({ endpoints, id, onBack, transport }: Props) {
 
   // Session status (paused, gospel, QR) is part of the projection itself, as on mobile. The badge reports
   // only whether the projection is current, so shown text never passes for live when it is not.
-  const badge = !isConfirmedLive(fresh) && fresh.kind !== 'status' && (view.kind === 'projection' || view.kind === 'status' || view.kind === 'session_qr')
+  const badge = !bare && !isConfirmedLive(fresh) && fresh.kind !== 'status' && (view.kind === 'projection' || view.kind === 'status' || view.kind === 'session_qr')
   return (
     <View style={styles.canvas}>
       {renderContent()}
       {badge ? <View style={styles.badge}><FreshnessBadge value={fresh} showDetail={false} /></View> : null}
-      {scrolling && !optionsOpen ? <Text testID="display-scroll-hint" style={styles.hint}>{t('display.scrollHint')}</Text> : null}
+      {!bare && projection?.showExplanationCue ? <View style={styles.cue}><Text testID="display-explanation-cue" style={styles.cueText}>{t('display.explanationAvailable')}</Text></View> : null}
+      {!bare && scrolling && !optionsOpen ? <Text testID="display-scroll-hint" style={styles.hint}>{t('display.scrollHint')}</Text>
+        : null}
       {optionsOpen ? <DisplayOptions onClose={closeOptions} onBack={onBack} /> : null}
     </View>
   )
@@ -157,18 +170,6 @@ export function DisplayScreen({ endpoints, id, onBack, transport }: Props) {
   }
 }
 
-function Notice({ title, detail, busy = false, testID }: { title: string; detail?: string; busy?: boolean; testID?: string }) {
-  const { width } = useWindowDimensions()
-  const size = Math.max(28, Math.min(64, width / 28))
-  return (
-    <View testID={testID} style={styles.notice}>
-      {busy ? <ActivityIndicator color={colors.textSecondary} size="large" accessibilityLabel={title} /> : null}
-      <Text style={[styles.text, styles.title, { fontSize: size, lineHeight: size * 1.25 }]}>{title}</Text>
-      {detail ? <Text style={[styles.muted, { fontSize: Math.max(18, size * 0.5), textAlign: 'center' }]}>{detail}</Text> : null}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   canvas: { flex: 1, backgroundColor: colors.surfaceCanvas },
   screen: { flex: 1, minHeight: 0 },
@@ -181,9 +182,8 @@ const styles = StyleSheet.create({
   role: { color: colors.textPrimary, fontWeight: '600', textTransform: 'capitalize' },
   text: { color: colors.textPrimary, textAlign: 'center', fontWeight: '600' },
   muted: { color: colors.textSecondary },
-  // Mobile's notice title: AppText's title variant, in the Source Serif 4 semibold reading face.
-  title: { fontFamily: 'SourceSerif4-Semibold', fontWeight: '400' },
-  notice: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, gap: space.lg },
   badge: { position: 'absolute', top: space.lg, right: space.xl },
+  cue: { position: 'absolute', top: space.lg, left: space.xl, backgroundColor: colors.surfaceRaised, paddingHorizontal: space.md, paddingVertical: space.xs, borderRadius: 12 },
+  cueText: { color: colors.textSecondary, fontSize: type.caption },
   hint: { position: 'absolute', bottom: space.lg, alignSelf: 'center', color: colors.textSecondary, fontSize: type.caption, backgroundColor: colors.surfaceRaised, paddingHorizontal: space.md, paddingVertical: space.xs, borderRadius: 12, overflow: 'hidden' },
 })
