@@ -112,7 +112,7 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
           {languages.map((language, index) => <View key={language} testID={`display-column-${language}`} style={[styles.column,
             index > 0 ? { borderColor: colors.divider, borderLeftWidth: stacked ? 0 : 1, borderTopWidth: stacked ? 1 : 0, paddingLeft: stacked ? 0 : padding, paddingTop: stacked ? spacing.md : 0 } : undefined]}>
             <ProjectionText key={`${session.id}/${part.key}/${language}`} text={texts[index]}
-              language={language === 'hyw' ? 'en' : language} fontSize={fontSize} clock={readingClock}
+              language={language === 'hyw' ? 'grabar' : language} fontSize={fontSize} clock={readingClock}
               durationMs={settings.language_sync === 'independent' ? independentDuration(duration, texts[index], texts) : duration}
               movement={settings.text_movement} preview={preview}
               pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}

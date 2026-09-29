@@ -45,7 +45,6 @@ it('previews changes locally, saves explicitly, and never offers unsupported Wes
 it('preserves stored hyw, disables sharing while dirty, and registers the unsaved guard', async () => {
   const { Harness, controller } = setup(link.token)
   await render(<Harness />)
-  expect(screen.getByText(/This link uses Western Armenian/)).toBeOnTheScreen()
   await fireEvent.changeText(screen.getByLabelText('Title (optional)'), 'New title')
   expect(controller.getSnapshot().draft.lang1).toBe('hyw')
   expect(screen.getByLabelText('Share Sanctuary')).toBeDisabled()

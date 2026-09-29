@@ -5,11 +5,10 @@ import { usePreferences } from '../preferences'
 import { colors, radius, safe, space, type } from '../theme'
 import { FocusButton } from './FocusButton'
 
-// The languages a display can show today; Western Armenian waits for #178's hyw → hy_west mapping.
-const LANGUAGES: DisplayLanguage[] = ['translit', 'en', 'grabar']
+const LANGUAGES: DisplayLanguage[] = ['translit', 'en', 'hyw', 'grabar']
 const SCALES = [75, 100, 125, 150]
 const STATUS_VIEWS: DisplayPreferences['status_view'][] = ['full', 'pages_only', 'posture_only', 'none']
-const languageKey = (language: DisplayLanguage): MessageKey => `languageNames.${language === 'hyw' ? 'en' : language}`
+const languageKey = (language: DisplayLanguage): MessageKey => `languageNames.${language}`
 
 /** The display-link settings a viewer can change from the couch, with mobile's wording. */
 export function DisplayOptionRows({ first = false }: { first?: boolean }) {

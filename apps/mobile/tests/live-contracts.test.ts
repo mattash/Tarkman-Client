@@ -92,3 +92,9 @@ describe('revisioned publication boundaries', () => {
     expect(parseEvent({ event: 'part_change', data: { ...publication, ...invalid } })).toEqual({ event: 'part_change', sessionId: 7 })
   })
 })
+
+it('keeps Western Armenian text from hy_west for displays configured with hyw', () => {
+  const [part] = normalizeParts({ parts: [{ part: { id: 1, liturgy_id: 10, liturgy_part_id: 101, position: 1, hy_west: 'Արևմտահայերեն', en: 'English' } }] })
+  expect(part.hyWest).toBe('Արևմտահայերեն')
+  expect(part.text.en).toBe('English')
+})
