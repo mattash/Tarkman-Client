@@ -22,7 +22,7 @@ it.each<[string | null | undefined, string, string, string]>([
   document.body.append(container)
   const root = createRoot(container)
   try {
-    await act(async () => root.render(<I18nProvider preference="en"><PostureIcon posture={posture} /></I18nProvider>))
+    await act(async () => root.render(<I18nProvider preference="en"><PostureIcon posture={posture} width={1280} height={720} scale={1} /></I18nProvider>))
     const svg = container.querySelector('svg')!
     expect(svg.getAttribute('data-testid')).toBe('display-posture')
     expect(svg.getAttribute('role')).toBe('img')

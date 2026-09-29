@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { render, screen, waitFor } from '@testing-library/react-native'
 import { StyleSheet, useWindowDimensions } from 'react-native'
 import glyphs from '@react-native-vector-icons/ionicons/glyphmaps/Ionicons.json'
@@ -6,7 +6,7 @@ import { ReadingFontContext } from '../design/readingFont'
 import { colors } from '../design/tokens'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { I18nProvider, setActiveInterfaceLanguage } from '../features/i18n'
-import { DisplayProjection, sessionQrLayout } from '../features/displayLinks/DisplayProjection'
+import { DisplayPresentation, DisplayProjection, sessionQrLayout } from '../features/displayLinks/DisplayProjection'
 import { useReader } from '../features/live/useReader'
 import { initialState } from '../features/live/state'
 import type { DisplayLinkConfig } from '../features/displayLinks/config'
@@ -314,4 +314,34 @@ it.each([[1280, 720], [1920, 1080], [390, 844]] as [number, number][])('keeps QR
   expect(screen.getByTestId('display-session-qr')).toBeOnTheScreen()
   expect(screen.getByText('Scan to read along')).toHaveStyle({ lineHeight: qr.titleLineHeight })
   expect(screen.getByText('https://web.tarkman.app/sessions/42/parts')).toHaveStyle({ lineHeight: qr.captionLineHeight })
+})
+
+describe('status text sizing', () => {
+  const session = { ...statusSession, posture: 'sit', page: 12 }
+  const fontSize = (id: string) => StyleSheet.flatten(screen.getByTestId(id).props.style).fontSize as number
+  const readSizes = () => ({ page: fontSize('display-page'), posture: fontSize('display-posture') })
+  it('shrinks page number and posture with a smaller configured scale', async () => {
+    setStatus(session)
+    const view = await render(statusTree())
+    const full = readSizes()
+    await view.rerender(statusTree({ config: { ...config, font_scale: 50 } }))
+    const small = readSizes()
+    expect(small.page).toBeCloseTo(full.page * 0.5)
+    expect(small.posture).toBeCloseTo(full.posture * 0.5)
+  })
+  it('never enlarges them past the area they already fill, by one shared rule', async () => {
+    setStatus(session)
+    const view = await render(statusTree())
+    const full = readSizes()
+    await view.rerender(statusTree({ config: { ...config, font_scale: 200 } }))
+    expect(readSizes()).toEqual(full)
+  })
+  it('sizes posture against the allocated stage, not the application window', async () => {
+    const state = { ...initialState, loading: false, stale: false, connected: true, session, parts: statusParts }
+    await render(<ThemeProvider scheme="dark"><I18nProvider preference="en"><ReadingFontContext.Provider value>
+      <DisplayPresentation state={state} config={config} sessionId={42} statusOnly preview size={{ width: 600, height: 500 }} />
+    </ReadingFontContext.Provider></I18nProvider></ThemeProvider>)
+    // The window is 1440 x 900, where posture would hit its 160 cap; the 600 x 500 stage bounds it to 600 * 0.13.
+    expect(fontSize('display-posture')).toBeCloseTo(600 * 0.13)
+  })
 })
