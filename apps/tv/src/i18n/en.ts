@@ -102,6 +102,7 @@ export const en = {
     en: 'English',
     ru: 'Russian',
     grabar: 'Classical Armenian',
+    hyw: 'Western Armenian',
     translit: 'Transliteration',
   },
   interfaceLanguages: {
