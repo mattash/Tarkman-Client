@@ -46,6 +46,9 @@ export function createPolledResource<T>(load: (signal: AbortSignal) => Promise<T
     getSnapshot: () => state,
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
     start() {
+      // A stopped resource can be started again (Strict Mode, Fast Refresh): begin from a clean slate so
+      // the lifecycle's first callback is not mistaken for "no change".
+      disposed = false; active = false; online = false
       const unlisten = lifecycle.listen((nextActive, nextOnline) => {
         if (active === nextActive && online === nextOnline) return
         active = nextActive; online = nextOnline; stop()
