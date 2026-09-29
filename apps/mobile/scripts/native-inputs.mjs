@@ -22,6 +22,7 @@ export const mobilePathspecs = [
   'packages/tarkman-core/',
   'packages/tarkman-design/',
   'packages/tarkman-reader/',
+  'packages/tarkman-lectionary/',
   'tools/metro/',
   '.github/workflows/node.js.yml',
 ]

@@ -1,0 +1,46 @@
+import './global.css'
+import { registerRootComponent } from 'expo'
+import { useEffect, useState } from 'react'
+import { ScrollView, Text, View } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { ThemeProvider } from './design/ThemeProvider'
+import { ReadingFontProvider } from './design/ReadingFontProvider'
+import { LectionaryPicker } from './features/services/management/LectionaryPicker'
+import { EMPTY_OPTIONS, sameDraft, type SessionDraft } from './features/services/management/draft'
+import { bundledLectionary } from '@tarkman/lectionary/bundled'
+let networkAttempts = 0
+const blocked = () => { networkAttempts++; throw Error('QA network disabled') }
+globalThis.fetch = async () => blocked()
+globalThis.XMLHttpRequest = class { constructor() { blocked() } } as unknown as typeof XMLHttpRequest
+globalThis.WebSocket = class { constructor() { blocked() } } as unknown as typeof WebSocket
+function QA() {
+  const [report, setReport] = useState('Starting embedded offline lookup')
+  const [draft, setDraft] = useState<SessionDraft>({date:'2026-06-01',liturgies:[],options:{...EMPTY_OPTIONS,gospel:'Manual Gospel'}})
+  useEffect(() => {
+    void (async () => {
+      const runtime = (globalThis as unknown as {HermesInternal?:{getInstrumentedStats?:()=>unknown}}).HermesInternal
+      const statsBefore = runtime?.getInstrumentedStats?.()
+      const start = performance.now()
+      const result = await bundledLectionary.getDay('2026-06-01',{language:'hy'})
+      const firstLookupMs = performance.now()-start
+      if (!result.ok) throw Error(JSON.stringify(result))
+      const statsAfterFirst = runtime?.getInstrumentedStats?.()
+      const cached = performance.now()
+      for(let i=0;i<100;i++) await bundledLectionary.getDay('2026-06-01',{language:'hy'})
+      const cachedLookupMs=(performance.now()-cached)/100
+      for (const year of ['2026', '2027']) for (const language of ['en', 'hy'] as const) {
+        const check = await bundledLectionary.getDay(year+'-06-01', {language})
+        if (!check.ok) throw Error(JSON.stringify(check))
+      }
+      const metrics={engine:runtime?'Hermes':'unknown',firstLookupMs,cachedLookupMs,networkAttempts,verifiedPacks:4,statsBefore,statsAfterFirst}
+      console.log('LECTIONARY_QA '+JSON.stringify(metrics))
+      setReport(JSON.stringify(metrics,null,2)+'\n'+result.day['Liturgical Day'])
+    })().catch(error=>setReport(String(error)))
+  },[])
+  return <SafeAreaProvider><ThemeProvider scheme="light"><ReadingFontProvider><ScrollView contentContainerStyle={{padding:24,paddingTop:75,gap:16}}>
+    <Text selectable>{report}</Text>
+    <LectionaryPicker draft={draft} editable onApply={(expected,patch)=>{if(!sameDraft(expected,draft))return false;setDraft({...draft,options:{...draft.options,...patch}});return true}} />
+    <View><Text>Applied Gospel: {draft.options.gospel}</Text><Text>Applied Epistle: {draft.options.epistle}</Text></View>
+  </ScrollView></ReadingFontProvider></ThemeProvider></SafeAreaProvider>
+}
+registerRootComponent(QA)

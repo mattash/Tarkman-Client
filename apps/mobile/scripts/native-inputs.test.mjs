@@ -84,6 +84,18 @@ test('reuses a compile only while the merged native inputs are unchanged', t => 
   assert.equal(docs.mobile, false)
   assert.equal(docs.native, false)
 
+  // Generated lectionary data must run both bundle smoke checks without a native compile.
+  git(['checkout', '-q', '-b', 'lectionary', main])
+  write('packages/tarkman-lectionary/data/2026-en.json', '{"schemaVersion":1}\n')
+  const lectionaryHead = commit('update bundled lectionary')
+  for (const platform of ['ios', 'android']) {
+    const result = run(platform, main, lectionaryHead)
+    assert.equal(result.mobile, true)
+    assert.equal(result.native, false)
+    assert.equal(result.requested, false)
+    assert.equal(result.fingerprint, run(platform, main, main).fingerprint)
+  }
+
   // PR #217: valid version-only edits are informational, not native changes.
   git(['checkout', '-q', '-b', 'version', main])
   write('apps/mobile/app.json', '{"expo":{"version":"0.2.0"}}\n')
