@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
+import { Linking } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { colors } from '../design/tokens'
 import { PreferencesProvider, usePreferences } from '../features/preferences/PreferencesProvider'
@@ -166,6 +167,14 @@ it('keeps sign-in on the About tab, and My Sessions only when signed in', async 
   expect(screen.getByText('Signed in as Deacon')).toBeOnTheScreen()
   await fireEvent.press(screen.getByRole('button', { name: /^My Sessions/ }))
   expect(mockPush).toHaveBeenCalledWith('/services')
+})
+
+it('opens the public privacy policy from About without sign-in', async () => {
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined)
+  await render(<About />, { wrapper })
+  await fireEvent.press(screen.getByTestId('about-privacy-policy'))
+  expect(open).toHaveBeenCalledWith('https://www.tarkman.app/privacy')
+  open.mockRestore()
 })
 
 it('keeps Settings to reading choices now that the account lives on About', async () => {
