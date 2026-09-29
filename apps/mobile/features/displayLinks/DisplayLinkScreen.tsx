@@ -38,7 +38,7 @@ function TokenDisplay({ endpoints, token, sessionId, statusOnly, request }: {
   if (result.terminal) return <DisplayNotice testID="display-invalid" title={t('display.invalidLink')} detail={t('display.replaceLink')} />
   if (!result.data) return <DisplayNotice testID="display-loading" busy={!result.error} title={t(result.error ? 'display.couldNotLoad' : 'display.loading')} detail={result.error ? t('display.retrying') : undefined} />
   // The normalized stored preferences are authoritative, including defaults for malformed values.
-  return <ResolvedDisplay endpoints={endpoints} preferences={{ ...result.data, tokenProjection: true }} userId={result.data.user_id} sessionId={sessionId} statusOnly={statusOnly} request={request} />
+  return <ResolvedDisplay endpoints={endpoints} preferences={result.data} userId={result.data.user_id} sessionId={sessionId} statusOnly={statusOnly} request={request} />
 }
 function ResolvedDisplay({ endpoints, preferences, userId, sessionId, statusOnly, request }: {
   endpoints: Endpoints; preferences: DisplayPreferences; userId: number; sessionId: number | null; statusOnly: boolean; request: typeof fetch

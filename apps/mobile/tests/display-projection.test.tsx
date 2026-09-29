@@ -93,7 +93,7 @@ it('shows a clear unavailable message when the session fails to load', async () 
   expect(screen.getByText('This service is not available right now.')).toBeOnTheScreen()
 })
 
-it('renders both languages without ancillary projection labels', async () => {
+it('renders both languages without ancillary projection labels, showing the explanation cue only when enabled', async () => {
   const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_id: 10, current_liturgy_part_id: 11, page: 24, posture: 'stand' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_id: 10, liturgy_part_id: 11, en: 'Peace unto all.', grabar: 'Խաղաղութիւն ամենեցուն։' } }] })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts,
@@ -101,11 +101,21 @@ it('renders both languages without ancillary projection labels', async () => {
   await renderProjection({ config: { ...config, lang2: 'grabar', show_explanations: true } })
   expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
   expect(screen.getByText('Խաղաղութիւն ամենեցուն։')).toBeOnTheScreen()
-  expect(screen.queryByText('Explanation available')).toBeNull()
+  // The effective setting decides, whether or not the link was resolved from a token.
+  expect(screen.getByText('Explanation available')).toBeOnTheScreen()
   expect(screen.queryByText('Page 24')).toBeNull()
   expect(screen.queryByText('Stand')).toBeNull()
   expect(screen.queryByTestId('display-page-placeholder')).toBeNull()
   expect(screen.queryByTestId('display-posture')).toBeNull()
+  expect(jest.mocked(useReader).mock.calls.at(-1)?.[2]).toBe(true)
+})
+it('neither requests nor shows explanations when the setting is off', async () => {
+  const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_id: 10, current_liturgy_part_id: 11 } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_id: 10, liturgy_part_id: 11, en: 'Peace unto all.' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts,
+    explanations: [{ id: 1, title: 'Peace', description: null, liturgyPartId: 11 }] }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection({ config: { ...config, show_explanations: false } })
+  expect(screen.queryByText('Explanation available')).toBeNull()
   expect(jest.mocked(useReader).mock.calls.at(-1)?.[2]).toBe(false)
 })
 it.each(['full', 'pages_only', 'posture_only'] as const)('renders minimal status %s without reading text', async status_view => {

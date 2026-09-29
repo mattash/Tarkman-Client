@@ -156,7 +156,7 @@ export function describeDisplay({ state, config, sessionId, statusOnly = false, 
     ...frame, kind: 'projection', message: textMessage, messageText: textMessage ? textMessage.body ?? textMessage.title : null,
     part, languages, texts, durationMs: projectionDuration(part?.effectiveDurationMs, texts),
     fontSize, roleSize: Math.max(24, fontSize * 0.6), stacked,
-    showExplanationCue: !!config.tokenProjection && config.show_explanations && !state.stale && !state.explanationError && state.explanations.length > 0,
+    showExplanationCue: config.show_explanations && !state.stale && !state.explanationError && state.explanations.length > 0,
     readingRunning: !!part && !textMessage && session.status === 'active',
     messageRunning: !!textMessage,
   }

@@ -12,7 +12,7 @@ jest.mock('../features/displayLinks/ProjectionText', () => ({ ProjectionText: je
 it('reflows accepted config through existing clock, manual position, page group and reader identity', async () => {
   const state = { ...previewState(true), following: false }
   jest.mocked(useReader).mockReturnValue({ state, saved: null, retry: jest.fn(), dispatch: jest.fn(), refreshAfterCommand: jest.fn() })
-  const make = (config = link) => <ThemeProvider><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" sessionId={1} config={{ ...config, tokenProjection: true }} /></ThemeProvider>
+  const make = (config = link) => <ThemeProvider><DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" sessionId={1} config={config} /></ThemeProvider>
   const view = await render(make())
   const first = jest.mocked(ProjectionText).mock.calls[0][0]
   first.manualPosition?.set(0.45)
