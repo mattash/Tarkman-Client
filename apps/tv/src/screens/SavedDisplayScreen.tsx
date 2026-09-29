@@ -4,7 +4,6 @@ import type { DisplayLinkConfig, Endpoints } from '@tarkman/reader'
 import { FocusButton } from '../components/FocusButton'
 import { Notice } from '../components/Notice'
 import { ResetControl } from '../components/ResetControl'
-import { SavedDisplayToolbar } from '../components/SavedDisplayToolbar'
 import { useCurrentSession, useLinkConfig } from '../displayLinks'
 import { useI18n } from '../i18n'
 import type { ReaderTransport } from '../reader'
@@ -17,6 +16,8 @@ interface Props {
   saved: SavedDisplayV1
   transport?: ReaderTransport
   request?: typeof fetch
+  /** Back from the running display: opens the management screen. */
+  onManage(): void
   onChangeDisplay(): void
   onBrowseServices(): void
   onSettings(): void
@@ -61,14 +62,12 @@ export function SavedDisplayScreen(props: Props) {
 
 function CurrentDisplay({ config, ...props }: Props & { config: DisplayLinkConfig }) {
   const { t } = useI18n()
-  const { endpoints, saved, transport, request } = props
+  const { endpoints, transport, request } = props
   const current = useCurrentSession(endpoints, config.user_id, request)
   const session = current.data
   if (session) {
-    return <DisplayScreen key={session.id} endpoints={endpoints} transport={transport} id={session.id} config={config}
-      onBack={props.onChangeDisplay}
-      renderToolbar={onLayoutHeight => <SavedDisplayToolbar saved={saved} onChange={props.onChangeDisplay} onBrowse={props.onBrowseServices}
-        onSettings={props.onSettings} onReset={props.onReset} onLayoutHeight={onLayoutHeight} />} />
+    return <DisplayScreen key={session.id} endpoints={endpoints} transport={transport} id={session.id} config={config} bare
+      onBack={props.onManage} />
   }
   return (
     <Frame actions={<ChangeActions {...props} />}>

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
+import { BackHandler } from 'react-native'
 import type { KeyValueAdapter } from '@tarkman/core'
 import { Launch } from '../src/App'
 import { I18nProvider } from '../src/i18n'
@@ -229,23 +230,31 @@ describe('following', () => {
     expect(has('display-column-translit')).toBe(false)
   })
 
-  it('shows a toolbar under the running display, and resets only after a confirmation', async () => {
+  it('shows nothing but the display; Back opens a management screen where reset needs a confirmation', async () => {
+    const back: Parameters<typeof BackHandler.addEventListener>[1][] = []
+    jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_event, handler) => { back.unshift(handler); return { remove: () => { back.splice(back.indexOf(handler), 1) } } })
     seed()
     const store = savedStore()
     await launch(store)
     await startService(7)
-    expect(has('saved-display-toolbar')).toBe(true)
-    expect(screen.getByTestId('saved-display-current').props.children).toBe('Sanctuary · St. John Armenian Church')
-    await remote('select') // Select belongs to the toolbar's buttons, not to a hidden menu
-    expect(has('display-options')).toBe(false)
-    expect(has('saved-display-toolbar')).toBe(true)
+    expect(has('display-projection')).toBe(true)
+    // No chrome: no toolbar, hint, badge or options, and Select does nothing.
+    await remote('select')
+    for (const id of ['saved-display-toolbar', 'display-menu-hint', 'display-options', 'saved-display-manage', 'display-scroll-hint']) expect(has(id)).toBe(false)
 
-    await press('toolbar-reset')
-    expect(has('toolbar-reset-confirm')).toBe(true)
-    await press('toolbar-reset-cancel')
+    await act(async () => { back[0]({ eventType: 'menu' } as never) }); await flush()
+    expect(has('saved-display-manage')).toBe(true)
+    expect(screen.getByTestId('saved-display-current').props.children).toBe('Sanctuary · St. John Armenian Church')
+    await press('manage-reset')
+    expect(has('manage-reset-confirm')).toBe(true)
+    await press('manage-reset-cancel')
     expect(stored(store)?.link.token).toBe('tok1') // cancelling changes nothing
-    await press('toolbar-reset')
-    await press('toolbar-reset-yes')
+    await act(async () => { back[0]({ eventType: 'menu' } as never) }); await flush()
+    expect(has('display-projection')).toBe(true) // Back from the management screen returns to the display
+
+    await act(async () => { back[0]({ eventType: 'menu' } as never) }); await flush()
+    await press('manage-reset')
+    await press('manage-reset-yes')
     expect(stored(store)).toBeNull()
     expect(has('display-setup')).toBe(true) // back to the unconfigured home screen
   })

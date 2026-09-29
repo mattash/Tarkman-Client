@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, View, useTVEventHandler, useWindowDimensions } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
 import { createManualPosition, createPageGroup, describeDisplay, displayOccurrence, independentDuration, projectionDuration,
@@ -19,10 +19,10 @@ interface Props {
   /** A saved church display's configuration. It replaces this TV's local options, which then do not apply. */
   config?: DisplayPreferences
   /**
-   * A saved display's toolbar, shown under the projection at all times. The projection is sized to the
-   * space above it. With a toolbar, Select belongs to its buttons rather than opening display options.
+   * A saved church display: nothing but the display's own content. No badge, cue, hint or options, and
+   * Select does nothing; Menu calls onBack (which opens the management screen).
    */
-  renderToolbar?(onLayoutHeight: (height: number) => void): ReactNode
+  bare?: boolean
 }
 
 /**
@@ -30,21 +30,20 @@ interface Props {
  * screen only renders it and adds the remote: Select opens display options, Up/Down scrolls the current
  * reading by hand (until the next reading), Menu closes options or goes back.
  */
-export function DisplayScreen({ endpoints, id, onBack, transport, config, renderToolbar }: Props) {
+export function DisplayScreen({ endpoints, id, onBack, transport, config, bare = false }: Props) {
   const { t } = useI18n()
   const online = useOnline()
   const { display: localDisplay } = usePreferences()
   const display = config ?? localDisplay
   const { state } = useReader(endpoints, id, transport, { loadExplanations: !!config?.show_explanations })
-  const [toolbarHeight, setToolbarHeight] = useState(0)
-  const { width, height: windowHeight, fontScale } = useWindowDimensions()
-  const height = Math.max(0, windowHeight - toolbarHeight)
+  const { width, height, fontScale } = useWindowDimensions()
   const view = describeDisplay({ state, config: display, sessionId: id, width, height, fontScale, spacing: space, t: displayText })
   const occurrence = displayOccurrence(state, id)
   const fresh = freshness(state, online)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const closeOptions = useCallback(() => setOptionsOpen(false), [])
   useMenuBack(optionsOpen, closeOptions)
+  useMenuBack(bare, onBack)
 
   // Remote scrolling makes this occurrence manual; the next reading returns to the configured movement.
   const [scrolledOccurrence, setScrolledOccurrence] = useState<string | null>(null)
@@ -66,7 +65,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, render
 
   useTVEventHandler(event => {
     if (optionsOpen || !event) return
-    if (!renderToolbar && (event.eventType === 'select' || event.eventType === 'playPause')) { setOptionsOpen(true); return }
+    if (!bare && (event.eventType === 'select' || event.eventType === 'playPause')) { setOptionsOpen(true); return }
     const direction = event.eventType === 'down' || event.eventType === 'swipeDown' ? 1 : event.eventType === 'up' || event.eventType === 'swipeUp' ? -1 : 0
     if (!direction || !projection?.part || projection.message) return
     const deepest = [...metrics.current.values()].reduce((a, b) => b.maximum > a.maximum ? b : a, { maximum: 0, viewport: 0 })
@@ -82,18 +81,15 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, render
 
   // Session status (paused, gospel, QR) is part of the projection itself, as on mobile. The badge reports
   // only whether the projection is current, so shown text never passes for live when it is not.
-  const badge = !isConfirmedLive(fresh) && fresh.kind !== 'status' && (view.kind === 'projection' || view.kind === 'status' || view.kind === 'session_qr')
+  const badge = !bare && !isConfirmedLive(fresh) && fresh.kind !== 'status' && (view.kind === 'projection' || view.kind === 'status' || view.kind === 'session_qr')
   return (
     <View style={styles.canvas}>
-      <View style={styles.stage}>
       {renderContent()}
       {badge ? <View style={styles.badge}><FreshnessBadge value={fresh} showDetail={false} /></View> : null}
-      {projection?.showExplanationCue ? <View style={styles.cue}><Text testID="display-explanation-cue" style={styles.cueText}>{t('display.explanationAvailable')}</Text></View> : null}
-      {scrolling && !optionsOpen ? <Text testID="display-scroll-hint" style={styles.hint}>{t('display.scrollHint')}</Text>
+      {!bare && projection?.showExplanationCue ? <View style={styles.cue}><Text testID="display-explanation-cue" style={styles.cueText}>{t('display.explanationAvailable')}</Text></View> : null}
+      {!bare && scrolling && !optionsOpen ? <Text testID="display-scroll-hint" style={styles.hint}>{t('display.scrollHint')}</Text>
         : null}
       {optionsOpen ? <DisplayOptions onClose={closeOptions} onBack={onBack} /> : null}
-      </View>
-      {renderToolbar?.(setToolbarHeight)}
     </View>
   )
 
@@ -177,7 +173,6 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, render
 
 const styles = StyleSheet.create({
   canvas: { flex: 1, backgroundColor: colors.surfaceCanvas },
-  stage: { flex: 1, minHeight: 0 },
   screen: { flex: 1, minHeight: 0 },
   qrScreen: { alignItems: 'center', justifyContent: 'center', gap: space.lg, backgroundColor: '#101010' },
   white: { color: '#fff', textAlign: 'center' },

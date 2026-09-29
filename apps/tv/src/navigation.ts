@@ -5,6 +5,8 @@ export type Route =
   | { name: 'settings' }
   /** Launch root when a church display is saved. */
   | { name: 'savedDisplay' }
+  /** Above the saved display: change, browse, settings and reset. Back returns to the display. */
+  | { name: 'savedManage' }
   /** Launch root when the saved record cannot be read; explains and offers recovery. */
   | { name: 'savedProblem' }
   | { name: 'churches' }

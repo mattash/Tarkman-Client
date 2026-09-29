@@ -13,6 +13,7 @@ import { SavedDisplayProvider, useSavedDisplay } from './saved'
 import { ChurchesScreen } from './screens/ChurchesScreen'
 import { ChurchLinksScreen } from './screens/ChurchLinksScreen'
 import { DisplayScreen } from './screens/DisplayScreen'
+import { SavedManageScreen } from './screens/SavedManageScreen'
 import { SavedDisplayScreen } from './screens/SavedDisplayScreen'
 import { SavedProblemScreen } from './screens/SavedProblemScreen'
 import { ServicesScreen } from './screens/ServicesScreen'
@@ -73,7 +74,10 @@ export function Navigator({ endpoints, transport, request, initialRoot = { name:
     case 'settings': return <SettingsScreen onDone={back} onChangeDisplay={() => push({ name: 'churches' })} onReset={reset} />
     case 'savedDisplay':
       return saved.load.kind === 'saved' ? <SavedDisplayScreen endpoints={endpoints} saved={saved.load.record} transport={transport} request={request}
-        onChangeDisplay={() => push({ name: 'churches' })} onBrowseServices={() => push({ name: 'services' })} onSettings={() => push({ name: 'settings' })} onReset={reset} /> : null
+        onManage={() => push({ name: 'savedManage' })} onChangeDisplay={() => push({ name: 'churches' })} onBrowseServices={() => push({ name: 'services' })} onSettings={() => push({ name: 'settings' })} onReset={reset} /> : null
+    case 'savedManage':
+      return saved.load.kind === 'saved' ? <SavedManageScreen saved={saved.load.record} onChange={() => push({ name: 'churches' })}
+        onBrowse={() => push({ name: 'services' })} onSettings={() => push({ name: 'settings' })} onReset={reset} /> : null
     case 'savedProblem':
       return <SavedProblemScreen reason={saved.load.kind === 'unreadable' ? saved.load.reason : 'corrupt'} onSetup={() => push({ name: 'churches' })}
         onServices={() => push({ name: 'services' })} onErase={reset} />

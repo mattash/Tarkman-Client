@@ -26,9 +26,9 @@ Transliteration and English, continuous text movement, text and status screens.
 
 | Siri Remote | Effect |
 | --- | --- |
-| Select (or Play/Pause) | On a saved church display, presses the focused toolbar button. Otherwise, display options: first and second language, parallel or single, text size, text movement, screen content |
+| Select (or Play/Pause) | Nothing on a saved church display. Otherwise, display options: first and second language, parallel or single, text size, text movement, screen content |
 | Up / Down | Scroll the current reading by hand; the next reading returns to the configured movement. Never changes the service. |
-| Menu | Close the options, then leave the display; at the service list, leave the app |
+| Menu | Close the options, then leave the display; at the service list, leave the app. On a saved church display, opens its management screen |
 
 A freshness badge appears only when the projection is not confirmed live
 (Connecting, Reconnecting, Offline, Not live, Service ended, No longer available).

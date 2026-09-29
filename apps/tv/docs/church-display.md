@@ -18,14 +18,13 @@ operator credential is involved, and the TV only ever reads.
 | Saved record damaged, or written by a newer app | Explained on screen, left in place; **Choose a display again** (overwrites on save), **Erase**, or browse live services |
 | Display configuration edited by the church | Adopted live (revisioned: an older revision never wins) |
 
-Changing or resetting is reachable from every state: a running
-saved display always shows a **toolbar** along the bottom (live services, settings, change display,
-reset), and the projection is sized to the space above it. Select acts on the focused toolbar button;
-**Menu (Back)** is the only way out of the display, and leaves the app for the Apple TV home screen.
-The waiting, error and unavailable screens show the same buttons directly; Settings has a Church
-display section. Reset always asks twice, with Cancel focused. Backing out of
-setup never changes the saved display, and browsing another live service never
-replaces it.
+A running saved display shows **nothing but the display's own content**: no toolbar, badge,
+hint or menu, and Select does nothing. **Menu (Back)** opens a management screen (change display,
+live services, settings, reset); Back from there returns to the display, and the Home button leaves
+the app. The waiting, error and unavailable screens have no display content, so they show the same
+buttons directly; Settings has a Church display section. Reset always asks twice, with Cancel
+focused. Backing out of setup never changes the saved display, and browsing another live service
+never replaces it.
 
 ## Storage
 
