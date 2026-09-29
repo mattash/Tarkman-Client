@@ -49,6 +49,14 @@ export function projectionLayout(settings: DisplayCustomization, width: number, 
   }
 }
 
+/**
+ * Status screens (page number, posture) are already sized to fill their area, so a configured
+ * text scale can shrink them but never enlarge them past it. Every renderer uses this one rule.
+ */
+export function statusTextScale(textScale: number): number {
+  return Math.min(1, textScale)
+}
+
 /** Independent translations finish according to their own lengths within the part's estimate. */
 export function independentDuration(duration: number, text: string | null, texts: Array<string | null>) {
   const words = (value: string | null) => value?.trim().split(/\s+/).filter(Boolean).length ?? 0

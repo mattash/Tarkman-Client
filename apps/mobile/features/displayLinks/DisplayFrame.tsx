@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react'
+import { useState, type PropsWithChildren, type ReactNode } from 'react'
 import { ActivityIndicator, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { AppText } from '../../components/AppText'
@@ -14,6 +14,24 @@ function Canvas({ children }: PropsWithChildren) {
   const { colors } = useTheme()
   return <View style={[styles.canvas, { backgroundColor: colors.background }]}>
     <StatusBar hidden />{children}
+  </View>
+}
+/**
+ * Setup preview stage: the dark projection surface at a fixed height, measured so the display
+ * lays out against this stage instead of the application window. No keep-awake or status bar.
+ */
+export function PreviewStage({ height = 420, children }: { height?: number; children: (size: { width: number; height: number }) => ReactNode }) {
+  return <ThemeProvider scheme="dark"><Stage height={height}>{children}</Stage></ThemeProvider>
+}
+function Stage({ height, children }: { height: number; children: (size: { width: number; height: number }) => ReactNode }) {
+  const { colors } = useTheme()
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null)
+  return <View testID="display-preview-stage" style={{ height, overflow: 'hidden', backgroundColor: colors.background }}
+    onLayout={event => {
+      const { width, height: measured } = event.nativeEvent.layout
+      setSize(previous => previous && previous.width === width && previous.height === measured ? previous : { width, height: measured })
+    }}>
+    {size && size.width > 0 ? children(size) : null}
   </View>
 }
 export function DisplayNotice({ title, detail, busy = false, testID }: { title: string; detail?: string; busy?: boolean; testID?: string }) {

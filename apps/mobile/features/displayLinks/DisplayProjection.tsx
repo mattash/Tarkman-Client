@@ -17,7 +17,7 @@ import { describeDisplay, displayOccurrence, sessionQrLayout as sharedSessionQrL
 import { displayText } from './presentation'
 import { projectionDuration } from './projectionTiming'
 import { useProjectionClock } from './useProjectionClock'
-import { independentDuration, createManualPosition, createPageGroup } from './customization'
+import { independentDuration, createManualPosition, createPageGroup, statusTextScale } from './customization'
 
 /** Reserve both scaled text lines, quiet zone, gaps and screen margins before sizing the matrix. */
 export function sessionQrLayout(width: number, height: number, fontScale: number, paddingHorizontal: number, paddingVertical: number) {
@@ -35,13 +35,16 @@ export function DisplayProjection({ apiBase, cableBase, config, sessionId, statu
 }
 
 /** Also used by the setup preview with synthetic data; no requests or service mutations. */
-export function DisplayPresentation({ state, config, sessionId, statusOnly = false, discoveryError = false, preview = false }: {
+export function DisplayPresentation({ state, config, sessionId, statusOnly = false, discoveryError = false, preview = false, size }: {
   state: ReturnType<typeof useReader>['state']; config: DisplayPreferences; sessionId: number
-  statusOnly?: boolean; discoveryError?: boolean; preview?: boolean
+  statusOnly?: boolean; discoveryError?: boolean; preview?: boolean; size?: { width: number; height: number }
 }) {
   const { t } = useI18n()
   const { colors } = useTheme()
-  const { width, height, fontScale } = useWindowDimensions()
+  const window = useWindowDimensions()
+  // The setup preview renders inside a smaller stage; real displays fill the window.
+  const { width, height } = size ?? window
+  const { fontScale } = window
   // What to show is decided once for mobile and apps/tv; this component only renders it.
   const view = describeDisplay({ state, config, sessionId, statusOnly, discoveryError, width, height, fontScale, spacing, t: displayText })
   const { settings, layout, padding } = view
@@ -85,16 +88,17 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
     const both = showPage && showPosture
     const pageWidth = (width - layout.paddingHorizontal * 2) * (both && !compact ? 0.65 : 1)
     const itemHeight = (height - layout.paddingVertical * 2) / (both && compact ? 2 : 1)
+    const statusScale = statusTextScale(layout.textScale)
     const pageText = page !== null ? String(page) : null
     const numberSize = pageText !== null ? Math.min(itemHeight * 0.85, pageWidth / (pageText.length * 0.65)) / fontScale : 0
     return <View testID="display-status" style={[styles.screen, screenPadding]}>
       <View style={[styles.statusContent, { flexDirection: compact ? 'column' : 'row' }]}>
         {showPage && <View style={[styles.statusItem, { flex: both && !compact ? 0.65 : 1 }]}>
-          {page !== null ? <AppText testID="display-page" accessibilityLabel={t('display.page', { page })} style={{ fontSize: numberSize * Math.min(1, layout.textScale), lineHeight: numberSize * Math.min(1, layout.textScale) * 1.1, fontWeight: '600', textAlign: 'center', fontVariant: ['tabular-nums'] }}>{pageText}</AppText>
-            : <PagePlaceholder width={pageWidth} height={itemHeight} scale={layout.textScale} />}
+          {page !== null ? <AppText testID="display-page" accessibilityLabel={t('display.page', { page })} style={{ fontSize: numberSize * statusScale, lineHeight: numberSize * statusScale * 1.1, fontWeight: '600', textAlign: 'center', fontVariant: ['tabular-nums'] }}>{pageText}</AppText>
+            : <PagePlaceholder width={pageWidth} height={itemHeight} scale={statusScale} />}
         </View>}
         {showPosture && <View style={[styles.statusItem, { flex: both && !compact ? 0.35 : 1 }]}>
-          <PostureIcon posture={posture} />
+          <PostureIcon posture={posture} width={width} height={height} scale={statusScale} />
         </View>}
       </View>
     </View>
@@ -129,7 +133,7 @@ function PagePlaceholder({ width, height, scale }: { width: number; height: numb
   const { colors } = useTheme()
   const available = Math.max(0, Math.min(width, height))
   // AppIcon's line height and width each add two points to the glyph size.
-  const size = Math.max(0, Math.min(available * 0.35 * Math.min(1, scale), available - 2))
+  const size = Math.max(0, Math.min(available * 0.35 * scale, available - 2))
   return <View testID="display-page-placeholder" accessible accessibilityRole="image"
     accessibilityLabel={t('display.pageUnavailable')} style={{ maxWidth: '100%', alignItems: 'center' }}>
     {ready ? <View style={{ opacity: 0.55 }}><AppIcon name="book" color={colors.muted} size={size} /></View>
