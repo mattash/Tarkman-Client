@@ -229,24 +229,23 @@ describe('following', () => {
     expect(has('display-column-translit')).toBe(false)
   })
 
-  it('opens the display menu with Select, and resets only after a confirmation', async () => {
+  it('shows a toolbar under the running display, and resets only after a confirmation', async () => {
     seed()
     const store = savedStore()
     await launch(store)
     await startService(7)
-    expect(has('display-menu-hint')).toBe(true)
-    await remote('select')
+    expect(has('saved-display-toolbar')).toBe(true)
     expect(screen.getByTestId('saved-display-current').props.children).toBe('Sanctuary · St. John Armenian Church')
-    await press('menu-close')
-    expect(has('saved-display-menu')).toBe(false)
+    await remote('select') // Select belongs to the toolbar's buttons, not to a hidden menu
+    expect(has('display-options')).toBe(false)
+    expect(has('saved-display-toolbar')).toBe(true)
 
-    await remote('select')
-    await press('menu-reset')
-    expect(has('menu-reset-confirm')).toBe(true)
-    await press('menu-reset-cancel')
+    await press('toolbar-reset')
+    expect(has('toolbar-reset-confirm')).toBe(true)
+    await press('toolbar-reset-cancel')
     expect(stored(store)?.link.token).toBe('tok1') // cancelling changes nothing
-    await press('menu-reset')
-    await press('menu-reset-yes')
+    await press('toolbar-reset')
+    await press('toolbar-reset-yes')
     expect(stored(store)).toBeNull()
     expect(has('display-setup')).toBe(true) // back to the unconfigured home screen
   })

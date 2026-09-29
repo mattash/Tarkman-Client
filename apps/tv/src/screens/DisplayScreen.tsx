@@ -18,10 +18,11 @@ interface Props {
   endpoints: Endpoints; id: number; onBack(): void; transport?: ReaderTransport
   /** A saved church display's configuration. It replaces this TV's local options, which then do not apply. */
   config?: DisplayPreferences
-  /** Replaces the local display options behind Select, for a saved display's change/reset menu. */
-  renderMenu?(close: () => void): ReactNode
-  /** Briefly says that Select opens the menu, for displays whose only other chrome is the projection. */
-  menuHint?: boolean
+  /**
+   * A saved display's toolbar, shown under the projection at all times. The projection is sized to the
+   * space above it. With a toolbar, Select belongs to its buttons rather than opening display options.
+   */
+  renderToolbar?(onLayoutHeight: (height: number) => void): ReactNode
 }
 
 /**
@@ -29,19 +30,15 @@ interface Props {
  * screen only renders it and adds the remote: Select opens display options, Up/Down scrolls the current
  * reading by hand (until the next reading), Menu closes options or goes back.
  */
-export function DisplayScreen({ endpoints, id, onBack, transport, config, renderMenu, menuHint = false }: Props) {
+export function DisplayScreen({ endpoints, id, onBack, transport, config, renderToolbar }: Props) {
   const { t } = useI18n()
   const online = useOnline()
   const { display: localDisplay } = usePreferences()
   const display = config ?? localDisplay
   const { state } = useReader(endpoints, id, transport, { loadExplanations: !!config?.show_explanations })
-  const [hintVisible, setHintVisible] = useState(menuHint)
-  useEffect(() => {
-    if (!menuHint) return
-    const timer = setTimeout(() => setHintVisible(false), 8000)
-    return () => clearTimeout(timer)
-  }, [menuHint])
-  const { width, height, fontScale } = useWindowDimensions()
+  const [toolbarHeight, setToolbarHeight] = useState(0)
+  const { width, height: windowHeight, fontScale } = useWindowDimensions()
+  const height = Math.max(0, windowHeight - toolbarHeight)
   const view = describeDisplay({ state, config: display, sessionId: id, width, height, fontScale, spacing: space, t: displayText })
   const occurrence = displayOccurrence(state, id)
   const fresh = freshness(state, online)
@@ -69,7 +66,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, render
 
   useTVEventHandler(event => {
     if (optionsOpen || !event) return
-    if (event.eventType === 'select' || event.eventType === 'playPause') { setOptionsOpen(true); return }
+    if (!renderToolbar && (event.eventType === 'select' || event.eventType === 'playPause')) { setOptionsOpen(true); return }
     const direction = event.eventType === 'down' || event.eventType === 'swipeDown' ? 1 : event.eventType === 'up' || event.eventType === 'swipeUp' ? -1 : 0
     if (!direction || !projection?.part || projection.message) return
     const deepest = [...metrics.current.values()].reduce((a, b) => b.maximum > a.maximum ? b : a, { maximum: 0, viewport: 0 })
@@ -88,12 +85,15 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, render
   const badge = !isConfirmedLive(fresh) && fresh.kind !== 'status' && (view.kind === 'projection' || view.kind === 'status' || view.kind === 'session_qr')
   return (
     <View style={styles.canvas}>
+      <View style={styles.stage}>
       {renderContent()}
       {badge ? <View style={styles.badge}><FreshnessBadge value={fresh} showDetail={false} /></View> : null}
       {projection?.showExplanationCue ? <View style={styles.cue}><Text testID="display-explanation-cue" style={styles.cueText}>{t('display.explanationAvailable')}</Text></View> : null}
       {scrolling && !optionsOpen ? <Text testID="display-scroll-hint" style={styles.hint}>{t('display.scrollHint')}</Text>
-        : hintVisible && !optionsOpen ? <Text testID="display-menu-hint" style={styles.hint}>{t('savedDisplay.menuHint')}</Text> : null}
-      {optionsOpen ? (renderMenu ? renderMenu(closeOptions) : <DisplayOptions onClose={closeOptions} onBack={onBack} />) : null}
+        : null}
+      {optionsOpen ? <DisplayOptions onClose={closeOptions} onBack={onBack} /> : null}
+      </View>
+      {renderToolbar?.(setToolbarHeight)}
     </View>
   )
 
@@ -177,6 +177,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, render
 
 const styles = StyleSheet.create({
   canvas: { flex: 1, backgroundColor: colors.surfaceCanvas },
+  stage: { flex: 1, minHeight: 0 },
   screen: { flex: 1, minHeight: 0 },
   qrScreen: { alignItems: 'center', justifyContent: 'center', gap: space.lg, backgroundColor: '#101010' },
   white: { color: '#fff', textAlign: 'center' },

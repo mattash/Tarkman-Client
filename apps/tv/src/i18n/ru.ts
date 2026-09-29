@@ -63,12 +63,10 @@ export const ru: Catalog = {
     change: 'Сменить экран',
     services: 'Идущие службы',
     settings: 'Настройки',
-    menuHint: 'Нажмите «Выбрать», чтобы открыть меню экрана',
   },
   displayMenu: {
     title: 'Церковный экран',
     current: '{title} · {church}',
-    close: 'Закрыть',
     reset: 'Сбросить настройку ТВ',
     resetConfirm: 'Сбросить церковный экран этого ТВ? Придётся настроить его заново.',
     resetYes: 'Сбросить',

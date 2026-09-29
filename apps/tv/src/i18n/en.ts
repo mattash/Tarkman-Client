@@ -61,12 +61,10 @@ export const en = {
     change: 'Change display',
     services: 'Browse live services',
     settings: 'Settings',
-    menuHint: 'Press Select for the display menu',
   },
   displayMenu: {
     title: 'Church display',
     current: '{title} · {church}',
-    close: 'Close',
     reset: 'Reset this TV',
     resetConfirm: 'Reset this TV’s church display? It will ask you to set one up again.',
     resetYes: 'Reset',

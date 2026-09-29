@@ -4,7 +4,7 @@ import type { DisplayLinkConfig, Endpoints } from '@tarkman/reader'
 import { FocusButton } from '../components/FocusButton'
 import { Notice } from '../components/Notice'
 import { ResetControl } from '../components/ResetControl'
-import { SavedDisplayMenu } from '../components/SavedDisplayMenu'
+import { SavedDisplayToolbar } from '../components/SavedDisplayToolbar'
 import { useCurrentSession, useLinkConfig } from '../displayLinks'
 import { useI18n } from '../i18n'
 import type { ReaderTransport } from '../reader'
@@ -65,10 +65,10 @@ function CurrentDisplay({ config, ...props }: Props & { config: DisplayLinkConfi
   const current = useCurrentSession(endpoints, config.user_id, request)
   const session = current.data
   if (session) {
-    return <DisplayScreen key={session.id} endpoints={endpoints} transport={transport} id={session.id} config={config} menuHint
+    return <DisplayScreen key={session.id} endpoints={endpoints} transport={transport} id={session.id} config={config}
       onBack={props.onChangeDisplay}
-      renderMenu={close => <SavedDisplayMenu saved={saved} onClose={close} onChange={props.onChangeDisplay} onBrowse={props.onBrowseServices}
-        onSettings={props.onSettings} onReset={props.onReset} />} />
+      renderToolbar={onLayoutHeight => <SavedDisplayToolbar saved={saved} onChange={props.onChangeDisplay} onBrowse={props.onBrowseServices}
+        onSettings={props.onSettings} onReset={props.onReset} onLayoutHeight={onLayoutHeight} />} />
   }
   return (
     <Frame actions={<ChangeActions {...props} />}>
