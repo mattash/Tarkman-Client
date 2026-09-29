@@ -14,7 +14,8 @@ operator credential is involved, and the TV only ever reads.
 | No service live | "Waiting for the next service"; the display starts by itself |
 | Service ends or a new one starts | Follows the church's current service; the saved choice is unchanged |
 | Network loss, timeouts, 5xx | Keeps the saved choice, retries on its own, never claims live until it recovers |
-| Link removed (404/403), expired (410) | "This display is no longer available" with **Try again**, **Change display**, **Reset**; the saved identity is kept until an explicit replace or reset |
+| Link removed (404/403), expired (410) | "This display is no longer available" with **Try again**, **Change display**, **Reset**; the saved identity is kept until an explicit replace or reset. It also looks again by itself every 5 minutes |
+| Keychain read fails (locked, busy) | "Couldn't read its saved church display just now" with **Try again**, retried automatically every 30 seconds; never offered for erasing or replacing, since the record may be fine |
 | Saved record damaged, or written by a newer app | Explained on screen, left in place; **Choose a display again** (overwrites on save), **Erase**, or browse live services |
 | Display configuration edited by the church | Adopted live (revisioned: an older revision never wins) |
 
@@ -22,8 +23,8 @@ A running saved display shows **nothing but the display's own content**: no tool
 hint or menu, and Select does nothing. **Menu (Back)** opens a management screen (change display,
 live services, settings, reset); Back from there returns to the display, and the Home button leaves
 the app. The waiting, error and unavailable screens have no display content, so they show the same
-buttons directly; Settings has a Church display section. Reset always asks twice, with Cancel
-focused. Backing out of setup never changes the saved display, and browsing another live service
+buttons directly (Menu opens the management screen in those states too); Settings has a Church display section. Reset always asks twice, with Cancel
+focused. Backing out of setup, even while a display is being checked, never changes the saved display, and browsing another live service
 never replaces it.
 
 ## Storage
@@ -130,7 +131,7 @@ npm run tvos               # build and launch (simulator), or build to the Apple
    choice is kept until reset.
 8. **Configuration update:** edit the display's languages or text size on the
    server and confirm the TV adopts it without a relaunch.
-9. **Legibility:** 1080p and 4K, long Armenian text, and the explanation cue if
-   the display enables it.
+9. **Legibility:** 1080p and 4K, long Armenian text. A saved display shows content only,
+   so the explanation cue never appears there and explanations are not fetched.
 10. Record results in the Evidence table of `apps/tv/README.md`, separating
     simulator results from physical-device results.

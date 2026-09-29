@@ -37,7 +37,7 @@ the projection itself, as on mobile. The screen stays awake while a service is
 open and ongoing, never in the background.
 
 Western Armenian is available in the display options (#225), and a saved church
-display shows the explanation cue when its configuration turns it on (#227).
+display shows content only, so it never shows the explanation cue or fetches explanations (#227 applies to the live-service browser).
 Display choices for the live-service browser last for the session.
 
 ## Church display
