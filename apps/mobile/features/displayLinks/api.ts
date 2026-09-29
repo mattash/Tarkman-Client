@@ -1,49 +1,20 @@
+import { createDisplayLinkApi, InvalidDisplayLinkError, type DisplayLinkConfig } from '@tarkman/reader'
 import { t } from '../i18n'
-import { normalizeSession, record, type LiveSession } from '../live/contracts'
-import type { DisplayLinkConfig } from './config'
-import { completeConfig } from './configState'
-import { normalizeConfig } from './normalize'
+import { readerText } from '../live/adapters'
+import type { LiveSession } from '../live/contracts'
 
-export class InvalidDisplayLinkError extends Error {
-  constructor(message: string, readonly expired = false) { super(message) }
-}
+// Shared with apps/tv; see packages/tarkman-reader/src/display/link-api.ts.
+export { InvalidDisplayLinkError }
+
+const linkText = { invalidLink: () => t('display.invalidLink'), couldNotLoad: () => t('display.couldNotLoad'), discoveryUnavailable: () => t('display.discoveryUnavailable') }
+const api = (base: string, request?: typeof fetch) => createDisplayLinkApi({ base, request, text: readerText, linkText })
 
 /** Fetches a display-link configuration. The endpoint is unauthenticated; the token is its own capability. */
-export async function fetchDisplayLink(
-  base: string,
-  token: string,
-  request: typeof fetch = fetch,
-  signal?: AbortSignal,
-): Promise<DisplayLinkConfig> {
-  const response = await request(`${base}/display_links/${encodeURIComponent(token)}`, {
-    signal,
-    credentials: 'omit',
-    cache: 'no-store',
-    redirect: 'error',
-    headers: { Accept: 'application/json' },
-  })
-  if ([404, 410, 403].includes(response.status)) throw new InvalidDisplayLinkError(t('display.invalidLink'), response.status === 410)
-  if (!response.ok) throw new Error(t('display.couldNotLoad'))
-  const data = (await response.json()) as unknown
-  const raw = record(data)
-  // Presentation additions may roll out independently. Identity, ordering and
-  // expiration cannot be defaulted away when supplied but malformed.
-  if (raw.config_version !== undefined && (!Number.isSafeInteger(raw.config_version) || Number(raw.config_version) < 0) ||
-    raw.expires_at !== undefined && raw.expires_at !== null &&
-      !(typeof raw.expires_at === 'string' && Number.isFinite(Date.parse(raw.expires_at)))) throw new Error(t('display.couldNotLoad'))
-  const config = completeConfig(data) ?? normalizeConfig(data)
-  if (!config || config.token !== token) throw new Error(t('display.couldNotLoad'))
-  return config
+export function fetchDisplayLink(base: string, token: string, request: typeof fetch = fetch, signal?: AbortSignal): Promise<DisplayLinkConfig> {
+  return api(base, request).link(token, signal)
 }
 
 /** The current endpoint is user-scoped, like the legacy display's church link. */
-export async function fetchCurrentDisplaySession(base: string, userId: number, signal: AbortSignal, request: typeof fetch = fetch): Promise<LiveSession | null> {
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-  const response = await request(`${base}/s/${userId}/current.json?tz=${encodeURIComponent(zone)}`, {
-    signal, credentials: 'omit', cache: 'no-store', redirect: 'error',
-    headers: { Accept: 'application/json', 'X-Polling-Client': 'true' },
-  })
-  if (!response.ok) throw new Error(t('display.discoveryUnavailable'))
-  const data = record(await response.json())
-  return data.status === 'inactive' ? null : normalizeSession(data)
+export function fetchCurrentDisplaySession(base: string, userId: number, signal: AbortSignal, request: typeof fetch = fetch): Promise<LiveSession | null> {
+  return api(base, request).currentSession(userId, signal)
 }
