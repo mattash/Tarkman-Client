@@ -5,9 +5,43 @@ It is a separate Expo app from `apps/mobile`, ships on the **same App Store
 record** (bundle ID `app.tarkman`), and shares only source packages with mobile:
 never `node_modules`, an EAS project, update channels or OTA bundles.
 
-Scope today is the foundation: a shell that lists services through the shared
-reader engine. The live reader is #214; saved church and display setup is #215.
+The primary experience mirrors **apps/mobile's session display** (#214): pick a
+live service, and the TV projects its current part full screen, as a church
+projector running mobile's display would. Saved church and display setup is #215.
 watchOS, Android TV, controller features and `apps/web` are out of scope.
+
+## Session display
+
+What the display shows is decided by the shared `describeDisplay` in
+`@tarkman/reader` (`packages/tarkman-reader/src/display/`). Mobile's
+`DisplayPresentation` renders the same decisions, so the two cannot differ on
+which screen to show, which languages and text, sizes, messages, the QR code or
+page/posture status. TV renders them with its own views
+(`src/screens/DisplayScreen.tsx`, `src/components/ProjectionText.tsx`) and
+mobile's reading fonts (Source Serif 4, Noto Serif Armenian). The fonts are
+embedded and byte-identical to mobile's; `npm run check:fonts` enforces this.
+
+Defaults are mobile's display defaults with the `tv` device preset: parallel
+Transliteration and English, continuous text movement, text and status screens.
+
+| Siri Remote | Effect |
+| --- | --- |
+| Select (or Play/Pause) | Display options: first and second language, parallel or single, text size, text movement, screen content |
+| Up / Down | Scroll the current reading by hand; the next reading returns to the configured movement. Never changes the service. |
+| Menu | Close the options, then leave the display; at the service list, leave the app |
+
+A freshness badge appears only when the projection is not confirmed live
+(Connecting, Reconnecting, Offline, Not live, Service ended, No longer available).
+Session status, such as a pause, the Gospel or the read-along QR code, is part of
+the projection itself, as on mobile. The screen stays awake while a service is
+open and ongoing, never in the background.
+
+Not yet on TV: Western Armenian (as on mobile, pending #178) and the explanation
+cue (display-link tokens only, #215). Display choices last for the session;
+saving them per TV is #215.
+
+QA only: build with `EXPO_PUBLIC_TV_START_SERVICE=<session id>` to open that
+service at launch, for simulator captures without a remote.
 
 ## Compatibility gate
 
@@ -20,7 +54,8 @@ watchOS, Android TV, controller features and `apps/web` are out of scope.
 | Xcode / tvOS SDK | Xcode 27.0, tvOS 27.0 SDK and simulator runtime | Verified locally, see [Evidence](#evidence) |
 | Deployment target | tvOS 16.4 | Set by the plugin |
 
-`package.json` sets `"overrides": { "react-native": "$react-native" }`. Without it,
+`package.json` sets `"overrides": { "react-native": "$react-native" }` (and pins
+`test-renderer` to 1.2.0, the version mobile's lockfile resolves for React 19.2). Without it,
 npm installs a **second, upstream** `react-native@0.86.3` nested under
 `@react-native-tvos/virtualized-lists`. That package's exact peer `0.86.3` is not
 satisfied by the fork's prerelease version `0.86.3-0`. The bundle then contains two React Natives,
@@ -45,7 +80,8 @@ changes; remove it once the template adopts scenes.
 
 Expo Router is not on Expo's tvOS support list, so the TV app uses a plain root
 component (`index.ts` → `src/App.tsx`). Every native module added here must be
-on that list (currently `expo-network`, `expo-status-bar` and `expo-updates`).
+on that list (currently `expo-font`, `expo-keep-awake`, `expo-localization`,
+`expo-network`, `expo-status-bar`, `expo-updates` and `react-native-svg`).
 
 ## One React Native per app
 
@@ -103,7 +139,8 @@ the Expo bundler inlines them.
 npm ci --prefix apps/tv
 cd apps/tv
 export EXPO_PUBLIC_API_URL=https://www.tarkman.app EXPO_PUBLIC_ACTIONCABLE_URL=wss://www.tarkman.app/cable
-npm run typecheck && npm run check:runtime && npm run check:identity
+npm run typecheck && npm run lint && npm test
+npm run check:runtime && npm run check:identity && npm run check:fonts
 npm run tvos          # prebuild + build + launch on an Apple TV simulator (EXPO_TV=1)
 npm start             # Metro only, for an installed development build
 ```
@@ -229,5 +266,7 @@ Record each result separately. A simulator launch is not App Store acceptance.
 | Launch on Apple TV 4K (3rd gen, 1080p) simulator, tvOS 27.0, production API | Pass, 2026-09-28: renders, completes a reader recovery, "No services right now." matches the API's empty response |
 | EAS project `@mesropash/tarkman-tv` created; updates URL embedded in prebuild | Done, 2026-09-28 |
 | tvOS App Store and Development provisioning profiles | Done, 2026-09-28 |
+| #214 session display: Apple TV 4K simulator at 1080p and 4K against production (`qa/214/*-0a0ae3d.png`) | Pass, 2026-09-28 |
+| #214 session display on the Guest room Apple TV (tvOS 26.6), live St. John service, Siri Remote | Accepted by the maintainer, 2026-09-28 |
 | Physical Apple TV: signed Release build (Tarkman tvOS Development), install and launch on Apple TV 4K (2nd gen), tvOS 26.6 | Pass, 2026-09-28: process alive after launch; screen to be confirmed by the maintainer |
 | TestFlight / App Store acceptance | Not yet done (needs release authorization) |

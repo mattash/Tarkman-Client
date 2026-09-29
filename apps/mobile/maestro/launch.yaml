@@ -1,15 +1,6 @@
-# Loads the development client from Metro. Android uses the configured app
-# scheme and adb reverse; retain the existing iOS launch sequence.
+# Loads the development client from Metro; Android reaches it through adb reverse.
 appId: app.tarkman
 ---
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - launchApp:
-          clearState: false
-      - openLink:
-          link: exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
 - runFlow:
     when:
       platform: Android
@@ -20,31 +11,85 @@ appId: app.tarkman
       - setPermissions:
           permissions:
             camera: allow
-      - openLink:
-          link: tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
-      # Resetting data also resets the required dev client's first-run preferences.
-      - extendedWaitUntil:
-          visible: "Continue"
-          timeout: 60000
+# Continue can briefly return Android to the launcher. Retry only the client
+# handoff, once, without clearing data again or assuming a menu must appear.
+- retry:
+    maxRetries: 1
+    commands:
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            # Cold-launch directly from the link, preserving app data. Launching first
+            # can trigger an in-process reload that loses ExpoFabricView's AppContext
+            # when /scan mounts.
+            - stopApp
+            - openLink:
+                link: exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - openLink:
+                link: tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
       - tapOn:
-          text: "Continue"
+          text: "Open"
+          optional: true
       - extendedWaitUntil:
-          visible: "Close"
+          visible: "Continue|Close|close|xmark|Tools|Today"
+          timeout: 60000
+      - runFlow:
+          when:
+            visible: "Continue"
+          commands:
+            - tapOn: "Continue"
+            - waitForAnimationToEnd:
+                timeout: 5000
+            - assertNotVisible: "Continue"
+      - extendedWaitUntil:
+          visible: "Close|close|xmark|Tools|Today"
           timeout: 15000
-      # clearState restores Expo's Tools button to enabled. Its upper-right
-      # touch surface overlaps reader-preferences even when Maestro sees the
-      # reader underneath it. Turn it off before closing the developer menu.
+# Clean up only an open developer menu, including after first-run Continue.
+# A returning client may already show Today with floating Tools; leave it alone.
+- runFlow:
+    when:
+      visible: "Close|close|xmark"
+    commands:
       - scrollUntilVisible:
           element:
             text: "Tools button"
           direction: DOWN
-      - tapOn: "Tools button"
-      # Maestro's text selector also matches Android contentDescription.
+      # Android's reset enables this preference; cleanup runs only once, outside retry.
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn: "Tools button"
+      # iOS retains preferences. Its label and SwiftUI switch are separate elements;
+      # only tap a switch that is on, so repeat fixture launches cannot turn it back on.
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    text: "1"
+                    rightOf: "Tools button"
+                    checked: true
+                commands:
+                  - tapOn:
+                      text: "1"
+                      rightOf: "Tools button"
+                      checked: true
+            - assertVisible:
+                text: "0"
+                rightOf: "Tools button"
+                checked: false
+      # Android exposes Close; iOS uses the native xmark image's accessibility label.
       - tapOn:
-          text: "Close"
-- tapOn:
-    text: "Open"
-    optional: true
+          text: "Close|close|xmark"
+      - assertNotVisible: "Close|close|xmark"
 - extendedWaitUntil:
     visible: "Today"
     timeout: 60000

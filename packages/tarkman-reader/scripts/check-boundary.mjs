@@ -21,8 +21,8 @@ for (const entry of readdirSync(source, { recursive: true })) {
   for (const match of text.matchAll(specifier)) {
     const [, typeOnly, from, dynamic, required] = match
     const target = from ?? dynamic ?? required
-    if (target.startsWith('./')) {
-      if (resolve(dirname(file), target).startsWith(source)) continue
+    if (target.startsWith('./') || target.startsWith('../')) {
+      if (resolve(dirname(file), target).startsWith(source + '/')) continue
     } else if (target === '@tarkman/core' && typeOnly) continue
     findings.push(`${name}: import of '${target}'${target === '@tarkman/core' ? ' must be type-only' : ''}`)
   }

@@ -14,26 +14,45 @@
     "typecheck": "tsc --noEmit",
     "config": "EXPO_TV=1 expo config --type public",
     "check:identity": "node scripts/check-identity.mjs",
-    "check:runtime": "node scripts/check-runtime.mjs"
+    "check:runtime": "node scripts/check-runtime.mjs",
+    "test": "jest --runInBand",
+    "lint": "eslint . --max-warnings 0",
+    "check:fonts": "node scripts/check-fonts.mjs"
   },
   "dependencies": {
     "@tarkman/core": "file:../../packages/tarkman-core",
     "@tarkman/design": "file:../../packages/tarkman-design",
     "@tarkman/reader": "file:../../packages/tarkman-reader",
     "expo": "~57.0.25",
+    "expo-font": "~57.0.4",
+    "expo-keep-awake": "~57.0.2",
+    "expo-localization": "~57.0.2",
     "expo-network": "~57.0.2",
     "expo-status-bar": "~57.0.1",
     "expo-updates": "~57.0.23",
     "react": "19.2.3",
-    "react-native": "npm:react-native-tvos@0.86.3-0"
+    "react-native": "npm:react-native-tvos@0.86.3-0",
+    "react-native-qrcode-svg": "^6.3.26",
+    "react-native-svg": "^15.15.4"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@react-native-tvos/config-tv": "0.1.6",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.0",
-    "typescript": "~6.0.3"
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.5.0",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.0",
+    "react-test-renderer": "^19.2.3",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0"
   },
   "overrides": {
-    "react-native": "$react-native"
+    "react-native": "$react-native",
+    "test-renderer": "1.2.0"
   }
 }

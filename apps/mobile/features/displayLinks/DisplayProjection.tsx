@@ -7,17 +7,22 @@ import { AppText } from '../../components/AppText'
 import { useTheme } from '../../design/ThemeProvider'
 import { spacing } from '../../design/tokens'
 import { useI18n } from '../i18n'
-import { currentPart } from '../live/contracts'
 import { useReader } from '../live/useReader'
-import type { DisplayLanguage, DisplayPreferences } from './config'
+import type { DisplayPreferences } from './config'
 import { DisplayNotice } from './DisplayFrame'
 import { PostureIcon } from './PostureIcon'
 import { ProjectionText } from './ProjectionText'
 import QRCode from 'react-native-qrcode-svg'
-import { projectionMessage, projectionText, statusPageNumber } from './presentation'
+import { describeDisplay, displayOccurrence, sessionQrLayout as sharedSessionQrLayout } from '@tarkman/reader'
+import { displayText } from './presentation'
 import { projectionDuration } from './projectionTiming'
 import { useProjectionClock } from './useProjectionClock'
-import { customization, projectionLayout, independentDuration, createManualPosition, createPageGroup } from './customization'
+import { independentDuration, createManualPosition, createPageGroup } from './customization'
+
+/** Reserve both scaled text lines, quiet zone, gaps and screen margins before sizing the matrix. */
+export function sessionQrLayout(width: number, height: number, fontScale: number, paddingHorizontal: number, paddingVertical: number) {
+  return sharedSessionQrLayout(width, height, fontScale, paddingHorizontal, paddingVertical, spacing)
+}
 
 export interface DisplayProjectionProps {
   apiBase: string; cableBase: string; config: DisplayPreferences; sessionId: number
@@ -37,42 +42,33 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
   const { t } = useI18n()
   const { colors } = useTheme()
   const { width, height, fontScale } = useWindowDimensions()
-  const settings = customization(config)
-  const minimal = statusOnly || config.status_view === 'pages_only' || config.status_view === 'posture_only'
-  const session = state.session
-  const part = session ? currentPart(session, state.parts) : undefined
-  const padding = Math.max(spacing.md, Math.min(spacing.xl, width / 60))
-  const layout = projectionLayout(settings, width, height, padding)
+  // What to show is decided once for mobile and apps/tv; this component only renders it.
+  const view = describeDisplay({ state, config, sessionId, statusOnly, discoveryError, width, height, fontScale, spacing, t: displayText })
+  const { settings, layout, padding } = view
+  const occurrence = displayOccurrence(state, sessionId)
   const screenPadding = { paddingHorizontal: layout.paddingHorizontal, paddingVertical: layout.paddingVertical }
   const manualPositions = useMemo(() => ({
-    occurrence: `${sessionId}/${part?.key}`,
+    occurrence,
     linked: createManualPosition(),
     independent: { en: createManualPosition(), grabar: createManualPosition(), translit: createManualPosition(), hyw: createManualPosition() },
-  }), [sessionId, part?.key])
-  const pageGroup = useMemo(() => ({ occurrence: `${sessionId}/${part?.key}`, ...createPageGroup() }), [sessionId, part?.key])
-  const posture = session?.posture?.trim() || part?.posture?.trim() || null
-  const page = statusPageNumber(session?.page, part?.page)
-  const message = session ? projectionMessage(session, state.parts, config) : null
-  const languages: DisplayLanguage[] = [...new Set(config.mode === 'parallel' && config.lang2 ? [config.lang1, config.lang2] : [config.lang1])]
-  const texts = languages.map(language => language === 'hyw' ? null : projectionText(part?.text[language]))
-  const duration = projectionDuration(part?.effectiveDurationMs, texts)
-  const available = !minimal && !discoveryError && !state.error
-  const readingClock = useProjectionClock(`${sessionId}/${part?.key}`, available && !!part && !message && session?.status === 'active')
-  const messageText = message?.kind === 'message' ? message.body ?? message.title : null
-  const messageClock = useProjectionClock(`${sessionId}/${part?.key}/${message?.kind === 'message' ? message.title : message?.kind}/${messageText}`, available && message?.kind === 'message')
+  }), [occurrence])
+  const pageGroup = useMemo(() => ({ occurrence, ...createPageGroup() }), [occurrence])
+  const projection = view.kind === 'projection' ? view : null
+  const readingRunning = !!projection?.readingRunning, messageRunning = !!projection?.messageRunning
+  const messageKey = `${occurrence}/${projection?.message?.title}/${projection?.messageText}`
+  const readingClock = useProjectionClock(occurrence, readingRunning)
+  const messageClock = useProjectionClock(messageKey, messageRunning)
 
-  // A deleted named session is final here; an owner-current link's discovery replaces this projection on its own.
-  if (state.deleted) return <DisplayNotice testID="display-session-deleted" title={t('common.serviceNoLongerAvailable')} />
-  if (!session) return <DisplayNotice testID={state.error ? 'display-projection-unavailable' : 'display-projection-loading'}
-    busy={!state.error} title={t(state.error ? 'display.projectionUnavailable' : 'display.loading')}
-    detail={state.error ? t('display.retrying') : undefined} />
-  // A failure must also be readable from a distance. Keep the snapshot and live reader mounted
-  // behind this notice so successful discovery/polling can restore the projection automatically.
-  if (discoveryError || state.error) return <DisplayNotice testID="display-connection"
-    title={t(discoveryError ? 'display.discoveryUnavailable' : 'readerStatus.updatesUnavailable')}
+  if (view.kind === 'deleted') return <DisplayNotice testID="display-session-deleted" title={t('common.serviceNoLongerAvailable')} />
+  if (view.kind === 'loading' || view.kind === 'unavailable') return <DisplayNotice testID={view.kind === 'unavailable' ? 'display-projection-unavailable' : 'display-projection-loading'}
+    busy={view.kind === 'loading'} title={t(view.kind === 'unavailable' ? 'display.projectionUnavailable' : 'display.loading')}
+    detail={view.kind === 'unavailable' ? t('display.retrying') : undefined} />
+  if (view.kind === 'connection') return <DisplayNotice testID="display-connection"
+    title={t(view.discovery ? 'display.discoveryUnavailable' : 'readerStatus.updatesUnavailable')}
     detail={t('display.retrying')} />
 
-  if (message?.kind === 'session_qr' && !minimal) {
+  if (view.kind === 'session_qr') {
+    const { message } = view
     const qr = sessionQrLayout(width, height, fontScale, layout.paddingHorizontal, layout.paddingVertical)
     return <View testID="display-session-qr" style={[styles.screen, styles.qrScreen, screenPadding]}>
       <AppText style={{ color: '#fff', fontSize: qr.titleSize, lineHeight: qr.titleLineHeight, textAlign: 'center', fontWeight: '700' }}>{t('display.scanToReadAlong')}</AppText>
@@ -83,8 +79,8 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
     </View>
   }
 
-  if (minimal) {
-    const showPage = config.status_view !== 'posture_only', showPosture = config.status_view !== 'pages_only'
+  if (view.kind === 'status') {
+    const { showPage, showPosture, page, posture } = view
     const compact = height > width || width / fontScale < 700
     const both = showPage && showPosture
     const pageWidth = (width - layout.paddingHorizontal * 2) * (both && !compact ? 0.65 : 1)
@@ -104,12 +100,11 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
     </View>
   }
 
-  const stacked = width / fontScale < 640
-  const fontSize = Math.max(32, Math.min(width / (languages.length > 1 ? 26 : 20), height / (stacked && languages.length > 1 ? 18 : 10))) * layout.textScale
-  const roleSize = Math.max(24, fontSize * 0.6)
+  const { message, messageText, part, languages, texts, durationMs: duration, fontSize, roleSize, stacked, showExplanationCue } = view
+  const session = state.session!
   return <View testID="display-projection" style={[styles.screen, screenPadding, { gap: spacing.md }]}>
-    {config.tokenProjection && config.show_explanations && !state.stale && !state.explanationError && state.explanations.length > 0 && <StatusPill label={t('links.explanationAvailable')} tone="info" />}
-    {message?.kind === 'message' ? <ProjectionText key={`${message.title}/${message.body}`} text={messageText} fontSize={fontSize * 1.2} centered
+    {showExplanationCue && <StatusPill label={t('links.explanationAvailable')} tone="info" />}
+    {message ? <ProjectionText key={`${message.title}/${message.body}`} text={messageText} fontSize={fontSize * 1.2} centered
       clock={messageClock} durationMs={projectionDuration(null, [messageText])} movement={settings.text_movement} preview={preview} />
       : part ? <>
         {part.role && <AppText testID="display-speaker" style={{ fontSize: roleSize, lineHeight: roleSize * 1.25, fontWeight: '600', textTransform: 'capitalize' }}>{part.role}</AppText>}
@@ -140,18 +135,6 @@ function PagePlaceholder({ width, height, scale }: { width: number; height: numb
     {ready ? <View style={{ opacity: 0.55 }}><AppIcon name="book" color={colors.muted} size={size} /></View>
       : <AppText accessible={false} importantForAccessibility="no" tone="muted" style={{ textAlign: 'center' }}>{t('display.pageUnavailable')}</AppText>}
   </View>
-}
-/** Reserve both scaled text lines, quiet zone, gaps and screen margins before sizing the matrix. */
-export function sessionQrLayout(width: number, height: number, fontScale: number, paddingHorizontal: number, paddingVertical: number) {
-  const titleSize = Math.max(28, Math.min(56, width / 18))
-  const captionSize = Math.max(18, Math.min(32, width / 32))
-  const titleLineHeight = titleSize * 1.3, captionLineHeight = captionSize * 1.3
-  const availableHeight = height - paddingVertical * 2 - spacing.lg * 2 - spacing.md - (titleLineHeight + captionLineHeight) * fontScale
-  const availableWidth = width - paddingHorizontal * 2
-  const space = Math.max(0, Math.min(availableHeight, availableWidth))
-  const size = Math.max(0, Math.min(760, space / 1.12, space - 32))
-  const quietZone = Math.max(16, size * 0.06)
-  return { size, quietZone, titleSize, captionSize, titleLineHeight, captionLineHeight }
 }
 const styles = StyleSheet.create({
   screen: { flex: 1, minHeight: 0 }, qrScreen: { alignItems: 'center', justifyContent: 'center', gap: spacing.lg, backgroundColor: '#101010' }, body: { flex: 1, minHeight: 0 }, column: { flex: 1, minWidth: 0, minHeight: 0 },
