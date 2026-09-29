@@ -35,6 +35,30 @@ describe('apple-app-site-association', () => {
   })
 })
 
+describe('android asset links', () => {
+  const association = read('apps/mobile/public/.well-known/assetlinks.json')
+
+  it('associates this Android app with both Play signing certificates', () => {
+    const mobile = read('apps/mobile/app.json').expo
+    expect(association).toEqual([{
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: mobile.android.package,
+        sha256_cert_fingerprints: [
+          '1F:64:9E:59:72:81:85:07:1A:7D:E1:33:DD:A9:AD:D5:19:52:07:4E:97:7D:A6:D1:83:36:45:68:BF:A3:FC:30',
+          '1D:24:05:04:F7:93:87:6D:5D:53:8A:7A:C0:EF:38:13:7B:F6:55:7A:8B:27:BD:9F:E4:1D:0A:0E:B6:38:2C:23',
+        ],
+      },
+    }])
+  })
+
+  it('serves the association without an HTML content type', () => {
+    const header = read('vercel.json').headers.find((entry: { source: string }) => entry.source === '/.well-known/assetlinks.json')
+    expect(header.headers).toContainEqual({ key: 'Content-Type', value: 'application/json' })
+  })
+})
+
 describe('legacy Vite paths', () => {
   const redirects: { source: string, destination: string, permanent: boolean }[] = read('vercel.json').redirects
 
