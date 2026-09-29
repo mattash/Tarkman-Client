@@ -3,6 +3,33 @@
  * Placeholders are `{name}`; a message with `one`/`other` forms is chosen by its `count` parameter.
  */
 export const en = {
+  lectionary: {
+    "title": "Lectionary readings",
+    "contentLanguage": "Reading language",
+    "english": "English",
+    "armenian": "Classical Armenian",
+    "preview": "Preview readings for this date",
+    "help": "Optional readings for {from}–{through}. Changing the date leaves your reading fields unchanged.",
+    "loading": "Loading lectionary readings",
+    "stale": "The draft changed since this preview. Refresh before applying readings.",
+    "invalidDate": "Enter a valid service date to preview readings. You can still enter readings manually.",
+    "outOfRange": "Bundled readings cover {from}–{through}. You can create this session with manually entered readings.",
+    "unavailable": "These readings could not be loaded. Try again or enter readings manually.",
+    "source": "Source: {source}",
+    "confidence": "Source confidence: {confidence}",
+    "validation2027": "These 2027 readings match the calendar engine. Independent source validation is not established for every date.",
+    "selectionHelp": "Choose the references you need. They are grouped by Bible category, without a service or office assignment. Multiple selections keep the listed order.",
+    "noReadings": "No readings are appointed for this date. Your existing reading fields will stay unchanged.",
+    "noneInCategory": "No references in this category.",
+    "referenceOnly": "{category} · reference only",
+    "oldTestament": "Old Testament",
+    "other": "Other readings",
+    "replaceWarning": "Applying replaces only the fields shown below. Fields without a selection stay unchanged.",
+    "current": "Current: {value}",
+    "empty": "(empty)",
+    "apply": "Apply selected readings",
+    "refresh": "Refresh preview"
+},
   library: {
     "removeSelection": "Remove selection",
     "noMatches": "No services match your search.",

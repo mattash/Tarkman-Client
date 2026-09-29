@@ -1,6 +1,7 @@
 import { randomUUID } from 'expo-crypto'
 import { isUnauthorized, type AuthContextValue } from '../../auth/AuthProvider'
 import { t } from '../../i18n'
+import type { ReadingPatch } from '../../lectionary'
 import { createSession, fetchBootstrap, type CreateAttempt } from './api'
 import { isManagementError, OPTION_KEYS, type ManagedSession, type ManagementBootstrap, type ManagementErrorKind, type OptionKey } from './contracts'
 import { draftSetup, EMPTY_OPTIONS, localErrors, mapFieldErrors, sameDraft, type FormField, type SessionDraft } from './draft'
@@ -86,13 +87,14 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
     }
   }
 
-  function edit(update: (draft: SessionDraft) => SessionDraft, field?: 'date' | OptionKey) {
+  function edit(update: (draft: SessionDraft) => SessionDraft, field?: 'date' | OptionKey | ('date' | OptionKey)[]) {
     if (locked()) return
-    if (field) touched.add(field)
+    const changed = field ? Array.isArray(field) ? field : [field] : []
+    changed.forEach(key => touched.add(key))
     const draft = update(snapshot.draft)
     if (draft === snapshot.draft) return
     const fields = { ...snapshot.fields }
-    if (field) delete fields[field]
+    changed.forEach(key => { delete fields[key] })
     if (draft.liturgies !== snapshot.draft.liturgies) delete fields.liturgy_ids
     // Once every highlighted field is fixed, the summary no longer applies; server-wide notes are stale after an edit.
     const settled = snapshot.errorKind === 'validation' && Object.keys(fields).length === 0
@@ -152,6 +154,15 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
     retryBootstrap: () => loadBootstrap(),
     setDate: (date: string) => edit(draft => ({ ...draft, date }), 'date'),
     setOption: (key: OptionKey, value: string) => edit(draft => ({ ...draft, options: { ...draft.options, [key]: value } }), key),
+    /** Apply only to the exact editable draft that was previewed; never create or send a control command. */
+    applyReadings(expected: SessionDraft, patch: ReadingPatch): boolean {
+      if (locked() || !sameDraft(snapshot.draft, expected)) return false
+      const keys = (['gospel', 'epistle'] as const).filter(key => typeof patch[key] === 'string' && patch[key]!.length > 0)
+      if (!keys.length) return false
+      // Applying a date's readings deliberately pins that date across later midnight bootstrap refreshes.
+      edit(draft => ({ ...draft, options: { ...draft.options, ...Object.fromEntries(keys.map(key => [key, patch[key]])) } }), ['date', ...keys])
+      return true
+    },
     update: (change: (draft: SessionDraft) => SessionDraft) => edit(change),
     validate,
     /** Explicit Create. Returns without sending when locked, invalid, or already in flight. */

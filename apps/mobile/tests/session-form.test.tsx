@@ -38,6 +38,50 @@ async function renderApp(request: typeof fetch, initialUrl = '/services') {
   return { getPathname: app.getPathname }
 }
 
+it('previews all readings, applies only explicit selections, and persists them through the existing create form', async () => {
+  let persisted: ReturnType<typeof fixtures.managedSession> | undefined
+  const request = fakeApi({
+    [LIST]: () => respond(200, listed(persisted ? [4008] : [])),
+    'GET /s/new.json': () => respond(200, fixtures.bootstrap),
+    [CATALOG]: () => respond(200, fixtures.liturgyPage1),
+    [CATALOG_2]: () => respond(200, fixtures.liturgyPage2),
+    'POST /s.json': init => {
+      const { session } = JSON.parse(String(init.body))
+      persisted = fixtures.managedSession({ ...session, revision: 1 })
+      return respond(201, { session: persisted })
+    },
+  })
+  await renderApp(request, '/session-management/new')
+  await fireEvent.changeText(await screen.findByLabelText('Service date'), '2026-01-05')
+  await pick('Divine Liturgy')
+  await pick('Morning Service')
+  await fireEvent.changeText(screen.getByLabelText('Gospel reading'), 'Manual Gospel')
+  await fireEvent.changeText(screen.getByLabelText('Epistle reading'), 'Manual Epistle')
+  await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
+  const first = await screen.findByRole('checkbox', { name: 'Luke 1.26-38' })
+  expect(first).not.toBeChecked()
+  expect(screen.getByRole('button', { name: 'Apply selected readings' })).toBeDisabled()
+  expect(screen.getByText('Old Testament · reference only')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByRole('checkbox', { name: 'Matthew 2.1-12' }))
+  await fireEvent.press(first)
+  expect(screen.getByText('Current: Manual Gospel')).toBeOnTheScreen()
+  expect(request.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
+  await fireEvent.press(screen.getByRole('button', { name: 'Apply selected readings' }))
+  expect(screen.getByLabelText('Gospel reading').props.value).toBe('Luke 1.26-38; Matthew 2.1-12')
+  expect(screen.getByLabelText('Epistle reading').props.value).toBe('Manual Epistle')
+  // A subsequent date change deliberately retains what the person applied.
+  await fireEvent.changeText(screen.getByLabelText('Service date'), '2026-01-26')
+  await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
+  expect(await screen.findByText('No readings are appointed for this date. Your existing reading fields will stay unchanged.')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Apply selected readings' })).toBeDisabled()
+  await fireEvent.press(screen.getByRole('button', { name: 'Close Lectionary readings' }))
+  expect(screen.getByLabelText('Gospel reading').props.value).toBe('Luke 1.26-38; Matthew 2.1-12')
+  await fireEvent.press(screen.getByRole('button', { name: 'Create Session' }))
+  await waitFor(() => expect(persisted?.date).toBe('2026-01-26'))
+  expect(persisted?.liturgy_ids).toEqual([101, 202])
+  expect(persisted?.options).toEqual({ gospel: 'Luke 1.26-38; Matthew 2.1-12', epistle: 'Manual Epistle', before_message: '', after_message: '' })
+})
+
 it.each([
   ['empty', () => respond(200, { error: 'No sessions found' })],
   ['failed', () => respond(500)],

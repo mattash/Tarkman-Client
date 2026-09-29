@@ -1,0 +1,16 @@
+{
+  "name": "@tarkman/lectionary",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
+    "./bundled": { "types": "./src/bundled.ts", "default": "./src/bundled.ts" }
+  },
+  "files": ["src", "data", "LICENSE", "NOTICE", "README.md"],
+  "scripts": {
+    "build": "node ../../apps/mobile/node_modules/typescript/bin/tsc -p tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.cjs"
+  }
+}

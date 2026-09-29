@@ -27,6 +27,7 @@
     "core:test": "npm run core:build && node --test packages/tarkman-core/tests/*.test.mjs && npm run core:check",
     "core:check": "node packages/tarkman-core/scripts/check-boundary.mjs",
     "core:check-consumers": "node packages/tarkman-core/scripts/check-consumers.mjs",
+    "lectionary:test": "npm test --prefix packages/tarkman-lectionary",
     "reader:check": "node packages/tarkman-reader/scripts/check-boundary.mjs",
     "metro:test": "node --test tools/metro/*.test.mjs",
     "design:check": "npm run check --prefix packages/tarkman-design",

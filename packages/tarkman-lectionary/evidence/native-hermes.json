@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-29",
+  "runtime": "iOS 26.5 Simulator",
+  "architecture": "arm64",
+  "configuration": "Release",
+  "engine": "Hermes",
+  "sdk": "iOS 27.0",
+  "entry": "scripts/native-qa-entry.tsx.template",
+  "samples": 1,
+  "firstLookupMs": 11.601249992847443,
+  "cachedLookupMeanMs": 0.030070419907569885,
+  "cachedLookupCount": 100,
+  "networkAttempts": 0,
+  "verifiedPacks": 4,
+  "statsBefore": {
+    "js_numGCs": 0,
+    "js_totalAllocatedBytes": 3062200,
+    "js_allocatedBytes": 3062200,
+    "js_heapSize": 8388608,
+    "js_externalBytes": 558
+  },
+  "statsAfterFirst": {
+    "js_numGCs": 2,
+    "js_totalAllocatedBytes": 8170032,
+    "js_allocatedBytes": 4342840,
+    "js_heapSize": 8388608,
+    "js_externalBytes": 940894
+  },
+  "limitations": [
+    "One cold simulator process; not a physical-device benchmark or whole-app startup delta.",
+    "QA entry blocks JS fetch/XMLHttpRequest/WebSocket; native OTA disabled.",
+    "Picker rendered natively; selection/application verified by component tests and Chromium, not simulator touch automation.",
+    "Same binary fails before JavaScript on iOS 27 because generated shell lacks required UIScene lifecycle."
+  ]
+}

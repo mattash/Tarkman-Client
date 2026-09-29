@@ -1,0 +1,21 @@
+{
+  "baselineCommit": "277e5ab1f75e7ad64d08a30f85efd0ec1f4c1eaf",
+  "command": "expo export --no-minify",
+  "note": "Final implementation. Web includes entry script only; iOS is Hermes bytecode. Final export uses synthetic api.test endpoints; baseline endpoints unset. Not installed size or physical-device startup.",
+  "web": {
+    "baselineBytes": 9733370,
+    "afterBytes": 11787685,
+    "deltaBytes": 2054315,
+    "baselineGzipBytes": 1837704,
+    "afterGzipBytes": 2062579,
+    "deltaGzipBytes": 224875
+  },
+  "ios": {
+    "baselineBytes": 7015257,
+    "afterBytes": 7564983,
+    "deltaBytes": 549726,
+    "baselineGzipBytes": 3000789,
+    "afterGzipBytes": 3169761,
+    "deltaGzipBytes": 168972
+  }
+}
