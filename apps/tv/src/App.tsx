@@ -8,7 +8,7 @@ import { canGoBack, currentRoute, initialNavigation, navigate } from './navigati
 import { PreferencesProvider } from './preferences'
 import { readerConfig, type ReaderTransport } from './reader'
 import { DisplaySetupScreen } from './screens/DisplaySetupScreen'
-import { ReaderScreen } from './screens/ReaderScreen'
+import { DisplayScreen } from './screens/DisplayScreen'
 import { ServicesScreen } from './screens/ServicesScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { colors, safe, type } from './theme'
@@ -43,7 +43,7 @@ export function Navigator({ endpoints, transport }: { endpoints: Endpoints; tran
       onOpen={id => dispatch({ type: 'push', route: { name: 'reader', id } })}
       onDisplaySetup={() => dispatch({ type: 'push', route: { name: 'displaySetup' } })}
       onSettings={() => dispatch({ type: 'push', route: { name: 'settings' } })} />
-    case 'reader': return <ReaderScreen key={route.id} endpoints={endpoints} transport={transport} id={route.id} onBack={back} />
+    case 'reader': return <DisplayScreen key={route.id} endpoints={endpoints} transport={transport} id={route.id} onBack={back} />
     case 'settings': return <SettingsScreen onDone={back} />
     case 'displaySetup': return <DisplaySetupScreen onBack={back} />
   }

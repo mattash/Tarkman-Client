@@ -1,19 +1,16 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import type { Language } from '@tarkman/core'
-import { deviceInterfaceLanguage } from './i18n'
-import type { TextSize } from './theme'
+import { DEFAULT_DISPLAY_CONFIG, type DisplayPreferences } from '@tarkman/reader'
 
-// Viewer choices for this session. Persisting them, and any saved church, belongs to #215.
-export interface Preferences {
-  readingLanguage: Language; textSize: TextSize
-  setReadingLanguage(language: Language): void; setTextSize(size: TextSize): void
-}
+/** Mobile's display defaults, sized for a television. */
+export const TV_DISPLAY_DEFAULTS: DisplayPreferences = { ...DEFAULT_DISPLAY_CONFIG, device_type: 'tv' }
+
+// Display choices for this session. Persisting them, and any saved church, belongs to #215.
+export interface Preferences { display: DisplayPreferences; updateDisplay(patch: Partial<DisplayPreferences>): void }
 const PreferencesContext = createContext<Preferences | null>(null)
 
-export function PreferencesProvider({ children, initialLanguage }: { children: ReactNode; initialLanguage?: Language }) {
-  const [readingLanguage, setReadingLanguage] = useState<Language>(() => initialLanguage ?? (deviceInterfaceLanguage() === 'ru' ? 'ru' : 'en'))
-  const [textSize, setTextSize] = useState<TextSize>('medium')
-  const value = useMemo(() => ({ readingLanguage, textSize, setReadingLanguage, setTextSize }), [readingLanguage, textSize])
+export function PreferencesProvider({ children, initialDisplay = TV_DISPLAY_DEFAULTS }: { children: ReactNode; initialDisplay?: DisplayPreferences }) {
+  const [display, setDisplay] = useState<DisplayPreferences>(initialDisplay)
+  const value = useMemo<Preferences>(() => ({ display, updateDisplay: patch => setDisplay(current => ({ ...current, ...patch })) }), [display])
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
 export function usePreferences(): Preferences {

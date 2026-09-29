@@ -6,11 +6,6 @@ export const colors = foundation.themes.dark
 /** Apple's TV safe area: keep text and focus effects clear of overscanned edges. */
 export const safe = { horizontal: 90, vertical: 60 }
 
-export const TEXT_SIZES = ['small', 'medium', 'large'] as const
-export type TextSize = typeof TEXT_SIZES[number]
-/** Reading text, sized for viewing across a room. */
-export const readingSize: Record<TextSize, number> = { small: 38, medium: 46, large: 56 }
-
 export const type = {
   title: 57,
   heading: 44,

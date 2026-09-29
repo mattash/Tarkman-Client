@@ -22,7 +22,18 @@
           "isTV": true
         }
       ],
-      "./plugins/withSceneLifecycle"
+      "./plugins/withSceneLifecycle",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/SourceSerif4-Regular.ttf",
+            "./assets/fonts/SourceSerif4-Semibold.ttf",
+            "./assets/fonts/NotoSerifArmenian-Regular.ttf",
+            "./assets/fonts/NotoSerifArmenian-Bold.ttf"
+          ]
+        }
+      ]
     ],
     "runtimeVersion": {
       "policy": "appVersion"
