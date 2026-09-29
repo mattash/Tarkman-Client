@@ -30,7 +30,7 @@ export interface DisplayProjectionProps {
 }
 export function DisplayProjection({ apiBase, cableBase, config, sessionId, statusOnly = false, discoveryError = false }: DisplayProjectionProps) {
   const endpoints = useMemo(() => ({ api: apiBase, cable: cableBase }), [apiBase, cableBase])
-  const { state } = useReader(endpoints, sessionId, !!config.tokenProjection && config.show_explanations)
+  const { state } = useReader(endpoints, sessionId, config.show_explanations)
   return <DisplayPresentation state={state} config={config} sessionId={sessionId} statusOnly={statusOnly} discoveryError={discoveryError} />
 }
 

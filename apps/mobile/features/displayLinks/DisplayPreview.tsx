@@ -25,7 +25,9 @@ export function previewState(long: boolean) {
     ...Object.fromEntries(Object.entries(sample).map(([language, text]) => [language,
       long ? Array(language === 'en' ? 8 : 6).fill(text).join('\n\n') : text])),
   } }] })
-  return { ...initialState, session, parts, loading: false, stale: false, connected: true }
+  // One authored note so the setup preview can show the explanation cue when that setting is on.
+  const explanations = [{ id: 1, title: 'Sample explanation', description: null, liturgyPartId: 1 }] // i18n-ignore: sample content
+  return { ...initialState, session, parts, explanations, loading: false, stale: false, connected: true }
 }
 
 /** Unsaved preferences only. This route never resolves a token, authenticates or subscribes. */
