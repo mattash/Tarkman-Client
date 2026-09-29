@@ -1,6 +1,6 @@
 import { createContext, createElement, useContext, useMemo, useState, type ReactNode } from 'react'
 import { getLocales } from 'expo-localization'
-import type { DisplayMessageKey, DisplayText, ReaderMessageKey } from '@tarkman/reader'
+import type { DisplayLinkText, DisplayMessageKey, DisplayText, ReaderMessageKey } from '@tarkman/reader'
 import { en, type Catalog } from './en'
 import { ru } from './ru'
 
@@ -33,6 +33,13 @@ export const readerText = (key: ReaderMessageKey): string => t(engineKey(key))
 /** The shared display's messages, from the same catalogs. */
 const displayKey: (key: DisplayMessageKey) => MessageKey = key => key
 export const displayText: DisplayText = key => t(displayKey(key))
+
+/** Messages the shared display-link API attaches to its errors. */
+export const linkText: DisplayLinkText = {
+  invalidLink: () => t('displayLink.invalid'),
+  couldNotLoad: () => t('displayLink.couldNotLoad'),
+  discoveryUnavailable: () => t('displayLink.discoveryUnavailable'),
+}
 
 interface I18n { language: InterfaceLanguage; setLanguage(language: InterfaceLanguage): void; t: typeof t }
 const I18nContext = createContext<I18n>({ language: active, setLanguage: () => {}, t })

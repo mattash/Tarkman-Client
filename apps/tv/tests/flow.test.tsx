@@ -18,7 +18,7 @@ beforeEach(() => { jest.useFakeTimers(); server = fakeServer() })
 afterEach(() => { jest.useRealTimers() })
 
 async function renderApp() {
-  await render(<I18nProvider initial="en"><PreferencesProvider><Navigator endpoints={endpoints} transport={server.transport} /></PreferencesProvider></I18nProvider>)
+  await render(<I18nProvider initial="en"><PreferencesProvider><Navigator endpoints={endpoints} transport={server.transport} request={server.request as unknown as typeof fetch} /></PreferencesProvider></I18nProvider>)
   await flush()
 }
 
@@ -42,7 +42,8 @@ describe('service selection', () => {
     await renderApp()
     expect(screen.getByTestId('service-7').props.accessibilityLabel).toBe('Divine Liturgy, St. John Armenian Church')
     await fireEvent.press(screen.getByTestId('display-setup'))
-    expect(screen.getByTestId('display-setup-body')).toBeTruthy()
+    await flush()
+    expect(screen.getByTestId('churches-empty')).toBeTruthy()
   })
   it('shows no-services and failure states, retries, and refreshes while open', async () => {
     server.failServices(true)

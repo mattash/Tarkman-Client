@@ -36,9 +36,18 @@ Session status, such as a pause, the Gospel or the read-along QR code, is part o
 the projection itself, as on mobile. The screen stays awake while a service is
 open and ongoing, never in the background.
 
-Not yet on TV: Western Armenian (as on mobile, pending #178) and the explanation
-cue (display-link tokens only, #215). Display choices last for the session;
-saving them per TV is #215.
+Western Armenian is available in the display options (#225), and a saved church
+display shows the explanation cue when its configuration turns it on (#227).
+Display choices for the live-service browser last for the session.
+
+## Church display
+
+A TV can be set to open one church's display at every launch (#215): choose the
+church, then one of its published displays, and the TV follows that church's
+current service, waiting between services. See
+[docs/church-display.md](docs/church-display.md) for behavior, the storage
+limits, the **proposed** public directory contract (backend #457 is not final),
+and the device checklist.
 
 QA only: build with `EXPO_PUBLIC_TV_START_SERVICE=<session id>` to open that
 service at launch, for simulator captures without a remote.
@@ -269,4 +278,7 @@ Record each result separately. A simulator launch is not App Store acceptance.
 | #214 session display: Apple TV 4K simulator at 1080p and 4K against production (`qa/214/*-0a0ae3d.png`) | Pass, 2026-09-28 |
 | #214 session display on the Guest room Apple TV (tvOS 26.6), live St. John service, Siri Remote | Accepted by the maintainer, 2026-09-28 |
 | Physical Apple TV: signed Release build (Tarkman tvOS Development), install and launch on Apple TV 4K (2nd gen), tvOS 26.6 | Pass, 2026-09-28: process alive after launch; screen to be confirmed by the maintainer |
+| #215 church display: Jest on synthetic fixtures (setup, save, relaunch, waiting, failure, unavailable link, reset, damaged record; GETs only) | Pass, 2026-09-29 |
+| #215 church display: tvOS bundle export and prebuild with `expo-secure-store` | Pass, 2026-09-29 (no Pods installed; no simulator or device run) |
+| #215 church display: simulator and physical Apple TV (Keychain persistence, Siri Remote, relaunch/restart, real backend) | Not yet done; see the checklist in `docs/church-display.md` |
 | TestFlight / App Store acceptance | Not yet done (needs release authorization) |

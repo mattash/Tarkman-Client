@@ -22,6 +22,22 @@ export function fakeServer() {
   const requests: { url: string; method: string }[] = []
   const subscriptions = new Map<number, CableCallbacks>()
 
+  // The public directory, display links and current-service discovery used by the saved church display (#215).
+  interface FakeChurch { id: string; name: string; locality?: string | null }
+  interface FakeLink { id: string; title: string; token: string; userId: number }
+  const churches: FakeChurch[] = []
+  const churchLinks = new Map<string, FakeLink[]>()
+  const linkState = new Map<string, { userId: number; version: number; over: Record<string, unknown>; status: number }>()
+  const currentByUser = new Map<number, number | null>()
+  const linkSubscriptions = new Map<string, CableCallbacks>()
+  let directoryFail = false, currentFail = false
+  const linkConfig = (token: string) => {
+    const l = linkState.get(token)!
+    return { token, user_id: l.userId, title: null, mode: 'parallel', lang1: 'translit', lang2: 'en', show_explanations: false, show_notifications: true,
+      status_view: 'full', config_version: l.version, updated_at: '2026-09-29T12:00:00Z', expires_at: null,
+      device_type: 'tv', font_scale: 100, margin_percent: null, text_movement: 'continuous', language_sync: 'linked', ...l.over }
+  }
+
   const partRow = (p: Part) => ({ part: { id: p.id, liturgy_part_id: p.liturgyPartId, liturgy_id: 1, position: p.position, role: p.role ?? 'priest',
     en: p.en, ru: p.ru ?? null, grabar: p.grabar ?? null, translit: p.translit ?? null, page: p.page ?? null } })
   const context = (id: number) => `manifest-${id}-${(parts.get(id) ?? []).length}`
@@ -44,6 +60,35 @@ export function fakeServer() {
     const url = String(input)
     requests.push({ url, method: (init?.method ?? 'GET').toUpperCase() })
     const path = url.slice(API.length).split('?')[0]
+    if (path === '/public/churches' || /^\/public\/churches\/[^/]+\/display_links$/.test(path)) {
+      if (directoryFail) return json({ error: 'boom' }, 500)
+      if (path === '/public/churches') {
+        const params = new URL(url).searchParams
+        const query = (params.get('query') ?? '').toLowerCase(), limit = Number(params.get('limit') ?? 20), offset = Number(params.get('cursor') ?? 0)
+        const matches = churches.filter(c => !query || `${c.name} ${c.locality ?? ''}`.toLowerCase().includes(query))
+        const page = matches.slice(offset, offset + limit)
+        return json({ churches: page.map(c => ({ id: c.id, name: c.name, locality: c.locality ?? null, secret_note: 'must not surface' })),
+          next_cursor: offset + limit < matches.length ? String(offset + limit) : null })
+      }
+      const id = decodeURIComponent(path.split('/')[3])
+      const church = churches.find(c => c.id === id)
+      if (!church) return json({ error: 'not_found' }, 404)
+      return json({ church: { id: church.id, name: church.name, locality: church.locality ?? null },
+        display_links: (churchLinks.get(id) ?? []).map(l => ({ id: l.id, title: l.title, token: l.token, owner_email: 'must@not.surface' })) })
+    }
+    const linkMatch = /^\/display_links\/([^/]+)$/.exec(path)
+    if (linkMatch) {
+      const state = linkState.get(decodeURIComponent(linkMatch[1]))
+      if (!state) return json({ error: 'not_found' }, 404)
+      if (state.status !== 200) return json({ error: 'gone' }, state.status)
+      return json(linkConfig(decodeURIComponent(linkMatch[1])))
+    }
+    const currentMatch = /^\/s\/(\d+)\/current\.json$/.exec(path)
+    if (currentMatch) {
+      if (currentFail) return json({ error: 'boom' }, 500)
+      const current = currentByUser.get(Number(currentMatch[1])) ?? null
+      return current !== null && sessions.has(current) ? json(sessionJson(current)) : json({ status: 'inactive' })
+    }
     if (path === '/services.json') {
       if (servicesFail) return json({ error: 'boom' }, 500)
       const rows = [...listed].map(sessionJson)
@@ -58,8 +103,15 @@ export function fakeServer() {
   })
 
   const cable: CableClient = { subscribe: (_url, id, callbacks) => {
-    subscriptions.set(Number(id), callbacks)
-    return () => { if (subscriptions.get(Number(id)) === callbacks) subscriptions.delete(Number(id)) }
+    if (typeof id === 'object' && id.channel === 'DisplayLinkChannel') {
+      // Keyed by token, not by session.
+      const token = id.token
+      linkSubscriptions.set(token, callbacks)
+      return () => { if (linkSubscriptions.get(token) === callbacks) linkSubscriptions.delete(token) }
+    }
+    const session = typeof id === 'object' ? id.id : id
+    subscriptions.set(session, callbacks)
+    return () => { if (subscriptions.get(session) === callbacks) subscriptions.delete(session) }
   } }
   const transport: ReaderTransport = { api: base => createReaderApi({ base, text: readerText, request: request as unknown as typeof fetch }), cable: () => cable }
 
@@ -70,6 +122,24 @@ export function fakeServer() {
       cursor.set(session.id, { revision: 1, liturgyPartId: currentLiturgyPartId, status: session.status })
       listed.add(session.id)
     },
+    /** Publishes a church and its display links. Each link names the operator (`userId`) whose current service it follows. */
+    addChurch(church: FakeChurch, links: FakeLink[] = []) {
+      churches.push(church); churchLinks.set(church.id, links)
+      for (const link of links) linkState.set(link.token, { userId: link.userId, version: 1, over: {}, status: 200 })
+    },
+    setCurrentService(userId: number, sessionId: number | null) { currentByUser.set(userId, sessionId) },
+    failDirectory(fail: boolean) { directoryFail = fail },
+    failCurrent(fail: boolean) { currentFail = fail },
+    /** A revoked (404/403) or expired (410) display link; the token read then reports it unavailable. */
+    setLinkStatus(token: string, status: 200 | 403 | 404 | 410) { linkState.get(token)!.status = status },
+    /** The operator edits the display: the version rises and the channel publishes a complete snapshot. */
+    updateLink(token: string, over: Record<string, unknown>) {
+      const l = linkState.get(token)!
+      l.version += 1; l.over = { ...l.over, ...over }
+      linkSubscriptions.get(token)?.received({ event: 'display_link.updated', data: linkConfig(token) })
+    },
+    linkSubscribed(token: string) { return linkSubscriptions.has(token) },
+    connectedLink(token: string) { linkSubscriptions.get(token)?.connected() },
     unlist(id: number) { listed = new Set([...listed].filter(value => value !== id)) },
     failServices(fail: boolean) { servicesFail = fail },
     connected(id: number) { subscriptions.get(id)?.connected() },

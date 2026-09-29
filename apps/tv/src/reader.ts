@@ -15,14 +15,16 @@ export interface ReaderTransport { api(base: string): ReaderApi; cable(): CableC
 export const defaultTransport: ReaderTransport = { api: base => createReaderApi({ base, text: readerText }), cable: createCable }
 
 /**
- * Read-only: TV never sends commands, authenticates, or keeps an offline copy. `id` null lists
+ * Read-only: TV never sends commands, authenticates, or keeps an offline copy. Explanations load
+ * only when a saved display's configuration asks for its cue. `id` null lists
  * services; a new id creates a new controller, so a previous service's responses can never land.
  */
-export function useReader(endpoints: Endpoints, id: number | null, transport: ReaderTransport = defaultTransport) {
+export function useReader(endpoints: Endpoints, id: number | null, transport: ReaderTransport = defaultTransport, options: { loadExplanations?: boolean } = {}) {
+  const loadExplanations = !!options.loadExplanations
   const controller = useMemo(() => createReaderController({
     api: transport.api(endpoints.api), cable: transport.cable(), cableUrl: endpoints.cable,
-    lifecycle, id, text: readerText, loadExplanations: false,
-  }), [endpoints.api, endpoints.cable, id, transport])
+    lifecycle, id, text: readerText, loadExplanations,
+  }), [endpoints.api, endpoints.cable, id, transport, loadExplanations])
   useEffect(() => controller.start(), [controller])
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot)
   return useMemo(() => ({
