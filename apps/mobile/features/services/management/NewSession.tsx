@@ -15,6 +15,7 @@ import { todayIn } from './draft'
 import { FormShell } from './FormShell'
 import { announceMutation, managementScope } from './mutations'
 import { SessionForm } from './SessionForm'
+import { LectionaryPicker } from './LectionaryPicker'
 
 /** Auth hydration is owned by the signed-in layout; the key isolates every draft to one environment and account. */
 export function NewSessionRoute() {
@@ -81,6 +82,7 @@ function NewSession({ scope }: { scope: string }) {
     {bootstrap && <>
       <Notice tone="neutral">{t('sessionManagement.publicNote')}</Notice>
       <SessionForm draft={state.draft} timeZone={bootstrap.timeZone} editable={editable} fields={state.fields} focusRequest={state.focusRequest}
+        readingAssistant={<LectionaryPicker draft={state.draft} editable={editable} onApply={controller.applyReadings} />}
         catalog={catalog} onDate={controller.setDate} onOption={controller.setOption} onChange={controller.update} />
     </>}
     <AppModal visible={confirmToday} onDismiss={() => setConfirmToday(false)} title={t('sessionManagement.todayTitle')} openerRef={createRef}>

@@ -5,6 +5,7 @@ import { createCreationController, isDirty, RETRY_WINDOW_MS } from '../features/
 import { addLiturgy } from '../features/services/management/draft'
 import { deferred, respond } from './auth-helpers'
 import * as fixtures from './fixtures/session-management'
+import { getLectionaryDay, selectedReadings } from '../features/lectionary'
 
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => '00000000-0000-4000-8000-000000000001') }))
 
@@ -22,6 +23,62 @@ function setup(handlers: Array<Response | Promise<Response> | Error>, now = () =
   return { fetcher, controller }
 }
 const posts = (fetcher: jest.Mock<AuthContextValue['authorizedFetch']>) => fetcher.mock.calls.filter(([, init]) => init?.method === 'POST')
+
+it('applies selected references atomically, preserves messages and other fields, and submits the same values', async () => {
+  const { fetcher, controller } = setup([])
+  await ready(controller)
+  controller.setDate('2026-01-05')
+  controller.setOption('gospel', 'My draft')
+  controller.setOption('epistle', 'Keep this')
+  controller.setOption('before_message', 'Welcome')
+  const expected = controller.getSnapshot().draft
+  const result = await getLectionaryDay(expected.date, 'en')
+  if (!result.ok) throw Error(result.reason)
+  const patch = selectedReadings(result.day, { gospel: [3, 0], epistle: [] })
+  expect(patch).toEqual({ gospel: 'Luke 1.26-38; Matthew 2.1-12' })
+  expect(controller.applyReadings(expected, patch)).toBe(true)
+  const draft = controller.getSnapshot().draft
+  expect(draft.options).toEqual({ gospel: patch.gospel, epistle: 'Keep this', before_message: 'Welcome', after_message: '' })
+  expect(posts(fetcher)).toHaveLength(0)
+  fetcher.mockImplementationOnce(async (_path, init) => {
+    const { session } = JSON.parse(String(init?.body))
+    return respond(201, { session: fixtures.managedSession({ ...session, revision: 1,
+      liturgies: [{ id: 101, name: 'Divine Liturgy', position: 1, selectable: true }] }) })
+  })
+  controller.submit(); await flush()
+  expect(controller.getSnapshot().created?.options).toEqual(draft.options)
+  expect(JSON.parse(String(posts(fetcher)[0][1]?.body)).session).toEqual({ date: expected.date, liturgy_ids: [101], options: draft.options })
+})
+
+it('rejects stale and locked applications and leaves readings alone on date changes', async () => {
+  const { controller } = setup([new Promise<Response>(() => {})])
+  await ready(controller)
+  const before = controller.getSnapshot().draft
+  controller.setOption('gospel', 'Manual change')
+  expect(controller.applyReadings(before, { gospel: 'Old preview' })).toBe(false)
+  const beforeDate = controller.getSnapshot().draft
+  controller.setDate('2030-10-04')
+  expect(controller.applyReadings(beforeDate, { gospel: 'Old date' })).toBe(false)
+  expect(controller.getSnapshot().draft.options.gospel).toBe('Manual change')
+  expect(controller.applyReadings(controller.getSnapshot().draft, {})).toBe(false)
+  controller.submit()
+  expect(controller.applyReadings(controller.getSnapshot().draft, { gospel: 'Locked' })).toBe(false)
+  expect(controller.getSnapshot().draft.options.gospel).toBe('Manual change')
+  controller.dispose()
+})
+
+it('pins an applied date and readings across a late midnight bootstrap without freezing untouched fields', async () => {
+  let clock = 0
+  const { controller, fetcher } = setup([], () => clock)
+  await ready(controller)
+  const expected = controller.getSnapshot().draft
+  expect(controller.applyReadings(expected, { gospel: 'Matthew 1.18-25' })).toBe(true)
+  clock = 60 * 60 * 1000
+  fetcher.mockResolvedValueOnce(respond(200, { ...fixtures.bootstrap, defaults: { date: '2026-09-28', options: { gospel: 'Backend changed', epistle: 'New default' } } }))
+  controller.focus(); await flush()
+  expect(controller.getSnapshot().draft.date).toBe(expected.date)
+  expect(controller.getSnapshot().draft.options).toMatchObject({ gospel: 'Matthew 1.18-25', epistle: 'New default' })
+})
 async function ready(controller: ReturnType<typeof createCreationController>) {
   controller.focus(); await flush()
   controller.update(draft => addLiturgy(draft, liturgy))

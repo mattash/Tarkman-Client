@@ -30,6 +30,7 @@
     "@shopify/flash-list": "2.0.2",
     "@tarkman/core": "file:../../packages/tarkman-core",
     "@tarkman/design": "file:../../packages/tarkman-design",
+    "@tarkman/lectionary": "file:../../packages/tarkman-lectionary",
     "@tarkman/reader": "file:../../packages/tarkman-reader",
     "expo": "~57.0.25",
     "expo-camera": "~57.0.5",
