@@ -2,7 +2,7 @@
 
 Local implementation, September 29, 2026, based on Tarkman-Client
 `277e5ab1f75e7ad64d08a30f85efd0ec1f4c1eaf`. No production session or live control
-was modified. Data redistribution remains pending maintainer clarification.
+was modified. Upstream data rights remain pending maintainer clarification; the repository owner has authorized PR publication.
 
 ## Data and contract
 
@@ -127,8 +127,9 @@ incidental package-script changes from prebuild. Never ship this QA entry.
 ## Release gates
 
 Maintainer confirmation of modern/source-derived data redistribution rights is
-still required by #211 before pushing generated data or publishing/deploying a
-bundle containing it. LICENSE, NOTICE and the source limitations accompany the
+still required by #211 before package publication or production deployment.
+The repository owner explicitly authorized pushing the implementation and generated
+data for PR review on September 29, 2026; this is not a claim of maintainer clearance. LICENSE, NOTICE and the source limitations accompany the
 package. Exact Python parity is not independent validation of every 2027 date.
 No physical-device timing, full-app native startup delta, deployed-backend write
 or successful iOS 27 launch is claimed by these checks.

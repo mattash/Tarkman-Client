@@ -1,8 +1,8 @@
 # Bundled Armenian lectionary
 
 Implementation of [#211](https://github.com/mattash/Tarkman-Client/issues/211).
-**Distribution is pending maintainer clarification of derived-data rights.**
-The package is private; do not publish it, upload its generated packs, or deploy a bundle containing them until that question is resolved.
+**Release is pending maintainer clarification of derived-data rights.**
+The repository owner authorized uploading this implementation and its generated packs for PR review on September 29, 2026. That authorization does not establish upstream data rights. Keep package publication and production deployment blocked until the question is resolved.
 
 ## Contract
 
