@@ -1,4 +1,4 @@
-import { ScrollView, View, useWindowDimensions } from 'react-native'
+import { Linking, ScrollView, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
@@ -25,6 +25,8 @@ export function About() {
         <AppText variant="heading">{t('about.creditsTitle')}</AppText>
         <AppText tone="muted">{t('about.credits')}</AppText>
       </Card>
+      <ServiceRow testID="about-privacy-policy" title={t('about.privacyTitle')} subtitle={t('about.privacySubtitle')}
+        onPress={() => { void Linking.openURL('https://www.tarkman.app/privacy') }} />
       {state.status !== 'hydrating' && <View style={{ gap: spacing.md }}>
         <AppText variant="label" tone="muted" accessibilityRole="header">{t('settings.account')}</AppText>
         {state.status === 'signedIn' ? <>
