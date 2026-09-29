@@ -32,6 +32,11 @@ function guardReactNative(appRoot, expected, resolve) {
     const match = guarded.exec(moduleName)
     if (match && result.type === 'sourceFile') {
       const file = fs.realpathSync(result.filePath)
+      // Expo replaces RN's HMR client with its own implementation on native platforms.
+      // Allow only that request/destination pair, still rejecting foreign or symlinked Expo copies.
+      const expoHmr = /^react-native\/Libraries\/Utilities\/HMRClient(?:\.js)?$/.test(moduleName)
+        && file === path.join(modules, 'expo/src/async-require/hmr.ts')
+      if (expoHmr) return result
       const root = modules + match[1] + path.sep
       // A nested copy (node_modules/react-native/node_modules/react-native) also starts with root.
       if (!file.startsWith(root) || file.slice(root.length).split(path.sep).includes('node_modules')) {

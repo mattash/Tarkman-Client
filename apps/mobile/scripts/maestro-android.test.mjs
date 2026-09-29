@@ -150,38 +150,134 @@ test('forwards cancellation only to the child it started', async () => {
   }
 })
 
-test('shared YAML parses with platform-scoped reset and keyboard behavior', () => {
-  const readFlow = name => yaml.loadAll(readFileSync(new URL(`../maestro/${name}.yaml`, import.meta.url), 'utf8'))
+const readFlow = name => yaml.loadAll(readFileSync(new URL(`../maestro/${name}.yaml`, import.meta.url), 'utf8'))
+
+test('shared YAML parses as exactly a config and command document', () => {
   for (const name of [...fixtureFlows.map(name => `fixture-${name}`), 'launch', 'fixture-open-service', 'fixture-sign-in']) {
-    const [config, commands] = readFlow(name)
+    const documents = readFlow(name)
+    assert.equal(documents.length, 2)
+    const [config, commands] = documents
     assert.equal(config.appId, 'app.tarkman')
     assert.ok(Array.isArray(commands))
   }
+})
+
+test('launch resets only Android, grants camera before the cold link, and never clears data on retry', () => {
   const [, launch] = readFlow('launch')
-  const branches = launch.filter(command => command.runFlow).map(command => command.runFlow)
-  assert.deepEqual(branches.map(branch => branch.when.platform), ['iOS', 'Android'])
-  assert.deepEqual(branches[0].commands, [
-    { launchApp: { clearState: false } },
-    { openLink: { link: 'exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081' } },
-  ])
-  // Keep the deep link cold and require both overlay controls before app assertions.
-  assert.deepEqual(branches[1].commands, [
-    'clearState',
-    { setPermissions: { permissions: { camera: 'allow' } } },
-    { openLink: { link: 'tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081' } },
-    { extendedWaitUntil: { visible: 'Continue', timeout: 60000 } },
-    { tapOn: { text: 'Continue' } },
-    { extendedWaitUntil: { visible: 'Close', timeout: 15000 } },
-    { scrollUntilVisible: { element: { text: 'Tools button' }, direction: 'DOWN' } },
-    { tapOn: 'Tools button' },
-    { tapOn: { text: 'Close' } },
-  ])
-  assert.deepEqual(launch.slice(2), [
+  assert.deepEqual(launch[0], {
+    runFlow: { when: { platform: 'Android' }, commands: [
+      'clearState', { setPermissions: { permissions: { camera: 'allow' } } },
+    ] },
+  })
+  const handoff = launch[1].retry
+  assert.equal(handoff.maxRetries, 1)
+  assert.deepEqual(handoff.commands[1], {
+    runFlow: { when: { platform: 'Android' }, commands: [
+      { openLink: { link: 'tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081' } },
+    ] },
+  })
+  const visit = commands => {
+    for (const command of commands) {
+      assert.notEqual(command, 'clearState')
+      assert.equal(Object.hasOwn(command, 'clearState'), false)
+      if (command.launchApp) assert.equal(command.launchApp.clearState, false)
+      if (command.runFlow?.commands) visit(command.runFlow.commands)
+      if (command.retry?.commands) visit(command.retry.commands)
+    }
+  }
+  visit(launch.slice(1))
+})
+
+test('iOS has exactly one cold link inside retry after stop, without launchApp', () => {
+  const [, launch] = readFlow('launch')
+  const handoff = launch[1].retry
+  assert.equal(handoff.maxRetries, 1)
+  assert.deepEqual(handoff.commands[0], {
+    runFlow: { when: { platform: 'iOS' }, commands: [
+      'stopApp',
+      { openLink: { link: 'exp+tarkman://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081' } },
+    ] },
+  })
+  const launches = []
+  const visit = commands => {
+    for (const command of commands) {
+      if (command === 'launchApp' || Object.hasOwn(command, 'launchApp')) launches.push(command)
+      if (command.runFlow?.commands) visit(command.runFlow.commands)
+      if (command.retry?.commands) visit(command.retry.commands)
+    }
+  }
+  visit(launch)
+  assert.equal(launches.length, 0)
+  // The only iOS link is in the fresh-process branch, regardless of prior route.
+  assert.equal(JSON.stringify(launch).split('exp+tarkman://').length - 1, 1)
+})
+
+test('handoff waits before conditional Continue and retries home/transient absence without requiring Close', () => {
+  const [, launch] = readFlow('launch')
+  assert.deepEqual(launch[1].retry.commands.slice(2), [
     { tapOn: { text: 'Open', optional: true } },
+    { extendedWaitUntil: { visible: 'Continue|Close|close|xmark|Tools|Today', timeout: 60000 } },
+    { runFlow: { when: { visible: 'Continue' }, commands: [
+      { tapOn: 'Continue' }, { waitForAnimationToEnd: { timeout: 5000 } }, { assertNotVisible: 'Continue' },
+    ] } },
+    { extendedWaitUntil: { visible: 'Close|close|xmark|Tools|Today', timeout: 15000 } },
+  ])
+  // Both waits accept an already-loaded app/menu; only the initial wait accepts onboarding.
+  const waits = launch[1].retry.commands.filter(command => command.extendedWaitUntil).map(command => command.extendedWaitUntil)
+  for (const wait of waits) {
+    const selector = new RegExp(`^(?:${wait.visible})$`)
+    for (const state of ['Today', 'Tools', 'Close', 'close', 'xmark']) assert.ok(selector.test(state))
+    for (const state of ['Android home', 'Loading', 'Unable to load script']) assert.equal(selector.test(state), false)
+  }
+})
+
+test('menu cleanup is conditional, outside retry, disables Tools before closing and requires Today', () => {
+  const [, launch] = readFlow('launch')
+  const menu = launch[2].runFlow
+  assert.deepEqual(menu.when, { visible: 'Close|close|xmark' })
+  assert.deepEqual(menu.commands, [
+    { scrollUntilVisible: { element: { text: 'Tools button' }, direction: 'DOWN' } },
+    { runFlow: { when: { platform: 'Android' }, commands: [{ tapOn: 'Tools button' }] } },
+    { runFlow: { when: { platform: 'iOS' }, commands: [
+      { runFlow: {
+        when: { visible: { text: '1', rightOf: 'Tools button', checked: true } },
+        commands: [{ tapOn: { text: '1', rightOf: 'Tools button', checked: true } }],
+      } },
+      { assertVisible: { text: '0', rightOf: 'Tools button', checked: false } },
+    ] } },
+    { tapOn: { text: 'Close|close|xmark' } },
+    { assertNotVisible: 'Close|close|xmark' },
+  ])
+  assert.deepEqual(launch.slice(3), [
     { extendedWaitUntil: { visible: 'Today', timeout: 60000 } },
   ])
-  // Device Metro traffic must use adb reverse, independently of host readiness checks.
-  assert.equal(new URL(branches[1].commands[2].openLink.link).searchParams.get('url'), 'http://127.0.0.1:8081')
+})
+
+test('returning client with Today and floating Tools skips menu cleanup without touching Tools', () => {
+  const [, launch] = readFlow('launch')
+  const visible = ['Today', 'Tools']
+  const matches = selector => visible.some(text => new RegExp(`^(?:${selector})$`).test(text))
+  for (const { extendedWaitUntil: wait } of launch[1].retry.commands) {
+    if (wait) assert.ok(matches(wait.visible))
+  }
+  const menu = launch[2].runFlow
+  assert.equal(matches(menu.when.visible), false)
+  assert.deepEqual(launch.slice(3), [
+    { extendedWaitUntil: { visible: 'Today', timeout: 60000 } },
+  ])
+  // Guard every nested branch against reopening the floating control or requiring its absence.
+  const visit = commands => {
+    for (const command of commands) {
+      assert.notEqual(command.tapOn?.text ?? command.tapOn, 'Tools')
+      assert.notEqual(command.assertNotVisible?.text ?? command.assertNotVisible, 'Tools')
+      if (command.runFlow?.commands) visit(command.runFlow.commands)
+      if (command.retry?.commands) visit(command.retry.commands)
+    }
+  }
+  visit(launch)
+})
+
+test('shared open-service flow keeps platform-scoped keyboard behavior', () => {
   const [, open] = readFlow('fixture-open-service')
   // Android types into the autoFocused field without tapping it under the keyboard.
   // Keep iOS's explicit field tap and Go submission, in their original order.
