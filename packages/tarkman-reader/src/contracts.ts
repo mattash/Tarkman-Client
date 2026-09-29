@@ -26,6 +26,8 @@ export interface LivePart {
   effectiveDurationMs?: number | null
   id: number; key: string; liturgyId: number | null; liturgyPartId: number | null
   position: number; role: string; text: Record<Language, string | null>
+  /** Western Armenian (`hy_west`), used only by displays whose language is `hyw`. */
+  hyWest?: string | null
   /** What the congregation does during this part ("stand"), when the service publishes one. */
   posture: string | null
 }
@@ -107,7 +109,7 @@ export function createContracts(t: ReaderText) {
       if (keys.has(key)) throw new Error(t('errors.duplicatePart'))
       keys.add(key)
       return { id, key, liturgyId, liturgyPartId, position, page: positiveId(p.page), effectiveDurationMs: positiveId(p.effective_duration_ms), role: text(p.role) || t('fallbacks.reading'),
-        text: { en: text(p.en), ru: text(p.ru), grabar: text(p.grabar), translit: text(p.translit) }, posture: text(p.posture)?.trim() || null }
+        text: { en: text(p.en), ru: text(p.ru), grabar: text(p.grabar), translit: text(p.translit) }, hyWest: text(p.hy_west), posture: text(p.posture)?.trim() || null }
     }).sort((a, b) => a.position - b.position)
   }
   function normalizeExplanations(value: unknown): LiveExplanation[] {

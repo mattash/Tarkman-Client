@@ -116,9 +116,8 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
                 options={DISPLAY_MODES.map(value => ({ value, label: optionLabel(value) }))}
                 onChange={value => controller.edit({ mode: value, lang2: value === 'single' ? null : draft.lang2 ?? 'en' })} />
             </View>
-            {choice('lang1', ['translit', 'en', 'grabar'])}
-            {draft.mode === 'parallel' && choice('lang2', ['translit', 'en', 'grabar'])}
-            {(draft.lang1 === 'hyw' || draft.lang2 === 'hyw') && <AppText accessibilityRole="alert">{t('links.unsupported')}</AppText>}
+            {choice('lang1', ['translit', 'en', 'hyw', 'grabar'])}
+            {draft.mode === 'parallel' && choice('lang2', ['translit', 'en', 'hyw', 'grabar'])}
             <AppText variant="label">{t('links.fontValue', { value: draft.font_scale })}</AppText>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <AppButton variant="secondary" accessibilityLabel={t('links.smaller')} disabled={disabled || draft.font_scale <= 50} onPress={() => controller.edit({ font_scale: Math.max(50, draft.font_scale - 5) })}>−</AppButton>

@@ -141,7 +141,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport }: Props) {
                 <View key={language} testID={`display-column-${language}`} style={[styles.column, index > 0 ? {
                   borderColor: colors.borderDivider, borderLeftWidth: stacked ? 0 : 1, borderTopWidth: stacked ? 1 : 0,
                   paddingLeft: stacked ? 0 : padding, paddingTop: stacked ? space.md : 0 } : undefined]}>
-                  <ProjectionText key={`${id}/${part.key}/${language}`} text={texts[index]} language={language === 'hyw' ? 'en' : language} fontSize={fontSize} clock={readingClock}
+                  <ProjectionText key={`${id}/${part.key}/${language}`} text={texts[index]} language={language === 'hyw' ? 'grabar' : language} fontSize={fontSize} clock={readingClock}
                     durationMs={settings.language_sync === 'independent' ? independentDuration(durationMs, texts[index], texts) : durationMs}
                     movement={movement} pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
                     manualPosition={settings.language_sync === 'linked' ? manualPositions.linked : manualPositions.independent[language]}
