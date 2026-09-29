@@ -148,7 +148,7 @@ export function describeDisplay({ state, config, sessionId, statusOnly = false, 
       page: statusPageNumber(session.page, part?.page), posture: session.posture?.trim() || part?.posture?.trim() || null }
   }
   const languages: DisplayLanguage[] = [...new Set(config.mode === 'parallel' && config.lang2 ? [config.lang1, config.lang2] : [config.lang1])]
-  const texts = languages.map(language => language === 'hyw' ? null : projectionText(part?.text[language]))
+  const texts = languages.map(language => projectionText(language === 'hyw' ? part?.hyWest : part?.text[language]))
   const stacked = width / fontScale < 640
   const fontSize = Math.max(32, Math.min(width / (languages.length > 1 ? 26 : 20), height / (stacked && languages.length > 1 ? 18 : 10))) * layout.textScale
   const textMessage = message?.kind === 'message' ? message : null
@@ -156,7 +156,7 @@ export function describeDisplay({ state, config, sessionId, statusOnly = false, 
     ...frame, kind: 'projection', message: textMessage, messageText: textMessage ? textMessage.body ?? textMessage.title : null,
     part, languages, texts, durationMs: projectionDuration(part?.effectiveDurationMs, texts),
     fontSize, roleSize: Math.max(24, fontSize * 0.6), stacked,
-    showExplanationCue: !!config.tokenProjection && config.show_explanations && !state.stale && !state.explanationError && state.explanations.length > 0,
+    showExplanationCue: config.show_explanations && !state.stale && !state.explanationError && state.explanations.length > 0,
     readingRunning: !!part && !textMessage && session.status === 'active',
     messageRunning: !!textMessage,
   }

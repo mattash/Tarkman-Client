@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, StyleSheet, Text, View, useTVEventHandler, useWindowDimensions } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
 import { createManualPosition, createPageGroup, describeDisplay, displayOccurrence, independentDuration, projectionDuration,
-  sessionQrLayout, statusPostureKey, type DisplayLanguage, type Endpoints } from '@tarkman/reader'
+  sessionQrLayout, statusPostureKey, statusTextScale, type DisplayLanguage, type Endpoints } from '@tarkman/reader'
 import { DisplayOptions } from '../components/DisplayOptions'
 import { FreshnessBadge } from '../components/FreshnessBadge'
 import { ProjectionText, type ScrollMetrics } from '../components/ProjectionText'
@@ -105,11 +105,12 @@ export function DisplayScreen({ endpoints, id, onBack, transport }: Props) {
         const both = showPage && showPosture
         const pageWidth = (width - layout.paddingHorizontal * 2) * (both ? 0.65 : 1)
         const itemHeight = height - layout.paddingVertical * 2
+        const statusScale = statusTextScale(layout.textScale)
         const pageText = page !== null ? String(page) : null
-        const numberSize = pageText !== null ? Math.min(itemHeight * 0.85, pageWidth / (pageText.length * 0.65)) / fontScale * Math.min(1, layout.textScale) : 0
+        const numberSize = pageText !== null ? Math.min(itemHeight * 0.85, pageWidth / (pageText.length * 0.65)) / fontScale * statusScale : 0
         const postureKey = statusPostureKey(posture)
         const postureLabel = postureKey ? t(`display.${postureKey}`) : t('display.postureUnavailable')
-        const postureSize = Math.max(40, Math.min(width * 0.13, height * 0.18, 160))
+        const postureSize = Math.max(40, Math.min(width * 0.13, height * 0.18, 160) * statusScale)
         return (
           <View testID="display-status" style={[styles.screen, screenPadding, styles.statusRow]}>
             {showPage ? <View style={[styles.statusItem, { flex: both ? 0.65 : 1 }]}>
@@ -141,7 +142,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport }: Props) {
                 <View key={language} testID={`display-column-${language}`} style={[styles.column, index > 0 ? {
                   borderColor: colors.borderDivider, borderLeftWidth: stacked ? 0 : 1, borderTopWidth: stacked ? 1 : 0,
                   paddingLeft: stacked ? 0 : padding, paddingTop: stacked ? space.md : 0 } : undefined]}>
-                  <ProjectionText key={`${id}/${part.key}/${language}`} text={texts[index]} language={language === 'hyw' ? 'en' : language} fontSize={fontSize} clock={readingClock}
+                  <ProjectionText key={`${id}/${part.key}/${language}`} text={texts[index]} language={language === 'hyw' ? 'grabar' : language} fontSize={fontSize} clock={readingClock}
                     durationMs={settings.language_sync === 'independent' ? independentDuration(durationMs, texts[index], texts) : durationMs}
                     movement={movement} pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
                     manualPosition={settings.language_sync === 'linked' ? manualPositions.linked : manualPositions.independent[language]}

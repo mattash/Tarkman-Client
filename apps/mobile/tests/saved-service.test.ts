@@ -210,3 +210,13 @@ test('live fingerprints stay local while older saved explanations remain readabl
   expect(saved.explanations?.items).toEqual(source.explanations.items)
   expect(saved.explanations?.items[0]).not.toHaveProperty('contentFingerprint')
 })
+
+test('keeps Western Armenian in saved copies and accepts older copies without it', () => {
+  const source = input()
+  source.parts[0].hyWest = 'Արևմտահայերեն'
+  const built = buildSavedService(source, now)!
+  expect(readSavedService(JSON.stringify(built), now)!.parts[0].hyWest).toBe('Արևմտահայերեն')
+  const older = JSON.parse(JSON.stringify(built))
+  for (const part of older.parts) delete part.hyWest
+  expect(readSavedService(JSON.stringify(older), now)!.parts[0]).not.toHaveProperty('hyWest')
+})

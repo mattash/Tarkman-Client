@@ -17,6 +17,7 @@ import { DEVICE_TYPES, TEXT_MOVEMENTS, LANGUAGE_SYNCS } from './customization'
 import { DISPLAY_MODES, DISPLAY_STATUS_VIEWS } from './config'
 import { CREATE_DEFAULTS, changedFields, localExpiration } from './draft'
 import { DisplayPresentation } from './DisplayProjection'
+import { PreviewStage } from './DisplayFrame'
 import { previewState } from './DisplayPreview'
 import { LinkActions } from './LinkActions'
 import { editableFields } from './managementApi'
@@ -116,9 +117,8 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
                 options={DISPLAY_MODES.map(value => ({ value, label: optionLabel(value) }))}
                 onChange={value => controller.edit({ mode: value, lang2: value === 'single' ? null : draft.lang2 ?? 'en' })} />
             </View>
-            {choice('lang1', ['translit', 'en', 'grabar'])}
-            {draft.mode === 'parallel' && choice('lang2', ['translit', 'en', 'grabar'])}
-            {(draft.lang1 === 'hyw' || draft.lang2 === 'hyw') && <AppText accessibilityRole="alert">{t('links.unsupported')}</AppText>}
+            {choice('lang1', ['translit', 'en', 'hyw', 'grabar'])}
+            {draft.mode === 'parallel' && choice('lang2', ['translit', 'en', 'hyw', 'grabar'])}
             <AppText variant="label">{t('links.fontValue', { value: draft.font_scale })}</AppText>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <AppButton variant="secondary" accessibilityLabel={t('links.smaller')} disabled={disabled || draft.font_scale <= 50} onPress={() => controller.edit({ font_scale: Math.max(50, draft.font_scale - 5) })}>−</AppButton>
@@ -149,7 +149,7 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
           </Card>
           <Card><AppText variant="heading">{t('links.preview')}</AppText><AppText tone="muted">{t('links.previewHelp')}</AppText>
             <AppButton variant="quiet" selected={long} onPress={() => setLong(!long)}>{t('links.longSample')}</AppButton>
-            <View style={{ height: 420, overflow: 'hidden' }}><DisplayPresentation state={sample} sessionId={1} config={draft} preview /></View>
+            <PreviewStage height={420}>{size => <DisplayPresentation state={sample} sessionId={1} config={draft} preview size={size} />}</PreviewStage>
           </Card>
           </>}
           {state.conflict && <Card>

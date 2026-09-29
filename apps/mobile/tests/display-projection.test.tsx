@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { render, screen, waitFor } from '@testing-library/react-native'
 import { StyleSheet, useWindowDimensions } from 'react-native'
 import glyphs from '@react-native-vector-icons/ionicons/glyphmaps/Ionicons.json'
@@ -6,7 +6,7 @@ import { ReadingFontContext } from '../design/readingFont'
 import { colors } from '../design/tokens'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { I18nProvider, setActiveInterfaceLanguage } from '../features/i18n'
-import { DisplayProjection, sessionQrLayout } from '../features/displayLinks/DisplayProjection'
+import { DisplayPresentation, DisplayProjection, sessionQrLayout } from '../features/displayLinks/DisplayProjection'
 import { useReader } from '../features/live/useReader'
 import { initialState } from '../features/live/state'
 import type { DisplayLinkConfig } from '../features/displayLinks/config'
@@ -93,7 +93,7 @@ it('shows a clear unavailable message when the session fails to load', async () 
   expect(screen.getByText('This service is not available right now.')).toBeOnTheScreen()
 })
 
-it('renders both languages without ancillary projection labels', async () => {
+it('renders both languages without ancillary projection labels, showing the explanation cue only when enabled', async () => {
   const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_id: 10, current_liturgy_part_id: 11, page: 24, posture: 'stand' } })
   const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_id: 10, liturgy_part_id: 11, en: 'Peace unto all.', grabar: 'Խաղաղութիւն ամենեցուն։' } }] })
   jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts,
@@ -101,11 +101,21 @@ it('renders both languages without ancillary projection labels', async () => {
   await renderProjection({ config: { ...config, lang2: 'grabar', show_explanations: true } })
   expect(screen.getByText('Peace unto all.')).toBeOnTheScreen()
   expect(screen.getByText('Խաղաղութիւն ամենեցուն։')).toBeOnTheScreen()
-  expect(screen.queryByText('Explanation available')).toBeNull()
+  // The effective setting decides, whether or not the link was resolved from a token.
+  expect(screen.getByText('Explanation available')).toBeOnTheScreen()
   expect(screen.queryByText('Page 24')).toBeNull()
   expect(screen.queryByText('Stand')).toBeNull()
   expect(screen.queryByTestId('display-page-placeholder')).toBeNull()
   expect(screen.queryByTestId('display-posture')).toBeNull()
+  expect(jest.mocked(useReader).mock.calls.at(-1)?.[2]).toBe(true)
+})
+it('neither requests nor shows explanations when the setting is off', async () => {
+  const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_id: 10, current_liturgy_part_id: 11 } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_id: 10, liturgy_part_id: 11, en: 'Peace unto all.' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false, connected: true, session, parts,
+    explanations: [{ id: 1, title: 'Peace', description: null, liturgyPartId: 11 }] }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection({ config: { ...config, show_explanations: false } })
+  expect(screen.queryByText('Explanation available')).toBeNull()
   expect(jest.mocked(useReader).mock.calls.at(-1)?.[2]).toBe(false)
 })
 it.each(['full', 'pages_only', 'posture_only'] as const)('renders minimal status %s without reading text', async status_view => {
@@ -304,4 +314,34 @@ it.each([[1280, 720], [1920, 1080], [390, 844]] as [number, number][])('keeps QR
   expect(screen.getByTestId('display-session-qr')).toBeOnTheScreen()
   expect(screen.getByText('Scan to read along')).toHaveStyle({ lineHeight: qr.titleLineHeight })
   expect(screen.getByText('https://web.tarkman.app/sessions/42/parts')).toHaveStyle({ lineHeight: qr.captionLineHeight })
+})
+
+describe('status text sizing', () => {
+  const session = { ...statusSession, posture: 'sit', page: 12 }
+  const fontSize = (id: string) => StyleSheet.flatten(screen.getByTestId(id).props.style).fontSize as number
+  const readSizes = () => ({ page: fontSize('display-page'), posture: fontSize('display-posture') })
+  it('shrinks page number and posture with a smaller configured scale', async () => {
+    setStatus(session)
+    const view = await render(statusTree())
+    const full = readSizes()
+    await view.rerender(statusTree({ config: { ...config, font_scale: 50 } }))
+    const small = readSizes()
+    expect(small.page).toBeCloseTo(full.page * 0.5)
+    expect(small.posture).toBeCloseTo(full.posture * 0.5)
+  })
+  it('never enlarges them past the area they already fill, by one shared rule', async () => {
+    setStatus(session)
+    const view = await render(statusTree())
+    const full = readSizes()
+    await view.rerender(statusTree({ config: { ...config, font_scale: 200 } }))
+    expect(readSizes()).toEqual(full)
+  })
+  it('sizes posture against the allocated stage, not the application window', async () => {
+    const state = { ...initialState, loading: false, stale: false, connected: true, session, parts: statusParts }
+    await render(<ThemeProvider scheme="dark"><I18nProvider preference="en"><ReadingFontContext.Provider value>
+      <DisplayPresentation state={state} config={config} sessionId={42} statusOnly preview size={{ width: 600, height: 500 }} />
+    </ReadingFontContext.Provider></I18nProvider></ThemeProvider>)
+    // The window is 1440 x 900, where posture would hit its 160 cap; the 600 x 500 stage bounds it to 600 * 0.13.
+    expect(fontSize('display-posture')).toBeCloseTo(600 * 0.13)
+  })
 })

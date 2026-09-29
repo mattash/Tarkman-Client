@@ -104,6 +104,7 @@ export const ru: Catalog = {
     en: 'Английский',
     ru: 'Русский',
     grabar: 'Грабар (древнеармянский)',
+    hyw: 'Западноармянский',
     translit: 'Транслитерация',
   },
   interfaceLanguages: {
