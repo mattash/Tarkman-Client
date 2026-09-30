@@ -12,6 +12,9 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
       }
     },
     "preview": {
@@ -23,6 +26,9 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
       }
     },
     "production": {
@@ -35,6 +41,9 @@
       },
       "env": {
         "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production"
+      },
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
       }
     },
     "development-simulator": {

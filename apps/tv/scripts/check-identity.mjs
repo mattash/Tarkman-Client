@@ -16,6 +16,8 @@ check(tvApp.ios?.bundleIdentifier === mobileApp.ios?.bundleIdentifier, 'TV bundl
 const plugin = (tvApp.plugins ?? []).find(p => (Array.isArray(p) ? p[0] : p) === '@react-native-tvos/config-tv')
 check(Array.isArray(plugin) && plugin[1]?.isTV === true, '@react-native-tvos/config-tv must be configured with isTV: true')
 check(tvApp.slug !== mobileApp.slug, 'TV needs its own Expo slug')
+check(/^macos-[a-z]+-\d+\.\d+-xcode-\d+\.\d+$/.test(tvEas.build?.base?.ios?.image ?? ''), 'TV builds must pin an exact iOS image name, not an alias')
+check(tvEas.build?.base?.ios?.image === mobileEas.build?.production?.ios?.image, 'TV must build on the same pinned iOS image as mobile')
 
 const mobileProject = mobileApp.extra?.eas?.projectId, tvProject = tvApp.extra?.eas?.projectId
 check(!tvProject || tvProject !== mobileProject, 'TV must not use the mobile EAS project')

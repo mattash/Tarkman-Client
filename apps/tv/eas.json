@@ -6,6 +6,9 @@
     "base": {
       "env": {
         "EXPO_TV": "1"
+      },
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
       }
     },
     "development-simulator": {

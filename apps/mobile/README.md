@@ -478,6 +478,16 @@ sign-in token is entered by the reader at runtime and kept in the keychain, and
 any future build-time secret (a Sentry auth token, an App Store Connect API key)
 belongs in EAS secrets, never in `app.json`, `eas.json` or source control.
 
+### EAS iOS build image
+
+iOS builds (mobile `development`, `preview` and `production`, and the TV profiles) are pinned to one exact
+EAS image, `macos-tahoe-26.5-xcode-26.6` (Xcode 26.6, the iOS 26.5 SDK), in `eas.json`, never an alias such as
+`auto`, `latest` or `sdk-57`. Expo SDK 57 does not adopt the UIScene lifecycle, so an app built with Xcode 27
+(the iOS 27 SDK) crashes at launch on iOS 27. `npm run check:store-config` (and the TV identity check) fail if
+the image is an alias, is Xcode 27 or later, or differs between profiles or apps. Move the image only together
+with the Expo SDK 58 upgrade, and change every profile in both apps at once. The image used by a build is
+printed in the first lines of its build log ("Using VM template ...").
+
 ### EAS Update release workflow (iOS)
 
 This app uses the EAS project ID in `app.json`. New `preview` and `production`
