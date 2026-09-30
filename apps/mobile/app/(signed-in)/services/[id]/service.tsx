@@ -11,6 +11,7 @@ import { Notice } from '../../../../components/Notice'
 import { capitalized } from '../../../../components/PartHeading'
 import { TextField } from '../../../../components/TextField'
 import { useTheme } from '../../../../design/ThemeProvider'
+import { useSheetBackground } from '../../../../design/liquidGlass'
 import { spacing } from '../../../../design/tokens'
 import type { LivePart } from '../../../../features/live/contracts'
 import { resolveControlLanguages, usePreferences } from '../../../../features/preferences/PreferencesProvider'
@@ -34,6 +35,7 @@ export default function ServiceSheet() {
     else router.replace(`/services/${sessionId}`)
   }, [invalid, sessionId])
   const { colors } = useTheme()
+  const sheetBackground = useSheetBackground()
   const { t } = useI18n()
   const { preferences } = usePreferences()
   // Previews come from the operator's first control language, the one they read from.
@@ -67,9 +69,10 @@ export default function ServiceSheet() {
   }
   const stopShowing = () => { void run(STOP_ANNOUNCEMENT, () => commands.setStatus(sessionId, 'active')) }
 
+  // The pinned title row stays opaque so scrolled content never prints over it; the body lets the system glass show.
   // The scroll view is the sheet's root: on iOS the native form sheet sizes its scroll view to the whole sheet, so a title row
   // beside it is drawn over. The title row is the first, pinned child instead.
-  return <ScrollView testID="service-sheet" style={{ flex: 1, backgroundColor: colors.overlay }} stickyHeaderIndices={[0]}
+  return <ScrollView testID="service-sheet" style={{ flex: 1, backgroundColor: sheetBackground }} stickyHeaderIndices={[0]}
     keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets
     contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, spacing.lg) }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.lg, paddingBottom: spacing.sm,

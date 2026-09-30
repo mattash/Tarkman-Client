@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppButton } from '../../../../components/AppButton'
 import { AppText } from '../../../../components/AppText'
 import { useTheme } from '../../../../design/ThemeProvider'
+import { useSheetBackground } from '../../../../design/liquidGlass'
 import { spacing, touchTarget } from '../../../../design/tokens'
 import { sampleLanguages } from '../../../../design/samples'
 import { LANGUAGES, MAX_CONTROL_LANGUAGES, resolveControlLanguages, usePreferences } from '../../../../features/preferences/PreferencesProvider'
@@ -13,6 +14,7 @@ import { useI18n } from '../../../../features/i18n'
 /** Which languages service control shows, and in what order. Saved on this device; the reading screen keeps its own languages. */
 export default function ControlLanguagesSheet() {
   const { colors } = useTheme()
+  const sheetBackground = useSheetBackground()
   const insets = useSafeAreaInsets()
   const { preferences, setControlLanguages } = usePreferences()
   const { t } = useI18n()
@@ -29,7 +31,7 @@ export default function ControlLanguagesSheet() {
   }
 
   // The scroll view is the sheet's root, so the native form sheet cannot draw it over the title row.
-  return <ScrollView testID="control-languages-sheet" style={{ flex: 1, backgroundColor: colors.overlay }} stickyHeaderIndices={[0]}
+  return <ScrollView testID="control-languages-sheet" style={{ flex: 1, backgroundColor: sheetBackground }} stickyHeaderIndices={[0]}
     contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, spacing.lg) }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.lg, paddingBottom: spacing.sm,
       paddingHorizontal: spacing.lg, backgroundColor: colors.overlay }}>
