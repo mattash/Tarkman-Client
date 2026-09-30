@@ -66,7 +66,10 @@ Builds from the same toolchain run normally on iOS 26.5 (baseline and spike) and
 **nothing is broken today**. The risk is that `eas.json` pins no build image, so which Xcode EAS uses is
 not under our control. If it moves to an Xcode with the iOS 27 SDK before we have scene support, the next
 release would crash on launch on iOS 27 devices. Pin the image, and plan the SDK 58 upgrade (or manual
-scene adoption) as its own piece of work. Apple's dates for when the iOS 27 SDK becomes mandatory for
+scene adoption) as its own piece of work. *Update: the image is now pinned in `eas.json`
+(`macos-tahoe-26.5-xcode-26.6`, guarded by `npm run check:store-config`); the SDK 58 upgrade is still to do.
+Expo's default `auto` resolves by SDK version, so this was a guard against an alias being repointed, not a
+fix for an imminent change.* Apple's dates for when the iOS 27 SDK becomes mandatory for
 App Store submissions are not stated here and should be checked.
 
 ### 2. Native tabs give real glass, with integration work

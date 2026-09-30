@@ -24,6 +24,19 @@ for (const environment of ['preview', 'production']) {
   assert.equal(eas.build?.[environment]?.environment, environment, `${environment} builds must use their own EAS environment`)
 }
 
+// The iOS build image is pinned to an exact name, never an alias (`auto`, `latest`, `sdk-NN`), so an Expo-side
+// change to an alias cannot move a release onto a different Xcode. Expo SDK 57 does not adopt the UIScene
+// lifecycle, so an app built with Xcode 27 (the iOS 27 SDK) crashes at launch on iOS 27. Raise this only
+// together with the Expo SDK 58 upgrade (see apps/mobile/docs/liquid-glass.md).
+const IOS_IMAGE = /^macos-[a-z]+-\d+\.\d+-xcode-(\d+)\.\d+$/
+const images = ['development', 'preview', 'production'].map(name => eas.build?.[name]?.ios?.image)
+for (const image of images) {
+  const match = IOS_IMAGE.exec(image ?? '')
+  assert.ok(match, `iOS builds must pin an exact image name (macos-<os>-xcode-<version>), not ${JSON.stringify(image)}`)
+  assert.ok(Number(match[1]) < 27, `${image}: Xcode 27 needs the Expo SDK 58 scene lifecycle; do not use it on SDK 57`)
+}
+assert.equal(new Set(images).size, 1, 'development, preview and production must build on the same iOS image')
+
 const android = expo.android
 assert.equal(android?.package, 'app.tarkman', 'the Android package must stay app.tarkman; a new package is a new app with new signing keys')
 assert.equal(eas.build?.development?.developmentClient, true, 'the development profile must build the development client')
