@@ -7,6 +7,8 @@ import { ManagementError, type FieldErrors, type createManagementApi } from './m
 interface ManagerState {
   links: ManagedDisplayLink[]; baseline?: ManagedDisplayLink; draft: DisplayLinkFields
   loading: boolean; saving: boolean; loaded: boolean; error?: string; fields: FieldErrors
+  /** The wanted publication, set only while it differs from the saved link (a new link starts unpublished). */
+  publish?: boolean
   expirationInput?: string; expirationInvalid: boolean; revokePending: boolean; revoked: boolean
   conflict?: ManagedDisplayLink; uncertain: boolean; reconciled: boolean; unavailable: boolean; saved: boolean
 }
@@ -64,6 +66,11 @@ export function createManagementController(api: ReturnType<typeof createManageme
       if (state.saving || state.unavailable) return
       update({ draft: { ...state.draft, ...patch }, saved: false, fields: {}, error: undefined })
     },
+    /** Toggling back to the saved value clears the change, so nothing is sent for it. */
+    setPublished(value: boolean) {
+      if (state.saving || state.unavailable) return
+      update({ publish: value === (state.baseline?.published ?? false) ? undefined : value, saved: false, fields: {}, error: undefined })
+    },
     editExpiration(value: string) {
       if (state.saving || state.unavailable) return
       const parsed = parseExpiration(value)
@@ -74,7 +81,9 @@ export function createManagementController(api: ReturnType<typeof createManageme
     review(selected: (keyof DisplayLinkFields)[]) {
       if (!state.conflict || state.saving) return
       const baseline = state.conflict, draft = { ...fieldsOf(baseline), ...Object.fromEntries(selected.map(key => [key, state.draft[key]])) }
-      update({ baseline, draft, ...(selected.includes('expires_at') ? {} : { expirationInput: undefined, expirationInvalid: false }), conflict: undefined, revokePending: false, uncertain: false, reconciled: false, error: undefined, fields: {} })
+      // A pending publication survives the review; it only counts as a change against the newer baseline.
+      const publish = state.publish === (baseline.published ?? false) ? undefined : state.publish
+      update({ baseline, draft, publish, ...(selected.includes('expires_at') ? {} : { expirationInput: undefined, expirationInvalid: false }), conflict: undefined, revokePending: false, uncertain: false, reconciled: false, error: undefined, fields: {} })
     },
     async revoke() {
       if (!alive || request || state.saving || !state.loaded || !state.baseline || state.unavailable || state.uncertain || state.conflict) return
@@ -96,13 +105,14 @@ export function createManagementController(api: ReturnType<typeof createManageme
       const fields = { ...validateDraft(state.draft), ...(state.expirationInvalid ? { expires_at: t('links.expiryInvalid') } : {}) }
       if (Object.keys(fields).length) { update({ fields, error: t('links.validation') }); return }
       const baseline = state.baseline, changes = baseline ? changedFields(baseline, state.draft) : fieldsOf(state.draft)
-      if (baseline && !Object.keys(changes).length) return
+      const publish = state.publish
+      if (baseline && !Object.keys(changes).length && publish === undefined) return
       const generation = epoch
       update({ saving: true, error: undefined, fields: {}, saved: false })
       try {
-        const result = await run(signal => api.save(changes, signal, baseline))
+        const result = await run(signal => api.save(changes, signal, baseline, publish))
         if (!alive || generation !== epoch) return
-        update({ baseline: result, draft: fieldsOf(result), expirationInput: undefined, expirationInvalid: false, saved: true,
+        update({ baseline: result, draft: fieldsOf(result), publish: undefined, expirationInput: undefined, expirationInvalid: false, saved: true,
           links: [result, ...state.links.filter(link => link.token !== result.token)] })
       } catch (error) {
         if (!alive || generation !== epoch || isUnauthorized(error)) return

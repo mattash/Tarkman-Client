@@ -1,0 +1,135 @@
+{
+  "subscription": {
+    "channel": "DisplayLinkChannel",
+    "token": "example12345"
+  },
+  "patch": {
+    "display_link": {
+      "font_scale": 130
+    },
+    "expected_config_version": 7
+  },
+  "management": {
+    "token": "example12345",
+    "user_id": 42,
+    "title": "Sanctuary",
+    "mode": "parallel",
+    "lang1": "translit",
+    "lang2": "en",
+    "show_explanations": true,
+    "show_notifications": true,
+    "status_view": "full",
+    "device_type": "auto",
+    "font_scale": 100,
+    "text_movement": "continuous",
+    "language_sync": "linked",
+    "margin_percent": null,
+    "expires_at": null,
+    "config_version": 7,
+    "updated_at": "2026-09-22T19:00:00.000Z",
+    "id": 17,
+    "created_at": "2026-09-20T19:00:00.000Z",
+    "display_url": "https://web.tarkman.app/sessions/display?token=example12345",
+    "published": false,
+    "published_at": null
+  },
+  "public": {
+    "token": "example12345",
+    "user_id": 42,
+    "title": "Sanctuary",
+    "mode": "parallel",
+    "lang1": "translit",
+    "lang2": "en",
+    "show_explanations": true,
+    "show_notifications": true,
+    "status_view": "full",
+    "device_type": "auto",
+    "font_scale": 100,
+    "text_movement": "continuous",
+    "language_sync": "linked",
+    "margin_percent": null,
+    "expires_at": null,
+    "config_version": 7,
+    "updated_at": "2026-09-22T19:00:00.000Z",
+    "church_name": "Example Church",
+    "church_avatar_url": null
+  },
+  "updated": {
+    "event": "display_link.updated",
+    "data": {
+      "token": "example12345",
+      "user_id": 42,
+      "title": "Sanctuary",
+      "mode": "parallel",
+      "lang1": "translit",
+      "lang2": "en",
+      "show_explanations": true,
+      "show_notifications": true,
+      "status_view": "full",
+      "device_type": "auto",
+      "font_scale": 130,
+      "text_movement": "continuous",
+      "language_sync": "linked",
+      "margin_percent": null,
+      "expires_at": null,
+      "config_version": 8,
+      "updated_at": "2026-09-22T19:00:00.000Z",
+      "church_name": "Example Church",
+      "church_avatar_url": null
+    }
+  },
+  "conflict": {
+    "error": "stale_display_link",
+    "current_config_version": 8,
+    "display_link": {
+      "token": "example12345",
+      "user_id": 42,
+      "title": "Sanctuary",
+      "mode": "parallel",
+      "lang1": "translit",
+      "lang2": "en",
+      "show_explanations": true,
+      "show_notifications": true,
+      "status_view": "full",
+      "device_type": "auto",
+      "font_scale": 130,
+      "text_movement": "continuous",
+      "language_sync": "linked",
+      "margin_percent": null,
+      "expires_at": null,
+      "config_version": 8,
+      "updated_at": "2026-09-22T19:00:00.000Z",
+      "id": 17,
+      "created_at": "2026-09-20T19:00:00.000Z",
+      "display_url": "https://web.tarkman.app/sessions/display?token=example12345",
+      "published": false,
+      "published_at": null
+    }
+  },
+  "deleted": {
+    "event": "display_link.invalidated",
+    "data": {
+      "token": "example12345",
+      "config_version": 9,
+      "reason": "deleted"
+    }
+  },
+  "expired": {
+    "event": "display_link.invalidated",
+    "data": {
+      "token": "example12345",
+      "config_version": 9,
+      "reason": "expired"
+    }
+  },
+  "validation": {
+    "errors": [
+      "Font scale must be in 50..200"
+    ],
+    "errors_by_field": {
+      "font_scale": [
+        "must be in 50..200"
+      ]
+    }
+  }
+}

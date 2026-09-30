@@ -1,0 +1,1 @@
+Copied verbatim from mattash/Tarkman docs/fixtures/display-links/contract.json at de40211 (Tarkman#459 and #460: published/published_at on management and conflict payloads). Refresh by copying again; do not edit by hand.
