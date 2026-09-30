@@ -1,4 +1,4 @@
-import type { DisplayLinkFields } from '@tarkman/core'
+import type { DisplayLinkFields, ManagedDisplayLink } from '@tarkman/core'
 import { editableFields, type FieldErrors } from './managementApi'
 import { t } from '../i18n'
 
@@ -6,6 +6,13 @@ export const CREATE_DEFAULTS: DisplayLinkFields = {
   title: '', device_type: 'auto', mode: 'parallel', lang1: 'translit', lang2: 'en', font_scale: 100,
   status_view: 'full', show_notifications: true, show_explanations: false, text_movement: 'continuous',
   language_sync: 'linked', margin_percent: null, expires_at: null,
+}
+/**
+ * Whether the backend reports publication. An older backend omits `published`, so the toggle is hidden
+ * rather than sending a field it would ignore. Creating with no links yet cannot tell, so it is hidden too.
+ */
+export function publicationSupported(baseline: ManagedDisplayLink | undefined, links: readonly ManagedDisplayLink[]): boolean {
+  return baseline ? typeof baseline.published === 'boolean' : links.some(link => typeof link.published === 'boolean')
 }
 export function fieldsOf(value: DisplayLinkFields): DisplayLinkFields {
   return Object.fromEntries(editableFields.map(key => [key, value[key]])) as unknown as DisplayLinkFields

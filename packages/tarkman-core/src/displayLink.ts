@@ -39,14 +39,21 @@ export interface PublicDisplayLink extends DisplayLinkConfig {
   expires_at: string | null
   display_url?: string
 }
-export interface ManagedDisplayLink extends PublicDisplayLink { id: number; created_at: string; display_url: string }
+/**
+ * Publication is not configuration: it never changes `config_version` and is absent from the public
+ * snapshot. Both fields are optional because older backends omit them.
+ */
+export interface ManagedDisplayLink extends PublicDisplayLink {
+  id: number; created_at: string; display_url: string
+  published?: boolean; published_at?: string | null
+}
 export type DisplayLinkFields = Pick<PublicDisplayLink, 'title' | 'mode' | 'lang1' | 'lang2' |
   'device_type' | 'font_scale' | 'text_movement' | 'language_sync' | 'margin_percent' |
   'show_explanations' | 'show_notifications' | 'status_view' | 'expires_at'>
-export interface CreateDisplayLinkRequest { display_link: DisplayLinkFields }
-export interface UpdateDisplayLinkRequest { display_link: Partial<DisplayLinkFields>; expected_config_version: number }
+export interface CreateDisplayLinkRequest { display_link: DisplayLinkFields & { published?: boolean } }
+export interface UpdateDisplayLinkRequest { display_link: Partial<DisplayLinkFields> & { published?: boolean }; expected_config_version?: number }
 export interface DisplayLinkConflict { error: string; display_link?: ManagedDisplayLink; current_config_version?: number }
-export interface DisplayLinkValidation { errors: string[]; errors_by_field: Partial<Record<keyof DisplayLinkFields, string[]>> }
+export interface DisplayLinkValidation { errors: string[]; errors_by_field: Partial<Record<keyof DisplayLinkFields | 'published', string[]>> }
 export type DisplayLinkEvent =
   | { event: 'display_link.updated'; data: PublicDisplayLink }
   | { event: 'display_link.invalidated'; data: { token: string; config_version: number; reason: 'deleted' | 'expired' } }

@@ -25,6 +25,7 @@ export function LinkList({ state, controller }: { state: ManagerSnapshot; contro
         <AppText variant="heading">{link.title}</AppText>
         <AppText tone="muted">{t('links.summary', { mode: t(`links.${link.mode}`), device: t(`links.${link.device_type}`), scale: link.font_scale,
           languages: [link.lang1, ...(link.mode === 'parallel' && link.lang2 ? [link.lang2] : [])].map(language => t(`links.${language}`)).join(' / ') })}</AppText>
+        {typeof link.published === 'boolean' && <AppText tone="muted">{t(link.published ? 'links.listingOn' : 'links.listingOff')}</AppText>}
         <AppButton variant="secondary" size="tier" accessibilityLabel={t('links.editTitle', { title: link.title })} onPress={() => router.push({ pathname: '/display-links/[token]', params: { token: link.token } })}>{t('links.edit')}</AppButton>
         <LinkActions link={link} />
       </Card>)}
