@@ -218,9 +218,15 @@ describe('native primitives', () => {
     expect(screen.getAllByText(/^(Cancel|Choose languages|Apply languages)$/).map(node => node.props.children))
       .toEqual(['Cancel', 'Choose languages', 'Apply languages'])
   })
-  it('keeps a lone Done trailing the title', async () => {
-    await render(<AppModal visible title="Reading preferences" onDismiss={() => {}} />, { wrapper })
-    expect(screen.getAllByText(/^(Done|Reading preferences)$/).map(node => node.props.children)).toEqual(['Reading preferences', 'Done'])
+  it('puts a lone close button trailing the title, named for the sheet', async () => {
+    const dismiss = jest.fn()
+    await render(<AppModal visible title="Reading preferences" onDismiss={dismiss} />, { wrapper })
+    // The rendered tree is in visual order, so the close button after the title is the top-right one.
+    const tree = JSON.stringify(screen.toJSON())
+    expect(tree.indexOf('"Close Reading preferences"')).toBeGreaterThan(tree.indexOf('"Reading preferences"'))
+    expect(screen.queryByText('Done')).toBeNull()
+    await fireEvent.press(screen.getByRole('button', { name: 'Close Reading preferences' }))
+    expect(dismiss).toHaveBeenCalledTimes(1)
   })
   it('hides the dismissed sheet', async () => {
     await render(<AppModal visible={false} title="Hidden reading" onDismiss={() => {}} />, { wrapper })
