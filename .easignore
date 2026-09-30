@@ -1,0 +1,53 @@
+# EAS archives this monorepo from the repository root, because both apps depend on
+# `packages/*` through `file:` paths. `.easignore` REPLACES `.gitignore` for that
+# upload, so everything `.gitignore` excluded has to be repeated here before any
+# local-only artifact is added. Without this file the archive is ~1.9 GB, almost
+# all of it `.claude/worktrees`.
+
+# --- mirrors .gitignore ---
+node_modules
+.pnp
+.pnp.js
+coverage
+dist
+/apps/mobile/dist-*/
+build
+.DS_Store
+.env*
+!.env.example
+!.env.test.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea
+.vscode
+*.swp
+*.swo
+.vercel
+.clawpatch/
+.expo/
+expo-env.d.ts
+/apps/mobile/ios/
+/apps/mobile/android/
+/apps/tv/ios/
+/apps/tv/android/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+credentials.json
+
+# --- local agent worktrees and scratch output, never build inputs ---
+# `.claude/worktrees` holds full sibling checkouts; git skips them, EAS does not.
+.claude/
+.codex-build/
+.cursor/
+deliverables/
+plans/
+output/
+4004.json
+
+# Local EAS build tarballs left in the app directory by earlier runs.
+apps/mobile/build-*.tar.gz
+apps/tv/build-*.tar.gz
