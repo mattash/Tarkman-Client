@@ -5,6 +5,10 @@ jest.mock('expo-network', () => ({
   addNetworkStateListener: jest.fn(() => ({ remove: jest.fn() })),
   getNetworkStateAsync: jest.fn(() => Promise.resolve({ isConnected: true, isInternetReachable: true })),
 }))
+jest.mock('expo-glass-effect', () => {
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native')
+  return { GlassView: View, GlassContainer: View, isLiquidGlassAvailable: () => false, isGlassEffectAPIAvailable: () => false }
+})
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'en' }] }))
 
 // The Siri Remote in tests: screens subscribe through useTVEventHandler; tests call remote('select').

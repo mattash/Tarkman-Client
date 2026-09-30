@@ -91,7 +91,7 @@ export function ChurchLinksScreen({ api, linkApi, churchId, onSaved, onBack }: P
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfaceCanvas, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
+  screen: { flex: 1, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
   title: { color: colors.textPrimary, fontSize: type.title, fontWeight: '700' },
   intro: { color: colors.textSecondary, fontSize: type.body, marginTop: space.xs },
   hint: { color: colors.textSecondary, fontSize: type.label, marginTop: space.xs },

@@ -13,6 +13,7 @@ import { SavedDisplayProvider, useSavedDisplay } from './saved'
 import { ChurchesScreen } from './screens/ChurchesScreen'
 import { ChurchLinksScreen } from './screens/ChurchLinksScreen'
 import { DisplayScreen } from './screens/DisplayScreen'
+import { Backdrop } from './components/Backdrop'
 import { SavedManageScreen } from './screens/SavedManageScreen'
 import { SavedDisplayScreen } from './screens/SavedDisplayScreen'
 import { SavedProblemScreen } from './screens/SavedProblemScreen'
@@ -52,7 +53,8 @@ export function Launch({ endpoints, transport, request }: { endpoints: Endpoints
   const { loading, load } = useSavedDisplay()
   if (loading) return <View testID="launch-loading" style={styles.blank} />
   const root: Route = load.kind === 'saved' ? { name: 'savedDisplay' } : load.kind === 'unreadable' ? { name: 'savedProblem' } : { name: 'services' }
-  return <Navigator endpoints={endpoints} transport={transport} request={request} initialRoot={root} />
+  // The backdrop sits behind every screen; a running display draws its own opaque canvas over it.
+  return <View style={styles.root}><Backdrop /><Navigator endpoints={endpoints} transport={transport} request={request} initialRoot={root} /></View>
 }
 
 export function Navigator({ endpoints, transport, request, initialRoot = { name: 'services' } }: {
@@ -94,6 +96,7 @@ export function Navigator({ endpoints, transport, request, initialRoot = { name:
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   blank: { flex: 1, backgroundColor: colors.surfaceCanvas },
   error: { flex: 1, backgroundColor: colors.surfaceCanvas, padding: safe.horizontal, justifyContent: 'center' },
   errorText: { color: colors.textPrimary, fontSize: type.body },

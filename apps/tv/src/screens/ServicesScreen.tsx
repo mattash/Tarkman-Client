@@ -1,5 +1,6 @@
-import { ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native'
+import { Image, ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native'
 import type { Endpoints, LiveSession } from '@tarkman/reader'
+import logo from '../../assets/images/logo.png'
 import { FocusButton } from '../components/FocusButton'
 import { statusName } from '../components/FreshnessBadge'
 import { useOnline } from '../hooks'
@@ -32,8 +33,13 @@ export function ServicesScreen({ endpoints, lastServiceId, onOpen, onDisplaySetu
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.brand}>{t('appName')}</Text>
-      <Text style={styles.title} accessibilityRole="header">{t('services.title')}</Text>
+      <View style={styles.header}>
+        <Image source={logo} style={styles.logo} accessibilityLabel={t('appName')} />
+        <View>
+          <Text style={styles.brand}>{t('appName')}</Text>
+          <Text style={styles.title} accessibilityRole="header">{t('services.title')}</Text>
+        </View>
+      </View>
       <Text style={styles.intro}>{t('services.intro')}</Text>
 
       <TVFocusGuideView autoFocus style={styles.list}>
@@ -80,7 +86,9 @@ function ServiceCard({ service, preferred, onPress }: { service: LiveSession; pr
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfaceCanvas, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
+  screen: { flex: 1, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  logo: { width: 112, height: 112, borderRadius: 26 },
   brand: { color: colors.textSecondary, fontSize: type.label, fontWeight: '600', letterSpacing: 1 },
   title: { color: colors.textPrimary, fontSize: type.title, fontWeight: '700', marginTop: space.xs },
   intro: { color: colors.textSecondary, fontSize: type.body, marginTop: space.xs },

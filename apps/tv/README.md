@@ -280,5 +280,7 @@ Record each result separately. A simulator launch is not App Store acceptance.
 | Physical Apple TV: signed Release build (Tarkman tvOS Development), install and launch on Apple TV 4K (2nd gen), tvOS 26.6 | Pass, 2026-09-28: process alive after launch; screen to be confirmed by the maintainer |
 | #215 church display: Jest on synthetic fixtures (setup, save, relaunch, waiting, failure, unavailable link, reset, damaged record; GETs only) | Pass, 2026-09-29 |
 | #215 church display: tvOS bundle export and prebuild with `expo-secure-store` | Pass, 2026-09-29 (no Pods installed; no simulator or device run) |
-| #215 church display: simulator and physical Apple TV (Keychain persistence, Siri Remote, relaunch/restart, real backend) | Not yet done; see the checklist in `docs/church-display.md` |
+| #215 church display on the Guest room Apple TV (tvOS 26.6), real backend with a published link: setup with the Siri Remote, relaunch, Apple TV restart; Liquid Glass build (#236) looked as designed | Accepted by the maintainer, 2026-09-29 |
+| #215 church display: simulator screenshots (`qa/215/*-7495303.png`): Live services at 1080p and 4K, church list (setup), running saved display (content only), and the Back menu | Captured, 2026-09-29 (church list and Back menu supplied by the maintainer from the simulator; the church list is a 2000×1125 preview, not native 4K). Not captured: the display list, waiting and unavailable screens |
+| #215 church display: delete-and-reinstall persistence, ordinary app-update persistence, network-loss and unavailable-link behavior on device | Not yet done; see the checklist in `docs/church-display.md` |
 | TestFlight / App Store acceptance | Not yet done (needs release authorization) |

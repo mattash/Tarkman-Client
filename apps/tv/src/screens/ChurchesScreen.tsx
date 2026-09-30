@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, TextInput, TVFocusGuideView, View } from 
 import { FocusButton } from '../components/FocusButton'
 import type { DirectoryChurch, PublicDirectoryApi } from '../directory'
 import { useI18n } from '../i18n'
-import { colors, radius, safe, space, type } from '../theme'
+import { colors, safe, space, type } from '../theme'
 import { useLoad } from '../useLoad'
 
 interface Props {
@@ -103,11 +103,11 @@ function SearchField({ value, onChangeText, onSubmit, placeholder }: { value: st
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfaceCanvas, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
+  screen: { flex: 1, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
   title: { color: colors.textPrimary, fontSize: type.title, fontWeight: '700' },
   intro: { color: colors.textSecondary, fontSize: type.body, marginTop: space.xs },
   search: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md },
-  field: { minWidth: 640, color: colors.textPrimary, fontSize: type.label, backgroundColor: colors.surfaceRaised, borderRadius: radius, borderWidth: 4, borderColor: 'transparent', paddingHorizontal: space.md, paddingVertical: space.sm },
+  field: { minWidth: 800, color: colors.textPrimary, fontSize: type.body, backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 999, borderWidth: 4, borderColor: 'rgba(255,255,255,0.16)', paddingHorizontal: space.lg, paddingVertical: space.md },
   fieldFocused: { borderColor: colors.focus },
   list: { flex: 1, marginTop: space.sm, marginHorizontal: -space.xl },
   cards: { gap: space.md, paddingVertical: space.lg, paddingHorizontal: space.xl },
