@@ -15,12 +15,12 @@ import { useTheme } from '../../design/ThemeProvider'
 import { useI18n, type MessageKey } from '../i18n'
 import { DEVICE_TYPES, TEXT_MOVEMENTS, LANGUAGE_SYNCS } from './customization'
 import { DISPLAY_MODES, DISPLAY_STATUS_VIEWS } from './config'
-import { CREATE_DEFAULTS, changedFields, localExpiration } from './draft'
+import { CREATE_DEFAULTS, changedFields, localExpiration, publicationSupported } from './draft'
 import { DisplayPresentation } from './DisplayProjection'
 import { PreviewStage } from './DisplayFrame'
 import { previewState } from './DisplayPreview'
 import { LinkActions } from './LinkActions'
-import { editableFields } from './managementApi'
+import { editableFields, errorFields } from './managementApi'
 import type { ManagerController, ManagerSnapshot } from './ManagerRoute'
 
 type PickerField = 'device_type' | 'lang1' | 'lang2' | 'status_view' | 'text_movement' | 'language_sync'
@@ -37,10 +37,11 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
   const selected = reviewSelection?.conflict === state.conflict ? reviewSelection?.fields ?? [] : []
   const [pending, setPending] = useState<NavigationAction | null>(null), [discard, setDiscard] = useState(false)
   const cancelRef = useRef<View>(null)
-  const changes = changedFields(baseline ?? CREATE_DEFAULTS, draft), dirty = Object.keys(changes).length > 0 || state.expirationInvalid
+  const changes = changedFields(baseline ?? CREATE_DEFAULTS, draft), dirty = Object.keys(changes).length > 0 || state.publish !== undefined || state.expirationInvalid
   const guarded = !state.revoked && (dirty || state.saving || state.uncertain)
   const disabled = state.loading || state.saving || state.unavailable || !state.loaded
   const sample = useMemo(() => previewState(long), [long])
+  const canPublish = publicationSupported(baseline, state.links), publishedNow = state.publish ?? baseline?.published ?? false
   const stepNames = [t('links.basics'), t('links.options'), t('links.advanced')]
   usePreventRemove(guarded && !discard, ({ data }) => setPending(data.action))
   useEffect(() => { if (state.error && Platform.OS !== 'web') AccessibilityInfo.announceForAccessibility(state.error) }, [state.error])
@@ -101,7 +102,7 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
         {guarded && <AppText accessibilityLiveRegion="polite">{t('links.unsaved')}</AppText>}
         {state.loading && <ActivityIndicator accessibilityLabel={t('links.loading')} />}
         {state.error && <Card><AppText accessibilityRole="alert" accessibilityLiveRegion="assertive" tone="destructive">{state.error}</AppText>
-          {editableFields.filter(field => state.fields[field]).map(field => <AppText key={field} accessibilityRole="alert">{t(`links.${field}`)}: {state.fields[field]}</AppText>)}
+          {errorFields.filter(field => state.fields[field]).map(field => <AppText key={field} accessibilityRole="alert">{t(`links.${field}`)}: {state.fields[field]}</AppText>)}
           {!state.loaded && <AppButton onPress={controller.refresh}>{t('common.retry')}</AppButton>}
         </Card>}
         {state.revoked && <AppText accessibilityRole="alert">{t('links.revoked')}</AppText>}
@@ -147,6 +148,15 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
               error={state.fields.expires_at} onChangeText={controller.editExpiration} />
             <AppText tone="muted">{t('links.expiryHelp', { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</AppText>
           </Card>
+          {canPublish && <Card>
+            <AppText variant="heading">{t('links.publicHeading')}</AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <AppText style={{ flex: 1 }}>{t('links.published')}</AppText>
+              <Switch accessibilityLabel={t('links.published')} value={publishedNow} disabled={disabled} onValueChange={controller.setPublished} />
+            </View>
+            <AppText tone="muted">{t('links.publishedHelp')}</AppText>
+            {state.fields.published && <AppText tone="destructive" accessibilityRole="alert">{state.fields.published}</AppText>}
+          </Card>}
           <Card><AppText variant="heading">{t('links.preview')}</AppText><AppText tone="muted">{t('links.previewHelp')}</AppText>
             <AppButton variant="quiet" selected={long} onPress={() => setLong(!long)}>{t('links.longSample')}</AppButton>
             <PreviewStage height={420}>{size => <DisplayPresentation state={sample} sessionId={1} config={draft} preview size={size} />}</PreviewStage>
