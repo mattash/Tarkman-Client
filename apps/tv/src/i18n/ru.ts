@@ -12,6 +12,7 @@ export const ru: Catalog = {
     failed: 'Не удалось загрузить идущие службы.',
     retry: 'Повторить',
     rowLabel: '{title}, {church}',
+    live: 'В эфире',
     rowStatusLabel: '{title}, {church}, {status}',
   },
   home: {

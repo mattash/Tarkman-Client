@@ -2,8 +2,9 @@ import { ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-nati
 import { TEXT_MOVEMENTS, type DisplayLanguage, type DisplayPreferences } from '@tarkman/reader'
 import { useI18n, type MessageKey } from '../i18n'
 import { usePreferences } from '../preferences'
-import { colors, radius, safe, space, type } from '../theme'
+import { colors, glassRadius, safe, space, type } from '../theme'
 import { FocusButton } from './FocusButton'
+import { Glass } from './Glass'
 
 const LANGUAGES: DisplayLanguage[] = ['translit', 'en', 'hyw', 'grabar']
 const SCALES = [75, 100, 125, 150]
@@ -66,6 +67,7 @@ export function DisplayOptions({ onClose, onBack }: { onClose(): void; onBack():
   return (
     <View testID="display-options" style={styles.overlay}>
       <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={styles.panel}>
+        <Glass radius={glassRadius.panel} style={StyleSheet.absoluteFill} />
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.title} accessibilityRole="header">{t('displayOptions.title')}</Text>
           <DisplayOptionRows first />
@@ -90,7 +92,9 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'flex-end' },
-  panel: { width: 1100, height: '100%', backgroundColor: colors.surfaceDefault, borderTopLeftRadius: radius, borderBottomLeftRadius: radius },
+  // A floating glass panel, not flush to the edge: its rounded corners show, and the dim overlay keeps light
+  // projection text from washing out the glass.
+  panel: { width: 1100, height: '92%', marginRight: space.lg },
   content: { paddingHorizontal: safe.horizontal * 0.8, paddingVertical: safe.vertical, gap: space.md },
   title: { color: colors.textPrimary, fontSize: type.heading, fontWeight: '700' },
   row: { gap: space.xs },

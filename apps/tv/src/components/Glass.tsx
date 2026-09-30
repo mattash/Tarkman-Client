@@ -1,5 +1,6 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect'
+import { glassSurface } from '../theme'
 
 // The system's Liquid Glass needs tvOS 26; older systems (and tests) get a plain translucent surface.
 function hasLiquidGlass(): boolean {
@@ -19,5 +20,5 @@ export function Glass({ radius, style, children, testID }: { radius: number; sty
 }
 
 const styles = StyleSheet.create({
-  fallback: { backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', overflow: 'hidden' },
+  fallback: { backgroundColor: glassSurface.fill, borderWidth: 1, borderColor: glassSurface.edge, overflow: 'hidden' },
 })

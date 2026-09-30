@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native'
 import { InvalidDisplayLinkError, type DisplayLinkApi } from '@tarkman/reader'
 import { FocusButton } from '../components/FocusButton'
+import { ScreenHeader } from '../components/ScreenHeader'
 import { DirectoryError, type DirectoryLink, type PublicDirectoryApi } from '../directory'
 import { useI18n } from '../i18n'
 import { useSavedDisplay } from '../saved'
@@ -60,7 +61,7 @@ export function ChurchLinksScreen({ api, linkApi, churchId, onSaved, onBack }: P
   const notFound = result.status === 'error' && result.error instanceof DirectoryError && result.error.kind === 'not_found'
   return (
     <View style={styles.screen}>
-      <Text style={styles.title} accessibilityRole="header">{result.status === 'ready' ? t('churchLinks.title', { church: result.data.church.name }) : t('churches.title')}</Text>
+      <ScreenHeader title={result.status === 'ready' ? t('churchLinks.title', { church: result.data.church.name }) : t('churches.title')} />
       <Text style={styles.intro}>{t('churchLinks.intro')}</Text>
       {current ? <Text testID="links-replaces" style={styles.hint}>{t('churchLinks.replaces', { title: current.link.title, church: current.church.name })}</Text> : null}
 
@@ -92,7 +93,6 @@ export function ChurchLinksScreen({ api, linkApi, churchId, onSaved, onBack }: P
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
-  title: { color: colors.textPrimary, fontSize: type.title, fontWeight: '700' },
   intro: { color: colors.textSecondary, fontSize: type.body, marginTop: space.xs },
   hint: { color: colors.textSecondary, fontSize: type.label, marginTop: space.xs },
   list: { flex: 1, marginTop: space.sm, marginHorizontal: -space.xl },

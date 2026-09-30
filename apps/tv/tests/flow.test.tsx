@@ -45,6 +45,20 @@ describe('service selection', () => {
     await flush()
     expect(screen.getByTestId('churches-empty')).toBeTruthy()
   })
+  it('marks an active service Live only while the list is fresh', async () => {
+    seedLiturgy()
+    await renderApp()
+    expect(screen.getAllByTestId('live-chip')).toHaveLength(1)
+    expect(within(screen.getByTestId('service-7')).getByText('Live')).toBeTruthy()
+    // A failed refresh leaves the last rows on screen, but they must not keep claiming to be live.
+    server.failServices(true)
+    await act(async () => { await jest.advanceTimersByTimeAsync(30000) }); await flush()
+    expect(screen.getByTestId('service-7')).toBeTruthy()
+    expect(screen.queryByTestId('live-chip')).toBeNull()
+    server.failServices(false)
+    await act(async () => { await jest.advanceTimersByTimeAsync(30000) }); await flush()
+    expect(screen.getAllByTestId('live-chip')).toHaveLength(1)
+  })
   it('shows no-services and failure states, retries, and refreshes while open', async () => {
     server.failServices(true)
     await renderApp()
