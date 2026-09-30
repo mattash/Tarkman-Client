@@ -1,7 +1,8 @@
-import { Image, ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native'
 import type { Endpoints, LiveSession } from '@tarkman/reader'
-import logo from '../../assets/images/logo.png'
 import { FocusButton } from '../components/FocusButton'
+import { LiveChip } from '../components/LiveChip'
+import { ScreenHeader } from '../components/ScreenHeader'
 import { statusName } from '../components/FreshnessBadge'
 import { useOnline } from '../hooks'
 import { useI18n } from '../i18n'
@@ -33,13 +34,7 @@ export function ServicesScreen({ endpoints, lastServiceId, onOpen, onDisplaySetu
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Image source={logo} style={styles.logo} accessibilityLabel={t('appName')} />
-        <View>
-          <Text style={styles.brand}>{t('appName')}</Text>
-          <Text style={styles.title} accessibilityRole="header">{t('services.title')}</Text>
-        </View>
-      </View>
+      <ScreenHeader brand={t('appName')} title={t('services.title')} />
       <Text style={styles.intro}>{t('services.intro')}</Text>
 
       <TVFocusGuideView autoFocus style={styles.list}>
@@ -57,7 +52,7 @@ export function ServicesScreen({ endpoints, lastServiceId, onOpen, onDisplaySetu
           ) : (
             <ScrollView contentContainerStyle={styles.cards}>
               {services.map(service => (
-                <ServiceCard key={service.id} service={service} preferred={service.id === focusId} onPress={() => onOpen(service.id)} />
+                <ServiceCard key={service.id} service={service} preferred={service.id === focusId} fresh={online && !failed} onPress={() => onOpen(service.id)} />
               ))}
             </ScrollView>
           )}
@@ -72,7 +67,8 @@ export function ServicesScreen({ endpoints, lastServiceId, onOpen, onDisplaySetu
   )
 }
 
-function ServiceCard({ service, preferred, onPress }: { service: LiveSession; preferred: boolean; onPress(): void }) {
+/** `fresh`: the list was just refreshed. A cached row after a failed refresh must not claim to be live. */
+function ServiceCard({ service, preferred, fresh, onPress }: { service: LiveSession; preferred: boolean; fresh: boolean; onPress(): void }) {
   const { t } = useI18n()
   const status = service.status !== 'active' ? statusName(service.status, t) : null
   const label = status ? t('services.rowStatusLabel', { title: service.title, church: service.church, status })
@@ -80,17 +76,14 @@ function ServiceCard({ service, preferred, onPress }: { service: LiveSession; pr
   return (
     <View style={styles.cardSlot}>
       <FocusButton testID={`service-${service.id}`} variant="card" label={service.church} detail={status ? `${service.title} · ${status}` : service.title}
-        accessibilityLabel={label} hasTVPreferredFocus={preferred} onPress={onPress} />
+        accessibilityLabel={label} hasTVPreferredFocus={preferred} onPress={onPress}
+        accessory={service.status === 'active' && fresh ? focused => <LiveChip focused={focused} /> : undefined} />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: safe.horizontal, paddingVertical: safe.vertical },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  logo: { width: 112, height: 112, borderRadius: 26 },
-  brand: { color: colors.textSecondary, fontSize: type.label, fontWeight: '600', letterSpacing: 1 },
-  title: { color: colors.textPrimary, fontSize: type.title, fontWeight: '700', marginTop: space.xs },
   intro: { color: colors.textSecondary, fontSize: type.body, marginTop: space.xs },
   list: { flex: 1, marginTop: space.sm, marginHorizontal: -space.xl },
   cards: { gap: space.md, paddingVertical: space.lg, paddingHorizontal: space.xl },

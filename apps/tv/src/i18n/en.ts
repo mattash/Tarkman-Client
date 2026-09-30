@@ -11,6 +11,7 @@ export const en = {
     retry: 'Retry',
     rowLabel: '{title}, {church}',
     rowStatusLabel: '{title}, {church}, {status}',
+    live: 'Live',
   },
   home: {
     displaySetup: 'Set up a church display',

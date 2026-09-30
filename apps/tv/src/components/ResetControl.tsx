@@ -16,14 +16,14 @@ export function ResetControl({ onReset, label, testID = 'reset' }: { onReset(): 
     setStage('busy'); setFailed(false)
     try { await onReset() } catch { setFailed(true); setStage('confirm') }
   }
-  if (stage === 'idle') return <FocusButton testID={testID} label={label ?? t('displayMenu.reset')} onPress={() => { setFailed(false); setStage('confirm') }} />
+  if (stage === 'idle') return <FocusButton testID={testID} label={label ?? t('displayMenu.reset')} tone="destructive" onPress={() => { setFailed(false); setStage('confirm') }} />
   return (
     <View style={styles.box}>
       <Text testID={`${testID}-confirm`} style={styles.text}>{t('displayMenu.resetConfirm')}</Text>
       {failed ? <Text testID={`${testID}-failed`} accessibilityRole="alert" style={styles.text}>{t('displayMenu.resetFailed')}</Text> : null}
       <View style={styles.row}>
         <FocusButton testID={`${testID}-cancel`} label={t('displayMenu.resetCancel')} hasTVPreferredFocus onPress={() => setStage('idle')} />
-        <FocusButton testID={`${testID}-yes`} label={t('displayMenu.resetYes')} disabled={stage === 'busy'} onPress={() => { void confirm() }} />
+        <FocusButton testID={`${testID}-yes`} label={t('displayMenu.resetYes')} tone="destructive" disabled={stage === 'busy'} onPress={() => { void confirm() }} />
       </View>
     </View>
   )
