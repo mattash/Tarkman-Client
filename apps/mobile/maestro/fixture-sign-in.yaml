@@ -6,8 +6,9 @@
 appId: app.tarkman
 ---
 - runFlow: launch.yaml
+# By label: the iOS 26 tab bar is drawn by the system and has no test ID.
 - tapOn:
-    id: "tab-about"
+    text: "About"
 # A stopped earlier run (or the helper executed standalone) can leave the app
 # signed in, which replaces this row with "Sign out". Sign out first so the
 # signed-out About row is always what the next tap finds.
