@@ -57,9 +57,15 @@ Decided by the owner on 2026-09-16:
 ## Privacy policy URL
 
 The App Store privacy policy URL is `https://tarkman.app/privacy`, served by the
-Rails app (mattash/Tarkman#428). It does not exist yet and must be published and
-reviewed before the privacy answers are entered. `web.tarkman.app/privacy` is not
-a privacy page: the Expo web app shows its not-found screen there.
+Rails app (mattash/Tarkman#428). **It is published**: verified 2026-09-30 to load
+a real Privacy Policy with an effective date of 2026-09-28, redirecting to
+`https://www.tarkman.app/privacy`. This paragraph previously recorded it as
+unpublished and blocking; that is no longer true, so do not treat it as an open
+release blocker. Re-check that it still resolves before entering privacy answers
+for a release.
+
+`web.tarkman.app/privacy` is still not a privacy page: the Expo web app shows its
+not-found screen there.
 
 ## Screenshot release task
 
