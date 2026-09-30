@@ -33,10 +33,15 @@ export default function ControlLanguagesSheet() {
   // The scroll view is the sheet's root, so the native form sheet cannot draw it over the title row.
   return <ScrollView testID="control-languages-sheet" style={{ flex: 1, backgroundColor: sheetBackground }} stickyHeaderIndices={[0]}
     contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, spacing.lg) }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.lg, paddingBottom: spacing.sm,
-      paddingHorizontal: spacing.lg, backgroundColor: colors.overlay }}>
-      <AppText variant="heading" style={{ flex: 1 }}>{t('common.languages')}</AppText>
-      <AppButton variant="quiet" accessibilityLabel={t('common.closeTitle', { title: t('common.languages') })} onPress={() => router.back()}>{t('common.done')}</AppButton>
+    <View style={{ backgroundColor: colors.overlay }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.lg, paddingBottom: spacing.sm,
+        paddingLeft: spacing.lg, paddingRight: spacing.lg + touchTarget, backgroundColor: colors.overlay }}>
+        <AppText variant="heading" style={{ flex: 1 }}>{t('common.languages')}</AppText>
+      </View>
+      {/* In an unpadded wrapper, so the corner is the sheet's corner: inside the padded row it anchors to the padded edge. */}
+      <View style={{ position: 'absolute', top: spacing.md, right: spacing.md }}>
+        <AppButton variant="quiet" icon="close" iconOnly accessibilityLabel={t('common.closeTitle', { title: t('common.languages') })} onPress={() => router.back()}>{t('common.done')}</AppButton>
+      </View>
     </View>
     <View style={{ gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}>
       <AppText variant="caption" tone="muted">{t('controlLanguages.intro', { count: MAX_CONTROL_LANGUAGES })}</AppText>

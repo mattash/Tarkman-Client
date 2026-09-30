@@ -37,11 +37,11 @@ export function AppModal({ visible, onDismiss, title, children, openerRef, heade
       <View testID="modal-shell" accessibilityViewIsModal onAccessibilityEscape={onDismiss} style={{ backgroundColor: colors.overlay, flex: ios ? 1 : undefined, height: Platform.OS === 'android' ? '90%' : undefined, maxHeight: ios ? '100%' : '90%', width: '100%', maxWidth: 680,
         alignSelf: 'center', borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet,
         paddingTop: spacing.lg, paddingBottom: Math.max(insets.bottom, spacing.lg), paddingLeft: Math.max(insets.left, spacing.lg), paddingRight: Math.max(insets.right, spacing.lg), gap: spacing.md }}>
-        {/* iOS convention: a lone Done trails the title; with a commit action, Cancel leads and the commit trails. */}
+        {/* A lone dismiss is an X at the top right; with a commit action, Cancel leads and the commit trails. */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm }}>
           {headerAction && <AppButton ref={closeRef} variant="text" onPress={onDismiss} accessibilityLabel={t('common.closeTitle', { title })}>{dismiss}</AppButton>}
           <AppText variant="heading" style={{ flex: 1 }}>{title}</AppText>
-          {headerAction ?? <AppButton ref={closeRef} variant="text" onPress={onDismiss} accessibilityLabel={t('common.closeTitle', { title })}>{dismiss}</AppButton>}
+          {headerAction ?? <AppButton ref={closeRef} variant="quiet" icon="close" iconOnly onPress={onDismiss} accessibilityLabel={t('common.closeTitle', { title })}>{dismiss}</AppButton>}
         </View>
         <ScrollView testID="modal-content" style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ gap: spacing.md }}>
           {children}
