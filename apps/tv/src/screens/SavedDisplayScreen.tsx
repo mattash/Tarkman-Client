@@ -57,7 +57,7 @@ export function SavedDisplayScreen(props: Props) {
         <FocusButton testID="unavailable-change" label={t('savedDisplay.change')} onPress={props.onChangeDisplay} />
         <ResetControl testID="unavailable-reset" onReset={props.onReset} />
       </>}>
-        <Notice testID="display-link-unavailable" title={t('savedDisplay.unavailableTitle')}
+        <Notice testID="display-link-unavailable" icon="warning" title={t('savedDisplay.unavailableTitle')}
           detail={t(expired ? 'savedDisplay.unavailableExpired' : 'savedDisplay.unavailableGone', { title: saved.link.title })} />
       </Frame>
     )
@@ -65,7 +65,7 @@ export function SavedDisplayScreen(props: Props) {
   if (!link.data) {
     return (
       <Frame actions={<ChangeActions {...props} />}>
-        <Notice testID={link.error ? 'display-link-failed' : 'display-link-loading'} busy={!link.error}
+        <Notice testID={link.error ? 'display-link-failed' : 'display-link-loading'} busy={!link.error} icon={link.error ? 'warning' : undefined}
           title={t(link.error ? 'savedDisplay.couldNotLoad' : 'savedDisplay.loading')} detail={link.error ? t('savedDisplay.retrying') : undefined} />
       </Frame>
     )
@@ -84,8 +84,8 @@ function CurrentDisplay({ config, ...props }: Props & { config: DisplayLinkConfi
   return (
     <Frame actions={<ChangeActions {...props} />}>
       {session === null
-        ? <Notice testID="display-link-waiting" title={t('savedDisplay.waiting')} detail={t('savedDisplay.waitingDetail')} />
-        : <Notice testID={current.error ? 'display-link-discovery-failed' : 'display-link-discovering'} busy={!current.error}
+        ? <Notice testID="display-link-waiting" icon="waiting" title={t('savedDisplay.waiting')} detail={t('savedDisplay.waitingDetail')} />
+        : <Notice testID={current.error ? 'display-link-discovery-failed' : 'display-link-discovering'} busy={!current.error} icon={current.error ? 'warning' : undefined}
           title={t(current.error ? 'savedDisplay.discoveryFailed' : 'savedDisplay.loading')} detail={current.error ? t('savedDisplay.retrying') : undefined} />}
     </Frame>
   )

@@ -1,12 +1,15 @@
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { colors, space } from '../theme'
+import { StatusIcon, type StatusIconName } from './StatusIcon'
 
 /** A full-screen, distance-readable status message; the display's loading, waiting and error states. */
-export function Notice({ title, detail, busy = false, testID }: { title: string; detail?: string; busy?: boolean; testID?: string }) {
+/** `icon` is opt-in: the running display's own notices stay plain text. */
+export function Notice({ title, detail, busy = false, icon, testID }: { title: string; detail?: string; busy?: boolean; icon?: StatusIconName; testID?: string }) {
   const { width } = useWindowDimensions()
   const size = Math.max(28, Math.min(64, width / 28))
   return (
     <View testID={testID} style={styles.notice}>
+      {icon ? <StatusIcon name={icon} /> : null}
       {busy ? <ActivityIndicator color={colors.textSecondary} size="large" accessibilityLabel={title} /> : null}
       <Text style={[styles.text, styles.title, { fontSize: size, lineHeight: size * 1.25 }]}>{title}</Text>
       {detail ? <Text style={[styles.muted, { fontSize: Math.max(18, size * 0.5), textAlign: 'center' }]}>{detail}</Text> : null}
