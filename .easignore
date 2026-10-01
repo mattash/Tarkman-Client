@@ -51,3 +51,6 @@ output/
 # Local EAS build tarballs left in the app directory by earlier runs.
 apps/mobile/build-*.tar.gz
 apps/tv/build-*.tar.gz
+
+# Image-generation scratch output.
+generated_images/
