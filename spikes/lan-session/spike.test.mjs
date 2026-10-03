@@ -75,6 +75,31 @@ test('follower: source choice between a fresh host and the cloud', () => {
   assert.equal(choose(lone, LEASE_MS + 1).follower.source, 'host-stale')
 })
 
+test('LAN-first: the room moves on the tap; the cloud accepting it is invisible; a 409 snaps the room to the cloud once', () => {
+  let f = initialFollower(42, 'ctx-1')
+  let h = host(10)
+  f = applyHost(f, publication(h), 0).follower
+  // Tap: provisional frame reaches the follower before any cloud reply.
+  h = applyLocal(h, { kind: 'move', cursor: cursorAt(2), transitionedAt: 't1' })
+  let r = applyHost(f, publication(h), 10)
+  assert.equal(r.applied, true); assert.equal(r.follower.shown.cursor.position, 2); f = r.follower
+  // The cloud accepts: same content under [11, 0, 0]. Nothing visible happens on the follower.
+  const accepted = settle(h, { kind: 'accepted', state: cloud(11, 2) }); h = accepted.host
+  r = applyHost(f, publication(h), 20)
+  assert.equal(r.applied, false); assert.equal(r.reason, 'unchanged'); assert.equal(r.follower.host.base, 11); f = r.follower
+  // Next tap is refused by the cloud because the service moved elsewhere: the room snaps to the cloud, once.
+  h = applyLocal(h, { kind: 'move', cursor: cursorAt(3), transitionedAt: 't2' })
+  f = applyHost(f, publication(h), 30).follower
+  assert.equal(f.shown.cursor.position, 3)
+  const refused = settle(h, { kind: 'stale', state: cloud(13, 5) }); h = refused.host
+  r = applyHost(f, publication(h), 40)
+  assert.equal(r.applied, true); assert.equal(r.follower.shown.cursor.position, 5); assert.equal(r.follower.host.seq, 0)
+  assert.equal(refused.conflict.roomState.cursor.position, 3)
+  // No reply at all: the provisional frame stands and the log keeps growing (the fallback, with no mode switch).
+  h = applyLocal(h, { kind: 'move', cursor: cursorAt(4), transitionedAt: 't3' })
+  assert.equal(settle(h, { kind: 'failed' }).retry, true); assert.equal(h.log.length, 1)
+})
+
 test('host: the log compresses to one set_part and one update_status with expected_revision = base', () => {
   let h = host(10)
   h = applyLocal(h, { kind: 'move', cursor: cursorAt(2), transitionedAt: 't1' })

@@ -5,15 +5,22 @@ the Apple TV on the same Wi‑Fi) while the online session stays the record. Thi
 recommendation, the protocol sketch, the reconciliation rules, the risks and a phased plan. The
 runnable spike is in [`spikes/lan-session`](../spikes/lan-session/README.md).
 
+**Priorities (owner, 2026‑10).** First, the least latency possible for the screens in the church.
+Second, a local fallback when the internet is bad. Third, and deliberately out of scope, running a
+service somewhere with no internet at all: fresh clients would have no way to get the liturgy's
+content, and making that work costs far more than it is worth.
+
 **Recommendation in one paragraph.** Keep the cloud as the only source of truth and the only thing
 that mints a `revision`. Let the signed‑in controller phone act as the *LAN host*: it advertises the
-service on Bonjour (`_tarkman._tcp`), relays the session state it already has to displays and the TV
-over the LAN, and, when the cloud is unreachable, applies the operator's commands to a provisional
-local log that it replays on reconnect. Displays and the TV are *followers*: read‑only, exactly as
-today. Order LAN state by `[cloud revision, host epoch, provisional seq]`, never by wall clocks. On
-replay the cloud wins any conflict and the operator gets one tap to reassert the position the room was
-at. Phase 0 (relay only) needs no backend change and already covers the most common failure in a
-church: the phone has cellular, the building's internet does not work, and the screens are on Wi‑Fi.
+service on Bonjour (`_tarkman._tcp`) and publishes every command to the displays and the TV over the
+LAN *the instant the operator taps*, before the cloud has answered, then confirms or corrects it when
+the cloud does. That is what buys the latency: the room sees the change in tens of milliseconds
+instead of waiting a cloud round trip (measured at roughly 1.3 to 1.5 seconds median on production
+in `performance/mobile-session-latency.md`). When the cloud is slow or down, the same mechanism
+degrades into the fallback: the host keeps its provisional commands in a log and replays them when
+the cloud is back. Displays and the TV are *followers*: read‑only, exactly as today. Order LAN state
+by `[cloud revision, host epoch, provisional seq]`, never by wall clocks; the cloud wins any
+conflict, and the operator gets one tap to reassert the position the room was at.
 
 ## 1. Where we are today
 
@@ -56,17 +63,47 @@ publication is the same `SessionState` the engine already applies, under a riche
 Second, the *host* side needs one new concept, a provisional command log under a cloud revision, and
 a LAN‑aware notion of "online" so the engine keeps running against the host when the internet is gone.
 
-## 2. Scenarios
+## 2. Scenarios, in priority order
 
 | | Phone (controller) | Church Wi‑Fi | Displays and TV | What the LAN gives |
 | --- | --- | --- | --- | --- |
-| A, the common one | Cellular, fine | Up, but no or flaky internet | On Wi‑Fi, can't reach the cloud | The phone relays cloud state over the LAN: screens keep following with no backend change (phase 0) |
-| B, full outage | No cellular (basement, rural) | Up, no internet | On Wi‑Fi | The phone hosts offline: the operator keeps commanding, screens follow, the cloud is reconciled afterwards (phase 1) |
-| C, flapping | Comes and goes | Comes and goes | On Wi‑Fi | Screens never flip between "live" and "offline" while the host can be heard; replay happens at each reconnect |
-| D, remote followers | Any | Any | Someone at home on the web | Unchanged: they see the cloud, which lags the room during B until replay |
+| 1. Normal Sunday | Online | Online | On Wi‑Fi | **Latency.** Screens change on the tap, not on the cloud's reply; the cloud confirms a moment later with no visible change |
+| 2. Bad internet | Cellular, fine | Up, but no or flaky internet | On Wi‑Fi, can't reach the cloud | **Fallback.** Screens keep following the phone; the cloud catches up when it can |
+| 2b. Flapping | Comes and goes | Comes and goes | On Wi‑Fi | Screens never flip between live and offline while the host can be heard; replay at each reconnect |
+| 3. No internet anywhere, fresh devices | None | Up, no internet | Never saw this service | **Out of scope.** A display that has not seen the service has no manifest, no display configuration and no way to resolve its link token; see section 10 |
+| Remote followers | Any | Any | Someone at home on the web | Unchanged: they see the cloud, which can lag the room by one round trip, or longer during 2 |
 
-Scenario A is where the issue's "slow or down internet" mostly bites in practice: the phone has its
-own uplink, and today the screens still go dark because they depend on the building's internet.
+### Latency: what the LAN changes
+
+Today, one Next is: tap → `POST /s/:id/next.json` to Rails → commit and broadcast → each display's
+cable receives the publication and applies it when its revision is in order
+(`applyPublication` in the engine). The controller's own screen also waits for the reply before it
+moves (`refreshAfterCommand` in `apps/mobile/features/services/ServiceControlProvider.tsx`). The
+LAN hop is tens of milliseconds (spike: a `next` reached the follower in the next write); the cloud
+round trip is the whole cost.
+
+With the host publishing *LAN‑first*:
+
+1. Tap. The host applies the command to its projection, appends it to the provisional log, and
+   publishes `[base, epoch, seq+1]` to every follower and to its own screen. The room has moved.
+2. The same command goes to the cloud exactly as today (compare‑and‑set, sent once).
+3. Accepted: the cloud publishes `[base+1, 0, 0]` with the same state. The host settles the log and
+   relays it; followers apply a higher key with identical content, so nothing visible happens.
+4. Refused (409, the service moved elsewhere): the host resyncs to the cloud state and relays it;
+   followers snap to it, and the operator sees *Return to Y*. With one operator in the room this is
+   rare, and the snap is the honest outcome.
+5. No reply (timeout, offline): the provisional state stands, the log grows, and the host is now in
+   the fallback of priority 2 with no mode switch.
+
+Relaying only after the cloud reply (what an earlier draft of this page proposed as phase 0) would
+make the screens *robust* but not *faster*: they would move at the same moment the cable broadcast
+would have reached them. LAN‑first is the only option that removes the round trip, so it is the
+default. The remaining latency budget on a normal Sunday is the LAN hop plus the follower's own
+render, which is already measured at about 25 ms from accepted data to visible text.
+
+Two cheaper wins sit beside the LAN and should happen anyway: the controller's own screen can move
+on the tap (an optimistic apply, reverted on 409, no LAN needed), and the cloud path itself can be
+made faster for remote and web followers, which is backend work.
 
 ## 3. Topology
 
@@ -208,13 +245,14 @@ temporary: the host reconciles the moment it sees the cloud.
 
 ### Host rules
 
-1. While the cloud is reachable, every command goes to the cloud as today (compare‑and‑set, sent
-   once). The host relays each accepted state to followers with `seq = 0`. Nothing provisional exists.
-2. When the cloud is unreachable, a command is applied to the local projection, appended to the
-   log with `commandId = hid:epoch:base:seq` and `transitioned_at`, persisted, and published with
-   `seq + 1`. Moves are resolved against the saved manifest; a move past either end is refused
+1. Every command is applied to the local projection first, appended to the log with
+   `commandId = hid:epoch:base:seq` and `transitioned_at`, persisted, and published to followers
+   with `seq + 1`. Moves are resolved against the saved manifest; a move past either end is refused
    locally with the same message the control screen uses for the server's refusal.
-3. On reconnect the host replays the log, then reads `state.json` and resumes relaying.
+2. The same command goes to the cloud as today (compare‑and‑set, sent once). An accepted reply
+   settles the log: the host takes the cloud's revision and relays it with `seq = 0`.
+3. When the cloud does not answer, the log stays and grows; the host keeps commanding on the LAN.
+   At the next successful contact the host replays the log, then reads `state.json` and resumes.
 
 ### Replay and conflicts
 
@@ -317,26 +355,38 @@ native module is the only platform code.
 
 ## 10. Scope and phased plan
 
-Read‑only followers first; command control on the LAN last.
+Read‑only followers only; the host is the one commander. Ordered by the owner's priorities.
 
-**Phase 0, relay (client only).** The native Bonjour/TCP module; the host relays accepted cloud state
-and serves its saved manifest; mobile display route and TV follow a host when present. Rule 4 with
-`seq` always 0. Covers scenario A. Pairing by code. Gate: a projector and a TV keep following a
-service with the building's uplink pulled and the phone on cellular, on physical devices.
+**Phase 1, latency (client only).** The native Bonjour/TCP module; the host publishes LAN‑first on
+every tap and settles against the cloud's reply; the controller's own screen moves on the tap;
+mobile display route and TV follow a host when present, falling to the cloud when none is heard.
+Pairing by code. The log need not be persisted yet: in this phase a lost log only costs a
+*Return to Y* after a restart. Gate on physical devices: a projector and a TV change within 100 ms
+of the tap over the church Wi‑Fi, a 409 snaps them to the cloud state once, and nothing is ever
+sent twice.
 
-**Phase 1, offline commands (client only).** Provisional log in SQLite, local moves against the
-saved manifest, LAN‑aware `online`, replay with today's endpoints, the *Return to Y* conflict
-screen. Covers scenario B. Gate: airplane‑mode service with three commands, replay accepted;
-the same with a conflicting online edit, 409 handled, no double move.
+**Phase 2, fallback (client only).** Persist the log in SQLite, make `online` LAN‑aware so the
+engine keeps running against the host when the internet is gone, replay with today's endpoints,
+the *Return to Y* conflict screen, and the "join the church Wi‑Fi to feed the screens" hint. Gate:
+pull the building's uplink mid‑service with the phone on cellular, then put the phone in airplane
+mode for three commands; the screens never stop following, the replay is accepted, and a
+conflicting online edit produces one 409 and no double move.
 
-**Phase 2, backend (mattash/Tarkman).** Transitions batch endpoint with idempotency keys and
+**Phase 3, backend (mattash/Tarkman).** Transitions batch endpoint with idempotency keys and
 original timestamps; LAN lease and host key fingerprint on the session and in the display link
 configuration; `state.json` and `display_links/:token` publish them. Removes the pairing code for
-displays that were online once, and restores timing analytics for offline moves.
+displays that were online once, and restores timing analytics for moves made during a fallback.
 
-**Phase 3, LAN controllers.** A second signed‑in phone sends commands to the host with a cloud‑issued
-capability; the host relays them to the cloud when online or logs them when not. Dedicated box as
-an alternative host, if a church wants it.
+**Out of scope: a service with no internet and fresh devices.** The host *could* serve its saved
+manifest (the `manifest` message exists for the case where the context changed), but a device that
+has never seen the service also needs the display link configuration, the church's display
+settings, the fonts' companion data and, for the TV, a link token it can only resolve through the
+cloud. Each of those would need a LAN copy and a way to trust it, for a situation that is rare and
+usually solved by a phone hotspot. If it ever matters, it is the dedicated LAN box of section 3
+with a cached copy of the church's services, not a change to this protocol.
+
+**Later, if wanted: LAN controllers.** A second signed‑in phone sends commands to the host with a
+cloud‑issued capability; the host relays them to the cloud when online or logs them when not.
 
 Backend changes to track in mattash/Tarkman: the transitions batch endpoint (idempotent, ordered,
 timestamps preserved), the LAN lease and fingerprint fields on session state and display link
@@ -349,6 +399,10 @@ endpoint for a deleted session.
   TV prebuild, and device testing of the local network prompt on iOS and tvOS. Estimate before
   committing; `react-native-zeroconf` plus `react-native-tcp-socket` is the fallback if a custom
   module proves too much.
+- **LAN‑first means a visible snap on a 409.** With one operator in the room that is rare; with two
+  controllers acting on different paths it is the honest outcome, but it is a product decision to
+  prefer the tap's speed over the cloud's confirmation. The alternative, relaying only after the
+  reply, is one flag on the host and costs the entire latency gain.
 - **Rule 4 needs a real‑world check.** Showing the room's operator over the cloud during a partition
   is a product decision; the alternative is one line in `choose()`.
 - **Cellular uplink with a Wi‑Fi LAN** on the phone is what makes scenario A work without any user
@@ -366,8 +420,9 @@ endpoint for a deleted session.
 
 `spikes/lan-session` (Node 22, no dependencies; `npm run lan-spike:test`). It implements the
 ordering key, the follower reducer, the host log, replay and settlement as pure functions with
-tests for every rule above, a minimal mDNS/DNS‑SD advertiser and browser, and a host and follower
-that run as two processes. The end‑to‑end test discovers the host over real multicast, connects,
-receives the initial state, and receives one cursor update after `next`; the two‑process run does
-the same across terminals. What it deliberately leaves out is listed in its README: TLS, pairing,
+tests for every rule above, including the LAN‑first sequence (provisional frame, then the cloud's
+acceptance with no visible change, then a 409 that snaps to the cloud), a minimal mDNS/DNS‑SD
+advertiser and browser, and a host and follower that run as two processes. The end‑to‑end test
+discovers the host over real multicast, connects, receives the initial state, and receives one
+cursor update after `next`; the two‑process run does the same across terminals. What it deliberately leaves out is listed in its README: TLS, pairing,
 manifest transfer, persistence and the real cloud.

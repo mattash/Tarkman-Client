@@ -32,8 +32,11 @@ standard DNS-SD and would be visible to `NWBrowser` on an iPhone or Apple TV.
   reaches the follower in the next write (tens of milliseconds, no polling).
 - The follower never needs a wall clock to order updates: `[base, epoch, seq]` is enough, and a
   cloud revision always outranks the provisional commands that preceded it.
+- LAN-first publishing (the room moves on the tap, the cloud confirms a moment later) is just the
+  ordering key at work: the cloud's acceptance arrives under a higher key with identical content and
+  changes nothing visible; a 409 snaps the room to the cloud once. Tested in `spike.test.mjs`.
 - The host's log compresses to the two requests today's backend already accepts (`set_part` and
-  `update_status`, both with `expected_revision`), so phase 1 of the plan needs no backend change.
+  `update_status`, both with `expected_revision`), so the fallback needs no backend change.
 
 ## What it does not show
 

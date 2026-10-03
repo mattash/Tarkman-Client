@@ -109,7 +109,9 @@ export function choose(follower, now) {
   if (hostFresh(follower, now) && (!cloud || host.base >= cloud.base || host.seq > 0)) { source = 'host'; shown = host.state }
   else if (cloud) { source = 'cloud'; shown = cloud.state }
   else if (host) { source = 'host-stale'; shown = host.state }
-  const applied = shown !== follower.shown || source !== follower.source
+  // "Applied" means something visible changed: the cloud confirming a LAN-first frame with identical
+  // content under a higher key is not a change the room can see.
+  const applied = source !== follower.source || JSON.stringify(shown) !== JSON.stringify(follower.shown)
   return { follower: { ...follower, source, shown }, applied, reason: applied ? 'applied' : 'unchanged' }
 }
 
@@ -135,7 +137,8 @@ export function publication(host) {
 export function commandId(host, seq) { return `${host.hostId}:${host.epoch}:${host.base}:${seq}` }
 
 /**
- * Apply an operator command locally while the cloud is unreachable. `command` is one of
+ * Apply an operator command locally, LAN-first: before the cloud has answered, or while it cannot
+ * answer. `command` is one of
  * `{ kind: 'move', cursor, transitionedAt }` or `{ kind: 'status', status, message }`. The move's cursor
  * must already be resolved against the manifest (the host has the parts; a move past either end is
  * refused by the caller exactly as the control screen refuses it today).
@@ -152,7 +155,9 @@ export function applyLocal(host, command) {
 /** The host accepted a cloud revision (relay, or the result of a replay): the log is settled. */
 export function acceptCloud(host, state) {
   if (state.revision < host.base) return host
-  return { ...host, base: state.revision, contentContext: state.contentContext, state, log: [] }
+  // Keep only the projected fields: the revision and context travel in the key, not in the state.
+  const { cursor, status, message, posture, date } = state
+  return { ...host, base: state.revision, contentContext: state.contentContext, state: { cursor, status, message, posture, date }, log: [] }
 }
 
 /**
