@@ -15,6 +15,9 @@
 - `packages/tarkman-reader` is the platform-free live reader engine both apps
   bundle from source. It must not import React, React Native or Expo; its guard
   is `npm run reader:check`. Mobile's `features/live/*` bind it to mobile copy.
+- `spikes/` holds throwaway investigations that neither app bundles and CI does not run.
+  `spikes/lan-session` is the LAN session control spike for #235; its design doc is
+  `docs/lan-session-control.md` and its tests run with `npm run lan-spike:test`.
 - `apps/web` is the **deprecated** Vite client. It no longer deploys anywhere; it is
   kept only until the post-cutover rollback window closes, then removed. Do not add
   features to it. Its scripts are `npm run legacy-web:*`. Everything below the

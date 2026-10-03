@@ -29,6 +29,7 @@
     "core:check-consumers": "node packages/tarkman-core/scripts/check-consumers.mjs",
     "lectionary:test": "npm test --prefix packages/tarkman-lectionary",
     "reader:check": "node packages/tarkman-reader/scripts/check-boundary.mjs",
+    "lan-spike:test": "node --test spikes/lan-session/*.test.mjs",
     "metro:test": "node --test tools/metro/*.test.mjs",
     "design:check": "npm run check --prefix packages/tarkman-design",
     "legacy-web:dev": "npm run dev --prefix apps/web --",
