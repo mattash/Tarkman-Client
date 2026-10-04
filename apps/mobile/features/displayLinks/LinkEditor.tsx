@@ -14,7 +14,7 @@ import { spacing } from '../../design/tokens'
 import { useTheme } from '../../design/ThemeProvider'
 import { useI18n, type MessageKey } from '../i18n'
 import { DEVICE_TYPES, TEXT_MOVEMENTS, LANGUAGE_SYNCS } from './customization'
-import { DISPLAY_MODES, DISPLAY_STATUS_VIEWS } from './config'
+import { DISPLAY_LANGUAGES, DISPLAY_MODES, DISPLAY_STATUS_VIEWS } from './config'
 import { CREATE_DEFAULTS, changedFields, localExpiration, publicationSupported } from './draft'
 import { DisplayPresentation } from './DisplayProjection'
 import { PreviewStage } from './DisplayFrame'
@@ -118,8 +118,8 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
                 options={DISPLAY_MODES.map(value => ({ value, label: optionLabel(value) }))}
                 onChange={value => controller.edit({ mode: value, lang2: value === 'single' ? null : draft.lang2 ?? 'en' })} />
             </View>
-            {choice('lang1', ['translit', 'en', 'hyw', 'grabar'])}
-            {draft.mode === 'parallel' && choice('lang2', ['translit', 'en', 'hyw', 'grabar'])}
+            {choice('lang1', DISPLAY_LANGUAGES)}
+            {draft.mode === 'parallel' && choice('lang2', DISPLAY_LANGUAGES)}
             <AppText variant="label">{t('links.fontValue', { value: draft.font_scale })}</AppText>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <AppButton variant="secondary" accessibilityLabel={t('links.smaller')} disabled={disabled || draft.font_scale <= 50} onPress={() => controller.edit({ font_scale: Math.max(50, draft.font_scale - 5) })}>−</AppButton>

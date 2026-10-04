@@ -1,12 +1,11 @@
 import { ScrollView, StyleSheet, Text, TVFocusGuideView, View } from 'react-native'
-import { TEXT_MOVEMENTS, type DisplayLanguage, type DisplayPreferences } from '@tarkman/reader'
+import { DISPLAY_LANGUAGES, TEXT_MOVEMENTS, type DisplayLanguage, type DisplayPreferences } from '@tarkman/reader'
 import { useI18n, type MessageKey } from '../i18n'
 import { usePreferences } from '../preferences'
 import { colors, glassRadius, safe, space, type } from '../theme'
 import { FocusButton } from './FocusButton'
 import { Glass } from './Glass'
 
-const LANGUAGES: DisplayLanguage[] = ['translit', 'en', 'hyw', 'grabar']
 const SCALES = [75, 100, 125, 150]
 const STATUS_VIEWS: DisplayPreferences['status_view'][] = ['full', 'pages_only', 'posture_only', 'none']
 const languageKey = (language: DisplayLanguage): MessageKey => `languageNames.${language}`
@@ -20,7 +19,7 @@ export function DisplayOptionRows({ first = false }: { first?: boolean }) {
   return (
     <>
       <Row label={t('displayOptions.lang1')}>
-        {LANGUAGES.map((language, index) => (
+        {DISPLAY_LANGUAGES.map((language, index) => (
           <FocusButton key={language} testID={`option-lang1-${language}`} label={t(languageKey(language))} selected={display.lang1 === language}
             hasTVPreferredFocus={first && index === 0} onPress={() => updateDisplay({ lang1: language })} />
         ))}
@@ -28,12 +27,12 @@ export function DisplayOptionRows({ first = false }: { first?: boolean }) {
       <Row label={t('displayOptions.mode')}>
         {(['parallel', 'single'] as const).map(mode => (
           <FocusButton key={mode} testID={`option-mode-${mode}`} label={t(`displayOptions.${mode}`)} selected={display.mode === mode}
-            onPress={() => updateDisplay({ mode, lang2: mode === 'parallel' ? display.lang2 ?? LANGUAGES.find(l => l !== display.lang1) : display.lang2 })} />
+            onPress={() => updateDisplay({ mode, lang2: mode === 'parallel' ? display.lang2 ?? DISPLAY_LANGUAGES.find(l => l !== display.lang1) : display.lang2 })} />
         ))}
       </Row>
       {display.mode === 'parallel' ? (
         <Row label={t('displayOptions.lang2')}>
-          {LANGUAGES.filter(language => language !== display.lang1).map(language => (
+          {DISPLAY_LANGUAGES.filter(language => language !== display.lang1).map(language => (
             <FocusButton key={language} testID={`option-lang2-${language}`} label={t(languageKey(language))} selected={display.lang2 === language}
               onPress={() => updateDisplay({ lang2: language })} />
           ))}

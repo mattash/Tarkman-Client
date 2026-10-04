@@ -147,3 +147,18 @@ it('shows each link’s public listing state in the list, and nothing for a link
   expect(screen.getAllByText('Public listing: Off')).toHaveLength(1)
   expect(screen.getByText('Legacy')).toBeOnTheScreen()
 })
+
+it('selects and saves Eastern Armenian in either display-link column', async () => {
+  const { api, Harness, controller } = setup(null)
+  await render(<Harness />)
+  await fireEvent.press(screen.getByRole('button', { name: 'First language: Transliteration' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Eastern Armenian' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Second language: English' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Eastern Armenian' }))
+  expect(controller.getSnapshot().draft).toMatchObject({ lang1: 'hye', lang2: 'hye' })
+  await fireEvent.press(screen.getByRole('button', { name: 'Next' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Next' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Create display link' }))
+  await act(flush)
+  expect(api.save.mock.calls[0][0]).toMatchObject({ lang1: 'hye', lang2: 'hye' })
+})

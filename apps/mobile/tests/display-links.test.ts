@@ -10,7 +10,7 @@ const validConfig = {
 }
 
 it('accepts only documented display languages, modes, and status views', () => {
-  for (const value of ['translit', 'en', 'hyw', 'grabar']) expect(isDisplayLanguage(value)).toBe(true)
+  for (const value of ['translit', 'en', 'hye', 'hyw', 'grabar']) expect(isDisplayLanguage(value)).toBe(true)
   expect(isDisplayLanguage('armenian')).toBe(false)
   expect(isDisplayLanguage(null)).toBe(false)
   expect(isDisplayMode('parallel')).toBe(true)
@@ -115,4 +115,9 @@ it.each([
 it.each([403, 404, 410])('preserves terminal HTTP status %s even with a valid payload', async status => {
   const request = fakeFetch({ '/display_links/abc': async () => new Response(JSON.stringify(validConfig), { status }) })
   await expect(fetchDisplayLink('https://api.test', 'abc', request)).rejects.toThrow('Invalid or expired display link.')
+})
+
+it('retains Eastern Armenian from the API and URL in either display column', () => {
+  expect(normalizeConfig({ ...validConfig, lang1: 'hye', lang2: 'hye' })).toMatchObject({ lang1: 'hye', lang2: 'hye' })
+  expect(normalizeOverrides({ lang1: 'hye', lang2: 'hye' })).toEqual({ lang1: 'hye', lang2: 'hye' })
 })

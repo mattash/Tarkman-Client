@@ -345,3 +345,27 @@ describe('status text sizing', () => {
     expect(fontSize('display-posture')).toBeCloseTo(600 * 0.13)
   })
 })
+
+// Eastern content copied from the existing part-detail fixture; no invented translation.
+it.each(['single', 'parallel'] as const)('renders hy_east in %s mode independently of Western Armenian', async mode => {
+  const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_part_id: 11, status: 'active' } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11, hy_east: 'Ալելուիա', hy_west: 'Western only', en: 'Alleluia' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session, parts }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await render(<ThemeProvider><I18nProvider><ReadingFontContext.Provider value>
+    <DisplayProjection apiBase="https://api.test" cableBase="wss://api.test/cable" config={{ ...config, mode, lang1: 'hye', lang2: 'en' }} sessionId={42} />
+  </ReadingFontContext.Provider></I18nProvider></ThemeProvider>)
+  expect(screen.getByText('Ալելուիա')).toBeOnTheScreen()
+  expect(screen.getByText('Ալելուիա')).toHaveStyle({ fontFamily: 'NotoSerifArmenian-Regular' })
+  expect(screen.queryByText('Western only')).toBeNull()
+  if (mode === 'parallel') expect(screen.getByText('Alleluia')).toBeOnTheScreen()
+})
+
+it.each([null, '', '   '])('does not replace missing Eastern Armenian (%j) with another language', async hyEast => {
+  const session = normalizeSession({ session: { id: 42, current_part_id: 1, current_liturgy_part_id: 11, status: 'active' } })
+  const parts = normalizeParts({ parts: [{ part: { id: 1, liturgy_part_id: 11, hy_east: hyEast, hy_west: 'Western only', en: 'Alleluia' } }] })
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, session, parts }, retry: jest.fn(), refreshAfterCommand: jest.fn(), dispatch: jest.fn() })
+  await renderProjection({ config: { ...config, mode: 'single', lang1: 'hye' } })
+  expect(screen.getByText('No text is available in the selected language.')).toBeOnTheScreen()
+  expect(screen.queryByText('Western only')).toBeNull()
+  expect(screen.queryByText('Alleluia')).toBeNull()
+})

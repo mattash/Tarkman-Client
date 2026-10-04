@@ -396,3 +396,20 @@ describe('unavailable and unreadable', () => {
     expect(has('display-setup')).toBe(true)
   })
 })
+
+it('renders Eastern Armenian from a saved display link and applies language updates', async () => {
+  seed()
+  server.addService({ id: 9, church: CHURCH.name, title: 'Divine Liturgy', status: 'active' }, [
+    { id: 30, liturgyPartId: 300, position: 1, en: 'Alleluia', hy_east: 'Ալելուիա', hy_west: 'Western only' },
+  ], 300)
+  server.updateLink('tok1', { mode: 'single', lang1: 'hye' })
+  await launch(savedStore())
+  await startService(9)
+  expect(screen.getByText('Ալելուիա')).toBeOnTheScreen()
+  expect(screen.getByText('Ալելուիա')).toHaveStyle({ fontFamily: 'NotoSerifArmenian-Regular' })
+  expect(screen.queryByText('Western only')).toBeNull()
+  await act(async () => server.updateLink('tok1', { lang1: 'hyw' }))
+  await flush()
+  expect(screen.getByText('Western only')).toBeOnTheScreen()
+  expect(screen.queryByText('Ալելուիա')).toBeNull()
+})
