@@ -6,7 +6,7 @@ import type { ReaderTransport } from '../src/reader'
 export const API = 'https://api.example.test'
 export const endpoints = { api: API, cable: 'wss://api.example.test/cable' }
 
-interface Part { id: number; liturgyPartId: number; position: number; en: string | null; ru?: string | null; grabar?: string | null; translit?: string | null; role?: string; page?: number }
+interface Part { id: number; liturgyPartId: number; position: number; en: string | null; hy_east?: string | null; hy_west?: string | null; ru?: string | null; grabar?: string | null; translit?: string | null; role?: string; page?: number }
 interface Session { id: number; church: string; title: string; status: string; message?: string | null }
 
 /**
@@ -39,7 +39,7 @@ export function fakeServer() {
   }
 
   const partRow = (p: Part) => ({ part: { id: p.id, liturgy_part_id: p.liturgyPartId, liturgy_id: 1, position: p.position, role: p.role ?? 'priest',
-    en: p.en, ru: p.ru ?? null, grabar: p.grabar ?? null, translit: p.translit ?? null, page: p.page ?? null } })
+    en: p.en, hy_east: p.hy_east ?? null, hy_west: p.hy_west ?? null, ru: p.ru ?? null, grabar: p.grabar ?? null, translit: p.translit ?? null, page: p.page ?? null } })
   const context = (id: number) => `manifest-${id}-${(parts.get(id) ?? []).length}`
   const state = (id: number) => {
     const c = cursor.get(id)!, s = sessions.get(id)!

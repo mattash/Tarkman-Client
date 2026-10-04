@@ -4,7 +4,7 @@ import { colors } from '../theme'
 
 // apps/mobile's LiturgyText faces: Source Serif 4 for reading text, Noto Serif Armenian for Classical
 // Armenian, the platform italic, and inline Markdown runs. Links are shown, not followed: a TV has no browser.
-const tags: Record<DisplayLanguage, string> = { en: 'en', grabar: 'hy', translit: 'hy-Latn', hyw: 'hy' }
+const tags: Record<DisplayLanguage, string> = { en: 'en', grabar: 'hy', translit: 'hy-Latn', hye: 'hy', hyw: 'hy' }
 
 export function ReadingText({ text, language, style, semibold = false }: { text: string; language: DisplayLanguage; style?: TextStyle | TextStyle[]; semibold?: boolean }) {
   const armenian = language === 'grabar'

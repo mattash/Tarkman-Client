@@ -1105,14 +1105,15 @@ reach a screen left open. Invalid/expired links have a clear replacement-link
 message; temporary failures retry automatically with a bounded 12-second request.
 
 Without a token, direct preferences are `mode=parallel|single`,
-`lang1=translit|en|grabar|hyw`, `lang2=...`, `show_notifications=true|false|1|0`,
+`lang1=translit|en|grabar|hye|hyw`, `lang2=...`, `show_notifications=true|false|1|0`,
 `show_explanations=true|false|1|0`, and
 `status_view=full|pages_only|posture_only|none`. Invalid values use defaults:
 parallel transliteration/English, notifications on, explanations off, full display.
 `none` keeps reading text while hiding operator messages. Service projection
 shows only the reading and speaker role; `show_explanations` loads the existing current-occurrence explanations only for token projections and shows an availability indicator when content exists. Direct tokenless projections keep their prior behavior. `pages_only` and `posture_only` select minimal screens even on a
-text-display route. `hyw` remains an explicit missing-translation state because
-the shared reading model does not yet include Western Armenian.
+text-display route. `hye` selects Eastern Armenian from `hy_east`; `hyw` selects
+Western Armenian from `hy_west`. Neither substitutes another language when its
+translation is missing or blank; the display shows the missing-text message.
 
 Current-service discovery checks the public `/s/:user_id/current.json` endpoint
 every 5 seconds, includes the viewer's time zone, and switches automatically to

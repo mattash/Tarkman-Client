@@ -45,6 +45,7 @@ export function validateSavedService(value: unknown, now: number): SavedServiceV
     parts.push({ id: p.id, key: p.key, liturgyId: p.liturgyId, liturgyPartId: p.liturgyPartId,
       ...(p.page === undefined ? {} : { page: id(p.page) ? p.page : null }),
       ...(p.effectiveDurationMs === undefined ? {} : { effectiveDurationMs: id(p.effectiveDurationMs) ? p.effectiveDurationMs : null }),
+      ...(p.hyEast === undefined ? {} : { hyEast: nullableText(p.hyEast) ? p.hyEast : null }),
       ...(p.hyWest === undefined ? {} : { hyWest: nullableText(p.hyWest) ? p.hyWest : null }),
       position: p.position, role: p.role, posture: p.posture, text: { en, ru, grabar, translit } })
   }

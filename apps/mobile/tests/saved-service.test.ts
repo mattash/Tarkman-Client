@@ -220,3 +220,13 @@ test('keeps Western Armenian in saved copies and accepts older copies without it
   for (const part of older.parts) delete part.hyWest
   expect(readSavedService(JSON.stringify(older), now)!.parts[0]).not.toHaveProperty('hyWest')
 })
+
+test('keeps Eastern Armenian in saved copies and accepts older copies without it', () => {
+  const source = input()
+  source.parts[0].hyEast = 'Ալելուիա'
+  const built = buildSavedService(source, now)!
+  expect(readSavedService(JSON.stringify(built), now)!.parts[0].hyEast).toBe('Ալելուիա')
+  const older = JSON.parse(JSON.stringify(built))
+  for (const part of older.parts) delete part.hyEast
+  expect(readSavedService(JSON.stringify(older), now)!.parts[0]).not.toHaveProperty('hyEast')
+})

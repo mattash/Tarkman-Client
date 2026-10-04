@@ -6,7 +6,7 @@ import { DEFAULT_CUSTOMIZATION, type DisplayCustomization } from './customizatio
  * (`GET /display_links/{token}`); a token is a public capability, not user auth.
  */
 export type DisplayMode = 'parallel' | 'single'
-export type DisplayLanguage = 'translit' | 'en' | 'hyw' | 'grabar'
+export type DisplayLanguage = 'translit' | 'en' | 'hye' | 'hyw' | 'grabar'
 export type DisplayStatusView = 'full' | 'pages_only' | 'posture_only' | 'none'
 
 export interface DisplayPreferences extends Partial<DisplayCustomization> {
@@ -23,7 +23,7 @@ export interface DisplayPreferences extends Partial<DisplayCustomization> {
 
 export interface DisplayLinkConfig extends CoreDisplayLinkConfig, DisplayPreferences {}
 
-export const DISPLAY_LANGUAGES: readonly DisplayLanguage[] = ['translit', 'en', 'hyw', 'grabar']
+export const DISPLAY_LANGUAGES: readonly DisplayLanguage[] = ['translit', 'en', 'hye', 'hyw', 'grabar']
 export const DISPLAY_MODES: readonly DisplayMode[] = ['parallel', 'single']
 export const DISPLAY_STATUS_VIEWS: readonly DisplayStatusView[] = ['full', 'pages_only', 'posture_only', 'none']
 

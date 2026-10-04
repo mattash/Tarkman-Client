@@ -249,6 +249,7 @@ export const en = {
     translit: 'Transliteration',
     en: 'English',
     grabar: 'Classical Armenian',
+    hye: 'Eastern Armenian',
     hyw: 'Western Armenian',
     full: 'Text and status screens',
     pages_only: 'Page number only',

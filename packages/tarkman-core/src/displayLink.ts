@@ -2,8 +2,8 @@ export interface DisplayLinkConfig {
   token: string
   title?: string
   mode: 'parallel' | 'single'
-  lang1: 'translit' | 'en' | 'hyw' | 'grabar'
-  lang2?: 'translit' | 'en' | 'hyw' | 'grabar' | null
+  lang1: 'translit' | 'en' | 'hye' | 'hyw' | 'grabar'
+  lang2?: 'translit' | 'en' | 'hye' | 'hyw' | 'grabar' | null
   show_explanations: boolean
   show_notifications: boolean
   status_view: 'full' | 'pages_only' | 'posture_only' | 'none'
