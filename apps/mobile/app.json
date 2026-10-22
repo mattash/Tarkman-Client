@@ -89,6 +89,11 @@
               "scheme": "https",
               "host": "web.tarkman.app",
               "pathPattern": "/sessions/.*/part/.*"
+            },
+            {
+              "scheme": "https",
+              "host": "web.tarkman.app",
+              "pathPattern": "/liturgies/.*"
             }
           ]
         }
