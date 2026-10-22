@@ -361,10 +361,10 @@ Prayer Library sharing uses the stable public contract
 `https://web.tarkman.app/liturgies/<id>`. Android's `/liturgies/.*` intent
 filter needs a new binary; `app/+native-intent.tsx` validates the Library path
 and drops query/fragment parameters before the existing Android reader guard.
-**Library AASA deployment is gated by issue #253 (G2)** and belongs to a
-separate PR after the Library-enabled 0.2.6 release and the owner's adoption
-gate. Until then iOS Library links open the web reader. The association file
-and its exact-pattern test remain unchanged in PR1. Physical-device link and
+Library links `https://web.tarkman.app/liturgies/<id>` are claimed on iOS via
+`/liturgies/?*` (with `/liturgies/*/*` excluded), effective only once this file
+is deployed after the Library-enabled 0.2.6 iOS build is live in the App Store.
+Physical-device link and
 share-sheet checks and rendered toolbar QA remain release gates.
 
 Links to the reading routes on `web.tarkman.app` open this app when it is

@@ -10,6 +10,17 @@ describe('apple-app-site-association', () => {
   const details = association.applinks.details
   const patterns: string[] = details.flatMap((detail: { components: { '/': string }[] }) => detail.components.map(component => component['/']))
 
+  function claims(path: string): boolean {
+    for (const component of details[0].components) {
+      const pattern = component['/']
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .replaceAll('\\*', '.*')
+        .replaceAll('\\?', '.')
+      if (new RegExp(`^${pattern}$`).test(path)) return component.exclude !== true
+    }
+    return false
+  }
+
   it('claims this site for the iOS app that ships from this repository', () => {
     const mobile = read('apps/mobile/app.json').expo
     expect(details).toHaveLength(1)
@@ -18,14 +29,18 @@ describe('apple-app-site-association', () => {
     expect(mobile.ios.associatedDomains).toContain('applinks:web.tarkman.app')
   })
 
-  it('opens only the reading routes the app actually has', () => {
-    expect(patterns).toEqual(['/sessions/*/parts', '/sessions/*/part/*'])
+  it('orders reading and Library routes with the nested Library exclusion first', () => {
+    expect(patterns).toEqual(['/sessions/*/parts', '/sessions/*/part/*', '/liturgies/*/*', '/liturgies/?*'])
+    expect(details[0].components.map((component: { exclude?: boolean }) => component.exclude === true)).toEqual([false, false, true, false])
   })
 
-  it('leaves the church display routes to the website', () => {
+  it('claims reading and Library service links while leaving display and other Library paths to the website', () => {
     // Kiosk screens must keep opening in the browser, never in someone's phone app.
-    for (const display of ['/sessions/4006/display', '/sessions/display', '/sessions/status/display']) {
-      expect(patterns.some(pattern => new RegExp(`^${pattern.replaceAll('*', '[^/]+')}$`).test(display))).toBe(false)
+    for (const path of ['/sessions/4006/display', '/sessions/display', '/sessions/status/display', '/library', '/liturgies', '/liturgies/', '/liturgies/1/x']) {
+      expect(claims(path)).toBe(false)
+    }
+    for (const path of ['/liturgies/1', '/liturgies/123456', '/sessions/4006/parts', '/sessions/4006/part/2066']) {
+      expect(claims(path)).toBe(true)
     }
   })
 
