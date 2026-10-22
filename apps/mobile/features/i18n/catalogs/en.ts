@@ -31,6 +31,12 @@ export const en = {
     "refresh": "Refresh preview"
 },
   library: {
+    share: 'Share',
+    shareTitle: 'Share {name}',
+    shareMessage: 'Read {name} in the Tarkman Prayer Library.',
+    shareCopied: 'Link copied.',
+    shareManualTitle: 'Copy manually',
+    shareManualHelp: 'Clipboard access is unavailable. Select and copy this link.',
     "removeSelection": "Remove selection",
     "noMatches": "No services match your search.",
     "updateError": "Couldn’t update right now. You can keep reading the version you have.",

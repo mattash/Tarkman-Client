@@ -33,6 +33,13 @@ export const ru: Catalog = {
     "refresh": "Обновить просмотр"
 },
   library: {
+    // #253: these six share strings await owner / fluent-reader approval.
+    share: 'Поделиться',
+    shareTitle: 'Поделиться: {name}',
+    shareMessage: 'Читайте «{name}» в Молитвенной библиотеке Tarkman.',
+    shareCopied: 'Ссылка скопирована.',
+    shareManualTitle: 'Скопировать вручную',
+    shareManualHelp: 'Буфер обмена недоступен. Выделите и скопируйте эту ссылку.',
     "removeSelection": "Убрать из выбранного",
     "noMatches": "По вашему запросу службы не найдены.",
     "updateError": "Сейчас не удалось обновить текст. Вы можете читать сохранённую версию.",

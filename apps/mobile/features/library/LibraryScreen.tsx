@@ -13,6 +13,7 @@ import { spacing } from '../../design/tokens'
 import { useTheme } from '../../design/ThemeProvider'
 import { useI18n } from '../i18n'
 import { useLibrary } from './LibraryProvider'
+import { ShareServiceButton } from './ShareService'
 import type { CatalogItem } from './contracts'
 
 export function LibraryScreen() {
@@ -89,11 +90,13 @@ export function LibraryScreen() {
             <AppText variant="caption" tone="muted">{t(updated ? 'library.updateAvailable' : 'library.downloaded')}</AppText>
           </View>
           {(updated || failure) && <AppButton variant="secondary" loading={busy} disabled={!controller.enabled || offline || !state.ready} onPress={() => request([entry.id])}>{t('library.update')}</AppButton>}
+          {controller.enabled && (saved?.bundle || state.catalog.some(item => item.id === entry.id)) && <ShareServiceButton id={entry.id} name={entry.name} />}
           <AppButton variant="quiet" onPress={() => { void controller.remove(entry.id).catch(() => undefined) }}>{t('library.remove')}</AppButton>
         </> : <>
           <AppButton disabled={!controller.enabled || offline || !state.ready || busy} accessibilityHint={t('library.internetRequired')} onPress={() => open(entry.id)}>{t('library.readSaved')}</AppButton>
           <AppText variant="caption" tone="muted">{t('library.internetRequired')}</AppText>
           {controller.durable && <AppButton variant="secondary" loading={busy} disabled={!controller.enabled || offline || !state.ready} onPress={() => request([entry.id])}>{t('library.download')}</AppButton>}
+          {controller.enabled && state.catalog.some(item => item.id === entry.id) && <ShareServiceButton id={entry.id} name={entry.name} />}
           {requested && <AppButton variant="quiet" onPress={() => { void controller.remove(entry.id).catch(() => undefined) }}>{t('library.removeSelection')}</AppButton>}
         </>}
       </Surface>
