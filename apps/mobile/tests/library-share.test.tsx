@@ -2,6 +2,7 @@ import { afterEach, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 import { Platform, Share, View } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
+import { spacing } from '../design/tokens'
 import { AppModal } from '../components/AppModal'
 import { ShareServiceButton } from '../features/library/ShareService'
 import { libraryShare } from '../features/library/share'
@@ -109,6 +110,19 @@ it('returns manual-copy focus to the supplied share opener', async () => {
   await render(<ThemeProvider><AppModal visible title="Copy manually" onDismiss={() => {}} openerRef={{ current: { focus } as unknown as View }} /></ThemeProvider>)
   await fireEvent(screen.getByTestId('app-modal'), 'dismiss')
   expect(focus).toHaveBeenCalledTimes(1)
+})
+
+it('pads the reader link-copied notice away from the screen edge', async () => {
+  jest.spyOn(libraryShare, 'share').mockResolvedValue('copy')
+  jest.spyOn(libraryShare, 'copy').mockResolvedValue(true)
+  const api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn(async () => parseBundle(fixture)) }
+  const controller = createLibrary('test', api, memoryStore())
+  const preferences = { get: async () => null, set: async () => {}, remove: async () => {} }
+  await render(<ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LiturgyReader /></LibraryProvider></PreferencesProvider></ThemeProvider>)
+  await fireEvent.press(await screen.findByTestId('library-reader-share'))
+  const notice = await screen.findByText('Link copied.')
+  expect(notice.parent).toHaveStyle({ paddingHorizontal: spacing.page })
+  expect(within(screen.getByTestId('library-reader-details')).queryByText('Link copied.')).toBeNull()
 })
 
 it('pins the reader copy confirmation outside its scrolling details and hides sharing after revocation', async () => {

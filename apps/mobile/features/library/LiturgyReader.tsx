@@ -108,7 +108,7 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">
     {toolbar}
-    {reading && controller.enabled && validId && <><ShareNotice notice={notice} /><ShareManualModal manual={manual} dismiss={dismiss} openerRef={shareAnchor} /></>}
+    {reading && controller.enabled && validId && <>{!!notice && <View style={{ paddingHorizontal: spacing.page, paddingVertical: spacing.xs }}><ShareNotice notice={notice} /></View>}<ShareManualModal manual={manual} dismiss={dismiss} openerRef={shareAnchor} /></>}
     <PartList parts={parts} following={false} language={preferences.language} selectedLanguages={preferences.selectedLanguages}
       readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={details}
       topPartChanged={part => setTopKey(part?.key)} open={part => { opener.current = null; setDetail(occurrence(part)) }} />
