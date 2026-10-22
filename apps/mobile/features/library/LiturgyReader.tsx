@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
@@ -18,15 +18,18 @@ import type { LivePart } from '../live/contracts'
 import { usePreferences } from '../preferences/PreferencesProvider'
 import { useI18n } from '../i18n'
 import { useLibrary } from './LibraryProvider'
+import { readLibraryId } from '../links/libraryLink'
 import type { Bundle, Occurrence } from './contracts'
 
 /** Pins one complete immutable revision. No SessionReader/controller/presence dependency. */
 export function LiturgyReader() {
-  const params = useLocalSearchParams<{ id: string; environment: string; origin?: string }>()
+  const params = useLocalSearchParams<{ id: string; environment?: string | string[]; origin?: string }>()
   const { controller } = useLibrary()
-  return <Reader key={`${params.environment}:${params.id}:${controller.environment}`} id={Number(params.id)} environment={params.environment} origin={params.origin} />
+  // A link names a service, never a server. Only an absent environment uses this build.
+  const environment = params.environment === undefined ? controller.environment : params.environment
+  return <Reader key={`${environment}:${params.id}:${controller.environment}`} id={readLibraryId(params.id)} environment={environment} origin={params.origin} />
 }
-function Reader({ id, environment, origin }: { id: number; environment: string; origin?: string }) {
+function Reader({ id, environment, origin }: { id: number; environment: string | string[]; origin?: string }) {
   const { controller, state } = useLibrary(), { t } = useI18n()
   const { preferences, setLanguage, setReadingSize, setAppearance } = usePreferences()
   const { colors } = useTheme()
@@ -45,7 +48,7 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
   const [failed, setFailed] = useState(false), [detail, setDetail] = useState<Occurrence | null>(null)
   useEffect(() => {
     let active = true
-    if (snapshot || !state.ready || !sameEnvironment || !validId || controller.getSnapshot().revoked.includes(id)) return
+    if (snapshot || !state.ready || !sameEnvironment || !validId || !controller.enabled || controller.getSnapshot().revoked.includes(id)) return
     const saved = controller.getSnapshot().items.find(i => i.id === id)
     if (saved?.bundle) {
       void Promise.resolve().then(() => { if (active) setSnapshot({ bundle: saved.bundle!, savedAt: saved.savedAt }) })
@@ -94,8 +97,8 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
     <AppText accessibilityRole={alert ? 'alert' : undefined}>{text}</AppText>
   </View>
   if (revoked || !sameEnvironment) return <View>{toolbar}{message(t('library.errors.unavailable'), true)}</View>
-  if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), failed || !validId)}
-    {failed && validId && <View style={{ paddingHorizontal: spacing.page }}><AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton></View>}
+  if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : !controller.enabled ? 'library.errors.unsupported' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), failed || !validId)}
+    {failed && validId && controller.enabled && <View style={{ paddingHorizontal: spacing.page }}><AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton></View>}
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">
     {toolbar}
