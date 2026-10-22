@@ -10,7 +10,7 @@ export function isLibraryLink(value: string): boolean {
   return match !== null && libraryLinkUrl(Number(match[1])) === value
 }
 export function readLibraryId(param: unknown): number {
-  return typeof param === 'string' && /^[1-9]\d*$/.test(param) && Number.isSafeInteger(Number(param)) ? Number(param) : NaN
+  return typeof param === 'string' && /^[1-9]\d*$/.test(param) && Number.isSafeInteger(Number(param)) && String(Number(param)) === param ? Number(param) : NaN
 }
 /** Undefined leaves other links alone; '/' rejects claimed but unsafe Library links. */
 export function libraryLinkPath(value: string): string | undefined {
