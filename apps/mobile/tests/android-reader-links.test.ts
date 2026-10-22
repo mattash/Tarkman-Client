@@ -52,6 +52,7 @@ describe('Android public reader links', () => {
       { scheme: 'https', host: 'web.tarkman.app', pathPattern: '/sessions/.*/parts' },
       { scheme: 'https', host: 'web.tarkman.app', pathPattern: '/sessions/.*/parts/' },
       { scheme: 'https', host: 'web.tarkman.app', pathPattern: '/sessions/.*/part/.*' },
+      { scheme: 'https', host: 'web.tarkman.app', pathPattern: '/liturgies/.*' },
     ])
   })
 })
@@ -68,4 +69,16 @@ it('applies the Android guard to cold and warm intents while preserving iOS hand
   } finally {
     platform.restore()
   }
+})
+
+it.each(['ios', 'android'] as const)('guards Library intents on %s for cold and warm starts', os => {
+  const platform = jest.replaceProperty(Platform, 'OS', os)
+  try {
+    for (const initial of [true, false]) {
+      for (const suffix of ['7', '7/', '7?environment=evil&id=9&origin=library#f']) expect(redirectSystemPath({ path: `https://web.tarkman.app/liturgies/${suffix}`, initial })).toBe('/liturgies/7')
+      for (const suffix of ['', '0', '7/x', '%31', '9007199254740993']) expect(redirectSystemPath({ path: `https://web.tarkman.app/liturgies/${suffix}`, initial })).toBe('/')
+    }
+    platform.replaceValue('ios')
+    expect(redirectSystemPath({ path: '/liturgies/7', initial: true })).toBe('/liturgies/7')
+  } finally { platform.restore() }
 })

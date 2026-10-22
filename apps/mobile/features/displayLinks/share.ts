@@ -11,10 +11,11 @@ export interface ShareAdapter {
   share(url: string, title: string, message: string, anchor?: number): Promise<'done' | 'cancelled' | 'copy'>
   copy(url: string): Promise<boolean>
 }
-export const platformShare: ShareAdapter = {
+export function createShareAdapter(accepts: (url: string) => boolean): ShareAdapter {
+  return {
   // Called synchronously from the tap handler: no awaited fetch/save before navigator.share.
   async share(url, title, message, anchor) {
-    if (!shareableUrl(url)) return 'copy'
+    if (!accepts(url)) return 'copy'
     try {
       if (Platform.OS === 'web') {
         if (typeof navigator.share !== 'function') return 'copy'
@@ -27,10 +28,12 @@ export const platformShare: ShareAdapter = {
     } catch (error) { return error instanceof Error && error.name === 'AbortError' ? 'cancelled' : 'copy' }
   },
   async copy(url) {
-    if (!shareableUrl(url)) return false
+    if (!accepts(url)) return false
     try {
       if (Platform.OS === 'web') { await navigator.clipboard.writeText(url); return true }
       return await Clipboard.setStringAsync(url)
     } catch { return false }
   },
 }
+}
+export const platformShare: ShareAdapter = createShareAdapter(shareableUrl)

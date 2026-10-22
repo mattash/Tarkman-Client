@@ -151,3 +151,27 @@ configuration, and no `.env` file is required or added.
 **Open editorial items:** there are no recommended starter IDs yet, so no starter invitation shows.
 Only the Divine Liturgy has Russian text; readers with Russian selected see the reader's existing
 choose-another-language prompt for the others. See `qa/library-190.md` for the independent UI Operator handoff.
+
+## Sharing
+
+The stable public link is `https://web.tarkman.app/liturgies/<id>`, with a
+canonical positive safe-integer id and no query or fragment. Sharing saves
+nothing, works offline, and uses the production origin even in preview builds.
+Link previews remain generic.
+
+An absent `environment` resolves to this build's Library environment. Explicit
+values must equal it exactly; different, empty or repeated values are refused
+without a request. A link never selects a server. Disabled builds show the
+not-available-yet message without Retry. Existing stored snapshots are preserved.
+
+Reader and real Library cards offer Share. Android includes the URL in the
+message; iOS anchors its popover to the opener. Cancellation is silent. Failed
+or unavailable sharing copies the link and confirms for five seconds; clipboard
+failure opens a selectable manual-copy dialog. Display-link sharing is unchanged.
+
+**AASA deployment is gated by issue #253 (G2)** in a separate PR; iOS taps
+open the web reader until that gate. Android intent changes require a new binary.
+The six new Russian share strings are the plan's draft wording, **pending owner /
+fluent-reader approval before release**. Rendered QA at 320/390/768/1440 widths,
+zoom and large text, Safari/Firefox clipboard checks, and native device share and
+link checks remain required; source tests do not establish rendered geometry.

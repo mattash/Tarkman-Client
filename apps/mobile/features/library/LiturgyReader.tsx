@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
@@ -18,18 +18,24 @@ import type { LivePart } from '../live/contracts'
 import { usePreferences } from '../preferences/PreferencesProvider'
 import { useI18n } from '../i18n'
 import { useLibrary } from './LibraryProvider'
+import { readLibraryId } from '../links/libraryLink'
+import { useShareService } from './useShareService'
+import { ShareNotice, ShareManualModal } from './ShareService'
 import type { Bundle, Occurrence } from './contracts'
 
 /** Pins one complete immutable revision. No SessionReader/controller/presence dependency. */
 export function LiturgyReader() {
-  const params = useLocalSearchParams<{ id: string; environment: string; origin?: string }>()
+  const params = useLocalSearchParams<{ id: string; environment?: string | string[]; origin?: string }>()
   const { controller } = useLibrary()
-  return <Reader key={`${params.environment}:${params.id}:${controller.environment}`} id={Number(params.id)} environment={params.environment} origin={params.origin} />
+  // A link names a service, never a server. Only an absent environment uses this build.
+  const environment = params.environment === undefined ? controller.environment : params.environment
+  return <Reader key={`${environment}:${params.id}:${controller.environment}`} id={readLibraryId(params.id)} environment={environment} origin={params.origin} />
 }
-function Reader({ id, environment, origin }: { id: number; environment: string; origin?: string }) {
+function Reader({ id, environment, origin }: { id: number; environment: string | string[]; origin?: string }) {
   const { controller, state } = useLibrary(), { t } = useI18n()
   const { preferences, setLanguage, setReadingSize, setAppearance } = usePreferences()
   const { colors } = useTheme()
+  const { anchor: shareAnchor, busy, notice, manual, dismiss, share } = useShareService(), compact = useWindowDimensions().width < 360
   const [sheet, setSheet] = useState<'language' | 'preferences' | null>(null)
   const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null), explanationOpener = useRef<View>(null)
   // With no live position, the book explains the part at the top of the screen.
@@ -45,7 +51,7 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
   const [failed, setFailed] = useState(false), [detail, setDetail] = useState<Occurrence | null>(null)
   useEffect(() => {
     let active = true
-    if (snapshot || !state.ready || !sameEnvironment || !validId || controller.getSnapshot().revoked.includes(id)) return
+    if (snapshot || !state.ready || !sameEnvironment || !validId || !controller.enabled || controller.getSnapshot().revoked.includes(id)) return
     const saved = controller.getSnapshot().items.find(i => i.id === id)
     if (saved?.bundle) {
       void Promise.resolve().then(() => { if (active) setSnapshot({ bundle: saved.bundle!, savedAt: saved.savedAt }) })
@@ -74,7 +80,10 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
     paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
     <BackButton iconOnly onPress={back}>{backLabel}</BackButton>
     {reading && <View style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', gap: spacing.xs, marginLeft: 'auto', flexShrink: 0 }}>
-      <AppButton testID="library-reader-language" ref={languageOpener} variant="quiet" selected icon="languages" labelMaxFontSizeMultiplier={1.3} labelNumberOfLines={1}
+      {controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" iconOnly disabled={busy}
+        accessibilityLabel={t('library.shareTitle', { name: snapshot.bundle.liturgy.name })}
+        onPress={() => share(id, snapshot.bundle.liturgy.name)}>{t('library.share')}</AppButton>}
+      <AppButton testID="library-reader-language" ref={languageOpener} variant="quiet" selected icon={compact ? undefined : 'languages'} labelMaxFontSizeMultiplier={1.3} labelNumberOfLines={1}
         onPress={() => openSheet('language')}
         accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === preferences.language)!.label })}>
         {languageAbbreviations[preferences.language]}
@@ -94,11 +103,12 @@ function Reader({ id, environment, origin }: { id: number; environment: string; 
     <AppText accessibilityRole={alert ? 'alert' : undefined}>{text}</AppText>
   </View>
   if (revoked || !sameEnvironment) return <View>{toolbar}{message(t('library.errors.unavailable'), true)}</View>
-  if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), failed || !validId)}
-    {failed && validId && <View style={{ paddingHorizontal: spacing.page }}><AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton></View>}
+  if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : !controller.enabled ? 'library.errors.unsupported' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), failed || !validId)}
+    {failed && validId && controller.enabled && <View style={{ paddingHorizontal: spacing.page }}><AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton></View>}
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">
     {toolbar}
+    {reading && controller.enabled && validId && <>{!!notice && <View style={{ paddingHorizontal: spacing.page, paddingVertical: spacing.xs }}><ShareNotice notice={notice} /></View>}<ShareManualModal manual={manual} dismiss={dismiss} openerRef={shareAnchor} /></>}
     <PartList parts={parts} following={false} language={preferences.language} selectedLanguages={preferences.selectedLanguages}
       readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={details}
       topPartChanged={part => setTopKey(part?.key)} open={part => { opener.current = null; setDetail(occurrence(part)) }} />
