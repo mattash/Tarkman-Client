@@ -35,7 +35,7 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   const { controller, state } = useLibrary(), { t } = useI18n()
   const { preferences, setLanguage, setReadingSize, setAppearance } = usePreferences()
   const { colors } = useTheme()
-  const sharing = useShareService(), compact = useWindowDimensions().width < 360
+  const { anchor: shareAnchor, busy, notice, manual, dismiss, share } = useShareService(), compact = useWindowDimensions().width < 360
   const [sheet, setSheet] = useState<'language' | 'preferences' | null>(null)
   const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null), explanationOpener = useRef<View>(null)
   // With no live position, the book explains the part at the top of the screen.
@@ -80,9 +80,9 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
     paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
     <BackButton iconOnly onPress={back}>{backLabel}</BackButton>
     {reading && <View style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', gap: spacing.xs, marginLeft: 'auto', flexShrink: 0 }}>
-      {controller.enabled && validId && <AppButton testID="library-reader-share" ref={sharing.anchor} variant="quiet" icon="share" iconOnly disabled={sharing.busy}
+      {controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" iconOnly disabled={busy}
         accessibilityLabel={t('library.shareTitle', { name: snapshot.bundle.liturgy.name })}
-        onPress={() => sharing.share(id, snapshot.bundle.liturgy.name)}>{t('library.share')}</AppButton>}
+        onPress={() => share(id, snapshot.bundle.liturgy.name)}>{t('library.share')}</AppButton>}
       <AppButton testID="library-reader-language" ref={languageOpener} variant="quiet" selected icon={compact ? undefined : 'languages'} labelMaxFontSizeMultiplier={1.3} labelNumberOfLines={1}
         onPress={() => openSheet('language')}
         accessibilityLabel={t('reader.chooseReadingLanguage')} accessibilityHint={t('reader.currentLanguageHint', { language: sampleLanguages.find(l => l.value === preferences.language)!.label })}>
@@ -108,7 +108,7 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">
     {toolbar}
-    {reading && controller.enabled && validId && <><ShareNotice sharing={sharing} /><ShareManualModal sharing={sharing} /></>}
+    {reading && controller.enabled && validId && <><ShareNotice notice={notice} /><ShareManualModal manual={manual} dismiss={dismiss} openerRef={shareAnchor} /></>}
     <PartList parts={parts} following={false} language={preferences.language} selectedLanguages={preferences.selectedLanguages}
       readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={details}
       topPartChanged={part => setTopKey(part?.key)} open={part => { opener.current = null; setDetail(occurrence(part)) }} />

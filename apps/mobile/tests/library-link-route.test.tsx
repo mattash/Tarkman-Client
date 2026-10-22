@@ -12,12 +12,12 @@ import fixture from './fixtures/public_liturgies/bundle.json'
 import catalog from './fixtures/public_liturgies/catalog.json'
 jest.mock('../features/library/store', () => ({ libraryStore: { durable: false } }))
 const preferences = { get: async () => null, set: async () => {}, remove: async () => {} }
-it.each([
+it.each<[string, boolean]>([
   ['/liturgies/701', true],
   ['/liturgies/701?environment=https%3A%2F%2Fevil.example', false],
   ['/liturgies/701?environment=', false],
   ['/liturgies/701?environment=test&environment=test', false],
-] as const)('resolves real router params for %s', async (initialUrl, allowed) => {
+])('resolves real router params for %s', async (initialUrl, allowed) => {
   const api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn(async () => parseBundle(fixture)) }
   const controller = createLibrary('test', api, memoryStore())
   await renderRouter({

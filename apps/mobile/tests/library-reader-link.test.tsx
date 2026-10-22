@@ -88,7 +88,7 @@ it('offers sharing on real cards but never saved-intent placeholders', async () 
 
 it('hides card sharing when the Library is disabled even with a saved bundle', async () => {
   const store = memoryStore()
-  await store.commit('disabled', fixture, Date.now(), () => true)
+  await store.commit('disabled', parseBundle(fixture), Date.now(), () => true)
   const controller = createLibrary('disabled', null, store)
   await render(<ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LibraryScreen /></LibraryProvider></PreferencesProvider></ThemeProvider>)
   await waitFor(() => expect(screen.getByText(fixture.liturgy.name)).toBeTruthy())

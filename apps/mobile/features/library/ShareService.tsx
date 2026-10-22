@@ -1,3 +1,4 @@
+import type { RefObject } from 'react'
 import { View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
@@ -5,21 +6,20 @@ import { AppModal } from '../../components/AppModal'
 import { spacing } from '../../design/tokens'
 import { useI18n } from '../i18n'
 import { useShareService } from './useShareService'
-type Sharing = ReturnType<typeof useShareService>
-export function ShareNotice({ sharing }: { sharing: Sharing }) {
-  return sharing.notice ? <AppText accessibilityLiveRegion="polite">{sharing.notice}</AppText> : null
+export function ShareNotice({ notice }: { notice: string }) {
+  return notice ? <AppText accessibilityLiveRegion="polite">{notice}</AppText> : null
 }
-export function ShareManualModal({ sharing }: { sharing: Sharing }) {
+export function ShareManualModal({ manual, dismiss, openerRef }: { manual: string | null; dismiss: () => void; openerRef: RefObject<View | null> }) {
   const { t } = useI18n()
-  return <AppModal visible={sharing.manual !== null} onDismiss={sharing.dismiss} openerRef={sharing.anchor} title={t('library.shareManualTitle')}>
-    <AppText>{t('library.shareManualHelp')}</AppText><AppText selectable>{sharing.manual}</AppText>
+  return <AppModal visible={manual !== null} onDismiss={dismiss} openerRef={openerRef} title={t('library.shareManualTitle')}>
+    <AppText>{t('library.shareManualHelp')}</AppText><AppText selectable>{manual}</AppText>
   </AppModal>
 }
 export function ShareServiceButton({ id, name }: { id: number; name: string }) {
-  const sharing = useShareService(), { t } = useI18n()
+  const { anchor, busy, notice, manual, dismiss, share } = useShareService(), { t } = useI18n()
   return <View style={{ gap: spacing.sm }}>
-    <AppButton testID={`library-share-${id}`} ref={sharing.anchor} variant="quiet" icon="share" disabled={sharing.busy}
-      accessibilityLabel={t('library.shareTitle', { name })} onPress={() => sharing.share(id, name)}>{t('library.share')}</AppButton>
-    <ShareNotice sharing={sharing} /><ShareManualModal sharing={sharing} />
+    <AppButton testID={`library-share-${id}`} ref={anchor} variant="quiet" icon="share" disabled={busy}
+      accessibilityLabel={t('library.shareTitle', { name })} onPress={() => share(id, name)}>{t('library.share')}</AppButton>
+    <ShareNotice notice={notice} /><ShareManualModal manual={manual} dismiss={dismiss} openerRef={anchor} />
   </View>
 }
