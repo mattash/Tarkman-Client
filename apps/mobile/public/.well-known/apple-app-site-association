@@ -5,7 +5,9 @@
         "appIDs": ["FHF872BAQR.app.tarkman"],
         "components": [
           { "/": "/sessions/*/parts", "comment": "Reading along with one service" },
-          { "/": "/sessions/*/part/*", "comment": "One part in every language, with its explanations" }
+          { "/": "/sessions/*/part/*", "comment": "One part in every language, with its explanations" },
+          { "/": "/liturgies/*/*", "exclude": true, "comment": "Nothing below a service id is an app route; keep it in the browser" },
+          { "/": "/liturgies/?*", "comment": "A shared Prayer Library service" }
         ]
       }
     ]
