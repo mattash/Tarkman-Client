@@ -171,7 +171,7 @@ failure opens a selectable manual-copy dialog. Display-link sharing is unchanged
 
 **AASA deployment is gated by issue #253 (G2)** in a separate PR; iOS taps
 open the web reader until that gate. Android intent changes require a new binary.
-The six new Russian share strings are the plan's draft wording, **pending owner /
-fluent-reader approval before release**. Rendered QA at 320/390/768/1440 widths,
+The six new Russian share strings were **approved by the owner (Fr. Mesrop Ash)
+on 2026-10-22**. Rendered QA at 320/390/768/1440 widths,
 zoom and large text, Safari/Firefox clipboard checks, and native device share and
 link checks remain required; source tests do not establish rendered geometry.

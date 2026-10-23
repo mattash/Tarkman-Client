@@ -33,7 +33,7 @@ export const ru: Catalog = {
     "refresh": "Обновить просмотр"
 },
   library: {
-    // #253: these six share strings await owner / fluent-reader approval.
+    // #253: these six share strings were approved by the owner (Fr. Mesrop Ash) on 2026-10-22.
     share: 'Поделиться',
     shareTitle: 'Поделиться: {name}',
     shareMessage: 'Читайте «{name}» в Молитвенной библиотеке Tarkman.',
