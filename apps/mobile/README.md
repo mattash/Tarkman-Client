@@ -1139,12 +1139,18 @@ Displays use the existing dark reading palette and bundled literary fonts, with
 viewport-scaled text, narrow outer margins, and one large speaker label. Church,
 service, language and footer labels are omitted for distance viewing. Parallel
 languages remain side by side on tablets and
-projectors; narrow screens stack two independently advancing reading regions.
+projectors; narrow screens stack the same two reading regions.
 Long readings use the API's `effective_duration_ms`, carried through the shared
 part model and saved snapshots. A single monotonic clock drives both language
-columns. The estimated reading position follows the center of each viewport,
-leaving reading time at both the opening and the end. Scrolling stops at the
-bottom and never loops or advances the service itself. Resizing, font loading,
+columns. Linked continuous pairs share opening/final holds and one movement phase;
+each column's speed follows its own scrollable distance, so both finish together.
+The denser measured column determines the holds. Geometry waits at most 250 ms of
+active reading time for an unmeasured partner, then proceeds with available data.
+Once moving, reflow retains the shared phase. A corrected API duration preserves
+the current fraction and retimes the remaining movement to the new completion
+boundary; completed text never rewinds. Single-language and independent displays
+retain their existing centered-position pacing and apply duration updates directly.
+Scrolling stops at the bottom and never loops or advances the service itself. Resizing, font loading,
 and duplicate live/poll updates remeasure without restarting the clock. A new
 occurrence (including a repeated reusable part) starts from the top. Pauses,
 operator messages, recovery notices, and backgrounding suspend the reading clock;

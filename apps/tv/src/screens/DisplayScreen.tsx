@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, Text, View, useTVEventHandler, useWindowDimensions } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
 import { createContinuousGroup, createManualPosition, createPageGroup, describeDisplay, displayOccurrence, independentDuration, projectionDuration,
@@ -54,10 +54,8 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
   }), [occurrence])
   const continuousGroup = useMemo(() => ({ occurrence, ...createContinuousGroup() }), [occurrence])
   const pageGroup = useMemo(() => ({ occurrence, ...createPageGroup() }), [occurrence])
-  const metrics = useRef(new Map<string, ScrollMetrics>())
+  const metrics = useMemo(() => ({ occurrence, columns: new Map<string, ScrollMetrics>() }), [occurrence])
   const projection = view.kind === 'projection' ? view : null
-  const columnCount = projection?.languages.length ?? 1
-  useEffect(() => continuousGroup.expect(columnCount), [continuousGroup, columnCount])
   const readingRunning = !!projection?.readingRunning, messageRunning = !!projection?.messageRunning
   const messageKey = `${occurrence}/${projection?.message?.title}/${projection?.messageText}`
   const readingClock = useProjectionClock(occurrence, readingRunning)
@@ -70,16 +68,23 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
     if (!bare && (event.eventType === 'select' || event.eventType === 'playPause')) { setOptionsOpen(true); return }
     const direction = event.eventType === 'down' || event.eventType === 'swipeDown' ? 1 : event.eventType === 'up' || event.eventType === 'swipeUp' ? -1 : 0
     if (!direction || !projection?.part || projection.message) return
-    const deepest = [...metrics.current.values()].reduce((a, b) => b.maximum > a.maximum ? b : a, { maximum: 0, viewport: 0 })
+    const visibleMetrics = projection.languages.map(language => metrics.columns.get(language)).filter((value): value is ScrollMetrics => !!value)
+    const deepest = visibleMetrics.reduce((a, b) => b.maximum > a.maximum ? b : a, { maximum: 0, viewport: 0, progress: 0 })
     if (deepest.maximum <= 0) return
-    const positions = [manualPositions.linked, ...Object.values(manualPositions.independent)]
-    // Start from where the automatic movement is, then page by most of a screen.
-    const from = scrolling ? manualPositions.linked.get() : Math.min(1, readingClock.elapsed() / Math.max(1, projection.durationMs))
-    const next = Math.max(0, Math.min(1, from + direction * deepest.viewport * 0.8 / deepest.maximum))
-    positions.forEach(position => position.set(next))
+    // Seed manual movement from the rendered offset, including holds, pages and independent timings.
+    const advance = (value: ScrollMetrics, from: number) => Math.max(0, Math.min(1, from + direction * value.viewport * 0.8 / value.maximum))
+    if (projection.settings.language_sync === 'independent') {
+      projection.languages.forEach(language => {
+        const value = metrics.columns.get(language)
+        if (!value || value.maximum <= 0) return
+        const position = manualPositions.independent[language]
+        position.set(advance(value, scrolling ? position.get() : value.progress))
+      })
+    } else {
+      manualPositions.linked.set(advance(deepest, scrolling ? manualPositions.linked.get() : deepest.progress))
+    }
     setScrolledOccurrence(occurrence)
   })
-  useEffect(() => { metrics.current.clear() }, [occurrence])
 
   // Session status (paused, gospel, QR) is part of the projection itself, as on mobile. The badge reports
   // only whether the projection is current, so shown text never passes for live when it is not.
@@ -161,9 +166,9 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
                   <ProjectionText key={`${id}/${part.key}/${language}`} text={texts[index]} language={language === 'hyw' || language === 'hye' ? 'grabar' : language} fontSize={fontSize} clock={readingClock}
                     durationMs={settings.language_sync === 'independent' ? independentDuration(durationMs, texts[index], texts) : durationMs}
                     movement={movement} pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
-                    continuousGroup={settings.language_sync === 'linked' ? continuousGroup : undefined}
+                    continuousGroup={settings.language_sync === 'linked' && languages.length > 1 ? continuousGroup : undefined}
                     manualPosition={settings.language_sync === 'linked' ? manualPositions.linked : manualPositions.independent[language]}
-                    onMetrics={value => metrics.current.set(language, value)} />
+                    onMetrics={value => metrics.columns.set(language, value)} />
                 </View>
               ))}
             </View>

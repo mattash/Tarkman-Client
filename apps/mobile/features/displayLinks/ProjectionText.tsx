@@ -18,7 +18,6 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
   const localPosition = useRef(0), expectedY = useRef<number | null>(null)
   const [viewport, setViewport] = useState(0)
   const [content, setContent] = useState(0)
-  const [holdFraction, setHoldFraction] = useState<number | undefined>(undefined)
   const [pageCount, setPageCount] = useState<number | undefined>(undefined)
   const [reducedMotion, setReducedMotion] = useState(true)
   const { t } = useI18n()
@@ -29,9 +28,12 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
     const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', value => { receivedEvent = true; setReducedMotion(value) })
     return () => { mounted = false; subscription.remove() }
   }, [])
-  const maximum = Math.max(0, content - viewport)
-  useEffect(() => continuousGroup?.subscribe(setHoldFraction), [continuousGroup])
-  useEffect(() => continuousGroup?.report(id, text ? content : 0, text && content <= 0 ? 0 : viewport), [continuousGroup, id, text, content, viewport])
+  const effectiveContent = text ? content : 0
+  const maximum = Math.max(0, effectiveContent - viewport)
+  useEffect(() => {
+    continuousGroup?.setGeometry(id, effectiveContent, text && content <= 0 ? 0 : viewport)
+  }, [continuousGroup, id, text, content, viewport, effectiveContent])
+  useEffect(() => () => continuousGroup?.remove(id), [continuousGroup, id])
   useEffect(() => pageGroup?.subscribe(setPageCount), [pageGroup])
   useEffect(() => {
     const step = Math.max(1, viewport - Math.min(lineHeight * 2, viewport / 2))
@@ -48,15 +50,11 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
       update(manualPosition?.get() ?? localPosition.current)
       return manualPosition?.subscribe(update)
     }
-    const continuous = movement === 'continuous' && !reducedMotion ? continuousGroup : undefined
-    if (continuous && holdFraction === undefined) return
-    return startProjectionScroll(clock, { content: text ? content : 0, viewport, lineHeight, duration: continuous?.duration(durationMs) ?? durationMs, holdFraction: continuous ? holdFraction : undefined,
+    return startProjectionScroll(clock, { content: effectiveContent, viewport, lineHeight, duration: durationMs,
+      continuousGroup: movement === 'continuous' && !reducedMotion ? continuousGroup : undefined,
       reducedMotion: movement === 'paged' || reducedMotion, pageCount: pageGroup ? pageCount : undefined },
-    y => {
-      if (y > 0) continuous?.start(durationMs)
-      scroll.current?.scrollTo({ y, animated: false })
-    })
-  }, [clock, content, viewport, lineHeight, durationMs, reducedMotion, movement, manualPosition, maximum, pageGroup, pageCount, continuousGroup, holdFraction, text])
+    y => scroll.current?.scrollTo({ y, animated: false }))
+  }, [clock, effectiveContent, viewport, lineHeight, durationMs, reducedMotion, movement, manualPosition, maximum, pageGroup, pageCount, continuousGroup])
   return <View style={styles.column}>
     <ScrollView ref={scroll} testID="projection-text-scroll" style={styles.column} showsVerticalScrollIndicator={movement === 'manual'}
       scrollEnabled={movement === 'manual'} scrollEventThrottle={32}

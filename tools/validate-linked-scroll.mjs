@@ -10,8 +10,8 @@
  * Chrome must be installed. No production server, auth or service mutations used.
  */
 import fs from 'node:fs'
-import http from 'node:http'
 import path from 'node:path'
+import { createLinkedScrollServer } from './linked-scroll-server.mjs'
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const [distArgument, label = 'after', scenario = 'default'] = process.argv.slice(2)
@@ -19,13 +19,7 @@ if (!distArgument) throw new Error('Usage: node tools/validate-linked-scroll.mjs
 const dist = path.resolve(distArgument)
 const out = path.resolve(process.env.SCROLL_EVIDENCE_DIR || '/tmp/linked-scroll-evidence')
 fs.mkdirSync(out, { recursive: true })
-const server = http.createServer((req, res) => {
-  let file = path.join(dist, decodeURIComponent(req.url.split('?')[0]))
-  if (!file.startsWith(`${dist}/`)) { res.writeHead(400); res.end(); return }
-  if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(dist, 'index.html')
-  res.setHeader('content-type', ({ '.js': 'application/javascript', '.html': 'text/html', '.css': 'text/css', '.ttf': 'font/ttf', '.png': 'image/png', '.woff2': 'font/woff2' })[path.extname(file)] || 'application/octet-stream')
-  res.end(fs.readFileSync(file))
-})
+const server = createLinkedScrollServer(dist)
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
 try {

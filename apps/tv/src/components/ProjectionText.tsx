@@ -5,7 +5,7 @@ import { useI18n } from '../i18n'
 import { ReadingText } from './ReadingText'
 import { colors, space } from '../theme'
 
-export interface ScrollMetrics { maximum: number; viewport: number }
+export interface ScrollMetrics { maximum: number; viewport: number; progress: number }
 
 /**
  * apps/mobile's ProjectionText for tvOS: the same shared occurrence clock, timing, page groups and manual
@@ -20,7 +20,6 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
   const id = useId()
   const [viewport, setViewport] = useState(0)
   const [content, setContent] = useState(0)
-  const [holdFraction, setHoldFraction] = useState<number | undefined>(undefined)
   const [pageCount, setPageCount] = useState<number | undefined>(undefined)
   const [reducedMotion, setReducedMotion] = useState(true)
   const lineHeight = fontSize * 1.45
@@ -30,31 +29,36 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
     const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', value => { receivedEvent = true; setReducedMotion(value) })
     return () => { mounted = false; subscription.remove() }
   }, [])
-  const maximum = Math.max(0, content - viewport)
-  useEffect(() => { onMetrics?.({ maximum, viewport }) }, [onMetrics, maximum, viewport])
-  useEffect(() => continuousGroup?.subscribe(setHoldFraction), [continuousGroup])
-  useEffect(() => continuousGroup?.report(id, text ? content : 0, text && content <= 0 ? 0 : viewport), [continuousGroup, id, text, content, viewport])
+  // The missing-text placeholder is not reading geometry, even if it overflows at large text sizes.
+  const readingContent = text ? content : 0
+  const maximum = Math.max(0, readingContent - viewport)
+  const offset = useRef(0)
+  const metricsCallback = useRef(onMetrics)
+  useEffect(() => { metricsCallback.current = onMetrics }, [onMetrics])
+  useEffect(() => { onMetrics?.({ maximum, viewport, progress: maximum > 0 ? Math.min(1, offset.current / maximum) : 0 }) }, [onMetrics, maximum, viewport])
+  useEffect(() => { continuousGroup?.setGeometry(id, readingContent, text && content <= 0 ? 0 : viewport) }, [continuousGroup, id, text, readingContent, content, viewport])
+  useEffect(() => () => continuousGroup?.remove(id), [continuousGroup, id])
   useEffect(() => pageGroup?.subscribe(setPageCount), [pageGroup])
   useEffect(() => {
     const step = Math.max(1, viewport - Math.min(lineHeight * 2, viewport / 2))
     return pageGroup?.report(id, viewport > 0 ? Math.ceil(maximum / step) + 1 : 1)
   }, [id, pageGroup, maximum, viewport, lineHeight])
   useEffect(() => {
-    if (movement === 'none') { scroll.current?.scrollTo({ y: 0, animated: false }); return }
+    const scrollTo = (y: number, animated = false) => {
+      offset.current = Math.max(0, Math.min(maximum, y))
+      scroll.current?.scrollTo({ y: offset.current, animated })
+      metricsCallback.current?.({ maximum, viewport, progress: maximum > 0 ? offset.current / maximum : 0 })
+    }
+    if (movement === 'none') { scrollTo(0); return }
     if (movement === 'manual') {
-      const update = (progress: number) => scroll.current?.scrollTo({ y: maximum * progress, animated: true })
+      const update = (progress: number) => scrollTo(maximum * progress, true)
       update(manualPosition?.get() ?? 0)
       return manualPosition?.subscribe(update)
     }
-    const continuous = movement === 'continuous' && !reducedMotion ? continuousGroup : undefined
-    if (continuous && holdFraction === undefined) return
-    return startProjectionScroll(clock, { content: text ? content : 0, viewport, lineHeight, duration: continuous?.duration(durationMs) ?? durationMs, holdFraction: continuous ? holdFraction : undefined,
-      reducedMotion: movement === 'paged' || reducedMotion, pageCount: pageGroup ? pageCount : undefined },
-    y => {
-      if (y > 0) continuous?.start(durationMs)
-      scroll.current?.scrollTo({ y, animated: false })
-    })
-  }, [clock, content, viewport, lineHeight, durationMs, reducedMotion, movement, manualPosition, maximum, pageGroup, pageCount, continuousGroup, holdFraction, text])
+    return startProjectionScroll(clock, { content: readingContent, viewport, lineHeight, duration: durationMs,
+      continuousGroup: movement === 'continuous' && !reducedMotion ? continuousGroup : undefined,
+      reducedMotion: movement === 'paged' || reducedMotion, pageCount: pageGroup ? pageCount : undefined }, scrollTo)
+  }, [clock, readingContent, viewport, lineHeight, durationMs, reducedMotion, movement, manualPosition, maximum, pageGroup, pageCount, continuousGroup])
   return (
     <ScrollView ref={scroll} testID="projection-text-scroll" style={styles.column} scrollEnabled={false} showsVerticalScrollIndicator={movement === 'manual'}
       onLayout={event => setViewport(event.nativeEvent.layout.height)} onContentSizeChange={(_width, height) => setContent(height)}
