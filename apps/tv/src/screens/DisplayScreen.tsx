@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, View, useTVEventHandler, useWindowDimensions } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
-import { createManualPosition, createPageGroup, describeDisplay, displayOccurrence, independentDuration, projectionDuration,
+import { createContinuousGroup, createManualPosition, createPageGroup, describeDisplay, displayOccurrence, independentDuration, projectionDuration,
   sessionQrLayout, statusPostureKey, statusTextScale, type DisplayLanguage, type DisplayPreferences, type Endpoints } from '@tarkman/reader'
 import { DisplayOptions } from '../components/DisplayOptions'
 import { FreshnessBadge } from '../components/FreshnessBadge'
@@ -52,9 +52,12 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
     linked: createManualPosition(),
     independent: { en: createManualPosition(), grabar: createManualPosition(), translit: createManualPosition(), hye: createManualPosition(), hyw: createManualPosition() },
   }), [occurrence])
+  const continuousGroup = useMemo(() => ({ occurrence, ...createContinuousGroup() }), [occurrence])
   const pageGroup = useMemo(() => ({ occurrence, ...createPageGroup() }), [occurrence])
   const metrics = useRef(new Map<string, ScrollMetrics>())
   const projection = view.kind === 'projection' ? view : null
+  const columnCount = projection?.languages.length ?? 1
+  useEffect(() => continuousGroup.expect(columnCount), [continuousGroup, columnCount])
   const readingRunning = !!projection?.readingRunning, messageRunning = !!projection?.messageRunning
   const messageKey = `${occurrence}/${projection?.message?.title}/${projection?.messageText}`
   const readingClock = useProjectionClock(occurrence, readingRunning)
@@ -158,6 +161,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
                   <ProjectionText key={`${id}/${part.key}/${language}`} text={texts[index]} language={language === 'hyw' || language === 'hye' ? 'grabar' : language} fontSize={fontSize} clock={readingClock}
                     durationMs={settings.language_sync === 'independent' ? independentDuration(durationMs, texts[index], texts) : durationMs}
                     movement={movement} pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
+                    continuousGroup={settings.language_sync === 'linked' ? continuousGroup : undefined}
                     manualPosition={settings.language_sync === 'linked' ? manualPositions.linked : manualPositions.independent[language]}
                     onMetrics={value => metrics.current.set(language, value)} />
                 </View>

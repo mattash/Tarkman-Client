@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { StyleSheet, View, useWindowDimensions } from 'react-native'
 import { StatusPill } from '../../components/StatusPill'
 import { AppIcon } from '../../components/AppIcon'
@@ -15,7 +15,7 @@ import { ProjectionText } from './ProjectionText'
 import QRCode from 'react-native-qrcode-svg'
 import { describeDisplay, displayOccurrence, sessionQrLayout as sharedSessionQrLayout } from '@tarkman/reader'
 import { displayText } from './presentation'
-import { projectionDuration } from './projectionTiming'
+import { createContinuousGroup, projectionDuration } from './projectionTiming'
 import { useProjectionClock } from './useProjectionClock'
 import { independentDuration, createManualPosition, createPageGroup, statusTextScale } from './customization'
 
@@ -55,8 +55,11 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
     linked: createManualPosition(),
     independent: { en: createManualPosition(), grabar: createManualPosition(), translit: createManualPosition(), hye: createManualPosition(), hyw: createManualPosition() },
   }), [occurrence])
+  const continuousGroup = useMemo(() => ({ occurrence, ...createContinuousGroup() }), [occurrence])
   const pageGroup = useMemo(() => ({ occurrence, ...createPageGroup() }), [occurrence])
   const projection = view.kind === 'projection' ? view : null
+  const columnCount = projection?.languages.length ?? 1
+  useEffect(() => continuousGroup.expect(columnCount), [continuousGroup, columnCount])
   const readingRunning = !!projection?.readingRunning, messageRunning = !!projection?.messageRunning
   const messageKey = `${occurrence}/${projection?.message?.title}/${projection?.messageText}`
   const readingClock = useProjectionClock(occurrence, readingRunning)
@@ -120,6 +123,7 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
               durationMs={settings.language_sync === 'independent' ? independentDuration(duration, texts[index], texts) : duration}
               movement={settings.text_movement} preview={preview}
               pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
+              continuousGroup={settings.language_sync === 'linked' ? continuousGroup : undefined}
               manualPosition={settings.language_sync === 'linked' ? manualPositions.linked : manualPositions.independent[language]} />
           </View>)}
         </View>

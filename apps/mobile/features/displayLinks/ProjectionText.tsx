@@ -5,19 +5,20 @@ import { AppText } from '../../components/AppText'
 import { LiturgyText } from '../../components/LiturgyText'
 import { spacing } from '../../design/tokens'
 import { useI18n } from '../i18n'
-import { startProjectionScroll, type ProjectionClock } from './projectionTiming'
+import { startProjectionScroll, type ContinuousGroup, type ProjectionClock } from './projectionTiming'
 import type { TextMovement, ManualPosition, PageGroup } from './customization'
 
 /** Keep large text within its own viewport while following the shared occurrence clock. */
-export function ProjectionText({ text, language = 'en', fontSize, centered = false, clock, durationMs, movement = 'continuous', manualPosition, pageGroup, preview = false }: {
+export function ProjectionText({ text, language = 'en', fontSize, centered = false, clock, durationMs, movement = 'continuous', manualPosition, pageGroup, continuousGroup, preview = false }: {
   text: string | null; language?: Language; fontSize: number; centered?: boolean; clock: ProjectionClock; durationMs: number
-  movement?: TextMovement; manualPosition?: ManualPosition; pageGroup?: PageGroup; preview?: boolean
+  movement?: TextMovement; manualPosition?: ManualPosition; pageGroup?: PageGroup; continuousGroup?: ContinuousGroup; preview?: boolean
 }) {
   const scroll = useRef<ScrollView>(null)
   const id = useId()
   const localPosition = useRef(0), expectedY = useRef<number | null>(null)
   const [viewport, setViewport] = useState(0)
   const [content, setContent] = useState(0)
+  const [holdFraction, setHoldFraction] = useState<number | undefined>(undefined)
   const [pageCount, setPageCount] = useState<number | undefined>(undefined)
   const [reducedMotion, setReducedMotion] = useState(true)
   const { t } = useI18n()
@@ -29,6 +30,8 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
     return () => { mounted = false; subscription.remove() }
   }, [])
   const maximum = Math.max(0, content - viewport)
+  useEffect(() => continuousGroup?.subscribe(setHoldFraction), [continuousGroup])
+  useEffect(() => continuousGroup?.report(id, text ? content : 0, text && content <= 0 ? 0 : viewport), [continuousGroup, id, text, content, viewport])
   useEffect(() => pageGroup?.subscribe(setPageCount), [pageGroup])
   useEffect(() => {
     const step = Math.max(1, viewport - Math.min(lineHeight * 2, viewport / 2))
@@ -45,10 +48,15 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
       update(manualPosition?.get() ?? localPosition.current)
       return manualPosition?.subscribe(update)
     }
-    return startProjectionScroll(clock, { content, viewport, lineHeight, duration: durationMs,
+    const continuous = movement === 'continuous' && !reducedMotion ? continuousGroup : undefined
+    if (continuous && holdFraction === undefined) return
+    return startProjectionScroll(clock, { content: text ? content : 0, viewport, lineHeight, duration: continuous?.duration(durationMs) ?? durationMs, holdFraction: continuous ? holdFraction : undefined,
       reducedMotion: movement === 'paged' || reducedMotion, pageCount: pageGroup ? pageCount : undefined },
-    y => scroll.current?.scrollTo({ y, animated: false }))
-  }, [clock, content, viewport, lineHeight, durationMs, reducedMotion, movement, manualPosition, maximum, pageGroup, pageCount])
+    y => {
+      if (y > 0) continuous?.start(durationMs)
+      scroll.current?.scrollTo({ y, animated: false })
+    })
+  }, [clock, content, viewport, lineHeight, durationMs, reducedMotion, movement, manualPosition, maximum, pageGroup, pageCount, continuousGroup, holdFraction, text])
   return <View style={styles.column}>
     <ScrollView ref={scroll} testID="projection-text-scroll" style={styles.column} showsVerticalScrollIndicator={movement === 'manual'}
       scrollEnabled={movement === 'manual'} scrollEventThrottle={32}

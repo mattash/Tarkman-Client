@@ -30,8 +30,40 @@ export function createProjectionClock(now = () => performance.now()): Projection
   }
 }
 
-interface ScrollGeometry { content: number; viewport: number; lineHeight: number; duration: number; reducedMotion: boolean; pageCount?: number }
-export function projectionPosition({ content, viewport, lineHeight, duration, reducedMotion, pageCount }: ScrollGeometry, elapsed: number) {
+/** Linked continuous columns use the densest column's opening/final screenful reading time.
+ * Fitting/unmeasured columns do not shorten that dwell. Once movement starts, keep the
+ * interval for this occurrence: later reflow changes travel, not phase or completion time.
+ */
+export function createContinuousGroup() {
+  const holds = new Map<string, number | null>(), listeners = new Set<(hold: number | undefined) => void>()
+  let startedHold: number | undefined, startedDuration: number | undefined, expected = 1
+  const get = () => {
+    if (startedHold !== undefined) return startedHold
+    if (holds.size < expected) return undefined
+    const overflowing = [...holds.values()].filter((hold): hold is number => hold !== null)
+    return overflowing.length ? Math.min(...overflowing) : 0
+  }
+  const publish = () => { const hold = get(); for (const listener of listeners) listener(hold) }
+  return {
+    get,
+    expect(count: number) { expected = Math.max(1, count); publish() },
+    duration(value: number) { return startedDuration ?? value },
+    start(duration: number) {
+      if (startedHold === undefined && get() !== undefined) { startedHold = get(); startedDuration = duration }
+    },
+    report(id: string, content: number, viewport: number) {
+      if (viewport > 0) holds.set(id, content - viewport > 2 ? viewport / (2 * content) : null)
+      else holds.delete(id)
+      publish()
+      return () => { holds.delete(id); publish() }
+    },
+    subscribe(listener: (hold: number | undefined) => void) { listeners.add(listener); listener(get()); return () => { listeners.delete(listener) } },
+  }
+}
+export type ContinuousGroup = ReturnType<typeof createContinuousGroup>
+
+interface ScrollGeometry { content: number; viewport: number; lineHeight: number; duration: number; reducedMotion: boolean; pageCount?: number; holdFraction?: number }
+export function projectionPosition({ content, viewport, lineHeight, duration, reducedMotion, pageCount, holdFraction }: ScrollGeometry, elapsed: number) {
   const maximum = Math.max(0, content - viewport)
   if (maximum <= 2 || content <= 0 || viewport <= 0 || duration <= 0) return { y: 0, done: true, nextIn: 0 }
   const progress = Math.min(1, Math.max(0, elapsed / duration))
@@ -39,6 +71,12 @@ export function projectionPosition({ content, viewport, lineHeight, duration, re
   // Keep the estimated spoken line near the middle. Unlike the legacy calculation, this
   // reveals the final lines BEFORE the duration expires and gives both ends reading time.
   if (!reducedMotion) {
+    if (holdFraction !== undefined) {
+      const hold = Math.min(0.499, Math.max(0, holdFraction))
+      const start = duration * hold, end = duration * (1 - hold)
+      const movement = Math.min(1, Math.max(0, (elapsed - start) / (end - start)))
+      return { y: maximum * movement, done: elapsed >= end, nextIn: Math.max(0, start - elapsed) }
+    }
     const y = Math.min(maximum, Math.max(0, readingPosition - viewport / 2))
     return { y, done: y >= maximum, nextIn: Math.max(0, viewport / 2 / content * duration - elapsed) }
   }
