@@ -118,6 +118,10 @@ try {
     if (elapsed === 30000 && scenario === 'background') {
       lifecycle.push({ event: 'before-background', columns: await snapshot() })
       await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')) })
+      // Let React commit the AppState transition and pause-clock effect before
+      // measuring the hidden interval. This real task does not advance page.clock.
+      await new Promise(resolve => setTimeout(resolve, 100))
+      lifecycle.push({ event: 'background-paused', columns: await snapshot() })
       await page.clock.runFor(5000)
       lifecycle.push({ event: 'after-5s-background', columns: await snapshot() })
       await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')) })
@@ -147,7 +151,7 @@ try {
       ? endpoints.every(value => value !== null) && Math.abs(endpoints[0] - endpoints[1]) <= 100 : null,
     manualStationary: scenario === 'manual' ? firstMoves.every(value => value === null) : null,
     fittingStationary: scenario === 'fitting' ? firstMoves[0] === null : null,
-    backgroundStationary: scenario === 'background' ? lifecycle[0].columns.every((column, index) => column.y === lifecycle[1].columns[index].y) : null,
+    backgroundStationary: scenario === 'background' ? lifecycle.find(entry => entry.event === 'background-paused').columns.every((column, index) => column.y === lifecycle.find(entry => entry.event === 'after-5s-background').columns[index].y) : null,
     completedReflowAtBottom: scenario === 'reflow' ? lifecycle.at(-1).columns.every(column => Math.abs(column.y - column.max) <= 1) : null,
   }
   const result = { label, scenario, checks, measurement: '100ms sampling after fonts ready; relative to start, not server reading time', start,

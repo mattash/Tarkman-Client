@@ -21,7 +21,7 @@ The reusable [browser harness](../../tools/validate-linked-scroll.mjs) includes 
 
 ## Controlled configuration and measurement
 
-- Baseline: isolated `git archive` of `735d64788c303431bf30feac1bdf58eb0b6e722e`, separately installed/built before changes. After: implementation `ed3e1cf41457cab811d7b693144f7224d21c8066` (export preceded its formatting-only cleanup), same Expo export command, browser, fixture and geometry.
+- Baseline: isolated `git archive` of `735d64788c303431bf30feac1bdf58eb0b6e722e`, separately installed/built before changes; the original baseline captures and records are retained unchanged. After: final app revision `61b21d2ef368621d4c3ec38ff5e769a25e687d63`, freshly exported with Expo 57.0.32, expo-constants 57.0.23, expo-dev-client 57.0.21, expo-location 57.0.23, expo-router 57.0.30 and expo-updates 57.0.27. All ten after scenarios were rerun against this production export using the same Expo export command, browser, fixture and geometry.
 - Authoritative token settings: parallel transliteration/English, `language_sync: linked`, `text_movement: continuous`, `device_type: projector`, `font_scale: 75`, `margin_percent: 4`, no explanations/status panel. Token JSON is captured in the records; no URL setting override assumption.
 - 1920×1080 Chromium, reduced motion off, bundled SourceSerif4 loaded before measuring; body font 63.6923 px / line height 92.3538 px. Both viewports: 930 px tall × 851 px wide. Transliteration content: 2132 px / travel 1202 px. English content: 3795 px / travel 2865 px.
 - Occurrence: session 259 / liturgy 1 / liturgy-part 2591 / Part 1 / position 1. API `effective_duration_ms: 60000`. Fixture has six ordered landmarks, with deliberately longer English expansion.
@@ -37,12 +37,12 @@ All after-run assertions pass; every run has zero browser errors. The baseline l
 | [Before linked](records/baseline-default.json) | 13.0 / 7.3 s | 46.8 / 52.6 s | **5.8 s endpoint gap** |
 | [After linked](records/after-default.json) | 7.3 / 7.3 s | 52.5 / 52.6 s | Common interval; about 7.4 s shared final dwell |
 | [Swapped](records/after-swap.json) | 7.3 / 7.3 s | 52.6 / 52.6 s | Symmetric |
-| [Stacked, 600×1080](records/after-stacked.json) | 11.7 / 11.7 s | 48.1 / 48.2 s | Both overflow; 457 px viewports, 688 / 1168 px content |
+| [Stacked, 600×1080](records/after-stacked.json) | 11.7 / 11.7 s | 48.1 / 48.1 s | Both overflow; 457 px viewports, 688 / 1168 px content |
 | [Missing API duration](records/after-fallback.json) | 8.2 / 8.2 s | 59.1 / 59.1 s | 67.5 s longest-language fallback |
 | [Resize during/after movement](records/after-reflow.json) | 7.3 / 7.3 s | 52.5 / 52.5 s | Phase and landmarks retained; completed reflow remains at bottom |
-| [Background 5 s](records/after-background.json) | 7.3 / 7.3 s | 52.6 / 52.6 s active time | Positions unchanged during hidden interval; resumes without catch-up jump |
-| [Fitting transliteration](records/after-fitting.json) | stationary / 7.3 s | stationary / 52.5 s | No forced movement |
-| [Independent](records/after-independent.json) | 3.9 / 7.3 s | 14.0 / 52.6 s | Matches [baseline](records/baseline-independent.json), intentionally unequal |
+| [Background 5 s](records/after-background.json) | 7.3 / 7.3 s | 52.5 / 52.6 s active time | Positions unchanged during hidden interval; resumes without catch-up jump |
+| [Fitting transliteration](records/after-fitting.json) | stationary / 7.3 s | stationary / 52.6 s | No forced movement |
+| [Independent](records/after-independent.json) | 3.8 / 7.3 s | 14.0 / 52.6 s | Matches [baseline](records/baseline-independent.json) within one 100 ms sample, intentionally unequal |
 | [Paged](records/after-paged.json) | 11.9 / 11.9 s | 47.9 / 47.9 s | Matches [baseline](records/baseline-paged.json), coordinated turns |
 | [Manual](records/after-manual.json) | stationary / stationary | stationary / stationary | Matches [baseline](records/baseline-manual.json), no automatic movement |
 
@@ -54,7 +54,7 @@ DOM `scrollTop` is pixel-rounded. Even exact equality with integer `scrollHeight
 - At 30 s: 605 / 1441 px, each about 50.3%. PEACE is visible in both; the short column additionally shows PRAISE/BLESSING. No claim of exact corresponding line placement.
 - At 50 s: baseline left is already stopped at 1202 px while English is still at 2706/2865 px. After: left is still moving at 1135/1202 px, English at 2706/2865 px (both about 94.4%); CLOSING is visible in both.
 - At 60 s: both are at their maximum with complete final lines visible and padding beneath; no blank overscroll. The opening and final screenfuls receive common holds.
-- Mid-reflow at 30 s: 605/1202 and 1441/2865 become 507/1006 and 1205/2392 after resizing to 1600×900. Landmarks remain unchanged. Restoring 1920×1080 after completion returns directly to 1202/2865, not the beginning.
+- Mid-reflow at 30 s: 605/1202 and 1442/2865 become 507/1006 and 1206/2392 after resizing to 1600×900. Landmarks remain unchanged. Restoring 1920×1080 after completion returns directly to 1202/2865, not the beginning.
 
 ### Actual application captures
 
@@ -74,4 +74,4 @@ DOM `scrollTop` is pixel-rounded. Even exact equality with integer `scrollHeight
 
 This establishes rendered paired completion for a controlled unequal fixture. It does **not** inspect the parish's saved link, deployed build, physical projector, audio delivery, or actual passage duration. Matching endpoints is not word/phrase alignment. A short translation naturally shows more landmarks per screenful; the screenshots and landmark records make this limitation explicit. Initial and final screenfuls remain readable, with no blank overscroll or looping observed.
 
-Background checks synthesize browser visibility events, not physical native-device suspension. Manual checks verify no automatic movement, not every manual gesture. Paged checks record existing behavior; this change does not invent phrase-level synchronization for it. Reflow changes both dimensions during movement, then restores the original size after completion to check that completed content does not replay.
+Background checks synthesize browser visibility events, not physical native-device suspension. The harness records the pre-event position, lets React's AppState transition and pause-clock effect settle for a real 100 ms task without advancing the browser clock, records `background-paused`, then asserts exact position equality after 5 s of hidden browser-clock time. An initial pre-settle check observed a 1 px event-boundary update; measuring the settled paused interval avoids treating that transition as hidden-time movement without relaxing the stationary assertion. Manual checks verify no automatic movement, not every manual gesture. Paged checks record existing behavior; this change does not invent phrase-level synchronization for it. Reflow changes both dimensions during movement, then restores the original size after completion to check that completed content does not replay.
