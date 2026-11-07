@@ -197,6 +197,12 @@ Contributions are welcome! Please:
 
 ## 📜 License
 
-[ISC](LICENSE)
+Original Tarkman Client source code is licensed under [ISC](LICENSE).
 
-Copyright © 2024
+Copyright © 2024–2026 Fr. Mesrop Ash and contributors.
+
+Third-party code, data, and assets retain their respective licenses and notices,
+including the lectionary package's [Apache-2.0 license](packages/tarkman-lectionary/LICENSE)
+and [NOTICE](packages/tarkman-lectionary/NOTICE), and the
+[Noto Serif Armenian](apps/mobile/assets/fonts/OFL.txt) and
+[Source Serif 4](apps/mobile/assets/fonts/SourceSerif-LICENSE.md) font licenses.
