@@ -30,8 +30,66 @@ export function createProjectionClock(now = () => performance.now()): Projection
   }
 }
 
-interface ScrollGeometry { content: number; viewport: number; lineHeight: number; duration: number; reducedMotion: boolean; pageCount?: number }
-export function projectionPosition({ content, viewport, lineHeight, duration, reducedMotion, pageCount }: ScrollGeometry, elapsed: number) {
+/** A pair's clock-derived phase, independent of React renders and scroll commands.
+ * Geometry settles for at most 250ms of active reading time if a peer never measures.
+ * Reflow preserves the started hold; corrected API durations preserve the current
+ * fraction and re-time the remaining movement to the corrected completion boundary.
+ */
+export function createContinuousGroup(expected = 2) {
+  const holds = new Map<string, number | null>(), listeners = new Set<() => void>()
+  let waitingSince: number | undefined, published = ''
+  let movement: { hold: number; duration: number; fromElapsed: number; fromProgress: number; end: number } | undefined
+  const hold = () => {
+    let value = 0.5, overflowing = false
+    for (const current of holds.values()) if (current !== null) { value = Math.min(value, current); overflowing = true }
+    return overflowing ? value : 0
+  }
+  const publish = () => {
+    // Once moving, geometry changes travel only. No React-wide notifications per reflow.
+    if (movement) return
+    const value = `${holds.size}:${hold()}`
+    if (value === published) return
+    published = value
+    for (const listener of listeners) listener()
+  }
+  const progressAt = (elapsed: number) => {
+    if (!movement) return 0
+    if (elapsed >= movement.end) return 1
+    return movement.fromProgress + (1 - movement.fromProgress) * Math.max(0, elapsed - movement.fromElapsed) / (movement.end - movement.fromElapsed)
+  }
+  return {
+    setGeometry(id: string, content: number, viewport: number) {
+      if (viewport > 0) holds.set(id, content - viewport > 2 ? viewport / (2 * content) : null)
+      else holds.delete(id)
+      publish()
+    },
+    remove(id: string) { holds.delete(id); publish() },
+    subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
+    position(elapsed: number, duration: number) {
+      if (!movement) {
+        if (holds.size === 0) return undefined
+        if (holds.size < expected) {
+          waitingSince ??= elapsed
+          if (elapsed - waitingSince < 250) return { progress: 0, done: false, nextIn: 250 - (elapsed - waitingSince) }
+        }
+        const fraction = hold(), start = duration * fraction, end = duration * (1 - fraction)
+        if (elapsed <= start) return { progress: 0, done: false, nextIn: start - elapsed }
+        movement = { hold: fraction, duration, fromElapsed: start, fromProgress: 0, end }
+      } else if (duration !== movement.duration) {
+        // Apply authoritative corrections without a backwards jump or replaying a finished reading.
+        const progress = progressAt(elapsed)
+        movement = { ...movement, duration, fromElapsed: elapsed, fromProgress: progress,
+          end: progress >= 1 ? elapsed : Math.max(elapsed, duration * (1 - movement.hold)) }
+      }
+      const progress = progressAt(elapsed)
+      return { progress, done: progress >= 1, nextIn: 0 }
+    },
+  }
+}
+export type ContinuousGroup = ReturnType<typeof createContinuousGroup>
+
+interface ScrollGeometry { content: number; viewport: number; lineHeight: number; duration: number; reducedMotion: boolean; pageCount?: number; holdFraction?: number; continuousGroup?: ContinuousGroup }
+export function projectionPosition({ content, viewport, lineHeight, duration, reducedMotion, pageCount, holdFraction, continuousGroup }: ScrollGeometry, elapsed: number) {
   const maximum = Math.max(0, content - viewport)
   if (maximum <= 2 || content <= 0 || viewport <= 0 || duration <= 0) return { y: 0, done: true, nextIn: 0 }
   const progress = Math.min(1, Math.max(0, elapsed / duration))
@@ -39,6 +97,17 @@ export function projectionPosition({ content, viewport, lineHeight, duration, re
   // Keep the estimated spoken line near the middle. Unlike the legacy calculation, this
   // reveals the final lines BEFORE the duration expires and gives both ends reading time.
   if (!reducedMotion) {
+    if (continuousGroup) {
+      const phase = continuousGroup.position(elapsed, duration)
+      return phase ? { y: maximum * phase.progress, done: phase.done, nextIn: phase.nextIn }
+        : { y: 0, done: false, nextIn: 250 }
+    }
+    if (holdFraction !== undefined) {
+      const hold = Math.min(0.499, Math.max(0, holdFraction))
+      const start = duration * hold, end = duration * (1 - hold)
+      const movement = Math.min(1, Math.max(0, (elapsed - start) / (end - start)))
+      return { y: maximum * movement, done: elapsed >= end, nextIn: Math.max(0, start - elapsed) }
+    }
     const y = Math.min(maximum, Math.max(0, readingPosition - viewport / 2))
     return { y, done: y >= maximum, nextIn: Math.max(0, viewport / 2 / content * duration - elapsed) }
   }
@@ -81,7 +150,13 @@ export function startProjectionScroll(clock: ProjectionClock, geometry: ScrollGe
     if (position.nextIn > 0) timer = schedule.timer(update, Math.min(position.nextIn, 2147483647))
     else frame = schedule.frame(update)
   }
-  const unsubscribe = clock.subscribe(update)
-  update()
-  return () => { disposed = true; cancel(); unsubscribe() }
+  // Shared geometry reports settle in the current commit before either column evaluates
+  // the clock phase. Read the group live, never a previous React-state snapshot.
+  const queue = () => { cancel(); if (!disposed) frame = schedule.frame(update) }
+  const continuous = geometry.reducedMotion ? undefined : geometry.continuousGroup
+  const unsubscribeGroup = continuous?.subscribe(queue)
+  const unsubscribe = clock.subscribe(() => { if (continuous && clock.running()) queue(); else update() })
+  if (continuous) queue()
+  else update()
+  return () => { disposed = true; cancel(); unsubscribe(); unsubscribeGroup?.() }
 }
