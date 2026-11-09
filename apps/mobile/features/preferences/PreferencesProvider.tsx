@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { KeyValueAdapter, Language } from '@tarkman/core'
 import { readingSizes, type ReadingSize } from '../../design/tokens'
 import { preferencesStore } from './storage'
+import { hasOwn } from '../shared/hasOwn'
 import { isInterfaceLanguage, type InterfaceLanguage, type InterfaceLanguagePreference } from '../i18n'
 
 export const PREFERENCES_KEY = 'tarkman.preferences.v1'
@@ -120,7 +121,7 @@ export function PreferencesProvider({ store = preferencesStore, children }: { st
   }, [store, persist])
 
   const setReadingSize = useCallback((readingSize: ReadingSize) => {
-    if (!Object.hasOwn(readingSizes, readingSize)) return
+    if (!hasOwn(readingSizes, readingSize)) return
     localRevision.current += 1
     setPreferences(current => {
       const next = { ...current, readingSize }
@@ -189,7 +190,7 @@ function readPreferences(raw: string | null): { preferences: Preferences; migrat
     if (selectedLanguages.length === 0) return null
     const validAppearance = typeof record.appearance === 'string' && APPEARANCES.includes(record.appearance as AppearancePreference)
     const appearance = validAppearance ? record.appearance as AppearancePreference : 'system'
-    const validReadingSize = typeof record.readingSize === 'string' && Object.hasOwn(readingSizes, record.readingSize)
+    const validReadingSize = typeof record.readingSize === 'string' && hasOwn(readingSizes, record.readingSize)
     const readingSize = validReadingSize ? record.readingSize as ReadingSize : 'standard'
     // An unreadable control arrangement is dropped on its own; it never discards the reader's other choices.
     const controlLanguages = Array.isArray(record.controlLanguages) ? normalizeControlLanguages(record.controlLanguages) : null
