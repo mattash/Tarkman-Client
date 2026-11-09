@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useLocales } from 'expo-localization'
+import { hasOwn } from '../shared/hasOwn'
 import { en } from './catalogs/en'
 import { ru } from './catalogs/ru'
 import { formatMessage, lookupMessage, type CatalogShape, type MessageParams, type MessagePath } from './messages'
@@ -21,7 +22,7 @@ export type InterfaceLanguagePreference = 'system' | InterfaceLanguage
 export const DEFAULT_INTERFACE_LANGUAGE: InterfaceLanguage = 'en'
 
 export function isInterfaceLanguage(value: unknown): value is InterfaceLanguage {
-  return typeof value === 'string' && Object.hasOwn(INTERFACE_CATALOGS, value)
+  return typeof value === 'string' && hasOwn(INTERFACE_CATALOGS, value)
 }
 
 /** Development and preview builds offer draft translations so testers can check them; production builds never do. */
@@ -73,7 +74,7 @@ export function formatLocale(language: InterfaceLanguage = activeLanguage): stri
 /** Known session statuses by name; anything newer from the server is shown as sent, with underscores as spaces. */
 export function statusName(status: string, language: InterfaceLanguage = activeLanguage): string {
   const key = `statuses.${status}` as MessageKey
-  if (Object.hasOwn(en.statuses, status)) return translate(language, key)
+  if (hasOwn(en.statuses, status)) return translate(language, key)
   const words = status.replaceAll('_', ' ')
   return words.charAt(0).toUpperCase() + words.slice(1)
 }

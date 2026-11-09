@@ -17,6 +17,20 @@ Google Play listing, production AAB, or verified HTTPS App Link yet, and the
 device verification matrix (reader, part detail, service control, sheets, Back
 gesture) is tracked in #191 rather than claimed here.
 
+### Runtime compatibility
+
+Native iOS builds target iOS 16.4+ with Expo SDK 57's Hermes runtime (see
+[the deployment-target evidence](docs/liquid-glass.md)). The web export uses the
+browser's JavaScript engine, not Hermes; a minimum browser-version matrix has
+not yet been established. Translation lookup/interpolation, interface-language
+validation and reading-size preferences do **not** require ES2022 `Object.hasOwn`.
+They use `Object.prototype.hasOwnProperty.call`, including for dictionaries with
+no prototype or a shadowed `hasOwnProperty`. This narrow compatibility guarantee
+does not establish support for every browser lacking `Object.hasOwn` or polyfill
+other browser APIs. Regression tests remove `Object.hasOwn` while exercising
+localization and preference hydration/updates. Node's minimum below applies to
+development tooling, not browser support.
+
 ## Develop and verify
 
 Use Node >=22.13; install each app independently. No workspaces or root install.

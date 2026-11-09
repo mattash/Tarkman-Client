@@ -1,3 +1,5 @@
+import { hasOwn } from '../shared/hasOwn'
+
 /** Plural forms follow CLDR categories; English needs one and other, Russian also few and many. */
 export interface PluralMessage { one: string; few?: string; many?: string; other: string }
 export type Message = string | PluralMessage
@@ -18,7 +20,7 @@ export function isPluralMessage(value: unknown): value is PluralMessage {
 export function lookupMessage(catalog: unknown, path: string): Message | undefined {
   let node: unknown = catalog
   for (const segment of path.split('.')) {
-    if (!node || typeof node !== 'object' || !Object.hasOwn(node, segment)) return undefined
+    if (!node || typeof node !== 'object' || !hasOwn(node, segment)) return undefined
     node = (node as Record<string, unknown>)[segment]
   }
   if (typeof node === 'string') return node.length > 0 ? node : undefined
@@ -42,7 +44,7 @@ export function formatMessage(language: string, message: Message, params?: Messa
   const count = params?.count
   const text = typeof message === 'string' ? message
     : message[typeof count === 'number' ? pluralCategory(language, count) : 'other'] ?? message.other
-  return text.replace(/\{(\w+)\}/g, (placeholder, name: string) => params && Object.hasOwn(params, name) ? String(params[name]) : placeholder)
+  return text.replace(/\{(\w+)\}/g, (placeholder, name: string) => params && hasOwn(params, name) ? String(params[name]) : placeholder)
 }
 
 /** Every `{name}` placeholder in a message, across all plural forms. */
