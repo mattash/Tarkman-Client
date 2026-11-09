@@ -174,7 +174,37 @@ it('opens the public privacy policy from About without sign-in', async () => {
   await render(<About />, { wrapper })
   await fireEvent.press(screen.getByTestId('about-privacy-policy'))
   expect(open).toHaveBeenCalledWith('https://www.tarkman.app/privacy')
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.queryByText('https://www.tarkman.app/privacy')).toBeNull()
   open.mockRestore()
+})
+
+it('keeps a selectable privacy address after refusal and lets the reader retry', async () => {
+  const open = jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('Unable to open URL'))
+  try {
+    await render(<About />, { wrapper })
+    await fireEvent.press(screen.getByTestId('about-privacy-policy'))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Could not open the privacy policy\./)
+    expect(screen.getByText('https://www.tarkman.app/privacy')).toHaveProp('selectable', true)
+    // A repeated refusal is handled too, without losing the manual fallback.
+    await fireEvent.press(screen.getByTestId('about-privacy-policy'))
+    expect(open).toHaveBeenCalledTimes(2)
+    expect(screen.getByText('https://www.tarkman.app/privacy')).toBeOnTheScreen()
+    open.mockResolvedValue(undefined)
+    await fireEvent.press(screen.getByTestId('about-privacy-policy'))
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    expect(screen.queryByText('https://www.tarkman.app/privacy')).toBeNull()
+  } finally { open.mockRestore() }
+})
+
+it('also handles a synchronous privacy-link failure in the Russian interface', async () => {
+  const open = jest.spyOn(Linking, 'openURL').mockImplementation(() => { throw new Error('Browser unavailable') })
+  try {
+    await render(<I18nProvider preference="ru"><About /></I18nProvider>, { wrapper })
+    await fireEvent.press(screen.getByTestId('about-privacy-policy'))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Не удалось открыть политику конфиденциальности\./)
+    expect(screen.getByText('https://www.tarkman.app/privacy')).toHaveProp('selectable', true)
+  } finally { open.mockRestore(); setActiveInterfaceLanguage('en') }
 })
 
 it('keeps Settings to reading choices now that the account lives on About', async () => {
