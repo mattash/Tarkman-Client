@@ -1,0 +1,40 @@
+/* global process, URL, console, document */
+// Supplemental actual Expo-web picker interaction, synthetic fixture only. No save.
+const { chromium } = require('playwright')
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const app = process.env.QA_APP || 'http://127.0.0.1:8081'
+if (!['localhost', '127.0.0.1'].includes(new URL(app).hostname)) throw Error('Loopback only')
+;(async () => {
+  const browser = await chromium.launch({ executablePath: process.env.QA_CHROMIUM })
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, colorScheme: 'light', deviceScaleFactor: 1, locale: 'en-US', timezoneId: 'America/Los_Angeles' })
+    const mutations = []
+    page.on('request', request => { if (request.method() === 'PATCH' || request.method() === 'POST' && !request.url().endsWith('/users/sign_in')) mutations.push(request.url()) })
+    await page.goto(app + '/session-management/9001/edit')
+    await page.getByLabel('Email', { exact: true }).fill('operator@display.test')
+    await page.getByLabel('Password', { exact: true }).fill('fixture')
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await page.getByText('Prophetic reading', { exact: true }).waitFor()
+    const gospel = page.getByLabel('Gospel reading', { exact: true })
+    const epistle = page.getByLabel('Epistle reading', { exact: true })
+    const prophetic = page.getByLabel('Prophetic reading', { exact: true })
+    await gospel.fill('Synthetic Gospel: preserve this draft')
+    await epistle.fill('Synthetic Epistle: preserve this draft')
+    const prior = await prophetic.inputValue()
+    await page.getByRole('button', { name: 'Preview readings for this date', exact: true }).click()
+    const choice = page.getByRole('checkbox', { name: 'Prophetic reading: Hosea 14.9-10', exact: true })
+    await choice.waitFor()
+    assert.equal(await page.getByRole('checkbox', { checked: true }).count(), 0)
+    assert.equal(await prophetic.inputValue(), prior)
+    await choice.click()
+    await page.evaluate(() => document.fonts.ready)
+    await page.screenshot({ path: 'docs/evidence/issue-268/after-picker-desktop-light.png' })
+    await page.getByRole('button', { name: 'Apply selected readings', exact: true }).click()
+    assert.equal(await prophetic.inputValue(), 'Hosea 14.9-10')
+    assert.equal(await gospel.inputValue(), 'Synthetic Gospel: preserve this draft')
+    assert.equal(await epistle.inputValue(), 'Synthetic Epistle: preserve this draft')
+    assert.equal(mutations.length, 0)
+    fs.writeFileSync('docs/evidence/issue-268/picker-check.json', JSON.stringify({ passed: true, date: '2026-11-10', language: 'en', noAutomaticSelection: true, previewKeptDraft: true, selectedReference: 'Hosea 14.9-10', appliedOnlySelectedField: true, gospelAndEpistlePreserved: true, noSaveRequests: true }, null, 2))
+  } finally { await browser.close() }
+})().catch(error => { console.error(error); process.exitCode = 1 })

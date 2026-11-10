@@ -1,0 +1,62 @@
+{
+  "app": "http://127.0.0.1:8081",
+  "phase": "after",
+  "browser": "156.0.8078.4",
+  "results": [
+    {
+      "name": "form-desktop-light",
+      "width": 1440,
+      "height": 1100,
+      "theme": "light",
+      "route": "/session-management/9001/edit",
+      "scroll": "Readings and messages",
+      "text": "Cancel\nEdit Session\nChange the date, liturgies, readings or messages. Nothing is saved until you tap Save changes. Live progress is kept.\n\nService date\n\nTue, Nov 10, 2026\nYear-month-day, for example 2026-10-04.\nLiturgies\nLiturgies are served in this order. Use the arrows to reorder them.\n1.\nDivine Liturgy\n\n\n\n\nAdd Liturgy\nReadings and messages\nOptional. Leave a field empty to show nothing for it.\nLectionary readings\nEnglish\nClassical Armenian\nPreview readings for this date\nOptional Gospel, Epistle and Prophetic readings for 2026–2027. Changing the date leaves your reading fields unchanged.\nGospel reading\nEpistle reading\nProphetic reading\nBefore-service message\nAfter-service message\nDelete Session\nDeleting is permanent. You will be asked to confirm.\nDelete\nSave changes",
+      "errors": [],
+      "overflow": {
+        "viewport": 1440,
+        "document": 1440
+      }
+    },
+    {
+      "name": "form-phone-dark",
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "route": "/session-management/9001/edit",
+      "scroll": "Gospel reading",
+      "text": "Cancel\nEdit Session\nChange the date, liturgies, readings or messages. Nothing is saved until you tap Save changes. Live progress is kept.\n\nService date\n\nTue, Nov 10, 2026\nYear-month-day, for example 2026-10-04.\nLiturgies\nLiturgies are served in this order. Use the arrows to reorder them.\n1.\nDivine Liturgy\n\n\n\n\nAdd Liturgy\nReadings and messages\nOptional. Leave a field empty to show nothing for it.\nLectionary readings\nEnglish\nClassical Armenian\nPreview readings for this date\nOptional Gospel, Epistle and Prophetic readings for 2026–2027. Changing the date leaves your reading fields unchanged.\nGospel reading\nEpistle reading\nProphetic reading\nBefore-service message\nAfter-service message\nDelete Session\nDeleting is permanent. You will be asked to confirm.\nDelete\nSave changes",
+      "errors": [],
+      "overflow": {
+        "viewport": 390,
+        "document": 390
+      }
+    },
+    {
+      "name": "operator-phone-light",
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "route": "/services/9001/service",
+      "text": "Service\n\nControllers\nController status unavailable\n\nWHAT THE CONGREGATION SEES\nActive\nPaused\nGospel Reading\nEpistle Reading\nProphetic Reading\nWelcome Message\nShow read-along QR\nANNOUNCEMENT\nMessage\nShow this\nGo to another part\n",
+      "errors": [],
+      "overflow": {
+        "viewport": 390,
+        "document": 390
+      }
+    },
+    {
+      "name": "display-kiosk-dark",
+      "width": 1920,
+      "height": 1080,
+      "theme": "dark",
+      "route": "/sessions/display?token=token-A",
+      "display": true,
+      "text": "A reading from the prophecy of Isaiah.\nThe people who walked in darkness have seen a great light.",
+      "errors": [],
+      "overflow": {
+        "viewport": 1920,
+        "document": 1920
+      }
+    }
+  ]
+}

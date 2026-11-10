@@ -20,7 +20,7 @@ function calendarDate(value) {
   const date = new Date(Date.UTC(year, month - 1, day))
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
 }
-const OPTION_KEYS = ['gospel', 'epistle', 'before_message', 'after_message']
+const OPTION_KEYS = ['gospel', 'epistle', 'prophetic', 'before_message', 'after_message']
 
 function createManagement({ enabled, owned, church, seed = [], onDeleted = () => {} }) {
   let nextId = 9101
@@ -66,7 +66,7 @@ function createManagement({ enabled, owned, church, seed = [], onDeleted = () =>
     if (path === '/s/new.json' && req.method === 'GET') {
       if (!authorized(req)) return error(res, 401, 'Sign in required.'), true
       return json(res, 200, { schema_version: 1, session_management_version: 1, time_zone: ZONE,
-        defaults: { date: today(), options: { gospel: '', epistle: '', before_message: '', after_message: '' } },
+        defaults: { date: today(), options: { gospel: '', epistle: '', prophetic: '', before_message: '', after_message: '' } },
         limits: { liturgy_ids: { min: 1, max: 20 }, options: Object.fromEntries(OPTION_KEYS.map(key => [key, { max_length: 2000 }])) } }), true
     }
     if (path === '/s/liturgy_options.json' && req.method === 'GET') {
