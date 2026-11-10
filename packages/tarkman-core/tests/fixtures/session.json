@@ -15,11 +15,13 @@
     "posture": "standing",
     "readings": {
       "gospel": "John 3:16",
-      "epistle": "Romans 8:28"
+      "epistle": "Romans 8:28",
+      "prophetic": "Isaiah 7:10-16"
     },
     "options": {
       "gospel": "John 3:16",
       "epistle": "Romans 8:28",
+      "prophetic": "Isaiah 7:10-16",
       "before_message": "Before message",
       "after_message": "After message"
     }

@@ -55,6 +55,11 @@ through `PartResponse`) accepts any string, including observed `fixed`.
 `StatusUpdateRequest.status` commands. Receiving a value does not establish that
 it is a supported command. No new command or UI label is inferred from wire data.
 
+Prophetic readings mirror gospel/epistle: `SessionData.readings.prophetic` and
+`options.prophetic` are optional for older responses and accept null;
+`showing_prophetic` is a supported status command (backend enum value 7).
+The wire status remains a string; no client numeric-status mapping is introduced.
+
 Public compile tests exercise these DTOs directly, including arbitrary strings,
 and reject `live`/future command values. The consumer check repeats those probes
 using each app's own TypeScript compiler and verifies local package resolution.

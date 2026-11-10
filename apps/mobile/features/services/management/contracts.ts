@@ -8,7 +8,7 @@ import { t } from '../../i18n'
  */
 export const SCHEMA_VERSION = 1
 export const SESSION_MANAGEMENT_VERSION = 1
-export const OPTION_KEYS = ['gospel', 'epistle', 'before_message', 'after_message'] as const
+export const OPTION_KEYS = ['gospel', 'epistle', 'prophetic', 'before_message', 'after_message'] as const
 export type OptionKey = typeof OPTION_KEYS[number]
 export type SessionOptions = Record<OptionKey, string>
 

@@ -10,7 +10,7 @@ import * as fixtures from './fixtures/session-management'
 
 const fetcher = () => jest.fn<AuthContextValue['authorizedFetch']>()
 const signal = () => new AbortController().signal
-const setup = { date: '2026-10-04', liturgy_ids: [101, 202], options: { gospel: '', epistle: '', before_message: '', after_message: '' } }
+const setup = { date: '2026-10-04', liturgy_ids: [101, 202], options: { gospel: '', epistle: '', prophetic: '', before_message: '', after_message: '' } }
 
 it('accepts only real calendar dates, without a time zone', () => {
   expect(['2026-09-27', '2024-02-29', '2000-02-29', '0001-01-01'].every(isCalendarDate)).toBe(true)
@@ -115,6 +115,17 @@ it('treats HTML or an old server bootstrap as unavailable, and a thrown fetch as
   await expect(fetchBootstrap(fetcher().mockResolvedValue(html), signal())).rejects.toMatchObject({ kind: 'unavailable' })
   await expect(fetchBootstrap(fetcher().mockResolvedValue(respond(404, {})), signal())).rejects.toMatchObject({ kind: 'unavailable' })
   await expect(fetchBootstrap(fetcher().mockRejectedValue(new TypeError('offline')), signal())).rejects.toMatchObject({ kind: 'network' })
+})
+
+it('normalizes missing or null prophetic values and preserves deliberate edits and clearing', () => {
+  const saved = fixtures.managedSession()
+  expect(normalizeManagedSession({ session: { ...saved, options: {} } }).options.prophetic).toBe('')
+  expect(normalizeManagedSession({ session: { ...saved, options: { prophetic: null } } }).options.prophetic).toBe('')
+  expect(normalizeManagedSession({ session: { ...saved, options: { prophetic: 'Isaiah 7:10-16' } } }).options.prophetic).toBe('Isaiah 7:10-16')
+  expect(setupDiff(setup, { ...setup, options: { ...setup.options, prophetic: 'Isaiah 7:10-16' } })).toEqual({ options: { prophetic: 'Isaiah 7:10-16' } })
+  const filled = { ...setup, options: { ...setup.options, prophetic: 'Isaiah 7:10-16' } }
+  expect(setupDiff(filled, setup)).toEqual({ options: { prophetic: '' } })
+  expect(mapFieldErrors({ 'options.prophetic': ['too long'] })).toEqual({ byField: { prophetic: 'too long' }, other: [] })
 })
 
 it('diffs key-wise and only reports deliberate changes', () => {

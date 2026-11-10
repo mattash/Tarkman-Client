@@ -14,6 +14,25 @@ test('session wrapper and inactive sentinel preserve existing shapes', () => {
     assert.equal(core.normalizeSession({ session: { ...input.session, status } }).status, status)
   }
 })
+test('prophetic contracts preserve canonical readings, nullable options and known status', () => {
+  const old = fixture('session')
+  delete old.session.options.prophetic
+  delete old.session.readings.prophetic
+  assert.equal('prophetic' in core.normalizeSession(old).options, false)
+  for (const prophetic of ['Isaiah 6:1', null]) {
+    const input = { session: { ...old.session, status: 'showing_prophetic',
+      readings: { ...old.session.readings, prophetic: 'Isaiah 6:1' },
+      options: { ...old.session.options, prophetic } } }
+    assert.deepEqual(core.normalizeSession(input), input.session)
+  }
+  assert.equal(core.STATUS_LABELS.showing_prophetic, 'Prophetic Reading')
+})
+test('raw variable metadata and legacy English accessors survive without client interpretation', () => {
+  for (const part of [{ id: 1, variable: true, variable_accessor: 'prophetic' },
+    { id: 1, variable: true, en: 'prophetic' }]) {
+    assert.deepEqual(core.normalizePart({ part }), part)
+  }
+})
 test('part transport duration stays open without filling missing domain fields', () => {
   const input = fixture('part')
   assert.deepEqual(core.normalizePart(input), input.part)

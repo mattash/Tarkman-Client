@@ -34,11 +34,11 @@ it('applies selected references atomically, preserves messages and other fields,
   const expected = controller.getSnapshot().draft
   const result = await getLectionaryDay(expected.date, 'en')
   if (!result.ok) throw Error(result.reason)
-  const patch = selectedReadings(result.day, { gospel: [3, 0], epistle: [] })
+  const patch = selectedReadings(result.day, { gospel: [3, 0], epistle: [], prophetic: [] })
   expect(patch).toEqual({ gospel: 'Luke 1.26-38; Matthew 2.1-12' })
   expect(controller.applyReadings(expected, patch)).toBe(true)
   const draft = controller.getSnapshot().draft
-  expect(draft.options).toEqual({ gospel: patch.gospel, epistle: 'Keep this', before_message: 'Welcome', after_message: '' })
+  expect(draft.options).toEqual({ gospel: patch.gospel, epistle: 'Keep this', prophetic: '', before_message: 'Welcome', after_message: '' })
   expect(posts(fetcher)).toHaveLength(0)
   fetcher.mockImplementationOnce(async (_path, init) => {
     const { session } = JSON.parse(String(init?.body))

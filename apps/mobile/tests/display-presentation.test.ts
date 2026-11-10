@@ -10,12 +10,13 @@ const parts = normalizeParts({ parts: [
   { part: { id: 1, liturgy_id: 10, liturgy_part_id: 103, position: 3, page: 14 } },
 ] })
 const raw = { id: 7, current_part_id: 2, current_liturgy_id: 10, current_liturgy_part_id: 102, current_part_position: 2, num_of_parts: 3,
-  page: 13, posture: 'stand', options: { before_message: 'Welcome to our parish.', after_message: 'Go with God.', gospel: 'The Gospel of John.', epistle: 'The Letter to the Romans.' } }
+  page: 13, posture: 'stand', options: { before_message: 'Welcome to our parish.', after_message: 'Go with God.', gospel: 'The Gospel of John.', epistle: 'The Letter to the Romans.', prophetic: 'The prophecy of Isaiah.' } }
 const session = normalizeSession({ session: raw })
 it.each([
   ['paused', 'Service paused', 'We will resume shortly.'],
   ['showing_gospel', 'Gospel', 'The Gospel of John.'],
   ['showing_epistle', 'Epistle', 'The Letter to the Romans.'],
+  ['showing_prophetic', 'Prophetic reading', 'The prophecy of Isaiah.'],
   ['showing_welcome', 'Welcome', 'Welcome to our parish.'],
   ['showing_custom', 'Announcement', 'We will resume shortly.'],
 ])('renders the operator interrupt %s', (status, title, body) => {

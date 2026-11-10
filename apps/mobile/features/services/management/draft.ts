@@ -1,7 +1,7 @@
 import { isCalendarDate, OPTION_KEYS, type LiturgyOption, type OptionKey, type SessionOptions, type SessionSetup } from './contracts'
 import { t } from '../../i18n'
 
-/** The editable form: calendar date, ordered liturgy selections (with their names), and the four text options. */
+/** The editable form: calendar date, ordered liturgy selections (with their names), and the session text options. */
 export interface SessionDraft { date: string; liturgies: LiturgyOption[]; options: SessionOptions }
 
 export const EMPTY_OPTIONS: SessionOptions = Object.fromEntries(OPTION_KEYS.map(key => [key, ''])) as SessionOptions

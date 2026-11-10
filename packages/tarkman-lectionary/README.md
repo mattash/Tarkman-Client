@@ -125,19 +125,28 @@ They keep application deliberate, with no automatic service mapping:
 
 - Look up the selected creation draft date only on explicit request. Never infer
   a different date from the clock; a bootstrap/date change invalidates a preview.
-- Show all readings. Let the user select Gospel/Epistle references; maintain
-  upstream order and join multiple selections with `; `. Other categories are
-  reference-only. Do not map categories to selected liturgies, including ordered
-  sessions containing multiple liturgies.
+- Show all readings. Let the user select Gospel/Epistle references from their
+  source categories, and explicitly assign any reference to the Prophetic field;
+  maintain upstream order and join multiple selections with `; `. No reference is
+  selected automatically. Other categories remain visible for reference. Do not
+  map categories to selected liturgies, including ordered sessions containing
+  multiple liturgies.
+- The installed 2026/2027 English and Armenian packs contain only `Gospel`,
+  `Epistle` and `Old Testament` categories, not a `Prophetic` role. They supply
+  references for manual prophetic selection, not an authoritative prophetic
+  assignment. Neither the first Old Testament reading nor any book/category is
+  assumed to identify that role. The prophetic selector therefore lists all
+  `ReadingsList` entries, mirroring the backend's deliberate manual assignment;
+  it does not fetch the external readings API or bundle passage text.
 - Default the content selector to English, independently of interface language,
   with Classical Armenian available. Show source/confidence/note annotations.
 - Apply only after an explicit action, clearly confirming replacement of the
-  selected Gospel/Epistle fields. Preserve unselected fields, messages, manual
+  selected Gospel/Epistle/Prophetic fields. Preserve unselected fields, messages, manual
   entries and defaults until then. Date changes do not automatically clear or
   reapply readings; late responses must never overwrite edits.
 - Out-of-range, load errors and intentional empty readings leave manual entry
-  available. Applying modifies only the creation draft. The existing authenticated
-  Create action sends the existing `options.gospel`/`options.epistle` attributes.
+  available. Applying modifies only the current form draft. The authenticated
+  Create/Save action sends `options.gospel`, `options.epistle` and `options.prophetic`.
 
 Examples: January 5 has five Gospel references; none is
 assumed to belong to a service or automatically chosen. January 26 has no appointed
@@ -145,9 +154,11 @@ readings; existing draft text remains. A manually typed Gospel stays after movin
 the date to January 27 until an explicit replacement. A 2030 session remains valid
 for manual entry. Crossing midnight never causes an unsolicited reading import.
 
-NewSession supplies the optional picker to SessionForm; editing receives no
-picker. Applying is one atomic controller update, guarded by the exact previewed
-draft and editable phase. It marks selected options and the chosen date touched,
+NewSession and EditSession supply the optional picker to SessionForm. Applying
+is one atomic controller update, guarded by the exact previewed draft and editable
+phase. Editing keeps the saved baseline unchanged and sends nothing until the
+explicit Save changes action; stale conflicts and cursor-reset review lock import.
+Creation marks selected options and the chosen date touched,
 so late bootstrap/midnight defaults cannot relocate applied readings or overwrite
 them. Existing field-length validation, deliberate Create, idempotent retries and
 backend attributes are retained. Synthetic tests round-trip applied values through
