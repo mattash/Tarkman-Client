@@ -110,6 +110,27 @@ describe('session display', () => {
     }
   })
 
+  it('refetches a shrinking reading manifest and follows the options-edit reconciled cursor', async () => {
+    seedLiturgy()
+    await renderApp()
+    await openService()
+    await act(async () => { server.advance(7, 101) }); await flush()
+    expect(speaker()).toBe('deacon')
+    const before = server.requests.length
+    await act(async () => { server.replaceReadingParts(7, [
+      { id: 10, liturgyPartId: 100, position: 1, role: 'priest', en: 'Blessed is the kingdom.' },
+      { id: 12, liturgyPartId: 102, position: 3, role: 'choir', en: 'Holy God, holy and mighty.' },
+    ], 102) }); await flush()
+    expect(speaker()).toBe('choir')
+    expect(within(screen.getByTestId('display-column-en')).getByText('Holy God, holy and mighty.')).toBeTruthy()
+    expect(screen.queryByText('Lord, have mercy.')).toBeNull()
+    expect(badge()).toBeUndefined()
+    const recovery = server.requests.slice(before)
+    expect(recovery.some(request => request.url === `${API}/s/7/parts.json`)).toBe(true)
+    expect(recovery.some(request => request.url === `${API}/s/7.json`)).toBe(true)
+    expect(recovery.every(request => request.method === 'GET')).toBe(true)
+  })
+
   it('shows status messages and the read-along QR code', async () => {
     seedLiturgy()
     await renderApp()

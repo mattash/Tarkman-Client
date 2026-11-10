@@ -32,6 +32,26 @@ it('uses occurrence boundaries for welcome and farewell, not reusable part IDs',
   expect((projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 103, currentPosition: 3 }, parts, DEFAULT_DISPLAY_CONFIG) as { body: string })?.body).toBe('Go with God.')
   expect((projectionMessage({ ...session, currentPartId: 1, currentLiturgyPartId: 103, currentPosition: 3, status: 'paused' }, parts, DEFAULT_DISPLAY_CONFIG) as { title: string })?.title).toBe('Service paused')
 })
+it('uses the new first and last visible occurrences after blank variable endpoints disappear', () => {
+  // The old endpoint occurrences (101, 103) are absent from the server's
+  // reading manifest. A newly visible endpoint need not have raw position 1.
+  const visible = normalizeParts({ parts: [
+    { part: { id: 2, liturgy_id: 10, liturgy_part_id: 102, position: 1 } },
+    { part: { id: 3, liturgy_id: 20, liturgy_part_id: 201, position: 2 } },
+  ] })
+  const first = normalizeSession({ session: { ...raw, num_of_parts: 2, current_part_position: 1 } })
+  const last = normalizeSession({ session: { ...raw, num_of_parts: 2, current_part_id: 3, current_liturgy_id: 20,
+    current_liturgy_part_id: 201, current_part_position: 2 } })
+  expect(projectionMessage(first, visible, DEFAULT_DISPLAY_CONFIG)).toEqual({ kind: 'message', title: 'Welcome', body: 'Welcome to our parish.' })
+  expect(projectionMessage(last, visible, DEFAULT_DISPLAY_CONFIG)).toEqual({ kind: 'message', title: 'Go in peace', body: 'Go with God.' })
+  expect(first.totalParts).toBe(2)
+  expect(last.totalParts).toBe(2)
+})
+it('prefers welcome over farewell when filtering leaves one visible occurrence', () => {
+  const only = [{ ...parts[1], position: 1 }]
+  const filtered = normalizeSession({ session: { ...raw, num_of_parts: 1, current_part_position: 1 } })
+  expect(projectionMessage(filtered, only, DEFAULT_DISPLAY_CONFIG)).toEqual({ kind: 'message', title: 'Welcome', body: 'Welcome to our parish.' })
+})
 it('supports old zero-position welcome snapshots', () => {
   const old = normalizeSession({ session: { ...raw, current_part_position: 0 } })
   expect(old.currentPosition).toBe(0)

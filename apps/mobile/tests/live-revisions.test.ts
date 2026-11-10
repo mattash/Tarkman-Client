@@ -87,6 +87,64 @@ it('reloads changed text even when the content edit did not consume a navigation
   expect(api.state).toHaveBeenCalledTimes(2); expect(api.parts).toHaveBeenCalledTimes(1)
   expect(controller.getSnapshot().parts[0].text.en).toBe('edited text')
 })
+it.each([0, 1])('reloads a shrinking reading manifest after a blank variable edit (cursor index %i)', async index => {
+  const controller = await setup()
+  if (index === 1) event(1, 1)
+  // The repeated Part at lp:21 disappears. Its cursor moves to lp:22; a cursor
+  // elsewhere stays put. The server supplies dense positions, not raw positions.
+  const visible = [parts[0], { ...parts[2], position: 2 }]
+  const selected = index === 1 ? visible[1] : visible[0]
+  const revision = index + 1
+  const cursor = { part_id: selected.id, liturgy_part_id: selected.liturgyPartId, liturgy_id: selected.liturgyId, position: selected.position }
+  const update = { content_context: 'blank-variable', cursor }
+  api.state.mockResolvedValue(compact(revision, 0, update))
+  api.session.mockResolvedValue(normalizeSession({ session: { id: 7, num_of_parts: 2,
+    current_part_id: selected.id, current_liturgy_part_id: selected.liturgyPartId, current_liturgy_id: selected.liturgyId,
+    current_part_position: selected.position, liturgies: [{ id: 10 }, { id: 20 }] } }))
+  api.parts.mockResolvedValue(visible)
+  event(revision, 0, update, 'status_change'); await flush()
+  const snapshot = controller.getSnapshot()
+  expect(api.session).toHaveBeenCalledTimes(1)
+  expect(api.parts).toHaveBeenCalledTimes(1)
+  expect(snapshot).toMatchObject({ stale: false, following: true,
+    session: { revision, contentContext: 'blank-variable', totalParts: 2, currentLiturgyPartId: selected.liturgyPartId, currentPosition: selected.position } })
+  expect(snapshot.parts.map(part => [part.key, part.position])).toEqual([['lp:11', 1], ['lp:22', 2]])
+  expect(currentPart(snapshot.session!, snapshot.parts)?.key).toBe(selected.key)
+  // Restoring the variable expands both the manifest and total without moving
+  // the selected occurrence, even though its dense position can change again.
+  const restoredCursor = { ...cursor, position: index === 1 ? 3 : 1 }
+  api.state.mockResolvedValue(compact(revision + 1, 0, { content_context: 'restored-variable', cursor: restoredCursor }))
+  api.session.mockResolvedValue(session)
+  api.parts.mockResolvedValue(parts)
+  event(revision + 1, 0, { content_context: 'restored-variable', cursor: restoredCursor }, 'status_change'); await flush()
+  const restored = controller.getSnapshot()
+  expect(restored).toMatchObject({ stale: false, session: { totalParts: 3, currentLiturgyPartId: selected.liturgyPartId, currentPosition: restoredCursor.position } })
+  expect(restored.parts).toEqual(parts)
+  expect(currentPart(restored.session!, restored.parts)?.key).toBe(selected.key)
+})
+it.each([null, payload().cursor])('characterizes an all-hidden reading manifest with public cursor %p', async cursor => {
+  const controller = await setup()
+  api.state.mockResolvedValue(compact(1, 0, { content_context: 'all-hidden', cursor }))
+  api.session.mockResolvedValue(normalizeSession({ session: { id: 7, num_of_parts: 0,
+    current_part_id: 1, current_liturgy_part_id: 11, current_liturgy_id: 10, current_part_position: 1 } }))
+  api.parts.mockResolvedValue([])
+  event(1, 0, { content_context: 'all-hidden', cursor }, 'status_change'); await flush()
+  const snapshot = controller.getSnapshot()
+  if (cursor === null) {
+    // Zero is currently normalized to an unknown total (null), but the empty
+    // manifest and canonical null cursor still clear all prior reading content.
+    expect(snapshot).toMatchObject({ stale: false, parts: [], session: { totalParts: null,
+      currentPartId: null, currentLiturgyPartId: null, currentLiturgyId: null, currentPosition: null } })
+    expect(currentPart(snapshot.session!, snapshot.parts)).toBeUndefined()
+  } else {
+    // Existing safety guard rejects a canonical cursor missing from the manifest.
+    // Rails may retain the stored cursor, but must publish null for an empty
+    // reading domain unless client handling is separately coordinated.
+    expect(snapshot.stale).toBe(true)
+    expect(snapshot.parts).toEqual(parts)
+    expect(snapshot.session?.contentContext).toBe('original')
+  }
+})
 it('recovers an unknown occurrence instead of selecting a similar part or indexing position', async () => {
   const controller = await setup()
   api.state.mockResolvedValue(compact(1, 2))
