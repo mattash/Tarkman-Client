@@ -151,6 +151,13 @@ export function fakeServer() {
       cursor.set(id, { ...c, revision: c.revision + 1, liturgyPartId })
       subscriptions.get(id)?.received({ event: 'part_change', data: { session: id, ...state(id) } })
     },
+    /** An options edit hides blank variable slots and reconciles the cursor in one revision. */
+    replaceReadingParts(id: number, visible: Part[], liturgyPartId: number) {
+      const c = cursor.get(id)!
+      parts.set(id, visible.map((part, index) => ({ ...part, position: index + 1 })))
+      cursor.set(id, { ...c, revision: c.revision + 1, liturgyPartId })
+      subscriptions.get(id)?.received({ event: 'status_change', data: { session_id: id, ...state(id) } })
+    },
     setStatus(id: number, status: string) {
       const c = cursor.get(id)!
       cursor.set(id, { ...c, revision: c.revision + 1, status })
