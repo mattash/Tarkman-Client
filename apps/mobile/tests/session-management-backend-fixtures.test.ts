@@ -15,7 +15,7 @@ const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 it('reads the bootstrap, including its real limits shape', () => {
   expect(normalizeBootstrap(backend('bootstrap.response'))).toEqual({
     timeZone: 'America/Los_Angeles', defaultDate: '2026-10-04',
-    defaultOptions: { gospel: '', epistle: '', before_message: 'Welcome!', after_message: 'Have a blessed Sunday!' },
+    defaultOptions: { gospel: '', epistle: '', prophetic: '', before_message: 'Welcome!', after_message: 'Have a blessed Sunday!' },
     limits: { maxLiturgies: 20, optionMaxLength: { gospel: 20000, epistle: 20000, before_message: 5000, after_message: 5000 } },
   })
 })
@@ -42,11 +42,11 @@ it('reads the canonical session from create (201), replay (200), edit, update an
   expect(normalizeManagedSession({ session: backend('session.snapshot') })).toMatchObject({ id: 4008 })
 })
 
-it('sends exactly the create request shape the backend documents', async () => {
+it('extends the older documented create request with an empty prophetic reading', async () => {
   const request = backend('create.request') as { client_request_id: string; session: Parameters<typeof setupPayload>[0] }
   const fetcher = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValue(respond(201, backend('create.response.201')))
   await createSession(fetcher, { clientRequestId: request.client_request_id, setup: request.session, startedAt: 0 })
-  expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toEqual(request)
+  expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toEqual({ ...request, session: { ...request.session, options: { ...request.session.options, prophetic: '' } } })
 })
 
 it.each([
@@ -56,7 +56,7 @@ it.each([
   ['error.malformed_request.400', 400, 'rejected'],
 ])('maps %s to %s', async (name, status, kind) => {
   const fetcher = jest.fn<AuthContextValue['authorizedFetch']>().mockResolvedValue(respond(status, backend(name)))
-  const failure = await createSession(fetcher, { clientRequestId: 'k', setup: { date: '2026-10-04', liturgy_ids: [12], options: { gospel: '', epistle: '', before_message: '', after_message: '' } }, startedAt: 0 }).catch(error => error)
+  const failure = await createSession(fetcher, { clientRequestId: 'k', setup: { date: '2026-10-04', liturgy_ids: [12], options: { gospel: '', epistle: '', prophetic: '', before_message: '', after_message: '' } }, startedAt: 0 }).catch(error => error)
   expect(failure).toMatchObject({ kind })
   if (kind === 'validation') expect(failure.fields).toEqual({ date: ['must be a valid calendar date (YYYY-MM-DD)'], 'options.gospel': ['must be a string or null'] })
 })

@@ -26,7 +26,7 @@ function serviceStatus(state: ReaderState): ServiceStatus {
   if (!state.session) return 'unknown'
   if (!state.listed) return 'unlisted'
   // These are known presentation modes of an ongoing service, not an unknown service state.
-  if (['active', 'showing_gospel', 'showing_epistle', 'showing_welcome', 'showing_custom', 'showing_session_qr'].includes(state.session.status)) return 'live'
+  if (['active', 'showing_gospel', 'showing_epistle', 'showing_prophetic', 'showing_welcome', 'showing_custom', 'showing_session_qr'].includes(state.session.status)) return 'live'
   if (state.session.status === 'paused') return 'paused'
   if (state.session.status === 'ended') return 'ended'
   return 'unknown'

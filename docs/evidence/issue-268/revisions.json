@@ -1,0 +1,56 @@
+{
+  "baselineCommit": "725e7d4883a2d6d996002a538871be23934903f3",
+  "after": "captured uncommitted source verified byte-identical to afterCommit (production files)",
+  "recordedAt": "2026-11-10T06:40:00.896842+00:00",
+  "sourceSha256": {
+    "apps/mobile/app/(signed-in)/services/[id]/service.tsx": "b3391e9304f7981105aa1f6f96141d5a4394f9ebf52d124a1662c9cd51ad54a1",
+    "apps/mobile/features/i18n/catalogs/en.ts": "9e40218f6c45cf4c5a70ce91eaf3c3f69c923b4b238b78128504de974bc0665c",
+    "apps/mobile/features/i18n/catalogs/ru.ts": "b506d58615617a8722cc7aa1a5553f1d7a1a320bc96f5905dbc2275d4fd4f155",
+    "apps/mobile/features/lectionary/index.ts": "ca26a2881c5e92bf8bc5eeda7d655096ee6bb15004eaa7404219abf80296d91b",
+    "apps/mobile/features/live/ReaderStatusControl.tsx": "b8a0460a5715c020da222a1c1d3a2d2b87a2bc8238a95d6e29d3c3117569c6fc",
+    "apps/mobile/features/services/management/EditSession.tsx": "1a78f5c2ff258cec56a9a1544a4548e4c1ecd1482da811a65cc5474ad4bb2d8c",
+    "apps/mobile/features/services/management/LectionaryPicker.tsx": "3233e5131c7f87a2ef6cae50e66cda2a7a9d4848c43744f0564f0d5ff2371d60",
+    "apps/mobile/features/services/management/contracts.ts": "e38026ae76aa91dbd695a4f4c2714c1dec793f3c931094c6163a7ba13ad3481b",
+    "apps/mobile/features/services/management/creation.ts": "5fbcb935b48b7ab24689dc9acc2721ff9ee054ad81a35e3cb4164885c6a3b555",
+    "apps/mobile/features/services/management/draft.ts": "baa265ee95c8d2902e93813c4227af4d8536a2d38077c62b4564de751982700b",
+    "apps/mobile/features/services/management/editing.ts": "5a1dad0fd3fcebb5953243ad7fa449cd40090825cbe2df719dafe60d4710cad8",
+    "apps/mobile/qa/design-system/management-fixture.cjs": "8d5004f19e9bd0b120d22833601f43174ba2541e6762e9d4dad1abef0f5a1402",
+    "apps/mobile/qa/display/issue268-capture.cjs": "0fb3ed37cd7e81aa61d261ba9c8b85c4cddf88e3420e4355fe17e079941e4c1d",
+    "apps/mobile/qa/display/server.cjs": "9f28589cfa0b1d82a7011e1afa7bac92f203b47c69a24f46cf0a560d03dea72d",
+    "apps/mobile/qa/display/static-export-server.cjs": "8020b92f986529f81b16837d98de29e476ecef299b07a258bdc89a1847204303",
+    "apps/mobile/tests/display-presentation.test.ts": "f59d004905b4cf757028833436efa86bd668a8ae7bc561a9174b70c6dca6eec6",
+    "apps/mobile/tests/edit-lectionary.test.tsx": "6f4cd72d92d0a40020d36e4e54ebbde7bf2986a92884d45e10bf28f5eac797ff",
+    "apps/mobile/tests/fixtures/session-management.ts": "6c56e443655e2805ab5080fdd028f4b80f9b25c76d20f083f2f6e5f80e5f6410",
+    "apps/mobile/tests/prophetic-lectionary.test.tsx": "e9b0ffe139b76d747b15bb29f34912e0e1910bb8a023951957e30eaa7c35e0f9",
+    "apps/mobile/tests/prophetic-rendering.test.tsx": "8c98ae0731c6d3a45b23ed3ce456edd0810ecb09ed746ee8dad9c89f59a97f05",
+    "apps/mobile/tests/service-controls-ui.test.tsx": "4734960af6ce21fb00856b74ebc2293f8c1a5f8332b28ba096f54d3d79e32132",
+    "apps/mobile/tests/session-creation.test.tsx": "a51fc4ecdba1475eca0bf5f5433e9b1f6144203859e31c61665b08f4bf6c1161",
+    "apps/mobile/tests/session-editing.test.tsx": "f328c3ed3404f426e21b987266a543d9cb1a870720b558335167cba6860e4881",
+    "apps/mobile/tests/session-form.test.tsx": "0ca919bee74e2102ad2591298f4b13ab1fe9aa9c1b08d6992015c7e5a0606d72",
+    "apps/mobile/tests/session-management-backend-fixtures.test.ts": "0fa49d1bf1b1c5e9bf47b09f7eae5f7d91ec0352db701d20b528512f88cfc6d2",
+    "apps/mobile/tests/session-management-contracts.test.ts": "dc76710453c73b250e2ba9347057281a72b054b67f52490ece4c7490e775854e",
+    "packages/tarkman-core/README.md": "d446dd6ffbddf3656dc4f707ba6dc6bd492218eeabef6d5b3c02a707c075737e",
+    "packages/tarkman-core/src/session.ts": "5310696c4dc0a8d144116e8cb35779324a68fc8a29998d2c9737e0f6513707f0",
+    "packages/tarkman-core/src/status.ts": "a451b6164ca5f6e02132619959e4dbeb6ce98e49ed4273957cbb31d0402aa71b",
+    "packages/tarkman-core/tests/contracts.test.mjs": "1592c47805138cd7634adcd200c9190d58fded5e3771774d4c62299fb08dc800",
+    "packages/tarkman-core/tests/contracts.types.ts": "4b2931178a7dfdbfc9ee4e88b07457e909067c59913239da2f10c04f1d5b5667",
+    "packages/tarkman-core/tests/fixtures/session.json": "11df31435e9d4f06a141784c44e86a14c6729d9f78f29db666ebebbc51c8abec",
+    "packages/tarkman-lectionary/README.md": "568b1e927ef6319ea707d4b7becd168ac9db644724099ebf9d5932de3fa7318b",
+    "packages/tarkman-reader/README.md": "a616fa8e7fae0f2dbb1d68f617ecc9e5013564a292e72d87c00e91147eefa6e0",
+    "packages/tarkman-reader/src/contracts.ts": "448849ede1b0156fbda0c2277836383352e812aba2310685ec3348bcc34f9bd1",
+    "packages/tarkman-reader/src/display/presentation.ts": "aa4abf59778661b803178e61fc98e62b6e7490914d9d5dd9cdfa0f5b0503710b",
+    "packages/tarkman-reader/tests/prophetic.test.mjs": "94224ab89a3383350585c8a9617125365e257de404267a5b4c5561d464ae3658",
+    "apps/mobile/qa/display/issue268-picker.cjs": "bda8ce3e7bc208ea76a3b670a717241f28a6450d9063bf652de87e2f9a8462b3"
+  },
+  "exports": {
+    "before": {
+      "_expo/static/js/web/entry-f25e1ee3a3481b64897b2a39a13f4813.js": "95828d1e8e94864107d7b8d05802c858b2a6d44b2b0c89c19f8b896def13a350",
+      "_expo/static/js/web/index-d41d8cd98f00b204e9800998ecf8427e.js": "a1ca01cf07d039501af88ab73a08ebe58d3d5d7e7aba1b96a4c9c5daacaa2bcf"
+    },
+    "after": {
+      "_expo/static/js/web/entry-f25e1ee3a3481b64897b2a39a13f4813.js": "abacd8acbd7641af9151bd3b55bc5005d607560f6c668a36b60fdb8ad78779e2",
+      "_expo/static/js/web/index-d41d8cd98f00b204e9800998ecf8427e.js": "a1ca01cf07d039501af88ab73a08ebe58d3d5d7e7aba1b96a4c9c5daacaa2bcf"
+    }
+  },
+  "afterCommit": "f5e3be071c3bc6066e6c2b4b4f7685b8a28f8404"
+}

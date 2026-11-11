@@ -6,9 +6,9 @@ export const bootstrap = {
   schema_version: 1,
   session_management_version: 1,
   time_zone: 'America/Los_Angeles',
-  defaults: { date: '2026-09-27', options: { gospel: '', epistle: '', before_message: '', after_message: '' } },
+  defaults: { date: '2026-09-27', options: { gospel: '', epistle: '', prophetic: '', before_message: '', after_message: '' } },
   limits: { liturgy_ids: { min: 1, max: 10 },
-    options: { gospel: { max_length: 500 }, epistle: { max_length: 500 }, before_message: { max_length: 2000 }, after_message: { max_length: 2000 } } },
+    options: { gospel: { max_length: 500 }, epistle: { max_length: 500 }, prophetic: { max_length: 500 }, before_message: { max_length: 2000 }, after_message: { max_length: 2000 } } },
 }
 
 export const liturgyPage1 = {
@@ -40,7 +40,7 @@ export function managedSession(overrides: Record<string, unknown> = {}) {
       { id: 101, name: 'Divine Liturgy', position: 1, selectable: true },
       { id: 202, name: 'Morning Service', position: 2, selectable: true },
     ],
-    options: { gospel: 'John 1:1-17', epistle: '', before_message: 'Welcome.', after_message: '' },
+    options: { gospel: 'John 1:1-17', epistle: '', prophetic: '', before_message: 'Welcome.', after_message: '' },
     status: 'active',
     revision: 17,
     current_part_id: 9001,

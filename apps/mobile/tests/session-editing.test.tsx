@@ -54,6 +54,16 @@ it('sends only deliberate changes, key-wise, with the baseline revision (zero in
   expect(controller.getSnapshot()).toMatchObject({ phase: 'saved', baseline: { revision: 1 } })
 })
 
+it.each([['', 'Isaiah 7:10-16'], ['Isaiah 7:10-16', '']])('changes prophetic from %s to %s without changing other options', async (before, after) => {
+  const { fetcher, controller } = setup(respond(200, snapshot({ options: { prophetic: before } })),
+    respond(200, { session: fixtures.managedSession({ revision: 18, options: { prophetic: after } }) }))
+  await controller.load()
+  controller.setOption('prophetic', after)
+  controller.save(); await flush()
+  expect(body(fetcher)).toEqual({ expected_revision: 17, session: { options: { prophetic: after } } })
+  expect(controller.getSnapshot().baseline?.options.prophetic).toBe(after)
+})
+
 it('sends the ordered ids only when membership or order changed, keeping unavailable ones', async () => {
   const { fetcher, controller } = setup(respond(200, { schema_version: 1, session: unavailableLiturgy }), respond(200, { session: unavailableLiturgy }))
   await controller.load()
@@ -63,7 +73,7 @@ it('sends the ordered ids only when membership or order changed, keeping unavail
 })
 
 it('keeps the draft on a stale save; reload discards it, reapply rebases it for another deliberate save', async () => {
-  const fresh = fixtures.managedSession({ revision: 19, options: { gospel: 'Theirs', epistle: 'Romans 8', before_message: 'Welcome.', after_message: '' } })
+  const fresh = fixtures.managedSession({ revision: 19, options: { gospel: 'Theirs', epistle: 'Romans 8', prophetic: '', before_message: 'Welcome.', after_message: '' } })
   const { fetcher, controller } = setup(respond(200, snapshot()), respond(409, { code: 'stale_session', error: 'stale_session', session: fresh }),
     respond(200, { session: fixtures.managedSession({ revision: 20 }) }))
   await controller.load()
@@ -78,7 +88,7 @@ it('keeps the draft on a stale save; reload discards it, reapply rebases it for 
   controller.reapply()
   state = controller.getSnapshot()
   expect(state.baseline?.revision).toBe(19)
-  expect(state.draft.options).toEqual({ gospel: 'Theirs', epistle: 'Romans 8', before_message: 'Welcome.', after_message: 'Go in peace.' })
+  expect(state.draft.options).toEqual({ gospel: 'Theirs', epistle: 'Romans 8', prophetic: '', before_message: 'Welcome.', after_message: 'Go in peace.' })
   controller.save(); await flush()
   expect(body(fetcher, 1)).toEqual({ expected_revision: 19, session: { options: { after_message: 'Go in peace.' } } })
 })

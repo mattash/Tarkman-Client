@@ -23,7 +23,7 @@ import { ControllerStatusRow } from '../../../../features/services/presence/Cont
 
 // KnownSessionStatus is one enum answering two questions, so the sheet groups them apart.
 const DOING: KnownSessionStatus[] = ['active', 'paused']
-const INSTEAD: KnownSessionStatus[] = ['showing_gospel', 'showing_epistle', 'showing_welcome']
+const INSTEAD: KnownSessionStatus[] = ['showing_gospel', 'showing_epistle', 'showing_prophetic', 'showing_welcome']
 
 /** Everything occasional: status, pause, announcement and jumping to a part. Next and Back are never here. */
 export default function ServiceSheet() {

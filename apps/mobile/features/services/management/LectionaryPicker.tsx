@@ -10,13 +10,13 @@ import { SegmentedControl } from '../../../components/SegmentedControl'
 import { useTheme } from '../../../design/ThemeProvider'
 import { radii, spacing, touchTarget } from '../../../design/tokens'
 import { useI18n } from '../../i18n'
-import { getLectionaryDay, lectionaryCoverage, readingCategories, selectedReadings, type ReadingPatch, type ReadingSelection } from '../../lectionary'
+import { getLectionaryDay, lectionaryCoverage, readingReferences, selectedReadings, type ReadingPatch, type ReadingSelection } from '../../lectionary'
 import { sameDraft, type SessionDraft } from './draft'
 
 interface Preview { draft: SessionDraft; language: Language; result: DayResult | null }
-const emptySelection = (): ReadingSelection => ({ gospel: [], epistle: [] })
+const emptySelection = (): ReadingSelection => ({ gospel: [], epistle: [], prophetic: [] })
 
-/** Creation-only, explicit preview/selection/application. Lookup never edits the draft. */
+/** Explicit preview/selection/application for an editable draft. Lookup never edits it. */
 export function LectionaryPicker({ draft, editable, onApply }: {
   draft: SessionDraft; editable: boolean; onApply(expected: SessionDraft, patch: ReadingPatch): boolean
 }) {
@@ -77,13 +77,15 @@ export function LectionaryPicker({ draft, editable, onApply }: {
         {day.Date.startsWith('2027-') && <Notice tone="neutral">{t('lectionary.validation2027')}</Notice>}
         <AppText tone="muted">{t('lectionary.selectionHelp')}</AppText>
         {!day.ReadingsList.length && <Notice tone="neutral">{t('lectionary.noReadings')}</Notice>}
-        {(['gospel', 'epistle'] as const).map(field => <View key={field} style={{ gap: spacing.xs }}>
+        {(['gospel', 'epistle', 'prophetic'] as const).map(field => <View key={field} style={{ gap: spacing.xs }}>
           <AppText variant="label">{t(`sessionManagement.${field}`)}</AppText>
-          {(day.Readings[readingCategories[field]] ?? []).map((reference, index) => <ReadingChoice key={index} text={reference}
+          {field === 'prophetic' && <AppText tone="muted">{t('lectionary.propheticHelp')}</AppText>}
+          {readingReferences(day, field).map((reference, index) => <ReadingChoice key={index} text={reference}
+            accessibilityLabel={field === 'prophetic' ? `${t('sessionManagement.prophetic')}: ${reference}` : reference}
             language={preview!.language} selected={selection[field].includes(index)} disabled={!editable || stale}
             onPress={() => setSelection(previous => ({ ...previous, [field]: previous[field].includes(index)
               ? previous[field].filter(value => value !== index) : [...previous[field], index] }))} />)}
-          {!(day.Readings[readingCategories[field]] ?? []).length && <AppText tone="muted">{t('lectionary.noneInCategory')}</AppText>}
+          {!readingReferences(day, field).length && <AppText tone="muted">{t('lectionary.noneInCategory')}</AppText>}
         </View>)}
         {referenceOnly.map(([category, references]) => <View key={category} style={{ gap: spacing.xs }}>
           <AppText variant="label">{t('lectionary.referenceOnly', { category: categoryLabel(category) })}</AppText>
@@ -91,7 +93,7 @@ export function LectionaryPicker({ draft, editable, onApply }: {
         </View>)}
         {hasSelection && <View style={{ gap: spacing.sm }}>
           <AppText variant="label">{t('lectionary.replaceWarning')}</AppText>
-          {(['gospel', 'epistle'] as const).filter(field => patch[field] !== undefined).map(field => <View key={field} style={{ gap: spacing.xs }}>
+          {(['gospel', 'epistle', 'prophetic'] as const).filter(field => patch[field] !== undefined).map(field => <View key={field} style={{ gap: spacing.xs }}>
             <AppText variant="label">{t(`sessionManagement.${field}`)}</AppText>
             <AppText tone="muted">{t('lectionary.current', { value: preview!.draft.options[field] || t('lectionary.empty') })}</AppText>
             <AppText language={preview!.language === 'hy' ? 'grabar' : 'en'}>{patch[field]}</AppText>
@@ -110,12 +112,12 @@ export function LectionaryPicker({ draft, editable, onApply }: {
   }
 }
 
-function ReadingChoice({ text, language, selected, disabled, onPress }: {
-  text: string; language: Language; selected: boolean; disabled: boolean; onPress(): void
+function ReadingChoice({ text, accessibilityLabel, language, selected, disabled, onPress }: {
+  text: string; accessibilityLabel: string; language: Language; selected: boolean; disabled: boolean; onPress(): void
 }) {
   const { colors } = useTheme()
   const [focused, setFocused] = useState(false)
-  return <Pressable accessibilityRole="checkbox" accessibilityLabel={text} accessibilityState={{ checked: selected, disabled }}
+  return <Pressable accessibilityRole="checkbox" accessibilityLabel={accessibilityLabel} accessibilityState={{ checked: selected, disabled }}
     {...(Platform.OS === 'web' ? { 'aria-checked': selected } : {})} disabled={disabled} onPress={onPress}
     onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
     style={{ minHeight: touchTarget, padding: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,

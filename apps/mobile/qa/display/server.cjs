@@ -65,6 +65,13 @@ const baseParts = [0, 1, 2, 3].map(i => ({ part: {
   ...Object.fromEntries(Object.entries(prayer).map(([language, text]) => [language, i === 2 ? Array(6).fill(text).join('\n\n') : text])), ru: null,
 } }))
 
+// Optional issue-268 management routes let the same synthetic origin cover form, operator and display QA.
+const managementOwned = []
+const management = require('../design-system/management-fixture.cjs').createManagement({
+  enabled: process.env.DISPLAY_FIXTURE_MANAGEMENT === '1', owned: managementOwned, church: 'Sample parish · review fixture',
+  seed: [{ id: 9001, date: '2026-11-10', liturgy_ids: [5001], options: { gospel: '', epistle: '', prophetic: 'A reading from the prophecy of Isaiah.\nThe people who walked in darkness have seen a great light.', before_message: '', after_message: '' } }],
+})
+
 function resetFixture() {
   revision = 1; live = true; sessionId = 9001; index = 1; status = 'active'; expired = false; disconnected = false
   contentContext = 'display-review-v1'; extraPart = null; stateMode = 'normal'; reconciliationState = null; commandMode = 'accept'
@@ -88,7 +95,8 @@ function session(id) {
     current_part_id: p.id, current_liturgy_part_id: p.liturgy_part_id, current_liturgy_id: 99, current_part_position: p.position,
     num_of_parts: parts().length, liturgies: [{ id: 99, position: 1 }], page: p.page,
     options: { before_message: 'Welcome to worship.\nLet us pray together.', after_message: 'Go in peace.\nMay the Lord be with you.',
-      gospel: 'The Holy Gospel according to John.\nGlory to You, O Lord our God.', epistle: 'A reading from the letter of Saint Paul to the Romans.' } } }
+      gospel: 'The Holy Gospel according to John.\nGlory to You, O Lord our God.', epistle: 'A reading from the letter of Saint Paul to the Romans.',
+      prophetic: 'A reading from the prophecy of Isaiah.\nThe people who walked in darkness have seen a great light.' } } }
 }
 function json(res, value, code = 200) {
   res.writeHead(code, { 'Content-Type': 'application/json', 'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization, X-Polling-Client', 'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS, HEAD', 'Cache-Control': 'no-store' })
@@ -131,7 +139,7 @@ function applyReviewChange(change) {
   if (typeof change.live === 'boolean') live = change.live
   if ([9001, 9002].includes(change.sessionId)) sessionId = change.sessionId
   setIndex(change.index)
-  if (['active', 'paused', 'showing_gospel', 'showing_epistle', 'showing_welcome', 'showing_custom', 'showing_session_qr'].includes(change.status)) status = change.status
+  if (['active', 'paused', 'showing_gospel', 'showing_epistle', 'showing_prophetic', 'showing_welcome', 'showing_custom', 'showing_session_qr'].includes(change.status)) status = change.status
   if (typeof change.expired === 'boolean') expired = change.expired
   if (typeof change.disconnected === 'boolean') disconnected = change.disconnected
 }
@@ -147,6 +155,12 @@ const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin
   if (LOOPBACK_ORIGINS.has(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Access-Control-Allow-Credentials', 'true'); res.setHeader('Vary', 'Origin') }
   if (req.method === 'OPTIONS') return json(res, {})
+  if (await management.handle(req, res, url.pathname, url, {
+    json: (target, code, value) => json(target, value, code),
+    error: (target, code, message) => json(target, { error: message }, code),
+    authorized: request => request.headers.authorization === 'Bearer display-fixture-account', requestJson: body,
+  })) return
+  if (process.env.DISPLAY_FIXTURE_MANAGEMENT === '1' && url.pathname === '/s.json' && req.method === 'GET') return json(res, [session(9001)])
   if (url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return res.end(fs.readFileSync(path.join(__dirname, 'review.html'))) }
 
   if (url.pathname === '/qa/reset' && req.method === 'POST') {

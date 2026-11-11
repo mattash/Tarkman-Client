@@ -25,10 +25,12 @@ export interface SessionData {
     readings: {
       gospel: string
       epistle: string
+      prophetic?: string | null
     }
     options: {
       gospel: string
       epistle: string
+      prophetic?: string | null
       before_message: string
       after_message: string
     }

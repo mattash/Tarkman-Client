@@ -79,7 +79,7 @@ it('previews all readings, applies only explicit selections, and persists them t
   await fireEvent.press(screen.getByRole('button', { name: 'Create Session' }))
   await waitFor(() => expect(persisted?.date).toBe('2026-01-26'))
   expect(persisted?.liturgy_ids).toEqual([101, 202])
-  expect(persisted?.options).toEqual({ gospel: 'Luke 1.26-38; Matthew 2.1-12', epistle: 'Manual Epistle', before_message: '', after_message: '' })
+  expect(persisted?.options).toEqual({ gospel: 'Luke 1.26-38; Matthew 2.1-12', epistle: 'Manual Epistle', prophetic: '', before_message: '', after_message: '' })
 })
 
 it.each([
@@ -131,7 +131,7 @@ it('creates a session in the chosen order, returns to My Sessions, and offers Op
   await waitFor(() => expect(app.getPathname()).toBe('/services'))
   const post = request.mock.calls.find(([, init]) => init?.method === 'POST')!
   expect(JSON.parse(String(post[1]!.body))).toEqual({ client_request_id: '00000000-0000-4000-8000-00000000c0de',
-    session: { date: '2030-10-04', liturgy_ids: [202, 101], options: { gospel: 'Հովհ. 1:1-17', epistle: '', before_message: '', after_message: '' } } })
+    session: { date: '2030-10-04', liturgy_ids: [202, 101], options: { gospel: 'Հովհ. 1:1-17', epistle: '', prophetic: '', before_message: '', after_message: '' } } })
   const notice = await screen.findByTestId('mutation-notice')
   expect(within(notice).getByText('Session created')).toBeOnTheScreen()
   expect(await screen.findByText('Service 4008')).toBeOnTheScreen()

@@ -241,7 +241,7 @@ it('changes what the congregation sees from one sheet, closing it once the statu
   await render(<Control />, { wrapper })
   await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
   expect(screen.getByText('WHAT THE CONGREGATION SEES')).toBeOnTheScreen()
-  for (const label of ['Active', 'Gospel Reading', 'Epistle Reading', 'Welcome Message']) expect(screen.getByRole('button', { name: label })).toBeOnTheScreen()
+  for (const label of ['Active', 'Gospel Reading', 'Epistle Reading', 'Prophetic Reading', 'Welcome Message']) expect(screen.getByRole('button', { name: label })).toBeOnTheScreen()
   expect(screen.getByRole('button', { name: 'Active' }).props.accessibilityState).toMatchObject({ selected: true })
   await fireEvent.press(screen.getByRole('button', { name: 'Paused' }))
   expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toEqual({ status: 'paused' })
@@ -253,6 +253,15 @@ it('changes what the congregation sees from one sheet, closing it once the statu
   await fireEvent.press(screen.getByRole('button', { name: 'Show this' }))
   expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[1][1]?.body))).toEqual({ status: 'showing_custom', status_message: 'Coffee hour follows' })
   await waitFor(() => expect(screen.queryByLabelText('Message')).toBeNull())
+})
+
+it('sends the prophetic display status and closes the service sheet', async () => {
+  await render(<Control />, { wrapper })
+  await fireEvent.press(screen.getByRole('button', { name: 'Service' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Prophetic Reading' }))
+  expect(sent()).toEqual(['PATCH /s/9/update_status.json'])
+  expect(JSON.parse(String(mockAuthorizedFetch.mock.calls[0][1]?.body))).toEqual({ status: 'showing_prophetic' })
+  await waitFor(() => expect(screen.queryByTestId('service-sheet')).toBeNull())
 })
 
 it('keeps the sheet open and shows a refused status under the control that failed', async () => {

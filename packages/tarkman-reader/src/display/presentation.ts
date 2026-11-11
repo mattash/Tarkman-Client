@@ -8,7 +8,7 @@ import { projectionDuration } from './timing'
 // The session display's decisions, shared by apps/mobile's display and apps/tv. Each app renders
 // the result with its own views; neither may decide differently what a display shows.
 
-export type DisplayMessageKey = 'display.paused' | 'display.gospel' | 'display.epistle' | 'display.welcome'
+export type DisplayMessageKey = 'display.paused' | 'display.gospel' | 'display.epistle' | 'display.prophetic' | 'display.welcome'
   | 'display.announcement' | 'display.farewell' | 'display.stand' | 'display.sit' | 'display.kneel'
 /** Resolved at call time, so a host that changes language at runtime is honoured on the next render. */
 export type DisplayText = (key: DisplayMessageKey) => string
@@ -30,6 +30,7 @@ export function projectionMessage(session: LiveSession, parts: LivePart[], prefe
     case 'paused': return { kind: 'message', title: t('display.paused'), body: projectionText(session.message) }
     case 'showing_gospel': return { kind: 'message', title: t('display.gospel'), body: projectionText(messages?.gospel) }
     case 'showing_epistle': return { kind: 'message', title: t('display.epistle'), body: projectionText(messages?.epistle) }
+    case 'showing_prophetic': return { kind: 'message', title: t('display.prophetic'), body: projectionText(messages?.prophetic) }
     case 'showing_welcome': return { kind: 'message', title: t('display.welcome'), body: projectionText(messages?.before) }
     case 'showing_session_qr': return { kind: 'session_qr', sessionId: session.id, url: sessionReaderUrl(session.id) }
     case 'showing_custom': return { kind: 'message', title: t('display.announcement'), body: projectionText(session.message) }

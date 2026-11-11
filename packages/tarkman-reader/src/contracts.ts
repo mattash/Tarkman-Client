@@ -3,7 +3,7 @@ import type { ReaderText } from './adapters'
 
 // Narrow public read models: the core's full Session/Explanation require fields
 // Rails does not always return. No authentication or mutation model belongs here.
-export interface DisplayMessages { gospel: string | null; epistle: string | null; before: string | null; after: string | null }
+export interface DisplayMessages { gospel: string | null; epistle: string | null; prophetic?: string | null; before: string | null; after: string | null }
 export interface LiveSession {
   page?: number | null; totalParts?: number | null; displayMessages?: DisplayMessages
   id: number; title: string; church: string; currentPartId: number | null
@@ -81,13 +81,16 @@ export function createContracts(t: ReaderText) {
   function normalizeSession(value: unknown): LiveSession {
     const s = record(record(value).session)
     const options = s.options && typeof s.options === 'object' && !Array.isArray(s.options) ? s.options as Record<string, unknown> : {}
+    const readings = s.readings && typeof s.readings === 'object' && !Array.isArray(s.readings) ? s.readings as Record<string, unknown> : {}
+    // Canonical snapshots also publish readings; an explicitly cleared option must stay cleared.
+    const prophetic = options.prophetic === undefined ? readings.prophetic : options.prophetic
     return { id: requiredId(s.id), title: text(s.liturgy) || t('fallbacks.service'), church: text(s.church_name) || t('fallbacks.churchService'),
       revision: typeof s.revision === 'number' && Number.isSafeInteger(s.revision) && s.revision >= 0 ? s.revision : null,
       currentLiturgyPartId: positiveId(s.current_liturgy_part_id),
       currentPartId: positiveId(s.current_part_id), currentLiturgyId: positiveId(s.current_liturgy_id),
       currentPosition: s.current_part_position === 0 ? 0 : positiveId(s.current_part_position), status: text(s.status) || 'active', message: text(s.status_message),
       page: positiveId(s.page), posture: text(s.posture)?.trim() || null, totalParts: positiveId(s.num_of_parts),
-      displayMessages: { gospel: text(options.gospel), epistle: text(options.epistle), before: text(options.before_message), after: text(options.after_message) },
+      displayMessages: { gospel: text(options.gospel), epistle: text(options.epistle), prophetic: text(prophetic), before: text(options.before_message), after: text(options.after_message) },
       date: text(s.date), currentRole: text(s.current_part_role)?.trim() || null,
       latitude: coordinate(s.church_latitude, 90), longitude: coordinate(s.church_longitude, 180), partsContext: partsContext(s) }
   }

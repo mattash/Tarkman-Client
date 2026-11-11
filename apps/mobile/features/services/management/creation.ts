@@ -157,7 +157,7 @@ export function createCreationController(fetcher: AuthContextValue['authorizedFe
     /** Apply only to the exact editable draft that was previewed; never create or send a control command. */
     applyReadings(expected: SessionDraft, patch: ReadingPatch): boolean {
       if (locked() || !sameDraft(snapshot.draft, expected)) return false
-      const keys = (['gospel', 'epistle'] as const).filter(key => typeof patch[key] === 'string' && patch[key]!.length > 0)
+      const keys = (['gospel', 'epistle', 'prophetic'] as const).filter(key => typeof patch[key] === 'string' && patch[key]!.length > 0)
       if (!keys.length) return false
       // Applying a date's readings deliberately pins that date across later midnight bootstrap refreshes.
       edit(draft => ({ ...draft, options: { ...draft.options, ...Object.fromEntries(keys.map(key => [key, patch[key]])) } }), ['date', ...keys])

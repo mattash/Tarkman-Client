@@ -23,6 +23,7 @@ import { FormShell } from './FormShell'
 import { announceMutation, managementScope } from './mutations'
 import { leaveToMySessions } from './NewSession'
 import { SessionForm } from './SessionForm'
+import { LectionaryPicker } from './LectionaryPicker'
 
 /** Validates the route ID, then keys the editor by environment, account, and session. */
 export function EditSessionRoute({ id }: { id: string | undefined }) {
@@ -92,7 +93,8 @@ function EditSession({ scope, userId, sessionId }: { scope: string; userId: numb
     {baseline && !state.final && <>
       {movesToday && <Notice tone="neutral">{t('sessionManagement.dateMovesToday')}</Notice>}
       <SessionForm draft={state.draft} timeZone={null} editable={editable} fields={state.fields} focusRequest={state.focusRequest}
-        catalog={catalog} onDate={controller.setDate} onOption={controller.setOption} onChange={controller.update} />
+        catalog={catalog} onDate={controller.setDate} onOption={controller.setOption} onChange={controller.update}
+        readingAssistant={<LectionaryPicker draft={state.draft} editable={editable} onApply={controller.applyReadings} />} />
       <Card>
         <AppText variant="heading">{t('sessionManagement.deleteTitle')}</AppText>
         <AppText tone="muted">{t('sessionManagement.deleteHelp')}</AppText>

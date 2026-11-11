@@ -27,6 +27,13 @@ export function inboundDuration(duration: string) {
 inboundDuration('fixed')
 inboundDuration('future_duration')
 
+const propheticCommand: StatusUpdateRequest = { status: 'showing_prophetic' }
+const oldReadings: SessionData['readings'] = { gospel: '', epistle: '' }
+const propheticReadings: SessionData['readings'] = { ...oldReadings, prophetic: 'Isaiah 6:1' }
+const oldOptions: SessionData['options'] = { gospel: '', epistle: '', before_message: '', after_message: '' }
+const propheticOptions: SessionData['options'] = { ...oldOptions, prophetic: null }
+void [propheticCommand, propheticReadings, propheticOptions]
+
 const command: StatusUpdateRequest = { status: 'active' }
 // @ts-expect-error Observed inbound live is not an established command value.
 const liveCommand: StatusUpdateRequest = { status: 'live' }

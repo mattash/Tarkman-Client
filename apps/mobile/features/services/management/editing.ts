@@ -1,5 +1,6 @@
 import { isUnauthorized, type AuthContextValue } from '../../auth/AuthProvider'
 import { t } from '../../i18n'
+import type { ReadingPatch } from '../../lectionary'
 import { fetchEditSnapshot, updateSession } from './api'
 import {
   isManagementError, normalizeManagedSession, OPTION_KEYS, setupDiff, setupOf, type ManagedSession, type ManagementErrorKind, type OptionKey, type SessionPatch,
@@ -119,12 +120,12 @@ export function createEditController(fetcher: AuthContextValue['authorizedFetch'
     }
   }
 
-  function edit(update: (draft: SessionDraft) => SessionDraft, field?: FormField) {
+  function edit(update: (draft: SessionDraft) => SessionDraft, field?: FormField | FormField[]) {
     if (locked()) return
     const draft = update(snapshot.draft)
     if (draft === snapshot.draft) return
     const fields = { ...snapshot.fields }
-    if (field) delete fields[field]
+    if (field) for (const key of Array.isArray(field) ? field : [field]) delete fields[key]
     if (draft.liturgies !== snapshot.draft.liturgies) delete fields.liturgy_ids
     const settled = snapshot.errorKind === 'validation' && Object.keys(fields).length === 0
     set({ draft, fields, committed: null, ...(settled ? { error: null, errorKind: null, otherErrors: [] } : {}) })
@@ -199,6 +200,14 @@ export function createEditController(fetcher: AuthContextValue['authorizedFetch'
     load,
     setDate: (date: string) => edit(draft => ({ ...draft, date }), 'date'),
     setOption: (key: OptionKey, value: string) => edit(draft => ({ ...draft, options: { ...draft.options, [key]: value } }), key),
+    /** Preview application edits the draft atomically; only a later explicit Save persists it. */
+    applyReadings(expected: SessionDraft, patch: ReadingPatch): boolean {
+      if (disposed || snapshot.final || locked() || !sameDraft(snapshot.draft, expected)) return false
+      const keys = (['gospel', 'epistle', 'prophetic'] as const).filter(key => typeof patch[key] === 'string' && patch[key]!.length > 0)
+      if (!keys.length) return false
+      edit(draft => ({ ...draft, options: { ...draft.options, ...Object.fromEntries(keys.map(key => [key, patch[key]])) } }), keys)
+      return true
+    },
     update: (change: (draft: SessionDraft) => SessionDraft) => edit(change),
     /** Explicit Save changes: only deliberate changes, against the saved revision. Never on blur, reorder or navigation. */
     save() {
