@@ -99,8 +99,29 @@ Choose downloads button remains. No configured recommendations means no invitati
 There is no production starter mapping: editorial verification remains outstanding.
 
 Metadata refresh coalesces work, observes explicit continuation, and uses a five-minute
-successful-check cooldown except explicit Refresh/Load more. Offline/partial checks
-never assert freshness. Saved IDs absent from metadata still sync directly by ID.
+successful-check cooldown except explicit Refresh/Load more. A terminal ordinary first
+page also supplies recommendations (non-null ranks, sorted), so a complete catalog
+needs only one GET. Continuing catalogs, including empty continuation pages, retain
+separate recommendation pagination; ordinary pages remain user-driven. Offline/partial
+checks never replace good metadata or assert freshness. Saved IDs absent from metadata
+still sync directly by ID; matching catalog revisions never skip explicit Sync/Update
+verification or advance saved-copy verification dates.
+
+HTTP 429 is recognized before reading its body. Catalog and bundle operations share
+one controller/environment not-before gate: full Retry-After seconds or HTTP-date,
+otherwise 60 seconds, plus 1–1000ms positive jitter. Browser CORS can hide the header,
+which uses that same fallback. Long delays are not shortened. Manual actions cannot
+bypass the gate. Each requested operation has at most one automatic retry across all
+of its pages/corrective requests; another 429 stops automatic recovery until explicit
+Refresh/Load more or a new Read/Download/Update/Sync action, still respecting the gate.
+Background, removal and disposal abort retry timers and never recreate abandoned work.
+Already-running partner requests may complete. Rate limiting preserves saved copies
+and their freshness; this is local coordination, not a church-network-wide scheduler.
+`cancelRefresh()` releases only abandoned catalog work. Online `request(id, false,
+signal)` calls hold read leases: releasing the last reader aborts online-only work,
+but another reader or explicit durable claimant keeps its shared job alive. Saved
+transfers and their normal durable follow-up remain explicit; global cancellation
+still invalidates both. Focus cleanup uses these narrow cancellation paths.
 At most two bundle requests run; duplicate requests share their completion. A Download arriving during Read online
 waits for that online job, then queues a normal durable request; duplicate durable
 waiters coalesce. This may require a second transfer, but Download cannot finish

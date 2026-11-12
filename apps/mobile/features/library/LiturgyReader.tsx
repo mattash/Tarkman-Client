@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useWindowDimensions, View } from 'react-native'
-import { router, useCanGoBack, useLocalSearchParams } from 'expo-router'
+import { router, useCanGoBack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
 import { AppModal } from '../../components/AppModal'
@@ -49,7 +49,7 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   const stored = state.items.find(i => i.id === id)
   const [snapshot, setSnapshot] = useState<{ bundle: Bundle; savedAt: number | null } | null>(() => stored?.bundle && sameEnvironment ? { bundle: stored.bundle, savedAt: stored.savedAt } : null)
   const [failed, setFailed] = useState(false), [detail, setDetail] = useState<Occurrence | null>(null)
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true
     if (snapshot || !state.ready || !sameEnvironment || !validId || !controller.enabled || controller.getSnapshot().revoked.includes(id)) return
     const saved = controller.getSnapshot().items.find(i => i.id === id)
@@ -57,11 +57,14 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
       void Promise.resolve().then(() => { if (active) setSnapshot({ bundle: saved.bundle!, savedAt: saved.savedAt }) })
       return () => { active = false }
     }
-    void controller.request(id, false).then(bundle => {
+    const request = new AbortController()
+    void controller.request(id, false, request.signal).then(bundle => {
       if (active) { if (bundle) setSnapshot({ bundle, savedAt: null }); else setFailed(true) }
     }, () => { if (active) setFailed(true) })
-    return () => { active = false }
-  }, [controller, id, sameEnvironment, state.ready, attempt, validId, snapshot])
+    return () => { active = false; request.abort() }
+    // The explicit retry counter intentionally restarts this focus-scoped request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controller, id, sameEnvironment, state.ready, attempt, validId, snapshot]))
   const revoked = state.revoked.includes(id)
   if (revoked && snapshot) setSnapshot(null)
   const parts = useMemo<LivePart[]>(() => snapshot?.bundle.parts.map(p => ({
@@ -104,7 +107,8 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
     <AppText accessibilityRole={alert ? 'alert' : undefined}>{text}</AppText>
   </View>
   if (revoked || !sameEnvironment) return <View>{toolbar}{message(t('library.errors.unavailable'), true)}</View>
-  if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : !controller.enabled ? 'library.errors.unsupported' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), failed || !validId)}
+  const paused = state.error === 'rate-limited' && ['downloading', 'updating'].includes(state.status[id])
+  if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : !controller.enabled ? 'library.errors.unsupported' : paused ? 'library.errors.rate-limited' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), paused || failed || !validId)}
     {failed && validId && controller.enabled && <View style={{ paddingHorizontal: spacing.page }}><AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton></View>}
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">

@@ -48,6 +48,28 @@ it('opening Library and starters transfers nothing; deselect/Skip persists and q
   expect(screen.queryByText('Recommended to start')).toBeNull()
   expect(screen.getByText('Choose services to save')).toBeTruthy(); expect(api.bundle).not.toHaveBeenCalled()
 })
+it('Library shows pause feedback and releases only metadata work when the screen is abandoned', async () => {
+  const { wrapper, api, controller } = setup()
+  api.catalog.mockRejectedValue(new LibraryError('rate-limited', 60000))
+  const cancel = jest.spyOn(controller, 'cancelRefresh')
+  const view = await render(<LibraryScreen />, { wrapper })
+  await waitFor(() => expect(screen.getByText('Requests are paused. Please try again later. Your saved copies are still available.')).toBeTruthy())
+  await view.rerender(<></>)
+  expect(cancel).toHaveBeenCalled(); expect(controller.getSnapshot().loading).toBe(false)
+  expect(api.catalog).toHaveBeenCalledTimes(1)
+})
+it('the online reader shows paused feedback and releases its read lease on abandonment', async () => {
+  const { wrapper, api, controller } = setup(false)
+  api.bundle.mockRejectedValue(new LibraryError('rate-limited', 60000))
+  const request = jest.spyOn(controller, 'request')
+  const view = await render(<LiturgyReader />, { wrapper })
+  await waitFor(() => expect(screen.getByText('Requests are paused. Please try again later. Your saved copies are still available.')).toBeTruthy())
+  const signal = request.mock.calls[0][2]
+  expect(signal?.aborted).toBe(false)
+  await view.rerender(<></>)
+  expect(signal?.aborted).toBe(true)
+  expect(api.bundle).toHaveBeenCalledTimes(1)
+})
 it('explicit starter confirmation downloads only selected IDs', async () => {
   const { wrapper, api, controller } = setup(); await render(<LibraryScreen />, { wrapper })
   await waitFor(() => expect(screen.getByText('Choose services to save')).toBeTruthy())
