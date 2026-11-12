@@ -322,6 +322,7 @@ export const en = {
     credits: 'Tarkman is developed by Fr. Mesrop Ash and St. John Armenian Church as a worship aid. Any parish or group is welcome to adopt it for liturgical worship or prayer guidance.',
     privacyTitle: 'Privacy policy',
     privacySubtitle: 'How Tarkman handles your data',
+    privacyLinkFailed: 'Could not open the privacy policy. Copy this address and paste it into your browser, or tap Privacy policy to try again.',
   },
   display: {
     previewLabel: 'Sample preview · timed readings run for 30 seconds',

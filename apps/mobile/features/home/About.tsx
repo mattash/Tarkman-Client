@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Linking, ScrollView, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
@@ -17,6 +18,15 @@ export function About() {
   const { state, signOut } = useAuth()
   const { fontScale } = useWindowDimensions()
   const { t } = useI18n()
+  const [privacyLinkFailed, setPrivacyLinkFailed] = useState(false)
+  async function openPrivacyPolicy() {
+    try {
+      await Linking.openURL(privacyPolicyUrl)
+      setPrivacyLinkFailed(false)
+    } catch {
+      setPrivacyLinkFailed(true)
+    }
+  }
   const page = fontScale > 2 ? spacing.md : spacing.page
   return <ScrollView testID="about" contentContainerStyle={{ paddingTop: 6, paddingHorizontal: page, paddingBottom: spacing.xl }}>
     <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: spacing.lg }}>
@@ -26,7 +36,11 @@ export function About() {
         <AppText tone="muted">{t('about.credits')}</AppText>
       </Card>
       <ServiceRow testID="about-privacy-policy" title={t('about.privacyTitle')} subtitle={t('about.privacySubtitle')}
-        onPress={() => { void Linking.openURL('https://www.tarkman.app/privacy') }} />
+        onPress={() => { void openPrivacyPolicy() }} />
+      {privacyLinkFailed && <Card>
+        <AppText accessibilityRole="alert">{t('about.privacyLinkFailed')}</AppText>
+        <AppText selectable>{privacyPolicyUrl}</AppText>
+      </Card>}
       {state.status !== 'hydrating' && <View style={{ gap: spacing.md }}>
         <AppText variant="label" tone="muted" accessibilityRole="header">{t('settings.account')}</AppText>
         {state.status === 'signedIn' ? <>
@@ -39,3 +53,5 @@ export function About() {
     </View>
   </ScrollView>
 }
+
+const privacyPolicyUrl = 'https://www.tarkman.app/privacy'
