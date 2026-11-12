@@ -13,7 +13,7 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
   text: string | null; language?: Language; fontSize: number; centered?: boolean; clock: ProjectionClock; durationMs: number
   movement?: TextMovement; manualPosition?: ManualPosition; pageGroup?: PageGroup; continuousGroup?: ContinuousGroup; preview?: boolean
 }) {
-  const scroll = useRef<ScrollView>(null)
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null)
   const id = useId()
   const localPosition = useRef(0), expectedY = useRef<number | null>(null)
   const [viewport, setViewport] = useState(0)

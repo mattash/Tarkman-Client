@@ -1,10 +1,27 @@
 # Tarkman mobile
 
-Managed Expo SDK 57, React Native and Expo Router. The home route is a public, read-only live-session reader behind three tabs (Today, Services, Settings). The development-only `/gallery` route
+Managed Expo SDK 58, React Native and Expo Router. The home route is a public, read-only live-session reader behind three tabs (Today, Services, Settings). The development-only `/gallery` route
 retains the Expo 05 static liturgy examples (`en`, `ru`, `grabar`, `translit`) and
 works without network configuration. This app's Expo web export is the
 production website at `web.tarkman.app` (cutover #177); the Vite app in `../web`
 is deprecated.
+
+## SDK 58 upgrade
+
+Mobile and TV move together to Expo 58 / React 19.3 / React Native 0.88.1
+(TV uses `react-native-tvos@0.88.1-0`). Rebuild native clients before publishing
+updates: app versions are bumped because the `appVersion` runtime policy must
+not deliver these bundles to SDK 57 binaries. Both EAS projects retain their
+separate channels and the 16.4 deployment target.
+
+The exact EAS image is `macos-tahoe-26.6-xcode-27.1` (the published SDK 58 image;
+Expo lists this Xcode image as RC). Upstream Expo now owns `SceneDelegate` and
+the scene manifest; `tools/check-apple-lifecycle.mjs` validates generated projects.
+Sentry is deliberately newer than Expo's recommendation: 8.33 adds Router 58
+integration and 8.35 fixes RN 0.88 touch breadcrumbs. Its install-check exclusion
+must not be interpreted as native runtime validation. NativeWind stays on 4 /
+Tailwind 3; custom tabs use Router 58's emitter and route-key navigation API.
+Jest 30 and `test-renderer` 1.3 are required by `jest-expo` 58.
 
 ## v1 platform scope
 
@@ -19,7 +36,7 @@ gesture) is tracked in #191 rather than claimed here.
 
 ### Runtime compatibility
 
-Native iOS builds target iOS 16.4+ with Expo SDK 57's Hermes runtime (see
+Native iOS builds target iOS 16.4+ with Expo SDK 58's Hermes runtime (see
 [the deployment-target evidence](docs/liquid-glass.md)). The web export uses the
 browser's JavaScript engine, not Hermes; a minimum browser-version matrix has
 not yet been established. Translation lookup/interpolation, interface-language
@@ -505,11 +522,11 @@ belongs in EAS secrets, never in `app.json`, `eas.json` or source control.
 ### EAS iOS build image
 
 iOS builds (mobile `development`, `preview` and `production`, and the TV profiles) are pinned to one exact
-EAS image, `macos-tahoe-26.5-xcode-26.6` (Xcode 26.6, the iOS 26.5 SDK), in `eas.json`, never an alias such as
-`auto`, `latest` or `sdk-57`. Expo SDK 57 does not adopt the UIScene lifecycle, so an app built with Xcode 27
-(the iOS 27 SDK) crashes at launch on iOS 27. `npm run check:store-config` (and the TV identity check) fail if
-the image is an alias, is Xcode 27 or later, or differs between profiles or apps. Move the image only together
-with the Expo SDK 58 upgrade, and change every profile in both apps at once. The image used by a build is
+EAS image, `macos-tahoe-26.6-xcode-27.1` (Xcode 27.1), in `eas.json`, never an alias such as
+`auto`, `latest` or `sdk-58`. Expo SDK 58's generated `ExpoAppSceneDelegate` and scene manifest adopt the
+UIKit scene lifecycle required by iOS 27. `npm run check:store-config` and the TV identity check enforce the
+reviewed image; CI checks both generated scene lifecycles and the unchanged 16.4 deployment target with
+`node tools/check-apple-lifecycle.mjs <app>`. Change every profile in both apps together. The image used by a build is
 printed in the first lines of its build log ("Using VM template ...").
 
 ### EAS Update release workflow (iOS)

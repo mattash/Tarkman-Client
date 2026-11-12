@@ -1,8 +1,18 @@
-/** @jest-environment jsdom */
-import { expect, it, jest } from '@jest/globals'
+import { afterAll, beforeAll, expect, it, jest } from '@jest/globals'
 import { act } from 'react'
 import { PostureIcon } from '../features/displayLinks/PostureIcon.web'
 import { I18nProvider } from '../features/i18n'
+
+// RN 0.88's Jest setup defines `window`; create the DOM afterwards rather than
+// letting that setup redefine jsdom's non-configurable window accessor.
+const { JSDOM } = jest.requireActual('jsdom') as { JSDOM: new (html: string) => { window: Window & typeof globalThis } }
+const dom = new JSDOM('<!doctype html><html><body></body></html>')
+beforeAll(() => {
+  for (const [key, value] of Object.entries({ window: dom.window, document: dom.window.document, navigator: dom.window.navigator })) {
+    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value })
+  }
+})
+afterAll(() => dom.window.close())
 
 // Import the actual web SVG, mounting DOM nodes rather than the native PostureIcon.
 // React DOM ships without types in this app; keep this test's adapter surface bounded.

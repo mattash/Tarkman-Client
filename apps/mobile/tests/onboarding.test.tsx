@@ -75,7 +75,7 @@ it('dismisses the Today card persistently while keeping help accessible', async 
   expect(screen.queryByText('Learn the basics')).toBeNull()
 })
 function ReaderProbe({ healthy = true, sheetOpen = false, following = true }: { healthy?: boolean; sheetOpen?: boolean; following?: boolean }) {
-  const root = useRef<View>(null)
+  const root = useRef<React.ComponentRef<typeof View>>(null)
   const e = useReaderEducation({ id: 1, healthy, ready: true, available: false, sheetOpen, following, root,
     targets: { follow: root, language: root, explanation: root, preferences: root }, layoutVersion: '1', open: jest.fn() })
   return <View ref={root}>{e.invitationView}{e.overlay}{e.hintView}<Probe />
@@ -168,8 +168,8 @@ it('shows the anchored spotlight and keeps the tour actions accessible', async (
   const next = jest.fn(), back = jest.fn(), end = jest.fn(), tryAction = jest.fn()
   const frame = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(callback => { callback(0); return 1 })
   const screenReader = jest.spyOn(AccessibilityInfo, 'isScreenReaderEnabled').mockResolvedValue(false)
-  const container = { current: { measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => done(0, 0, 390, 800) } } as RefObject<View>
-  const target = { current: { measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => done(300, 20, 48, 48) } } as RefObject<View | null>
+  const container = { current: { measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => done(0, 0, 390, 800) } } as RefObject<React.ComponentRef<typeof View>>
+  const target = { current: { measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => done(300, 20, 48, 48) } } as RefObject<React.ComponentRef<typeof View> | null>
   await render(<ThemeProvider><CoachmarkOverlay step="language" target={target} container={container} layoutVersion="1" available
     next={next} back={back} end={end} tryAction={tryAction} /></ThemeProvider>)
   await waitFor(() => expect(screen.getByTestId('coachmark-scrim-top')).toBeTruthy())
@@ -193,7 +193,7 @@ const cueState = { ...initialState, loading: false, connected: true, stale: fals
   explanations: normalizeExplanations({ explanations: [{ explanation: { id: 1, title: 'Authored' } }] }),
   explanationProvenance: { ownerKey: explanationOwnerKey(7, cueParts[0].key), contextKey: null, requestId: 1, status: 'ready' as const } }
 function CueEducationProbe({ open }: { open: (step: string) => void }) {
-  const root = useRef<View>(null), cue = useExplanationCue('reader', cueState, true, null)
+  const root = useRef<React.ComponentRef<typeof View>>(null), cue = useExplanationCue('reader', cueState, true, null)
   const e = useReaderEducation({ id: 7, healthy: true, ready: true, available: cue.available, sheetOpen: false, following: true, root,
     targets: { follow: root, language: root, explanation: root, preferences: root }, layoutVersion: '1', open })
   return <View ref={root}>{e.overlay}<AppText testID="product-new">{String(cue.newCount)}</AppText>

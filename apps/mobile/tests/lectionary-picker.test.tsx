@@ -9,7 +9,7 @@ import { deferred } from './auth-helpers'
 
 const initial: SessionDraft = { date: '2026-06-01', liturgies: [], options: { ...EMPTY_OPTIONS, gospel: 'Manual Gospel' } }
 afterEach(() => { jest.restoreAllMocks() })
-function picker(draft: SessionDraft, onApply = jest.fn(() => true)) {
+function picker(draft: SessionDraft, onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)) {
   return <ThemeProvider scheme="light"><LectionaryPicker draft={draft} editable onApply={onApply} /></ThemeProvider>
 }
 
@@ -17,7 +17,7 @@ it('never applies a late lookup over a changed draft and requires a fresh previe
   const result = await lectionary.getLectionaryDay(initial.date, 'en')
   const pending = deferred<DayResult>()
   jest.spyOn(lectionary, 'getLectionaryDay').mockReturnValueOnce(pending.promise)
-  const onApply = jest.fn(() => true)
+  const onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)
   const view = await render(picker(initial, onApply))
   await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
   await view.rerender(picker({ ...initial, options: { ...initial.options, gospel: 'New manual edit' } }, onApply))
@@ -49,7 +49,7 @@ it('ignores an older response after dismissing and opening a different date', as
 
 it('selects Classical Armenian content explicitly and preserves canonical display order', async () => {
   const lookup = jest.spyOn(lectionary, 'getLectionaryDay')
-  const onApply = jest.fn(() => true)
+  const onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)
   await render(picker(initial, onApply))
   await fireEvent.press(screen.getByRole('radio', { name: 'Reading language, Classical Armenian' }))
   await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
@@ -60,7 +60,7 @@ it('selects Classical Armenian content explicitly and preserves canonical displa
 })
 
 it.each(['2030-10-04', '2026-02-29'])('keeps manual entry available when lookup is unavailable for %s', async date => {
-  const onApply = jest.fn(() => true)
+  const onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)
   await render(picker({ ...initial, date }, onApply))
   await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
   expect(await screen.findByText(/manually/)).toBeOnTheScreen()

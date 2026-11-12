@@ -15,6 +15,8 @@ jest.mock('@shopify/flash-list/dist/recyclerview/utils/measureLayout', () => ({
 // reading list needs is useAnimatedReaction observing shared values, so here a shared value
 // write notifies registered reactions synchronously, as the worklet runtime does per frame.
 jest.mock('react-native-worklets', () => jest.requireActual('react-native-worklets/src/mock'))
+// Reanimated 4.7's real index initializes a native CSS event handler, even from its Jest mock.
+jest.mock('react-native-reanimated/src/initializers', () => ({ initializeReanimatedModule: jest.fn() }))
 jest.mock('react-native-reanimated', () => {
   // The mock exposes the reanimated surface we don't override; we only need it as a bag of unknown values
   // to spread, since the real module's exports don't fully match the mock's shape for typecheck purposes.

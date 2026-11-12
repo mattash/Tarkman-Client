@@ -14,7 +14,7 @@
         "buildType": "apk"
       },
       "ios": {
-        "image": "macos-tahoe-26.5-xcode-26.6"
+        "image": "macos-tahoe-26.6-xcode-27.1"
       }
     },
     "preview": {
@@ -28,7 +28,7 @@
         "buildType": "apk"
       },
       "ios": {
-        "image": "macos-tahoe-26.5-xcode-26.6"
+        "image": "macos-tahoe-26.6-xcode-27.1"
       }
     },
     "production": {
@@ -43,7 +43,7 @@
         "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production"
       },
       "ios": {
-        "image": "macos-tahoe-26.5-xcode-26.6"
+        "image": "macos-tahoe-26.6-xcode-27.1"
       }
     },
     "development-simulator": {

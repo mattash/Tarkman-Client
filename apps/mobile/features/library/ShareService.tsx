@@ -9,7 +9,7 @@ import { useShareService } from './useShareService'
 export function ShareNotice({ notice }: { notice: string }) {
   return notice ? <AppText accessibilityLiveRegion="polite">{notice}</AppText> : null
 }
-export function ShareManualModal({ manual, dismiss, openerRef }: { manual: string | null; dismiss: () => void; openerRef: RefObject<View | null> }) {
+export function ShareManualModal({ manual, dismiss, openerRef }: { manual: string | null; dismiss: () => void; openerRef: RefObject<React.ComponentRef<typeof View> | null> }) {
   const { t } = useI18n()
   return <AppModal visible={manual !== null} onDismiss={dismiss} openerRef={openerRef} title={t('library.shareManualTitle')}>
     <AppText>{t('library.shareManualHelp')}</AppText><AppText selectable>{manual}</AppText>

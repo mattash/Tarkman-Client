@@ -7,7 +7,7 @@ import { useReadingFont } from '../design/readingFont'
 import { AppText } from './AppText'
 
 export interface AppButtonProps extends Omit<PressableProps, 'children' | 'style'> {
-  ref?: Ref<View>
+  ref?: Ref<React.ComponentRef<typeof View>>
   children: string
   variant?: 'primary' | 'secondary' | 'secondaryDestructive' | 'quiet' | 'destructive' | 'row' | 'text'
   icon?: IconName

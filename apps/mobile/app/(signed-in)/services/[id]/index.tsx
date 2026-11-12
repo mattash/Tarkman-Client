@@ -37,7 +37,7 @@ export default function ServiceControlScreen() {
   const { t } = useI18n()
   const { preferences } = usePreferences()
   const { width, fontScale } = useWindowDimensions()
-  const reading = useRef<ScrollView>(null)
+  const reading = useRef<React.ComponentRef<typeof ScrollView>>(null)
   const wide = width >= TWO_PANE_WIDTH
 
   // The operator is the position: a new part replaces the text from its top, however far they had scrolled.

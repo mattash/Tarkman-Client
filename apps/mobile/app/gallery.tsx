@@ -21,9 +21,9 @@ export default function GalleryScreen() {
 
 function HomeScreen() {
   const { colors } = useTheme()
-  const readingOpener = useRef<View>(null)
-  const licenseOpener = useRef<View>(null)
-  const activeOpener = useRef<View>(null)
+  const readingOpener = useRef<React.ComponentRef<typeof View>>(null)
+  const licenseOpener = useRef<React.ComponentRef<typeof View>>(null)
+  const activeOpener = useRef<React.ComponentRef<typeof View>>(null)
   const [modal, setModal] = useState<'reading' | 'license' | null>(null)
   const [note, setNote] = useState('')
   const [message, setMessage] = useState('Try an action below.')

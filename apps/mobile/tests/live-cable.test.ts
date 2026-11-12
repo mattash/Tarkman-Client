@@ -4,7 +4,7 @@ let sockets: Socket[]
 beforeEach(() => { jest.useFakeTimers(); sockets = [] })
 afterEach(() => { jest.useRealTimers() })
 function setup() {
-  const factory = jest.fn(() => {
+  const factory = jest.fn<(url: string, protocols: string[]) => Socket>(() => {
     const socket: Socket = { readyState: 1, protocol: 'actioncable-v1-json', send: jest.fn(), close: jest.fn(), onopen: null, onclose: null, onerror: null, onmessage: null }
     sockets.push(socket); return socket
   })

@@ -77,7 +77,7 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
 
   return <View testID="reading-frame" style={{ flex: 1 }} onLayout={event => setFrameWidth(event.nativeEvent.layout.width)}
     {...(Platform.OS === 'web' ? { onWheel: stopFollowing, onTouchMove: stopFollowing,
-      onKeyDown: (event: { key: string }) => { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) stopFollowing() } } : {})}>
+      onKeyDown: (event: object) => { if ('key' in event && ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(String(event.key))) stopFollowing() } } : {})}>
     <FlashList testID="reading-list" ref={list} data={parts} keyExtractor={p => p.key}
       // Opening straight onto the live part avoids drawing and scrolling past everything before it.
       initialScrollIndex={following && index > 0 ? index : undefined} onLoad={() => target()}

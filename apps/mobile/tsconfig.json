@@ -3,7 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "types": [
-      "react"
+      "react",
+      "node",
+      "jest"
     ],
     "paths": {
       "@tarkman/core": [

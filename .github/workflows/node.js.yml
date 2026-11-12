@@ -34,7 +34,7 @@ jobs:
         working-directory: apps/mobile
     steps:
     - uses: actions/checkout@v7
-    # SDK 57 requires Node >=22.13; this matches the runtime the website deploys on.
+    # SDK 58 requires Node >=22.13; this matches the runtime the website deploys on.
     - uses: actions/setup-node@v7
       with:
         node-version: 24.x
@@ -79,6 +79,7 @@ jobs:
         grep -q 'NSPrivacyAccessedAPICategoryFileTimestamp' ios/Tarkman/PrivacyInfo.xcprivacy
         grep -q 'NSPrivacyAccessedAPICategorySystemBootTime' ios/Tarkman/PrivacyInfo.xcprivacy
         grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' ios/Tarkman/PrivacyInfo.xcprivacy
+        node ../../tools/check-apple-lifecycle.mjs .
 
   ios-changes:
     if: github.event_name == 'pull_request'
@@ -567,9 +568,8 @@ jobs:
         grep -q 'TARGETED_DEVICE_FAMILY = 3' ios/Tarkman.xcodeproj/project.pbxproj
         grep -q 'platform :tvos' ios/Podfile
         grep -q 'app.tarkman' ios/Tarkman.xcodeproj/project.pbxproj
-        # tvOS 27 SDK apps without a scene manifest trap at launch (plugins/withSceneLifecycle.js).
-        grep -q 'UIApplicationSceneManifest' ios/Tarkman/Info.plist
-        grep -q 'SceneDelegate.swift in Sources' ios/Tarkman.xcodeproj/project.pbxproj
+        # SDK 58 owns scene setup on both platforms; never reintroduce the SDK 57 workaround.
+        node ../../tools/check-apple-lifecycle.mjs .
 
   # Unsigned tvOS simulator compile, opt-in with [native-build] in the PR title (like ios-compile).
   # Signed device and App Store builds belong to the release workflow in apps/tv/README.md, not CI.

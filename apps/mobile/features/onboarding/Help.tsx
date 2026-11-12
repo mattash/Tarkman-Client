@@ -15,7 +15,7 @@ export function Help({ card = false, liveAvailable = false }: { card?: boolean; 
   const { t } = useI18n(), { colors } = useTheme()
   const onboarding = useOnboarding()
   const [visible, setVisible] = useState(false)
-  const opener = useRef<View>(null), launch = useRef<boolean | null>(null)
+  const opener = useRef<React.ComponentRef<typeof View>>(null), launch = useRef<boolean | null>(null)
   const expanded = card && onboarding.ready && onboarding.automatic && !onboarding.record.cardDismissed && onboarding.record.status !== 'completed'
   const start = (restart: boolean) => { launch.current = restart; setVisible(false) }
   return <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>

@@ -29,9 +29,9 @@ export interface SessionFormProps {
 /** The controlled setup form shared by New Session and Edit Session: date, ordered liturgies, readings and messages. */
 export function SessionForm({ draft, timeZone, editable, fields, focusRequest, catalog, readingAssistant, onDate, onOption, onChange }: SessionFormProps) {
   const { t } = useI18n()
-  const dateRef = useRef<TextInput>(null)
-  const liturgiesRef = useRef<View>(null)
-  const optionRefs = useRef<Partial<Record<OptionKey, TextInput | null>>>({})
+  const dateRef = useRef<React.ComponentRef<typeof TextInput>>(null)
+  const liturgiesRef = useRef<React.ComponentRef<typeof View>>(null)
+  const optionRefs = useRef<Partial<Record<OptionKey, React.ComponentRef<typeof TextInput> | null>>>({})
   const fieldsRef = useRef(fields)
   useEffect(() => { fieldsRef.current = fields }, [fields])
   useEffect(() => {
@@ -75,7 +75,7 @@ export function SessionForm({ draft, timeZone, editable, fields, focusRequest, c
   </View>
 }
 
-function focusView(target: View | null) {
+function focusView(target: React.ComponentRef<typeof View> | null) {
   if (!target) return
   if (Platform.OS === 'web') (target as unknown as HTMLElement).focus?.()
   else {

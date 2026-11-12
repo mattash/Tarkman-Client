@@ -6,7 +6,8 @@ const { guardReactNative } = require('../../tools/metro/single-react-native')
 // Sentry's Expo config adds debug IDs, so uploaded source maps match the bundle a release build ships.
 const config = getSentryExpoConfig(__dirname)
 // apps/tv bundles react-native-tvos from the same packages/*; each app must resolve only its own React Native.
-config.resolver.resolveRequest = guardReactNative(__dirname, 'react-native', (context, moduleName, platform) => context.resolveRequest(
+const sentryResolveRequest = config.resolver.resolveRequest
+config.resolver.resolveRequest = guardReactNative(__dirname, 'react-native', (context, moduleName, platform) => (sentryResolveRequest ?? context.resolveRequest)(
   context,
   coreSourceRequest(moduleName, path.dirname(context.originModulePath)),
   platform,

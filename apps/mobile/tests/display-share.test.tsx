@@ -15,7 +15,7 @@ afterEach(() => {
 })
 it('shares the persisted HTTPS capability with an iPad anchor, and treats cancellation quietly', async () => {
   Platform.OS = 'ios'
-  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.dismissedAction })
+  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.dismissedAction, activityType: undefined })
   await expect(platformShare.share(link.display_url, link.title, 'Read along', 42)).resolves.toBe('cancelled')
   expect(share).toHaveBeenCalledWith({ url: link.display_url, title: link.title, message: 'Read along' }, { subject: link.title, anchor: 42 })
   await expect(platformShare.share(link.display_url, link.title, '', undefined)).resolves.toBe('copy')

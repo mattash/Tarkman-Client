@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { expect, it, jest } from '@jest/globals'
 import { Slot } from 'expo-router'
 import { renderRouter, screen, waitFor } from 'expo-router/testing-library'
@@ -21,7 +22,7 @@ it.each<[string, boolean]>([
   const api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn(async () => parseBundle(fixture)) }
   const controller = createLibrary('test', api, memoryStore())
   await renderRouter({
-    _layout: () => <ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><Slot /></LibraryProvider></PreferencesProvider></ThemeProvider>,
+    _layout: () => <GestureHandlerRootView><ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><Slot /></LibraryProvider></PreferencesProvider></ThemeProvider></GestureHandlerRootView>,
     'liturgies/[id]/index': LiturgyReader,
   }, { initialUrl })
   if (allowed) {

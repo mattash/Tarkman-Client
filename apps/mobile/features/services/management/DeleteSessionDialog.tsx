@@ -21,7 +21,7 @@ export interface DeleteSessionDialogProps {
   fallbackTitle?: string
   /** Deleting from a dirty editor discards its unsaved changes; say so. */
   discardsChanges?: boolean
-  openerRef?: RefObject<View | null>
+  openerRef?: RefObject<React.ComponentRef<typeof View> | null>
   /** Called once the deletion is confirmed or the session is found already gone. */
   onFinished(outcome: 'deleted' | 'gone'): void
 }

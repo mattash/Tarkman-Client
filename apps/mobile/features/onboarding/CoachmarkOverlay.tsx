@@ -11,7 +11,7 @@ import { STEPS, type Step } from './state'
 
 type Rect = { x: number; y: number; width: number; height: number }
 export function CoachmarkOverlay({ step, target, container, layoutVersion, available, next, back, end, tryAction }: {
-  step: Step; target: RefObject<View | null>; container: RefObject<View | null>; layoutVersion: string
+  step: Step; target: RefObject<React.ComponentRef<typeof View> | null>; container: RefObject<React.ComponentRef<typeof View> | null>; layoutVersion: string
   available: boolean; next(): void; back(): void; end(): void; tryAction?(): void
 }) {
   const { t } = useI18n(), { colors } = useTheme()
@@ -21,7 +21,7 @@ export function CoachmarkOverlay({ step, target, container, layoutVersion, avail
   const [linear, setLinear] = useState(false)
   const [bounds, setBounds] = useState({ width, height })
   const [measured, setMeasured] = useState(false)
-  const heading = useRef<View>(null)
+  const heading = useRef<React.ComponentRef<typeof View>>(null)
   const [closing, setClosing] = useState(false), after = useRef<(() => void) | null>(null)
   useEffect(() => {
     // react-native-web reports true unconditionally; web offers the same linear guide explicitly.
@@ -96,7 +96,7 @@ export function CoachmarkOverlay({ step, target, container, layoutVersion, avail
     {rect && <View pointerEvents="none" style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.width, height: rect.height,
       borderWidth: 2, borderColor: colors.primary, borderRadius: radii.control }} />}
     <View testID="reader-coachmark" onAccessibilityEscape={finish}
-      {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string }) => { if (event.key === 'Escape') finish() } } : {})}
+      {...(Platform.OS === 'web' ? { onKeyDown: (event: object) => { if ('key' in event && event.key === 'Escape') finish() } } : {})}
       onLayout={event => setBoxHeight(event.nativeEvent.layout.height)}
       style={{ position: 'absolute', top: rect ? rect.y + rect.height + spacing.sm : 0, left: spacing.md, right: spacing.md,
         maxWidth: cardWidth, alignSelf: 'center', padding: spacing.md, gap: spacing.sm, borderRadius: radii.card, borderWidth: 1,

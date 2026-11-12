@@ -13,14 +13,13 @@ import { API, deferred, fakeApi, memoryStore, respond, storedAuth, user } from '
 const services = { sessions: [{ session: { id: 9, liturgy: 'Divine Liturgy', church_name: 'St. John', date: '2026-09-13', status: 'paused' } }] }
 
 async function renderApp(store: ReturnType<typeof memoryStore>['store'], request: typeof fetch, initialUrl: string) {
-  const app = renderRouter({
+  const app = await renderRouter({
     _layout: () => <ThemeProvider scheme="light"><AuthProvider apiBase={API} store={store} request={request}><Slot /></AuthProvider></ThemeProvider>,
     index: () => <Text>Live services home</Text>,
     'sign-in': SignInScreen,
     '(signed-in)/_layout': SignedInLayout,
     '(signed-in)/services': MyServicesScreen,
   }, { initialUrl })
-  await app
   return { getPathname: app.getPathname, getSearchParams: app.getSearchParams }
 }
 

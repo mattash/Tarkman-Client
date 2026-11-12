@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { it, expect, jest, beforeEach } from '@jest/globals'
 import { render, screen, waitFor } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
@@ -14,7 +15,7 @@ const mockPush = jest.fn()
 const mockBack = jest.fn(), mockReplace = jest.fn()
 const mockCanGoBack = true
 const mockParams: { id: string; environment?: string | string[]; origin?: string } = { id: '701', environment: 'test', origin: 'library' }
-jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockPush(...args), canGoBack: () => mockCanGoBack, back: () => mockBack(), replace: (path: string) => mockReplace(path) },
+jest.mock('expo-router', () => ({ useCanGoBack: () => mockCanGoBack, router: { push: (...args: unknown[]) => mockPush(...args), canGoBack: () => mockCanGoBack, back: () => mockBack(), replace: (path: string) => mockReplace(path) },
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
 }))
@@ -27,7 +28,7 @@ function setup(durable = true, preferenceStore = preferences) {
   const store = memoryStore(), api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn(async () => parseBundle(fixture)) }
   store.durable = durable
   const controller = createLibrary('test', api, store)
-  const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider scheme="light"><PreferencesProvider store={preferenceStore}><LibraryProvider controller={controller}>{children}</LibraryProvider></PreferencesProvider></ThemeProvider>
+  const wrapper = ({ children }: { children: React.ReactNode }) => <GestureHandlerRootView><ThemeProvider scheme="light"><PreferencesProvider store={preferenceStore}><LibraryProvider controller={controller}>{children}</LibraryProvider></PreferencesProvider></ThemeProvider></GestureHandlerRootView>
   return { store, api, controller, wrapper }
 }
 
@@ -72,7 +73,7 @@ it('serves a saved copy with no environment', async () => {
 })
 it('shows disabled availability immediately without retry or sharing', async () => {
   const controller = createLibrary('disabled', null, memoryStore())
-  await render(<ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LiturgyReader /></LibraryProvider></PreferencesProvider></ThemeProvider>)
+  await render(<GestureHandlerRootView><ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LiturgyReader /></LibraryProvider></PreferencesProvider></ThemeProvider></GestureHandlerRootView>)
   expect(screen.getByText("Prayer Library isn’t available yet.")).toBeTruthy()
   expect(screen.queryByText('Read now')).toBeNull()
   expect(screen.queryByText('Loading…')).toBeNull()
@@ -90,7 +91,7 @@ it('hides card sharing when the Library is disabled even with a saved bundle', a
   const store = memoryStore()
   await store.commit('disabled', parseBundle(fixture), Date.now(), () => true)
   const controller = createLibrary('disabled', null, store)
-  await render(<ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LibraryScreen /></LibraryProvider></PreferencesProvider></ThemeProvider>)
+  await render(<GestureHandlerRootView><ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LibraryScreen /></LibraryProvider></PreferencesProvider></ThemeProvider></GestureHandlerRootView>)
   await waitFor(() => expect(screen.getByText(fixture.liturgy.name)).toBeTruthy())
   expect(screen.queryByTestId('library-share-701')).toBeNull()
 })

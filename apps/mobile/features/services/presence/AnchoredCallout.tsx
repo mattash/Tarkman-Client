@@ -5,7 +5,7 @@ import { useTheme } from '../../../design/ThemeProvider'
 import { radii, spacing } from '../../../design/tokens'
 import { useI18n } from '../../i18n'
 
-function focus(target: View | null) {
+function focus(target: React.ComponentRef<typeof View> | null) {
   if (!target) return
   if (Platform.OS === 'web') (target as unknown as HTMLElement).focus()
   else {
@@ -25,8 +25,8 @@ export function AnchoredCallout({ label, title, children, trigger, testID }: {
   const { colors } = useTheme()
   const { t } = useI18n()
   const { width, height } = useWindowDimensions()
-  const triggerRef = useRef<View>(null)
-  const titleRef = useRef<View>(null)
+  const triggerRef = useRef<React.ComponentRef<typeof View>>(null)
+  const titleRef = useRef<React.ComponentRef<typeof View>>(null)
   const [open, setOpen] = useState(false)
   const [anchor, setAnchor] = useState({ x: 0, y: 0, width: 48, height: 48 })
   const measureAnchor = () => triggerRef.current?.measureInWindow((x, y, measuredWidth, measuredHeight) => {

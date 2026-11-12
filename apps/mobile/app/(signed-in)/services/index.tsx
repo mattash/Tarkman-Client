@@ -34,8 +34,8 @@ export default function MyServicesScreen() {
   useEffect(() => () => deletion.dispose(), [deletion])
   const [deleting, setDeleting] = useState<{ id: number; title: string } | null>(null)
   // Each row's Delete button, so focus returns to the one that opened the confirmation.
-  const deleteButtons = useRef(new Map<number, View | null>())
-  const deleteOpener = useRef<View | null>(null)
+  const deleteButtons = useRef(new Map<number, React.ComponentRef<typeof View> | null>())
+  const deleteOpener = useRef<React.ComponentRef<typeof View> | null>(null)
   const openControls = (service: { id: number; title: string; church?: string; date: string | null }) => {
     if (user) void recordRecentlyControlled({ sessionId: service.id, title: service.title, church: service.church ?? '', date: service.date }, user.id)
     router.push(`/services/${service.id}`)

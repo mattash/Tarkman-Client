@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { afterEach, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 import { Platform, Share, View } from 'react-native'
@@ -15,7 +16,7 @@ import { createLibrary } from '../features/library/downloadCoordinator'
 import { parseBundle, parseCatalog } from '../features/library/contracts'
 import fixture from './fixtures/public_liturgies/bundle.json'
 import catalog from './fixtures/public_liturgies/catalog.json'
-jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ id: '701' }), router: { canGoBack: () => false, replace: jest.fn() } }))
+jest.mock('expo-router', () => ({ useCanGoBack: () => false, useLocalSearchParams: () => ({ id: '701' }), router: { canGoBack: () => false, replace: jest.fn() } }))
 jest.mock('../features/library/store', () => ({ libraryStore: { durable: false } }))
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }))
 const url = 'https://web.tarkman.app/liturgies/701', name = 'Evening Prayer'
@@ -26,7 +27,7 @@ afterEach(() => {
   if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator)
   else Reflect.deleteProperty(globalThis, 'navigator')
 })
-async function card() { return render(<ThemeProvider><ShareServiceButton id={701} name={name} /></ThemeProvider>) }
+async function card() { return render(<GestureHandlerRootView><ThemeProvider><ShareServiceButton id={701} name={name} /></ThemeProvider></GestureHandlerRootView>) }
 it('keeps display sharing closed to Library links', async () => {
   expect(shareableUrl(url)).toBe(false)
   await expect(platformShare.share(url, name, '')).resolves.toBe('copy')
@@ -34,7 +35,7 @@ it('keeps display sharing closed to Library links', async () => {
 })
 it('anchors iOS sharing and quietly handles dismissal and missing anchors', async () => {
   Platform.OS = 'ios'
-  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.dismissedAction })
+  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.dismissedAction, activityType: undefined })
   await expect(libraryShare.share(url, name, 'Read', 42)).resolves.toBe('cancelled')
   expect(share).toHaveBeenCalledWith({ title: name, message: 'Read', url }, { subject: name, anchor: 42 })
   await expect(libraryShare.share(url, name, 'Read')).resolves.toBe('copy')
@@ -42,7 +43,7 @@ it('anchors iOS sharing and quietly handles dismissal and missing anchors', asyn
 })
 it('puts the URL in the Android message text', async () => {
   Platform.OS = 'android'
-  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction })
+  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
   await card()
   await fireEvent.press(screen.getByLabelText(`Share ${name}`))
   expect(share.mock.calls[0][0]).toMatchObject({ title: name, message: `Read ${name} in the Tarkman Prayer Library.\n${url}` })
@@ -72,7 +73,7 @@ it('locks repeated taps while the share sheet is pending', async () => {
 })
 it.each([false, true])('copies when Web Share is unavailable or fails (%s)', async fails => {
   Platform.OS = 'web'
-  const copy = jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
+  const copy = jest.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined)
   const share = jest.fn<() => Promise<void>>().mockRejectedValue(new Error('unavailable'))
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { ...(fails ? { share } : {}), clipboard: { writeText: copy } } })
   await card()
@@ -107,7 +108,7 @@ it('offers selectable manual copy and restores focus to its own opener', async (
 it('returns manual-copy focus to the supplied share opener', async () => {
   Platform.OS = 'web'
   const focus = jest.fn()
-  await render(<ThemeProvider><AppModal visible title="Copy manually" onDismiss={() => {}} openerRef={{ current: { focus } as unknown as View }} /></ThemeProvider>)
+  await render(<GestureHandlerRootView><ThemeProvider><AppModal visible title="Copy manually" onDismiss={() => {}} openerRef={{ current: { focus } as unknown as React.ComponentRef<typeof View> }} /></ThemeProvider></GestureHandlerRootView>)
   await fireEvent(screen.getByTestId('app-modal'), 'dismiss')
   expect(focus).toHaveBeenCalledTimes(1)
 })
@@ -118,7 +119,7 @@ it('pads the reader link-copied notice away from the screen edge', async () => {
   const api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn(async () => parseBundle(fixture)) }
   const controller = createLibrary('test', api, memoryStore())
   const preferences = { get: async () => null, set: async () => {}, remove: async () => {} }
-  await render(<ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LiturgyReader /></LibraryProvider></PreferencesProvider></ThemeProvider>)
+  await render(<GestureHandlerRootView><ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LiturgyReader /></LibraryProvider></PreferencesProvider></ThemeProvider></GestureHandlerRootView>)
   await fireEvent.press(await screen.findByTestId('library-reader-share'))
   const notice = await screen.findByText('Link copied.')
   expect(notice.parent).toHaveStyle({ paddingHorizontal: spacing.page })
@@ -131,7 +132,7 @@ it('pins the reader copy confirmation outside its scrolling details and hides sh
   const api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn(async () => parseBundle(fixture)) }
   const controller = createLibrary('test', api, memoryStore())
   const preferences = { get: async () => null, set: async () => {}, remove: async () => {} }
-  await render(<ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LiturgyReader /></LibraryProvider></PreferencesProvider></ThemeProvider>)
+  await render(<GestureHandlerRootView><ThemeProvider><PreferencesProvider store={preferences}><LibraryProvider controller={controller}><LiturgyReader /></LibraryProvider></PreferencesProvider></ThemeProvider></GestureHandlerRootView>)
   const share = await screen.findByTestId('library-reader-share')
   expect(share).toHaveProp('accessibilityLabel', `Share ${fixture.liturgy.name}`)
   await fireEvent.press(share)

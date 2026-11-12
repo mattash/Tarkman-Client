@@ -3,7 +3,7 @@
     "name": "Tarkman",
     "slug": "tarkman-tv",
     "owner": "mesropash",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "platforms": [
       "ios"
     ],
@@ -31,7 +31,6 @@
           }
         }
       ],
-      "./plugins/withSceneLifecycle",
       [
         "expo-font",
         {

@@ -7,8 +7,8 @@ import { AppText } from './AppText'
 import { AppButton } from './AppButton'
 import { useI18n } from '../features/i18n'
 
-export function AppModal({ visible, onDismiss, title, children, openerRef, headerAction, dismissLabel, onAfterDismiss, onAfterShow, restoreFocus = true }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<View | null>; headerAction?: ReactNode; dismissLabel?: string; onAfterDismiss?: () => void; onAfterShow?: () => void; restoreFocus?: boolean }>) {
-  const closeRef = useRef<View>(null)
+export function AppModal({ visible, onDismiss, title, children, openerRef, headerAction, dismissLabel, onAfterDismiss, onAfterShow, restoreFocus = true }: PropsWithChildren<{ visible: boolean; onDismiss: () => void; title: string; openerRef?: RefObject<React.ComponentRef<typeof View> | null>; headerAction?: ReactNode; dismissLabel?: string; onAfterDismiss?: () => void; onAfterShow?: () => void; restoreFocus?: boolean }>) {
+  const closeRef = useRef<React.ComponentRef<typeof View>>(null)
   const { t } = useI18n()
   const dismiss = dismissLabel ?? t('common.done')
   const wasVisible = useRef(false)
@@ -51,7 +51,7 @@ export function AppModal({ visible, onDismiss, title, children, openerRef, heade
   </Modal>
 }
 
-function focusControl(target: View | null | undefined) {
+function focusControl(target: React.ComponentRef<typeof View> | null | undefined) {
   if (!target) return
   if (Platform.OS === 'web') target.focus()
   else {

@@ -16,7 +16,7 @@ export function ProjectionText({ text, language = 'en', fontSize, centered = fal
   movement?: TextMovement; manualPosition?: ManualPosition; pageGroup?: PageGroup; continuousGroup?: ContinuousGroup; onMetrics?(metrics: ScrollMetrics): void
 }) {
   const { t } = useI18n()
-  const scroll = useRef<ScrollView>(null)
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null)
   const id = useId()
   const [viewport, setViewport] = useState(0)
   const [content, setContent] = useState(0)

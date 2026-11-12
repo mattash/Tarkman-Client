@@ -32,7 +32,7 @@ function serviceStatus(state: ReaderState): ServiceStatus {
   return 'unknown'
 }
 
-function focus(target: View | null) {
+function focus(target: React.ComponentRef<typeof View> | null) {
   if (!target) return
   if (Platform.OS === 'web') (target as unknown as HTMLElement).focus()
   else {
@@ -45,7 +45,7 @@ export function ReaderStatusControl({ state, online, retry, back }: { state: Rea
   const { colors, scheme } = useTheme()
   const { t, language } = useI18n()
   const { width, height, fontScale } = useWindowDimensions()
-  const trigger = useRef<View>(null), serviceLine = useRef<View>(null)
+  const trigger = useRef<React.ComponentRef<typeof View>>(null), serviceLine = useRef<React.ComponentRef<typeof View>>(null)
   const [pulse] = useState(() => new Animated.Value(1))
   const previousConnection = useRef<ConnectionStatus | null>(null)
   const degradedEpisode = useRef(false)

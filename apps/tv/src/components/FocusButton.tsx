@@ -19,7 +19,7 @@ export interface FocusButtonProps extends Omit<PressableProps, 'children' | 'sty
  * A remote-focusable control. At rest it is glass; on focus it lifts, brightens and gains a soft ring, so
  * focus is always visible from across the room. Primary is a solid accent; selected is a tinted glass.
  */
-export const FocusButton = forwardRef<ViewType, FocusButtonProps>(function FocusButton({ label, detail, selected = false, variant = 'secondary', tone, accessory, onFocus, onBlur, ...props }, ref) {
+export const FocusButton = forwardRef<React.ComponentRef<typeof ViewType>, FocusButtonProps>(function FocusButton({ label, detail, selected = false, variant = 'secondary', tone, accessory, onFocus, onBlur, ...props }, ref) {
   const [focused, setFocused] = useState(false)
   const primary = variant === 'primary'
   const card = variant === 'card'

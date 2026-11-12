@@ -52,7 +52,8 @@ async function pair(initialDuration = 60000, count = 2) {
     await fireEvent(columns[column], 'layout', { nativeEvent: { layout: { height: 600, width: 600, x: 0, y: 0 } } })
     await fireEvent(columns[column], 'contentSizeChange', 600, content)
   }
-  const advance = async (milliseconds: number) => { await act(async () => { await jest.advanceTimersByTimeAsync(milliseconds) }) }
+  // RAF callbacks are synchronous; avoid Jest 30 yielding a real timer turn per simulated frame.
+  const advance = async (milliseconds: number) => { await act(async () => { jest.advanceTimersByTime(milliseconds) }) }
   const latest = (column: number) => mockScrolls.filter(scroll => scroll.column === column).at(-1)!
   const jumpClockWithoutCallbacks = (milliseconds: number) => { clockOffset += milliseconds }
   return { view, Columns, group, clock, measure, advance, latest, jumpClockWithoutCallbacks }

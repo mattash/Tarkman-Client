@@ -18,6 +18,8 @@ check(Array.isArray(plugin) && plugin[1]?.isTV === true, '@react-native-tvos/con
 check(tvApp.slug !== mobileApp.slug, 'TV needs its own Expo slug')
 check(/^macos-[a-z]+-\d+\.\d+-xcode-\d+\.\d+$/.test(tvEas.build?.base?.ios?.image ?? ''), 'TV builds must pin an exact iOS image name, not an alias')
 check(tvEas.build?.base?.ios?.image === mobileEas.build?.production?.ios?.image, 'TV must build on the same pinned iOS image as mobile')
+check(tvEas.build?.base?.ios?.image === 'macos-tahoe-26.6-xcode-27.1', 'SDK 58 TV builds must use the reviewed Xcode 27 image')
+check(!(tvApp.plugins ?? []).includes('./plugins/withSceneLifecycle'), 'SDK 58 must use its upstream scene lifecycle, not the SDK 57 workaround')
 
 const mobileProject = mobileApp.extra?.eas?.projectId, tvProject = tvApp.extra?.eas?.projectId
 check(!tvProject || tvProject !== mobileProject, 'TV must not use the mobile EAS project')

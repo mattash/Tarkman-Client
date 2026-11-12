@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { StrictMode } from 'react'
 import { it, expect, jest } from '@jest/globals'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
@@ -18,7 +19,7 @@ const mockPush = jest.fn()
 const mockBack = jest.fn(), mockReplace = jest.fn()
 let mockCanGoBack = true
 const mockParams: { id: string; environment: string; origin?: string } = { id: '701', environment: 'test', origin: 'library' }
-jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockPush(...args), canGoBack: () => mockCanGoBack, back: () => mockBack(), replace: (path: string) => mockReplace(path) },
+jest.mock('expo-router', () => ({ useCanGoBack: () => mockCanGoBack, router: { push: (...args: unknown[]) => mockPush(...args), canGoBack: () => mockCanGoBack, back: () => mockBack(), replace: (path: string) => mockReplace(path) },
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
 }))
@@ -31,7 +32,7 @@ function setup(durable = true, preferenceStore = preferences) {
   const store = memoryStore(), api = { catalog: jest.fn(async () => parseCatalog(catalog)), bundle: jest.fn(async () => parseBundle(fixture)) }
   store.durable = durable
   const controller = createLibrary('test', api, store)
-  const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider scheme="light"><PreferencesProvider store={preferenceStore}><LibraryProvider controller={controller}>{children}</LibraryProvider></PreferencesProvider></ThemeProvider>
+  const wrapper = ({ children }: { children: React.ReactNode }) => <GestureHandlerRootView><ThemeProvider scheme="light"><PreferencesProvider store={preferenceStore}><LibraryProvider controller={controller}>{children}</LibraryProvider></PreferencesProvider></ThemeProvider></GestureHandlerRootView>
   return { store, api, controller, wrapper }
 }
 const languageRows = () => screen.getAllByRole('button').map(node => node.props.accessibilityLabel).filter(label => ['English', 'Русский', 'Գրաբար', 'Translit'].includes(label))

@@ -2,7 +2,10 @@ import { useEffect } from 'react'
 import { AppState, type AppStateStatus } from 'react-native'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
-export type KeepAwakeAppState = Pick<typeof AppState, 'currentState' | 'addEventListener'>
+export interface KeepAwakeAppState {
+  currentState: string | null | undefined
+  addEventListener(event: 'change', listener: (state: AppStateStatus) => void): { remove(): void }
+}
 
 let nextAcquisitionId = 0
 

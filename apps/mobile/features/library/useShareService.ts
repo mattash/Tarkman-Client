@@ -5,7 +5,7 @@ import { libraryLinkUrl } from '../links/libraryLink'
 import { libraryShare } from './share'
 
 export function useShareService() {
-  const { t } = useI18n(), anchor = useRef<View>(null), lock = useRef(false), mounted = useRef(true)
+  const { t } = useI18n(), anchor = useRef<React.ComponentRef<typeof View>>(null), lock = useRef(false), mounted = useRef(true)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [busy, setBusy] = useState(false), [notice, setNotice] = useState(''), [manual, setManual] = useState<string | null>(null)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; clearTimeout(timer.current) } }, [])

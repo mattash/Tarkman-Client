@@ -25,7 +25,7 @@ export interface FormShellProps {
 export function FormShell({ title, intro, guarded, error, otherErrors = [], onCancel, footer, children }: FormShellProps) {
   const { t } = useI18n(), { colors } = useTheme(), navigation = useNavigation()
   const [pending, setPending] = useState<NavigationAction | null>(null), [discard, setDiscard] = useState(false)
-  const cancelRef = useRef<View>(null)
+  const cancelRef = useRef<React.ComponentRef<typeof View>>(null)
   usePreventRemove(guarded && !discard, ({ data }) => setPending(data.action))
   useEffect(() => { if (discard && pending) navigation.dispatch(pending) }, [discard, pending, navigation])
   useEffect(() => { if (error && Platform.OS !== 'web') AccessibilityInfo.announceForAccessibility(error) }, [error])

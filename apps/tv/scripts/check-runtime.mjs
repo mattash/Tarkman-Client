@@ -1,4 +1,4 @@
-// Pins the compatibility gate: Expo SDK 57 ships React Native 0.86, so TV bundles react-native-tvos 0.86.x
+// Pins the compatibility gate: Expo SDK 58 ships React Native 0.88, so TV bundles react-native-tvos 0.88.x
 // installed as react-native, alongside the same React as mobile. Fails before a confusing native build does.
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -10,7 +10,7 @@ const rn = installed('react-native'), expo = installed('expo'), react = installe
 const mobile = JSON.parse(readFileSync(join(tv, '../mobile/package.json'), 'utf8')).dependencies
 const failures = []
 if (rn.name !== 'react-native-tvos') failures.push(`react-native is ${rn.name}; expected the react-native-tvos alias`)
-if (!expo.version.startsWith('57.')) failures.push(`expo ${expo.version}; the TV gate was validated on SDK 57`)
+if (!expo.version.startsWith('58.')) failures.push(`expo ${expo.version}; the TV gate was validated on SDK 58`)
 if (rn.version.split('-')[0] !== mobile['react-native']) failures.push(`react-native-tvos ${rn.version} does not track mobile's react-native ${mobile['react-native']}`)
 if (react.version !== mobile.react) failures.push(`react ${react.version} differs from mobile's ${mobile.react}`)
 // npm nests upstream react-native under any dependency whose peer range the fork's prerelease version

@@ -4,7 +4,7 @@ import { useTheme } from '../design/ThemeProvider'
 import { radii, spacing, touchTarget, typography } from '../design/tokens'
 import { AppText } from './AppText'
 
-export interface TextFieldProps extends TextInputProps { ref?: Ref<TextInput>; label: string; error?: string; leading?: ReactNode; trailing?: ReactNode }
+export interface TextFieldProps extends TextInputProps { ref?: Ref<React.ComponentRef<typeof TextInput>>; label: string; error?: string; leading?: ReactNode; trailing?: ReactNode }
 /** Label above a 52pt field. The 1pt control outline becomes a 2pt actionPrimary border on focus without moving the text. */
 export function TextField({ label, error, leading, trailing, style, onFocus, onBlur, editable = true, keyboardAppearance, ...props }: TextFieldProps) {
   const { colors, scheme } = useTheme()

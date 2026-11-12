@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useWindowDimensions, View } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useCanGoBack, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
 import { AppModal } from '../../components/AppModal'
@@ -37,11 +37,11 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   const { colors } = useTheme()
   const { anchor: shareAnchor, busy, notice, manual, dismiss, share } = useShareService(), compact = useWindowDimensions().width < 360
   const [sheet, setSheet] = useState<'language' | 'preferences' | null>(null)
-  const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null), explanationOpener = useRef<View>(null)
+  const languageOpener = useRef<React.ComponentRef<typeof View>>(null), preferencesOpener = useRef<React.ComponentRef<typeof View>>(null), explanationOpener = useRef<React.ComponentRef<typeof View>>(null)
   // With no live position, the book explains the part at the top of the screen.
   const [topKey, setTopKey] = useState<string | undefined>(undefined)
   // Focus returns to whichever button opened the sheet; `sheet` is already null when the modal restores it.
-  const opener = useRef<View>(null)
+  const opener = useRef<React.ComponentRef<typeof View>>(null)
   const openSheet = (next: 'language' | 'preferences') => { opener.current = (next === 'language' ? languageOpener : preferencesOpener).current; setSheet(next) }
   const sameEnvironment = environment === controller.environment
   const validId = Number.isSafeInteger(id) && id > 0
@@ -73,7 +73,8 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   const occurrence = (part: LivePart | undefined) => part ? snapshot?.bundle.parts.find(p => p.liturgy_part_id === part.liturgyPartId) ?? null : null
   const topPart = occurrence(parts.find(p => p.key === topKey) ?? parts[0])
   const back = () => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/live') }
-  const backLabel = t(router.canGoBack() ? origin === 'library' ? 'library.back' : 'onboarding.back' : 'servicesList.title')
+  const canGoBack = useCanGoBack()
+  const backLabel = t(canGoBack ? origin === 'library' ? 'library.back' : 'onboarding.back' : 'servicesList.title')
   const reading = !!snapshot && sameEnvironment && !revoked
   // The live reader's toolbar: one pinned row, so the text scrolls beneath it instead of below a block of controls.
   const toolbar = <View testID="library-reader-toolbar" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,

@@ -56,36 +56,35 @@ service at launch, for simulator captures without a remote.
 
 | | Version | Why |
 | --- | --- | --- |
-| Expo SDK | `~57.0.25` | Same SDK as mobile |
-| React Native | `npm:react-native-tvos@0.86.3-0` (installed as `react-native`) | SDK 57 ships RN 0.86; the TV fork tracks mobile's `0.86.3` exactly |
-| React | `19.2.3` | Same as mobile |
+| Expo SDK | `~58.0.25` | Same SDK as mobile |
+| React Native | `npm:react-native-tvos@0.88.1-0` (installed as `react-native`) | SDK 58 ships RN 0.88; the TV fork tracks mobile's `0.88.1` exactly |
+| React | `19.3.0` | Same as mobile |
 | `@react-native-tvos/config-tv` | `0.1.6` (exact) | Prebuild plugin; `isTV: true` is set in `app.json`, and scripts also set `EXPO_TV=1` |
 | Xcode / tvOS SDK | Xcode 27.0, tvOS 27.0 SDK and simulator runtime | Verified locally, see [Evidence](#evidence) |
 | Deployment target | tvOS 16.4 | Set by the plugin |
 
 `package.json` sets `"overrides": { "react-native": "$react-native" }` (and pins
-`test-renderer` to 1.2.0, the version mobile's lockfile resolves for React 19.2). Without it,
-npm installs a **second, upstream** `react-native@0.86.3` nested under
-`@react-native-tvos/virtualized-lists`. That package's exact peer `0.86.3` is not
-satisfied by the fork's prerelease version `0.86.3-0`. The bundle then contains two React Natives,
+`test-renderer` to 1.3.0, the version required by `jest-expo` 58 for React 19.3). Without the RN override,
+npm can install a **second, upstream** React Native nested under
+`@react-native-tvos/virtualized-lists`: an exact stable peer version is not
+satisfied by the fork's prerelease version. The bundle then contains two React Natives,
 and the app dies at launch with *View config getter callback for component
 `RCTText` must be a function*. This happened while building this app; the override,
 the Metro guard and `check:runtime` each now reject it.
 
 `npm run check:runtime` fails if there is not exactly one `react-native` install,
 if the installed `react-native` is not the fork,
-if Expo is not SDK 57, or if the fork or React stop matching mobile. Upgrade
+if Expo is not SDK 58, or if the fork or React stop matching mobile. Upgrade
 both apps together: mobile's `react-native` `X.Y.Z` pairs with
 `react-native-tvos@X.Y.Z-n`. Run `npx expo install --check` in `apps/tv` after
 any change; it accepts this pairing today.
 
 **UIScene lifecycle.** Apps linked against the tvOS 27 SDK (Xcode 27) must
 adopt the UIScene lifecycle; UIKit traps at launch otherwise
-(`_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`). Expo SDK 57's
-template still creates its window in the app delegate, so
-`plugins/withSceneLifecycle.js` adds a scene manifest and a `SceneDelegate` that
-starts React Native in the scene's window. The plugin throws if the Expo template
-changes; remove it once the template adopts scenes.
+(`_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`). SDK 58's template now
+provides `SceneDelegate: ExpoAppSceneDelegate` and the scene manifest, so the SDK 57
+window-creation workaround has been removed. CI runs `tools/check-apple-lifecycle.mjs`
+after prebuild to guard upstream scene adoption and the unchanged 16.4 deployment target.
 
 Expo Router is not on Expo's tvOS support list, so the TV app uses a plain root
 component (`index.ts` → `src/App.tsx`). Every native module added here must be
