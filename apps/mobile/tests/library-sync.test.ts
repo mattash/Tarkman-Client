@@ -65,7 +65,7 @@ it('dismissal failure survives catalog refresh and clears after a successful ret
 it('entry, recommendation metadata and Skip never transfer content; dismissal survives controller recreation', async () => {
   const { library, api, store } = setup()
   await library.refresh(); await library.refresh(); await library.dismiss()
-  expect(api.bundle).not.toHaveBeenCalled(); expect(api.catalog).toHaveBeenCalledTimes(2)
+  expect(api.bundle).not.toHaveBeenCalled(); expect(api.catalog).toHaveBeenCalledTimes(1)
   const next = createLibrary('test', api, store); await next.hydrate(); expect(next.getSnapshot().dismissed).toBe(true)
 })
 it('only explicit selection persists, sync only selected IDs, and removed recommendations stay removed', async () => {
@@ -221,7 +221,7 @@ it('continues omitted-content pages exactly once for recommendations and explici
 })
 it.each([699, 700])('stops recommendation pagination on nonadvancing omitted-content cursor %s', async next => {
   const fetcher = jest.fn<typeof fetch>()
-    .mockResolvedValueOnce(catalogResponse(catalog))
+    .mockResolvedValueOnce(catalogResponse({ ...catalog, next_after_id: 701 }))
     .mockResolvedValueOnce(catalogResponse(omitted))
     .mockResolvedValue(catalogResponse({ ...omitted, next_after_id: next }))
   const library = createLibrary('test', createApi('https://example.test', fetcher), memoryStore())
@@ -232,7 +232,7 @@ it.each([699, 700])('stops recommendation pagination on nonadvancing omitted-con
 it('retains the 100-page recommendation cap even for advancing empty pages', async () => {
   const fetcher = jest.fn<typeof fetch>().mockImplementation(async url => {
     const params = new URL(String(url)).searchParams
-    return catalogResponse(params.has('recommended') ? { ...omitted, next_after_id: Number(params.get('after_id')) + 1 } : catalog)
+    return catalogResponse(params.has('recommended') ? { ...omitted, next_after_id: Number(params.get('after_id')) + 1 } : { ...catalog, next_after_id: 701 })
   })
   const library = createLibrary('test', createApi('https://example.test', fetcher), memoryStore())
   await library.refresh()
@@ -289,5 +289,5 @@ it('a catalog check stopped by cancellation shows no error, and an error never s
   await library.refresh()
   expect(api.catalog.mock.calls.length).toBeGreaterThan(calls); expect(library.getSnapshot().error).toBeUndefined()
   await library.refresh()
-  expect(api.catalog.mock.calls.length).toBe(calls + 2)
+  expect(api.catalog.mock.calls.length).toBe(calls + 1)
 })

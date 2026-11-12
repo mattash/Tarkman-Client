@@ -36,7 +36,7 @@ export function LibraryScreen() {
     void controller.refresh()
     const app = AppState.addEventListener('change', status => { if (status === 'active') void controller.refresh() })
     const network = addNetworkStateListener(status => { if (AppState.currentState === 'active' && status.isConnected && status.isInternetReachable !== false) void controller.refresh() })
-    return () => { app.remove(); network.remove() }
+    return () => { app.remove(); network.remove(); controller.cancelRefresh() }
   }, [controller]))
   const request = (ids: number[]) => {
     if (ids.some(id => (state.catalog.find(c => c.id === id)?.download_bytes ?? state.recommended.find(c => c.id === id)?.download_bytes ?? 0) >= 5 * 1024 * 1024)) { setWarning(ids); return }

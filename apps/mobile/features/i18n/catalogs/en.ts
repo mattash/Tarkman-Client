@@ -100,6 +100,7 @@ export const en = {
     "clearConfirm": "Remove all services saved in Prayer Library and any waiting to be saved? Your saved live service and reading preferences will stay.",
     "errors": {
         "invalid": "Something went wrong with this service. Anything you saved is still here.",
+        "rate-limited": "Requests are paused. Please try again later. Your saved copies are still available.",
         "size": "This service is too large to save.",
         "network": "Couldn’t open this service right now. Try again when you’re connected.",
         "storage": "Couldn’t save changes on this device. Please try again.",

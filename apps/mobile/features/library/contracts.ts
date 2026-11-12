@@ -16,8 +16,8 @@ export interface Occurrence {
 }
 export interface Bundle { schema_version: 1; liturgy: Identity; revision: string; languages_available: BundleLanguage[]; parts: Occurrence[] }
 export interface Catalog { schema_version: 1; liturgies: CatalogItem[]; next_after_id: number | null }
-export type FailureCode = 'invalid' | 'size' | 'network' | 'storage' | 'unsupported' | 'cancelled' | 'unavailable' | 'capacity'
-export class LibraryError extends Error { constructor(public code: FailureCode) { super(code) } }
+export type FailureCode = 'invalid' | 'size' | 'network' | 'storage' | 'unsupported' | 'cancelled' | 'unavailable' | 'capacity' | 'rate-limited'
+export class LibraryError extends Error { constructor(public code: FailureCode, public retryAfterMs?: number) { super(code) } }
 function fail(): never { throw new LibraryError('invalid') }
 export function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fail()

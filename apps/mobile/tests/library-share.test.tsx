@@ -15,7 +15,9 @@ import { createLibrary } from '../features/library/downloadCoordinator'
 import { parseBundle, parseCatalog } from '../features/library/contracts'
 import fixture from './fixtures/public_liturgies/bundle.json'
 import catalog from './fixtures/public_liturgies/catalog.json'
-jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ id: '701' }), router: { canGoBack: () => false, replace: jest.fn() } }))
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ id: '701' }), router: { canGoBack: () => false, replace: jest.fn() },
+  useFocusEffect: (effect: () => void) => jest.requireActual<typeof import('react')>('react').useEffect(effect, [effect]),
+}))
 jest.mock('../features/library/store', () => ({ libraryStore: { durable: false } }))
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }))
 const url = 'https://web.tarkman.app/liturgies/701', name = 'Evening Prayer'
