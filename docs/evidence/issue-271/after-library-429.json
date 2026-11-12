@@ -1,0 +1,27 @@
+{
+  "label": "after-library-429",
+  "revision": "e89a14f990a7a62ee7e67178b3e02d160fbdee4f",
+  "url": "http://127.0.0.1:18771/library",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "deviceScaleFactor": 1,
+  "locale": "en-US",
+  "colorScheme": "light",
+  "timezoneId": "UTC",
+  "storage": "new anonymous browser context, no saved copies",
+  "scenario": "Initial Prayer Library focus; all catalog API calls respond HTTP 429 text/plain Too many requests with Retry-After: 60; screenshot before retry expiry",
+  "browser": "156.0.8078.4",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/public/liturgies.json?limit=100",
+      "status": 429,
+      "body": "Too many requests",
+      "retryAfter": "60"
+    }
+  ],
+  "errors": [],
+  "visibleText": "\nSettings\nPrayer Library\nRead services here. To pray without a connection, save them in the app.\nSearch services\n\nAll\nSaved\nAll services\nRequests are paused. Please try again later. Your saved copies are still available.\nCheck for new texts"
+}
