@@ -32,7 +32,7 @@ const images = ['development', 'preview', 'production'].map(name => eas.build?.[
 for (const image of images) {
   const match = IOS_IMAGE.exec(image ?? '')
   assert.ok(match, `iOS builds must pin an exact image name (macos-<os>-xcode-<version>), not ${JSON.stringify(image)}`)
-  assert.equal(image, 'macos-tahoe-26.6-xcode-27.1', 'SDK 58 builds must use the reviewed Xcode 27 image')
+  assert.equal(image, 'macos-tahoe-26.6-xcode-27.2', 'SDK 58 builds must use the reviewed Xcode 27 image')
   assert.match(dependencies.expo, /^~58\./, 'Xcode 27 requires the SDK 58 scene lifecycle')
 }
 assert.equal(new Set(images).size, 1, 'development, preview and production must build on the same iOS image')

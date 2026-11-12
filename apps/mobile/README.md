@@ -14,8 +14,10 @@ updates: app versions are bumped because the `appVersion` runtime policy must
 not deliver these bundles to SDK 57 binaries. Both EAS projects retain their
 separate channels and the 16.4 deployment target.
 
-The exact EAS image is `macos-tahoe-26.6-xcode-27.1` (the published SDK 58 image;
-Expo lists this Xcode image as RC). Upstream Expo now owns `SceneDelegate` and
+The exact EAS image is `macos-tahoe-26.6-xcode-27.2`, a published stable image
+matching the local Xcode 27.2 toolchain (not the SDK 58 alias's 27.1 RC image).
+Image availability is not evidence of a completed remote EAS build.
+Upstream Expo now owns `SceneDelegate` and
 the scene manifest; `tools/check-apple-lifecycle.mjs` validates generated projects.
 Sentry is deliberately newer than Expo's recommendation: 8.33 adds Router 58
 integration and 8.35 fixes RN 0.88 touch breadcrumbs. Its install-check exclusion
