@@ -7,7 +7,7 @@ accounts, credentials or private service content were used.
 | Evidence | Application source revision |
 | --- | --- |
 | [Before](<before-library-429.png>) | `bde6b9875e4f91542363c4162ab9c915df101aec` |
-| [After](<after-library-429.png>) | `e89a14f990a7a62ee7e67178b3e02d160fbdee4f` |
+| [After](<after-library-429.png>) | `f6ad0d8635b6eb0e3d408b89e0a3a3cfddd41d10` |
 
 Same scenario in both: initial `/library` focus, anonymous fresh browser storage,
 no saved copies, All filter, empty search, top scroll position, light appearance,
@@ -25,7 +25,7 @@ Request/viewport/text observations: [Before record](<before-library-429.json>) a
 
 ```text
 Before 5734c5b5210f0c7fdabe68881bee9f69e8f3442e3f1a4007e1fc75ade4a83246
-After  c533d2cf9fe426172cc8bb6c09a33106e6a71ab195609c5350620a80ed2a79e6
+After  e108d4c7642f84ba3e64915575063307d097c6ed4b7eb4d7005174b7329902d1
 ```
 
 ## Reproduce
@@ -54,13 +54,14 @@ node capture.mjs /absolute/path/to/before-export before-library-429 \
 PLAYWRIGHT_MODULE=/absolute/path/to/tooling/node_modules/playwright \
 node capture.mjs /absolute/path/to/after-export after-library-429 \
   'Requests are paused. Please try again later. Your saved copies are still available.' \
-  e89a14f990a7a62ee7e67178b3e02d160fbdee4f
+  f6ad0d8635b6eb0e3d408b89e0a3a3cfddd41d10
 ```
 
 `EVIDENCE_OUTPUT_DIR` changes output location; `PLAYWRIGHT_CHROMIUM_EXECUTABLE`
 selects an installed browser when needed. The harness owns a temporary loopback
 server on port 18771 and closes it and the browser after capture. The captured
-After export's changed runtime source files were byte-compared with its commit.
+After export was rebuilt from the stated clean application/dependency revision after
+aligning the compatible Expo SDK patch versions required by CI.
 
 ## Limits
 
