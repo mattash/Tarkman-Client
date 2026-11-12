@@ -7,9 +7,9 @@ import updated from './fixtures/public_liturgies/bundle_updated.json'
 import catalog from './fixtures/public_liturgies/catalog.json'
 import omitted from './fixtures/public_liturgies/catalog_content_error_page.json'
 import page from './fixtures/public_liturgies/catalog_page.json'
-import { byteLength, isUnavailable, parseBundle, parseCatalog } from '../features/library/contracts'
+import { byteLength, isUnavailable, LibraryError, parseBundle, parseCatalog } from '../features/library/contracts'
 import { libraryConfiguration } from '../features/library/config'
-import { createApi } from '../features/library/api'
+import { createApi, parseRetryAfter } from '../features/library/api'
 import manifest from './fixtures/public_liturgies.sha256.json'
 const clone = () => JSON.parse(JSON.stringify(bundle))
 it('pins every backend fixture byte-for-byte, optionally against the backend checkout', () => {
@@ -69,6 +69,48 @@ it('uses anonymous dedicated URLs and conditional quoted ETags', async () => {
 it.each([[404, { schema_version: 1, error: { code: 'public_liturgy_unavailable' } }, 'unavailable'], [404, {}, 'network'], [422, { schema_version: 1, error: { code: 'bundle_too_large' } }, 'size'], [422, { schema_version: 1, error: { code: 'invalid_public_liturgy_content' } }, 'invalid'], [400, { schema_version: 1, error: { code: 'invalid_public_liturgy_parameters' } }, 'invalid']])('distinguishes per-item HTTP failures (%s)', async (status, body, code) => {
   const api = createApi('https://example.test', jest.fn<typeof fetch>().mockResolvedValue(response(status as number, body)))
   await expect(api.bundle(701, new AbortController().signal)).rejects.toMatchObject({ code })
+})
+
+it('keeps rate-limit delay optional on typed Library errors', () => {
+  expect(new LibraryError('rate-limited', 120000)).toMatchObject({ code: 'rate-limited', retryAfterMs: 120000, message: 'rate-limited' })
+  expect(new LibraryError('network').retryAfterMs).toBeUndefined()
+})
+it.each([
+  ['120', 120000], [' 2 ', 2000], ['0', 0], ['86400', 86400000],
+  ['Thu, 12 Nov 2026 18:51:00 GMT', 120000],
+  ['Thursday, 12-Nov-26 18:51:00 GMT', 120000],
+  ['Thu Nov 12 18:51:00 2026', 120000],
+  ['Thu, 12 Nov 2026 18:48:00 GMT', 0],
+  [null, 60000], ['', 60000], ['  ', 60000], ['invalid', 60000],
+  ['-1', 60000], ['1.5', 60000], ['+2', 60000], ['1e3', 60000],
+  ['Infinity', 60000], ['9'.repeat(400), 60000], ['Thu, 99 Nov 2026 18:51:00 GMT', 60000],
+])('parses Retry-After %s without shortening positive server delays', (header, delay) => {
+  expect(parseRetryAfter(header as string | null, Date.parse('2026-11-12T18:49:00Z'))).toBe(delay)
+})
+it.each(['catalog', 'bundle'] as const)('classifies %s 429 before inspecting any body or size', async method => {
+  for (const body of ['{"error":"throttled"}', '<html>Too many requests</html>', '']) {
+    const text = jest.fn<() => Promise<string>>().mockResolvedValue(body)
+    const limited = { status: 429, ok: false, headers: { get: (name: string) => name === 'retry-after' ? '120' : '10485761' }, text } as unknown as Response
+    const fetcher = jest.fn<typeof fetch>().mockResolvedValue(limited)
+    const api = createApi('https://example.test', fetcher), signal = new AbortController().signal
+    await expect(method === 'catalog' ? api.catalog(signal) : api.bundle(701, signal)).rejects.toMatchObject({ code: 'rate-limited', retryAfterMs: 120000 })
+    expect(text).not.toHaveBeenCalled()
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  }
+})
+it.each([null, 'invalid'])('uses fallback for 429 Retry-After %s, including hidden browser headers', async header => {
+  const limited = { ...response(429, {}), headers: { get: () => header } } as unknown as Response
+  await expect(createApi('https://example.test', jest.fn<typeof fetch>().mockResolvedValue(limited)).catalog(new AbortController().signal)).rejects.toMatchObject({ code: 'rate-limited', retryAfterMs: 60000 })
+})
+it('classifies a dated 429 using the current clock without reading its body', async () => {
+  jest.useFakeTimers({ now: Date.parse('2026-11-12T18:49:00Z') })
+  try {
+    const text = jest.fn<() => Promise<string>>().mockRejectedValue(new Error('unreadable body'))
+    const limited = { ...response(429, {}), headers: { get: () => 'Thu, 12 Nov 2026 18:51:00 GMT' }, text } as unknown as Response
+    await expect(createApi('https://example.test', jest.fn<typeof fetch>().mockResolvedValue(limited)).bundle(701, new AbortController().signal)).rejects.toMatchObject({ code: 'rate-limited', retryAfterMs: 120000 })
+    expect(text).not.toHaveBeenCalled()
+    expect(jest.getTimerCount()).toBe(0)
+  } finally { jest.useRealTimers() }
 })
 
 it('capability is off by default and cannot enable a production build', () => {
