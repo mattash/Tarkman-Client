@@ -24,14 +24,14 @@ it.each([
 })
 
 it('delegates to Jest with the original resolver options', () => {
-  const defaultResolver = jest.fn(() => 'resolved')
+  const defaultResolver = jest.fn<(request: string, options: object) => string>(() => 'resolved')
   const options = { basedir: coreSource, defaultResolver }
   expect(resolve('./status.js', options)).toBe('resolved')
   expect(defaultResolver).toHaveBeenCalledWith('./status.ts', options)
 })
 
 it('resolves bare imports from shared packages against this app, not a parent node_modules', () => {
-  const defaultResolver = jest.fn(() => 'resolved')
+  const defaultResolver = jest.fn<(request: string, options: object) => string>(() => 'resolved')
   const reader = path.resolve(__dirname, '../../../packages/tarkman-reader/src')
   const appRoot = path.resolve(__dirname, '..')
   resolve('@babel/runtime/helpers/interopRequireDefault', { basedir: reader, defaultResolver })

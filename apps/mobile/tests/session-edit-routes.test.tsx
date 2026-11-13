@@ -20,13 +20,12 @@ const emptyOk = () => ({ ok: true, status: 200, json: async () => { throw new Sy
 async function renderApp(request: typeof fetch, initialUrl = '/services') {
   clearMutations()
   const { store } = memoryStore({ [AUTH_KEY]: storedAuth() })
-  const app = renderRouter({
+  const app = await renderRouter({
     _layout: () => <ThemeProvider scheme="light"><AuthProvider apiBase={API} store={store} request={request}><Slot /></AuthProvider></ThemeProvider>,
     '(signed-in)/_layout': SignedInLayout,
     '(signed-in)/services': MyServicesScreen,
     '(signed-in)/session-management/[id]/edit': EditSessionScreen,
   }, { initialUrl })
-  await app
   return { getPathname: app.getPathname }
 }
 

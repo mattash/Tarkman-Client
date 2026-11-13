@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import * as ReactNative from 'react-native'
 import { beforeEach, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, renderHook, screen, within } from '@testing-library/react-native'
@@ -35,7 +36,7 @@ const parts = (text: string) => normalizeParts({ parts: [{ part: { id: 1, role: 
 const record = () => buildSavedService({ session: { ...session, title: 'Saved service title', church: 'Saved church', date: '2026-09-13' }, parts: parts('Saved prayer'), explanations: { liturgyPartId: 11,
   items: normalizeExplanations({ explanations: [{ explanation: { id: 1, title: 'Saved explanation', description: 'Last seen meaning', liturgy_part_id: 11 } }] }) } }, Date.now())!
 const preferenceAdapter = { get: async () => null, set: async () => {}, remove: async () => {} }
-const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={preferenceAdapter}>{children}</PreferencesProvider></ThemeProvider>
+const wrapper = ({ children }: { children: React.ReactNode }) => <GestureHandlerRootView><ThemeProvider><PreferencesProvider store={preferenceAdapter}>{children}</PreferencesProvider></ThemeProvider></GestureHandlerRootView>
 let api: jest.Mocked<ReaderApi>, cable: CableCallbacks, network: (active: boolean, online: boolean) => void
 beforeEach(() => {
   jest.clearAllMocks()
@@ -241,9 +242,9 @@ it.each([
   { width: 402, height: 874, fontScale: 2, scheme: 'light' as const },
 ])('keeps saved status and retry accessible at $width x $height, scale $fontScale, $scheme', async ({ scheme, ...dimensions }) => {
   ReactNative.Dimensions.set({ window: { ...dimensions, scale: 1 }, screen: { ...dimensions, scale: 1 } })
-  await render(<ThemeProvider scheme={scheme}><PreferencesProvider store={preferenceAdapter}>
+  await render(<GestureHandlerRootView><ThemeProvider scheme={scheme}><PreferencesProvider store={preferenceAdapter}>
     <SessionReader endpoints={endpoints} id={7} back={() => {}} />
-  </PreferencesProvider></ThemeProvider>)
+  </PreferencesProvider></ThemeProvider></GestureHandlerRootView>)
   await flush()
   expect(screen.getByLabelText(savedLabel)).toBeOnTheScreen()
   expect(screen.getByRole('button', { name: 'Return to live' })).toBeOnTheScreen()

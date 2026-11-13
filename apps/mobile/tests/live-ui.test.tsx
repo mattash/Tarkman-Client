@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { OnboardingProvider } from '../features/onboarding/OnboardingProvider'
 import * as ReactNative from 'react-native'
 import { beforeEach, expect, it, jest } from '@jest/globals'
@@ -17,10 +18,10 @@ jest.mock('expo-router', () => ({ useFocusEffect: (effect: () => void) => jest.r
 let mockOnline = true
 jest.mock('../features/live/lifecycle', () => ({ lifecycle: { listen: (callback: (active: boolean, online: boolean) => void) => { callback(true, mockOnline); return () => {} } } }))
 const preferencesStore = { get: async () => null, set: async () => {}, remove: async () => {} }
-const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={preferencesStore}>{children}</PreferencesProvider></ThemeProvider>
+const wrapper = ({ children }: { children: React.ReactNode }) => <GestureHandlerRootView><ThemeProvider><PreferencesProvider store={preferencesStore}>{children}</PreferencesProvider></ThemeProvider></GestureHandlerRootView>
 // A reader who chose Russian among their three languages.
 const russianStore = { ...preferencesStore, get: async () => JSON.stringify({ language: 'en', selectedLanguages: ['en', 'ru', 'grabar'], appearance: 'system', readingSize: 'standard' }) }
-const russianWrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><PreferencesProvider store={russianStore}>{children}</PreferencesProvider></ThemeProvider>
+const russianWrapper = ({ children }: { children: React.ReactNode }) => <GestureHandlerRootView><ThemeProvider><PreferencesProvider store={russianStore}>{children}</PreferencesProvider></ThemeProvider></GestureHandlerRootView>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const retry = jest.fn(), dispatch = jest.fn()
 beforeEach(() => { jest.clearAllMocks(); mockOnline = true; jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, stale: false }, retry, refreshAfterCommand: jest.fn(), dispatch }) })

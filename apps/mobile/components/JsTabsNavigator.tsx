@@ -6,11 +6,11 @@ import { TabBar, type TabItem } from './TabBar'
 export function JsTabsNavigator({ tabs }: { tabs: readonly TabItem[] }) {
   const { colors } = useTheme()
   return <Tabs screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
-    tabBar={({ state, navigation }) => <TabBar tabs={tabs} selected={state.routes[state.index].name} onSelect={name => {
+    tabBar={({ state, emitter, navigateToTab }) => <TabBar tabs={tabs} selected={state.routes[state.index].name} onSelect={name => {
       const route = state.routes.find(candidate => candidate.name === name)
       if (!route) return
-      const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
-      if (!event.defaultPrevented && state.routes[state.index].name !== name) navigation.navigate(name)
+      const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
+      if (!event.defaultPrevented && state.routes[state.index].name !== name) navigateToTab(route.key)
     }} />}>
     {tabs.map(tab => <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.label }} />)}
   </Tabs>

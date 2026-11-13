@@ -6,7 +6,7 @@ import { useTheme } from '../../design/ThemeProvider'
 import { radii, spacing, typography } from '../../design/tokens'
 
 export interface ControlButtonProps {
-  ref?: Ref<View>
+  ref?: Ref<React.ComponentRef<typeof View>>
   label: string
   accessibilityLabel?: string
   accessibilityHint?: string

@@ -30,7 +30,7 @@ export function LectionaryPicker({ draft, editable, onApply }: {
   const [visible, setVisible] = useState(false)
   const [rejected, setRejected] = useState(false)
   const request = useRef(0)
-  const opener = useRef<View>(null)
+  const opener = useRef<React.ComponentRef<typeof View>>(null)
   useEffect(() => () => { request.current++ }, [])
   const stale = rejected || !!preview && !sameDraft(preview.draft, draft)
   const day = preview?.result?.ok ? preview.result.day : null

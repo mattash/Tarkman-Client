@@ -32,11 +32,11 @@ export function LinkEditor({ state, controller }: { state: ManagerSnapshot; cont
   const [picker, setPicker] = useState<{ field: PickerField; values: readonly string[] } | null>(null)
   const expiration = state.expirationInput ?? localExpiration(draft.expires_at)
   const [confirmRevoke, setConfirmRevoke] = useState(false)
-  const revokeRef = useRef<View>(null)
+  const revokeRef = useRef<React.ComponentRef<typeof View>>(null)
   const [reviewSelection, setReviewSelection] = useState<{ conflict: typeof state.conflict; fields: (keyof DisplayLinkFields)[] }>()
   const selected = reviewSelection?.conflict === state.conflict ? reviewSelection?.fields ?? [] : []
   const [pending, setPending] = useState<NavigationAction | null>(null), [discard, setDiscard] = useState(false)
-  const cancelRef = useRef<View>(null)
+  const cancelRef = useRef<React.ComponentRef<typeof View>>(null)
   const changes = changedFields(baseline ?? CREATE_DEFAULTS, draft), dirty = Object.keys(changes).length > 0 || state.publish !== undefined || state.expirationInvalid
   const guarded = !state.revoked && (dirty || state.saving || state.uncertain)
   const disabled = state.loading || state.saving || state.unavailable || !state.loaded

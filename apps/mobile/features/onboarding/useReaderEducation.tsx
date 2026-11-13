@@ -13,7 +13,7 @@ import { STEPS, tipEligible, type Feature, type Step } from './state'
 
 export function useReaderEducation({ id, healthy, ready, sheetOpen, available, following, root, targets, layoutVersion, open }: {
   id: number; healthy: boolean; ready: boolean; sheetOpen: boolean; available: boolean; following: boolean
-  root: RefObject<View | null>; targets: Record<Step, RefObject<View | null>>; layoutVersion: string
+  root: RefObject<React.ComponentRef<typeof View> | null>; targets: Record<Step, RefObject<React.ComponentRef<typeof View> | null>>; layoutVersion: string
   open(step: Exclude<Step, 'follow'>): void
 }) {
   const onboarding = useOnboarding(), { t } = useI18n(), { colors } = useTheme()

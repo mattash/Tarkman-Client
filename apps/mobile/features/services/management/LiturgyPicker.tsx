@@ -17,7 +17,7 @@ export interface LiturgyPickerProps {
   selected: LiturgyOption[]
   editable: boolean
   error?: string
-  headingRef?: Ref<View>
+  headingRef?: Ref<React.ComponentRef<typeof View>>
   onChange(update: (draft: SessionDraft) => SessionDraft): void
 }
 
@@ -29,7 +29,7 @@ export function LiturgyPicker({ catalog, selected, editable, error, headingRef, 
   const { t } = useI18n()
   const { colors } = useTheme()
   const [open, setOpen] = useState(false)
-  const addRef = useRef<View>(null)
+  const addRef = useRef<React.ComponentRef<typeof View>>(null)
   const announce = (message: string) => { if (Platform.OS !== 'web') AccessibilityInfo.announceForAccessibility(message) }
   function move(item: LiturgyOption, offset: -1 | 1, index: number) {
     onChange(draft => moveLiturgy(draft, item.id, offset))
@@ -74,7 +74,7 @@ export function LiturgyPicker({ catalog, selected, editable, error, headingRef, 
 }
 
 function AddLiturgySheet({ visible, catalog, selected, openerRef, onAdd, onDismiss }: {
-  visible: boolean; catalog: CatalogController; selected: LiturgyOption[]; openerRef: React.RefObject<View | null>
+  visible: boolean; catalog: CatalogController; selected: LiturgyOption[]; openerRef: React.RefObject<React.ComponentRef<typeof View> | null>
   onAdd(item: LiturgyOption): void; onDismiss(): void
 }) {
   const { t } = useI18n()

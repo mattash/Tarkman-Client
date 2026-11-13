@@ -41,7 +41,7 @@ function NewSession({ scope }: { scope: string }) {
   // Choosing to check My Sessions after an unknown outcome is deliberate, so it skips the discard prompt.
   const [checking, setChecking] = useState(false)
   const announced = useRef(false)
-  const createRef = useRef<View>(null)
+  const createRef = useRef<React.ComponentRef<typeof View>>(null)
   const { bootstrap, phase } = state
   const editable = !!bootstrap && phase === 'editing'
   const guarded = !checking && ((isDirty(state) && phase !== 'created') || phase === 'pending' || phase === 'uncertain')

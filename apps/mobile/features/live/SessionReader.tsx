@@ -47,10 +47,10 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
   const [languageMode, setLanguageMode] = useState<'quick' | 'choose'>('quick')
   const [draftLanguages, setDraftLanguages] = useState<Language[]>(preferences.selectedLanguages)
   const [languageError, setLanguageError] = useState(false)
-  const languageOpener = useRef<View>(null), preferencesOpener = useRef<View>(null), explanationOpener = useRef<View>(null)
-  const root = useRef<View>(null), followTarget = useRef<View>(null)
+  const languageOpener = useRef<React.ComponentRef<typeof View>>(null), preferencesOpener = useRef<React.ComponentRef<typeof View>>(null), explanationOpener = useRef<React.ComponentRef<typeof View>>(null)
+  const root = useRef<React.ComponentRef<typeof View>>(null), followTarget = useRef<React.ComponentRef<typeof View>>(null)
   const [layoutReady, setLayoutReady] = useState(false)
-  const activeOpener = useRef<View>(null)
+  const activeOpener = useRef<React.ComponentRef<typeof View>>(null)
   const [manualPart, setManualPart] = useState<string | undefined>(undefined)
   // Storage is a render fallback only; live state and its position channel stay authoritative.
   // A deleted session shows its unavailable notice; a saved copy never silently stands in for it.
@@ -139,7 +139,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     <AppText variant="heading" accessibilityRole="alert">{t('common.serviceNoLongerAvailable')}</AppText>
     <AppButton variant="secondary" onPress={() => router.replace('/')}>{t('scan.backToToday')}</AppButton>
   </View>
-  return <View testID="reader-root" ref={root} {...(Platform.OS === 'web' ? { onKeyDown: (event: { key: string }) => { if (event.key === 'Escape') education.endTour() } } : {})} onLayout={() => setLayoutReady(true)} style={{ flex: 1 }}>
+  return <View testID="reader-root" ref={root} {...(Platform.OS === 'web' ? { onKeyDown: (event: object) => { if ('key' in event && event.key === 'Escape') education.endTour() } } : {})} onLayout={() => setLayoutReady(true)} style={{ flex: 1 }}>
     <View testID="reader-header-actions" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
       paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
       <View ref={followTarget} collapsable={false} testID="reader-header-nav" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 0 }}>

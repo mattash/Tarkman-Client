@@ -7,7 +7,7 @@ import { EMPTY_OPTIONS, type SessionDraft } from '../features/services/managemen
 
 const initial: SessionDraft = { date: '2026-06-01', liturgies: [], options: { ...EMPTY_OPTIONS, prophetic: 'Manual prophetic', gospel: 'Manual Gospel' } }
 afterEach(() => { jest.restoreAllMocks() })
-function picker(draft: SessionDraft, onApply = jest.fn(() => true)) {
+function picker(draft: SessionDraft, onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)) {
   return <ThemeProvider scheme="light"><LectionaryPicker draft={draft} editable onApply={onApply} /></ThemeProvider>
 }
 
@@ -28,7 +28,7 @@ it('previews replacement of only the explicitly selected prophetic field and sup
   const result = await getLectionaryDay(initial.date, 'en')
   if (!result.ok) throw Error(result.reason)
   const reference = result.day.ReadingsList[0]
-  const onApply = jest.fn(() => true)
+  const onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)
   await render(picker(initial, onApply))
   await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
   const choice = await screen.findByRole('checkbox', { name: `Prophetic reading: ${reference}` })
@@ -48,7 +48,7 @@ it('previews replacement of only the explicitly selected prophetic field and sup
 it('blocks prophetic replacement when a manual edit makes the preview stale', async () => {
   const result = await getLectionaryDay(initial.date, 'en')
   if (!result.ok) throw Error(result.reason)
-  const onApply = jest.fn(() => true)
+  const onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)
   const view = await render(picker(initial, onApply))
   await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
   await fireEvent.press(await screen.findByRole('checkbox', { name: `Prophetic reading: ${result.day.ReadingsList[0]}` }))
@@ -58,7 +58,7 @@ it('blocks prophetic replacement when a manual edit makes the preview stale', as
 })
 
 it('keeps empty offline days non-applicable without clearing manual prophetic text', async () => {
-  const onApply = jest.fn(() => true)
+  const onApply = jest.fn<React.ComponentProps<typeof LectionaryPicker>['onApply']>(() => true)
   await render(picker({ ...initial, date: '2026-01-26' }, onApply))
   await fireEvent.press(screen.getByRole('button', { name: 'Preview readings for this date' }))
   expect(await screen.findByText('No readings are appointed for this date. Your existing reading fields will stay unchanged.')).toBeOnTheScreen()

@@ -62,7 +62,7 @@ it('restores the supplied web opener after the dismissal callback', async () => 
   Platform.OS = 'web'
   const focus = jest.fn()
   try {
-    await render(<AppModal visible title="Focus" onDismiss={() => {}} openerRef={{ current: { focus } as unknown as View }} />, { wrapper })
+    await render(<AppModal visible title="Focus" onDismiss={() => {}} openerRef={{ current: { focus } as unknown as React.ComponentRef<typeof View> }} />, { wrapper })
     await fireEvent(screen.getByTestId('app-modal'), 'dismiss')
     expect(focus).toHaveBeenCalledTimes(1)
   } finally { Platform.OS = previous }

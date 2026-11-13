@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import type { Language } from '@tarkman/core'
@@ -13,8 +14,8 @@ const parts = normalizeParts({ parts: [
 ] })
 
 async function layout(selectedLanguages: Language[], width: number, language: Language = 'en') {
-  const view = await render(<ThemeProvider scheme="light"><PartList parts={parts} currentKey={parts[0].key} following={false} language={language}
-    selectedLanguages={selectedLanguages} manual={() => {}} open={() => {}} /></ThemeProvider>)
+  const view = await render(<GestureHandlerRootView><ThemeProvider scheme="light"><PartList parts={parts} currentKey={parts[0].key} following={false} language={language}
+    selectedLanguages={selectedLanguages} manual={() => {}} open={() => {}} /></ThemeProvider></GestureHandlerRootView>)
   await fireEvent(screen.getByTestId('reading-frame'), 'layout', { nativeEvent: { layout: { width, height: 700, x: 0, y: 0 } } })
   return view
 }
@@ -26,8 +27,8 @@ it('gives every column one width, the same in every part, whatever its text or w
   // (1133 − 2 × 20 page − 2 × 24 gap) ÷ 3, floored.
   expect(widths(parts[0].key)).toEqual([['en', 348], ['grabar', 348], ['translit', 348]])
   expect(widths(parts[1].key)).toEqual(widths(parts[0].key))
-  await view.rerender(<ThemeProvider scheme="light"><PartList parts={parts} currentKey={parts[0].key} following={false} language="grabar"
-    selectedLanguages={['en', 'grabar', 'translit']} manual={() => {}} open={() => {}} /></ThemeProvider>)
+  await view.rerender(<GestureHandlerRootView><ThemeProvider scheme="light"><PartList parts={parts} currentKey={parts[0].key} following={false} language="grabar"
+    selectedLanguages={['en', 'grabar', 'translit']} manual={() => {}} open={() => {}} /></ThemeProvider></GestureHandlerRootView>)
   expect(widths(parts[0].key)).toEqual([['grabar', 348], ['en', 348], ['translit', 348]])
 })
 

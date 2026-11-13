@@ -12,7 +12,7 @@ export function LinkActions({ link, disabled = false, adapter = platformShare }:
   link: ManagedDisplayLink; disabled?: boolean; adapter?: ShareAdapter
 }) {
   const { t } = useI18n()
-  const shareRef = useRef<View>(null), copyRef = useRef<View>(null)
+  const shareRef = useRef<React.ComponentRef<typeof View>>(null), copyRef = useRef<React.ComponentRef<typeof View>>(null)
   const lock = useRef(false), mounted = useRef(true)
   const [busy, setBusy] = useState(false), [manual, setManual] = useState(false), [notice, setNotice] = useState('')
   const [now, setNow] = useState(() => Date.now())

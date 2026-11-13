@@ -13,14 +13,13 @@ import { link } from './fixtures/displayLink'
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }))
 jest.mock('../features/live/config', () => ({ readerConfig: () => ({ endpoints: { api: 'https://api.test', cable: 'wss://api.test/cable' } }) }))
 async function renderApp(store: ReturnType<typeof memoryStore>['store'], request: typeof fetch) {
-  const app = renderRouter({
+  const app = await renderRouter({
     _layout: () => <ThemeProvider><AuthProvider apiBase={API} store={store} request={request}><Slot /></AuthProvider></ThemeProvider>,
     index: () => <Text>Home</Text>,
     'sign-in': SignInScreen,
     '(signed-in)/_layout': SignedInLayout,
     '(signed-in)/display-links': DisplayLinksRoute,
   }, { initialUrl: '/display-links' })
-  await app
   return { getPathname: app.getPathname, getSearchParams: app.getSearchParams }
 }
 it('protects the direct manager URL and preserves its return path', async () => {

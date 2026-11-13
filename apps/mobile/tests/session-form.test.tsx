@@ -27,14 +27,13 @@ const listed = (ids: number[]) => ({ sessions: ids.map(id => ({ session: { id, l
 async function renderApp(request: typeof fetch, initialUrl = '/services') {
   clearMutations()
   const { store } = memoryStore({ [AUTH_KEY]: storedAuth() })
-  const app = renderRouter({
+  const app = await renderRouter({
     _layout: () => <ThemeProvider scheme="light"><AuthProvider apiBase={API} store={store} request={request}><Slot /></AuthProvider></ThemeProvider>,
     '(signed-in)/_layout': SignedInLayout,
     '(signed-in)/services': MyServicesScreen,
     '(signed-in)/session-management/new': NewSessionScreen,
     '(signed-in)/services/[id]': () => null,
   }, { initialUrl })
-  await app
   return { getPathname: app.getPathname }
 }
 

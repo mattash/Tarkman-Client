@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { beforeEach, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
@@ -24,7 +25,7 @@ jest.mock('expo-router', () => ({ router: { push: jest.fn() }, useFocusEffect: (
 let mockLifecycle: (active: boolean, online: boolean) => void
 jest.mock('../features/live/lifecycle', () => ({ lifecycle: { listen: (callback: typeof mockLifecycle) => { mockLifecycle = callback; return () => {} } } }))
 const store = { get: async () => null, set: async () => {}, remove: async () => {} }
-const wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider><ReadingFontContext.Provider value={true}><PreferencesProvider store={store}>{children}</PreferencesProvider></ReadingFontContext.Provider></ThemeProvider>
+const wrapper = ({ children }: { children: React.ReactNode }) => <GestureHandlerRootView><ThemeProvider><ReadingFontContext.Provider value={true}><PreferencesProvider store={store}>{children}</PreferencesProvider></ReadingFontContext.Provider></ThemeProvider></GestureHandlerRootView>
 const endpoints = { api: 'https://example.test', cable: 'wss://example.test/cable' }
 const parts = normalizeParts({ parts: [1, 2].map(position => ({ part: { id: 1, liturgy_id: 10, liturgy_part_id: 10 + position, position, en: `Prayer ${position}` } })) })
 const explanations = (title = 'Authored') => normalizeExplanations({ explanations: [{ explanation: { id: 1, title, description: 'Body', liturgy_part_id: 11 } }] })

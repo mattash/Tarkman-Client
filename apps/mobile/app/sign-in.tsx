@@ -24,7 +24,7 @@ export default function SignInScreen() {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string>()
   const inFlight = useRef(false)
-  const passwordField = useRef<TextInput>(null)
+  const passwordField = useRef<React.ComponentRef<typeof TextInput>>(null)
   if (state.status === 'signedIn') return <Redirect href={safeReturnTo(returnTo)} />
   if (state.status === 'hydrating') return <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator accessibilityLabel={t('common.checkingSignIn')} /></View>
 

@@ -52,7 +52,7 @@ function EditSession({ scope, userId, sessionId }: { scope: string; userId: numb
   useFocusEffect(useMemo(() => () => { void controller.load() }, [controller]))
   const [leaving, setLeaving] = useState(false)
   const announced = useRef(false)
-  const deleteRef = useRef<View>(null)
+  const deleteRef = useRef<React.ComponentRef<typeof View>>(null)
   const { baseline, phase } = state
   const dirty = isEditDirty(state)
   const editable = !!baseline && phase === 'editing' && !state.conflict && !state.reset && !state.final
