@@ -32,12 +32,12 @@ not merely a successful Activity.request call. No .token request/provider is use
 
 | Before — five-field native fixture | After — validated v1 native fixture |
 | --- | --- |
-| ![Before native card](<before-system-choir.jpg>) | ![After native card](<after-system-choir.jpg>) |
+| ![Before native card](<before-system-choir.png>) | ![After native card](<after-system-choir.png>) |
 
 The matched reported appearance is intentionally preserved; this is contract and
 semantic integration, not a restyling. New local controls/preview additionally
 exercise unknown and terminal state:
-[unknown total](<after-unknown-total.jpg>) · [deleted/cleared title and tap](<after-deleted-cleared.jpg>).
+[unknown total](<after-unknown-total.png>) · [deleted/cleared title and tap](<after-deleted-cleared.png>).
 
 ## Expiry without app rerun
 
@@ -46,10 +46,10 @@ returned source update **22:15:41Z**, staleDate **22:16:41Z** (`pushType=nil`,
 `schemaVersion=1`). The app was explicitly terminated using XCTest after background
 presentation. This is **not OS eviction or user force-quit**.
 
-- [75-second post-termination observation](<after-terminated-75s.jpg>), attachment
+- [75-second post-termination observation](<after-terminated-75s.png>), attachment
   `0850DF87-3A68-42FB-BABF-E2B84C8F0EAF.png`, **22:17:11.800Z**: Last reported
   part1/3Priest is still retained, roughly91s after source update /31s after expiry.
-- [Later genuine stale rendering](<after-terminated-later-stale.jpg>), attachment
+- [Later genuine stale rendering](<after-terminated-later-stale.png>), attachment
   `DAB2AF19-FF40-418B-B37C-8A43A2910A34.png`, **22:18:57.530Z**: Stale — open
   public parts; ordinal and role hidden, roughly197s after source update /137s
   after expiry, without app relaunch between observations.
@@ -70,8 +70,8 @@ content is in these owned-simulator captures. Raw physical xcresult/logs must ne
 be added here. Full Dynamic Island, Russian runtime, dark/large text/assistive
 technology and physical remote delivery remain separate acceptance gates.
 
-Files retain the exported JPEG bytes unchanged (XCTest gave them .png names; the
-committed extension reflects actual encoding). SHA256 source/capture provenance:
+Files retain the exported PNG bytes unchanged. File signature/decoder inspection
+confirmed PNG encoding; filenames match that encoding. SHA256 source/capture provenance:
 
 ```text
 Before App:    72dd591167384b80410f32291de21757fc63e4f2be2f84588c61d37d09db8f98
@@ -80,8 +80,8 @@ Before en:     873fd992421bf382af7a2824778c7c480efc75d4bed590587a24e515c46af511
 After App:     aca85fbfedc34dd3d02c4fc77c533a304971989b2523345c9ad257cab7cbc10a
 After Widget:  1739c89a135f12f41aa49db98cb7d0b95916649045806f64b27d6bcf68631fab
 After en:      1e8ae9ad7530ae3d5f9863098b684b1b543eb2404b19feb40547d018e7fc531e
-before-system-choir.jpg: 7b447d39f58daafb02c3c8ab24def3593aad544278dbe8eb2bdf47e6dfc26567
-after-system-choir.jpg: fd8bf67c4ce02fa88ac6f1c8958f9aa196216e56f5be0a3933a5a3f274463051
-after-terminated-75s.jpg: f874476da25f943abea74b6f9dcff099abd5bd11786459836389c915e006a7da
-after-terminated-later-stale.jpg: 678d2456094f22fa7ff8e2d51254050979b3af345630be5f760e34abdc1b8a79
+before-system-choir.png: 7b447d39f58daafb02c3c8ab24def3593aad544278dbe8eb2bdf47e6dfc26567
+after-system-choir.png: fd8bf67c4ce02fa88ac6f1c8958f9aa196216e56f5be0a3933a5a3f274463051
+after-terminated-75s.png: f874476da25f943abea74b6f9dcff099abd5bd11786459836389c915e006a7da
+after-terminated-later-stale.png: 678d2456094f22fa7ff8e2d51254050979b3af345630be5f760e34abdc1b8a79
 ```
