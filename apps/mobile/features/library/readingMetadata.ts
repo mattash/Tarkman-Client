@@ -1,5 +1,5 @@
 import type { KeyValueAdapter } from '@tarkman/core'
-import { LANGUAGES, type BundleLanguage } from './contracts'
+import { LANGUAGES, LibraryError, type BundleLanguage } from './contracts'
 
 const PREFIX = 'tarkman.library-reading.v1:'
 export const MAX_BOOKMARKS = 100
@@ -36,7 +36,7 @@ function same(a: PassageAnchor, b: PassageAnchor): boolean {
   return a.revision === b.revision && a.occurrenceId === b.occurrenceId && a.language === b.language && a.offset === b.offset
 }
 function key(scope: ReadingScope): string {
-  if (!scope.environment || scope.environment.length > 2048 || !Number.isSafeInteger(scope.liturgyId) || scope.liturgyId <= 0) throw new Error('Invalid reading scope')
+  if (!scope.environment || scope.environment.length > 2048 || !Number.isSafeInteger(scope.liturgyId) || scope.liturgyId <= 0) throw new LibraryError('invalid')
   // The caller supplies the controller's normalized environment, never a URL from a link.
   return `${PREFIX}${encodeURIComponent(scope.environment)}:${scope.liturgyId}`
 }
