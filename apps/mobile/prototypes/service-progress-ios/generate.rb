@@ -19,7 +19,8 @@ widget = project.new_target(:app_extension, 'ServiceProgressLiveActivity', :ios,
       'INFOPLIST_KEY_CFBundleDisplayName' => 'Service Progress Demo'
     })
   end
-  target.add_file_references([project.main_group.new_file('Shared/ServiceAttributes.swift')])
+  target.add_file_references([project.main_group.new_file('Shared/ServiceAttributes.swift'),
+                              project.main_group.new_file('Shared/ServiceContentState.swift')])
   resources = project.main_group.new_variant_group('Localizable.strings')
   ['en', 'ru'].each { |lang| resources.new_file("Resources/#{lang}.lproj/Localizable.strings").name = lang }
   target.resources_build_phase.add_file_reference(resources)

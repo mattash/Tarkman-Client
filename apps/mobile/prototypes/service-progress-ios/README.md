@@ -46,6 +46,34 @@ xcrun simctl launch BA0449F1-92EC-4D80-A869-4E183F56BEC4 app.tarkman.progresspro
 
 Observe OFF before opting in; enable disclosure, Start; use Simulator Home/Lock on **that window only**, capture fresh then >60s stale. Terminate using `xcrun simctl terminate <owned UUID> app.tarkman.progressprototype` after backgrounding, not another app. Capture with `xcrun simctl io <owned UUID> screenshot artifacts/<name>.png`. Relaunch removes prior activities and resets disclosure. Simulator termination is not proof of physical-device force-quit behavior. No physical phone, shared sim, production settings/data or credentials are part of this test.
 
+## Compiled synthetic wire golden (no push activation)
+
+`ServiceAttributes.ContentState` aliases the Foundation-only `ServiceContentState`
+compiled into both app and extension. This extraction preserves the existing native
+payload and rendering. Run its golden without a phone, server or APNs credentials:
+
+```sh
+mkdir -p artifacts
+swiftc Shared/ServiceContentState.swift Tests/ContentStateGolden.swift \
+  -o artifacts/content-state-golden
+artifacts/content-state-golden Tests/Fixtures/synthetic-update.json
+```
+
+The fixture is a synthetic ActivityKit **update envelope**, not a registration
+request, Expo `props` wrapper or the TypeScript publication model. APNs `timestamp`
+and `stale-date` are Unix seconds; native `updatedAt` uses default Codable Date
+encoding, seconds since **2001-01-01**. The test decodes with the exact native state
+type, compares compiled encoding against the fixture and checks payload size.
+A fake provider can consume this fixture; it does not exercise actual APNs.
+
+This existing five-field state is **synthetic-only**: fixed three-part totals and
+localization-key roles cannot represent arbitrary manifests, unknown totals or all
+terminal states. Backend [#552](https://github.com/mattash/Tarkman/issues/552)
+and client #277 must agree a versioned real-service contract before connecting a
+native adapter. No token observation, registration endpoint, provider credentials,
+push entitlement or `pushType: .token` is enabled by this golden. The harness still
+requests `pushType: nil`; no remote delivery is claimed.
+
 ## Evidence limits
 
 A pre-opt-in screenshot of this revision is a **same-revision before/after**, not an actual previous-source baseline. The existing shared simulator installation `app.tarkman0.2.7` reportedly lacks Activities/extension, but its exact installed revision is unknown; it was not altered or used as a source baseline. Simulator evidence cannot establish APNs delivery, server latency, production background correctness, device power behavior, Android feasibility or production readiness. Dynamic Island expanded/minimal code compilation is not by itself visual evidence of every system presentation.

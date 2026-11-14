@@ -2,13 +2,7 @@ import ActivityKit
 import Foundation
 
 struct ServiceAttributes: ActivityAttributes {
-    struct ContentState: Codable, Hashable {
-        var ordinal: Int
-        var occurrenceID: Int
-        var role: String // Localization key, synthetic only.
-        var updatedAt: Date
-        var paused: Bool
-    }
+    typealias ContentState = ServiceContentState
     let serviceID: Int
     // Immutable, distinct occurrences; not production part identifiers.
     static let occurrenceIDs = [11, 12, 13]
