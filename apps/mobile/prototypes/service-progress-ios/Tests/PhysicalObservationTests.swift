@@ -38,9 +38,15 @@ final class PhysicalObservationTests: XCTestCase {
         // must first be identified as belonging to this isolated prototype.
         func sample(_ phase: String) -> Bool {
             let title = "SYNTHETIC PUBLIC SERVICE 42"
-            let titleVisible = springboard.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch.exists
-            let staleVisible = springboard.staticTexts["Stale — open public parts"].exists
-            let reportedVisible = springboard.staticTexts["Last reported part"].exists
+            // WidgetKit may expose a combined accessibility element rather than
+            // StaticText children. Query only our fixed strings, never dump the tree.
+            func containsSyntheticLabel(_ value: String) -> Bool {
+                springboard.descendants(matching: .any)
+                    .matching(NSPredicate(format: "label CONTAINS %@", value)).firstMatch.exists
+            }
+            let titleVisible = containsSyntheticLabel(title)
+            let staleVisible = containsSyntheticLabel("Stale — open public parts")
+            let reportedVisible = containsSyntheticLabel("Last reported part")
             print("PHYSICAL_SYNTHETIC_SAMPLE phase=\(phase) elapsed=\(Int(Date().timeIntervalSince(started))) title=\(titleVisible) staleLabel=\(staleVisible) lastReportedLabel=\(reportedVisible)")
             return titleVisible
         }
