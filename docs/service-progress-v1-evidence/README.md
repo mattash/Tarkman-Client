@@ -85,3 +85,51 @@ after-system-choir.png: fd8bf67c4ce02fa88ac6f1c8958f9aa196216e56f5be0a3933a5a3f2
 after-terminated-75s.png: f874476da25f943abea74b6f9dcff099abd5bd11786459836389c915e006a7da
 after-terminated-later-stale.png: 678d2456094f22fa7ff8e2d51254050979b3af345630be5f760e34abdc1b8a79
 ```
+
+## Selected-service caller — current default-off Before / After
+
+**Before:** `06b5df1418943836517ba77620716fec3770b2ed` app/UI, actually built and
+captured before adding the caller section. **After:**
+`d84ebe709e9497992c8db424068e200c90b64b40`, matching the final captured production
+sources. Both use the same owned simulator, viewport, English/light/default text
+and unchanged settings above. State: fresh launch, disclosure OFF, no Activity,
+scrolled to the Form's end. The extra section increases content height; this is the
+same end-of-Form state rather than a fabricated fixed pixel offset. Real clocks differ.
+
+| Before — no development caller | After — caller visibly off, controls disabled |
+| --- | --- |
+| ![Before default-off app](<before-caller-default-off.png>) | ![After default-off caller](<after-caller-default-off.png>) |
+
+Before result `RemoteCallerBefore-01.xcresult`, source attachment
+`C2892AC5-71E9-4CCB-B8A9-D0AAAB864EC6.png`, **2026-11-14T22:51:07.047Z**.
+After result `RemoteCallerDefaultAfter-02.xcresult`, source attachment
+`2FB5849A-FF16-4906-A6A5-158A2FCADBAE.png`, **2026-11-14T23:52:53.324Z**.
+The final test asserts the actual localized off status and disabled selection,
+verification and start controls. Built/signed Info contains Boolean false and no
+backend/reader origin; signing has no APNs/App Group entitlement. No enabled
+remote path, Keychain operation, endpoint request or real token issuance is
+claimed by these captures. Synthetic policy/flow tests cover that preparation separately.
+
+The original matched native card was also refreshed on the current source:
+[Current After — local Choir2/3](<after-caller-system-choir.png>), attachment
+`E47AF402-3CC1-4221-B1E8-A8C20067A54F.png`, **2026-11-14T23:52:37.765Z**.
+Compare it with the genuine [five-field Before](<before-system-choir.png>) above:
+same service42/occurrence12/active/Choir2/3, viewport/theme/wallpaper and qualified
+reported wording, now with the actual current caller code present but off.
+
+Three focused UI tests passed on the caller source (default gate, matched native
+card and unknown/empty/paused/deleted controls); after the final native terminal
+invalidation guard, the two matched captures were refreshed and passed again.
+The earlier expiry observations remain historical, explicitly scoped above;
+unchanged 75/180-second suites were not repeated. All selected images were separately
+visually inspected, not inferred from test exit status. No raw private phone results
+or phone content is included. Phone work remains explicitly held.
+
+These files preserve the original exported PNG bytes (not the read tool's normalized
+JPEG previews), verified by file signatures. SHA256:
+
+```text
+before-caller-default-off.png: ac2ad6a9580106056c0420e4fdee0ad6717c6addd224e502a849a4dd9a162336
+after-caller-default-off.png: ebed942b996906a49c5039aaa3ce89e66345c3386a71da0d95d124d5b2f6a060
+after-caller-system-choir.png: 804821c7181511c10bf36d14b36853195acc9318e1916770eee961c40bda2aa7
+```
