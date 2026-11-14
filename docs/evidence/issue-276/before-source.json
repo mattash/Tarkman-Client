@@ -1,0 +1,8 @@
+{
+  "sourceRevision": "7aa34e13fb04cfdf6c110255d8591f4467a81e69",
+  "isolation": "git archive into /tmp/issue276-baseline-7aa34e13",
+  "applicationSourceChanges": [],
+  "externalToolingAdjustment": "tools/metro/single-react-native.js accepts dependency directory derived from realpath(react/package.json), for reuse of existing installed dependencies only",
+  "dependencies": "Individual symlinks to installed mobile dependencies; @tarkman package links point exclusively to isolated baseline source packages",
+  "platform": "Expo apps/mobile web rendered in desktop Chromium; no native evidence"
+}
