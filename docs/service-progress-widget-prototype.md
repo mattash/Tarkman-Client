@@ -1,17 +1,21 @@
-# Service-progress system surface: bounded design / data prototype
+# Service-progress system surface: bounded design / isolated native prototype
 
-Status: design and executable data prototype for #277, based on SDK 58 baseline
+Status: bounded design, executable data prototype and **separate local-only native
+ActivityKit harness** for #277, based on SDK 58 baseline
 `d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d`. **Live delivery is incomplete.**
-No widget, Live Activity, follow UI, native target, background task, push registration,
-credential, entitlement or release is added. Existing mobile/web readers are unchanged.
-This is not a launcher-only implementation substituted for the requested live widget.
+Existing mobile/web readers and their normal dependency/native build graphs are
+unchanged. The standalone harness has its own app/extension identity and synthetic
+public fixture; it is not a production widget, backend connection or substitute
+launcher presented as delivered live progress.
 
 ## Proposed platform boundary
 
-Recommend an explicitly opted-in **iOS Live Activity** for one bounded ongoing public
-service. Keep a Home Screen widget as a separately described last-known snapshot,
-not a real-time service monitor. This is a proposal for owner review, not a product
-or signing decision made by this prototype.
+The owner's follow-up authorizes an explicitly opted-in **iOS Live Activity** first,
+**default off**, with explicit per-service public lock-screen disclosure and a
+provisional **60-second expiry**, for a bounded isolated experiment. These are
+experimental assumptions, not a production freshness SLO or a decision to omit
+Android from release. Keep a Home Screen widget as a separately described
+last-known snapshot, not a real-time service monitor.
 
 | Surface | Available path | Limit and implication |
 | --- | --- | --- |
@@ -21,9 +25,10 @@ or signing decision made by this prototype.
 | Android promoted Live Updates | Separate future investigation | Expo custom notifications are not evidence of promoted Live Updates support. Android promotion excludes custom RemoteViews and remains user/system controlled. Not part of this prototype. |
 | Web, TV, unsupported/disabled native surface | Existing public read-only reader | No changes. Preserve the existing iOS 16.4+ app behavior without requiring an Activity or widget. |
 
-`expo-widgets` / `@expo/ui` are not installed in this repository baseline. Expo Go
-cannot validate these native surfaces. Adding them would require a new development
-binary and native-extension build checks; this PR intentionally does neither.
+`expo-widgets` / `@expo/ui` are not installed in this repository baseline or added
+by this PR. Expo Go cannot validate these native surfaces. The experiment instead
+uses a standalone SwiftUI/ActivityKit app, outside Expo autolinking and EAS, so no
+experimental native dependency enters the normal production build graph.
 
 Official references (reviewed for this design):
 - [Expo SDK 58 widgets, platform API restrictions, stale environment and push payloads](https://docs.expo.dev/versions/v58.0.0/sdk/widgets/)
@@ -33,6 +38,28 @@ Official references (reviewed for this design):
 - [ActivityKit push updates](https://developer.apple.com/documentation/activitykit/starting-and-updating-live-activities-with-activitykit-push-notifications)
 - [Android widget periodic updates](https://developer.android.com/develop/ui/views/appwidgets/advanced#update-periodically)
 - [Android Live Update eligibility](https://developer.android.com/develop/ui/views/notifications/live-update)
+
+## Verified normal-build isolation
+
+The native experiment is a **separate Xcode app/extension project**, not an Expo
+module, config plugin or flag-gated production dependency. No change to the ordinary
+app's manifest, lockfile or config is needed. Its separate identifiers, no production
+URL scheme/associated-domain/keychain group, and no EAS update configuration prevent
+replacing or sharing data with the installed production app.
+
+[Recorded graph comparison](<service-progress-isolation.json>) compares actual
+`expo-modules-autolinking resolve --platform apple --json` output for the normal app
+against the original baseline with both experiment flags unset: all **33 modules**,
+versions, pods, module classes and delegate/subscriber metadata match after only
+normalizing the two absolute checkout roots. The refreshed baseline uses its own
+private dependency tree, not the candidate's module-resolution path.
+`expo config --type introspect --json` (`EXPO_NO_DOTENV=1`) also confirms the normal
+entitlement mods match: only the existing associated domain, no App Group/APNs,
+no `NSSupportsLiveActivities` and no inline extension targets. This verifies more than
+app-config equality. The full generated Info.plist template is not asserted equal
+because the capture baseline has an existing generated iOS directory and an
+identity-only isolation override. Ordinary app manifest/lockfile/config bytes still
+match the exact baseline commit. No shared config/package edits with #275 are needed.
 
 ## Executable prototype
 
@@ -63,7 +90,8 @@ feed bounded serialized props rather than importing this module into their callb
 - Status and freshness are independent. Active/paused can become stale; unavailable
   is not silently active; ended/deleted are terminal for this follow. Removal clears
   retained content and rejects queued publications. Native adapters must additionally
-  unregister/end/delete their surface and subscription. The prototype does no I/O.
+  unregister/end/delete their surface and subscription. The TypeScript prototype does
+  no I/O; the separate native harness only starts/updates/ends a local fixture Activity.
 - The result says `recent`, **never `live`**. `updatedAt` is source validation time.
   There is no asserted offline detection: stale means the evidence expired, not proof
   of why delivery stopped. Future renderers must label expired progress as last-known
@@ -74,13 +102,32 @@ feed bounded serialized props rather than importing this module into their callb
   serialized. Public titles/roles still disclose religious attendance: require
   deliberate per-service system/lock-screen disclosure consent before registration.
 
+### Separate native experiment and current observed limit
+
+[Native harness](<../apps/mobile/prototypes/service-progress-ios/README.md>) generates
+an isolated SwiftUI app and embedded WidgetKit extension, with synthetic service 42,
+three distinct occurrences, localized disclosure OFF/ON + Allow/Revoke, a separate
+Start action and foreground-only fixture updates/removal. No Expo package or plugin
+is installed. The native payload is a small Codable fixture, not a connected
+implementation of the TypeScript publication contract or backend transport.
+
+Real simulator consent plus the system permission produced an Activity visible
+after explicit process termination. A continuously visible card still retained its
+ordinal/role at 75 seconds; later closing/reopening Notification Center, without
+relaunching the app, displayed the genuine stale branch with ordinal/role hidden.
+Thus **stale-on-redraw is observed; an exact 60-second onscreen transition is not**.
+The current renderer always qualifies retained content as **Last reported part**.
+The final capture revision reads back ActivityKit's returned staleDate and state;
+its visual comparison remains pending. This is measured OS behavior to review, not
+an assertion of real-time delivery or a reason to silently relax #277's criteria.
+
 ### Expiry without another app run
 
 The test that projects a stored snapshot one day later proves only deterministic
 expiry logic; **it does not prove any OS surface redraws when JavaScript is dead**.
-For a Live Activity, pass the same expiry to `staleDate` and use the native
-`environment.isStale` to hide/label progress even without the app. `staleDate` does
-not end/remove an Activity. A separate end push and dismissal policy are needed.
+For a Live Activity, pass the same expiry to `staleDate` and use native
+`ActivityViewContext.isStale` (or Expo's `environment.isStale`) to hide/label progress
+even without the app. `staleDate` does not end/remove an Activity. A separate end push and dismissal policy are needed.
 Home widgets need precomputed stale timeline entries on iOS, subject to scheduling.
 Expo Android has no equivalent timeline API here: a separately verified native
 expiry mechanism is a prerequisite, or limit it to explicitly timestamped snapshots
@@ -89,9 +136,14 @@ ActionCable socket as evidence of terminated-app delivery.
 
 ## Missing backend push contract (proposal, not implemented)
 
-Existing public reader state/cursor/content-context and deletion revisions are useful
-inputs, but do not establish push registration, heartbeat delivery or expiry. Agree
-these interfaces with the backend owner before wiring a native adapter:
+The existing public client reads `/s/:id/state.json`, `/s/:id.json` and
+`/s/:id/parts.json` and receives ActionCable publications. Backend route/publication
+inspection confirms no ActivityKit registration/provider path in that inspected
+boundary; an app WebSocket is not an APNs provider. The actual missing work is a
+revocable activity registration API, durable public-state projection/heartbeat jobs
+and an ActivityKit APNs provider with per-environment token management. This local
+prototype bypasses all three and cannot measure their delivery. Agree these
+interfaces with the backend owner before wiring a native adapter:
 
 1. Opt-in registration/removal scoped to one public session and follow generation,
    platform/environment, activity identity and asynchronously rotating ActivityKit
@@ -120,23 +172,79 @@ these interfaces with the backend owner before wiring a native adapter:
    and still do not guarantee a cadence. Neither push acceptance nor socket receipt
    proves the lock-screen content was displayed on time.
 
+### Concrete backend implementation and tests to commission
+
+Proposed additive endpoints (not present or called by this prototype):
+`PUT /public/service_activity_registrations/:registration_id` and
+`DELETE /public/service_activity_registrations/:registration_id`. The PUT supplies
+an installation-generated opaque registration ID, per-registration revocation
+secret, public session ID, fresh follow generation, activity ID, ActivityKit token,
+APNs environment and expiry/consent version. It returns a bounded lease and the
+canonical sequence/expiry. Do not reuse login/controller/display-link tokens or
+allow a caller to select arbitrary APNs topics. Store tokens/secrets protected,
+redact them in logs, rate-limit creation and reject sessions not publicly readable.
+Removal authenticates only this registration and is idempotent. Token rotation
+replaces the old token atomically; old generations cannot renew a new registration.
+Exact endpoint authorization/schema remain a backend security-design deliverable,
+not an API this client can assume exists.
+
+A durable after-commit/outbox projection job must compute one coherent public
+occurrence against its content-context and enqueue coalesced updates. A separate
+bounded heartbeat job may revalidate unchanged active/paused state with a new
+publication sequence, never fabricate a new source validation time for a failed
+read. Terminal/delete jobs send an end event and stop heartbeats. The provider
+must set ActivityKit headers and native Codable content-state (or the Expo wrapper
+if that adapter is chosen), propagate expiry/stale dates, retry transient failures
+within the lease, invalidate permanent APNs token failures, and never renew expired
+or removed registrations. The local Swift harness uses direct Codable content-state,
+not Expo's JSON-string wrapper: these are alternative adapters, not interchangeable
+payloads. APNs envelope `timestamp`, `stale-date` and `dismissal-date` use Unix
+seconds, distinct from the TypeScript experiment's epoch-millisecond clock. Pin the
+native content-state's Date encoding with a golden contract fixture.
+
+Required backend tests before an end-to-end experiment:
+- request auth/abuse tests: registration isolation, public-read scope, denied private
+  service, idempotent removal, redacted tokens, bounded leases and environment/topic;
+- job tests: transactional rollback publishes nothing, dedup/coalescing and retries
+  preserve state revision/content-context, heartbeat sequence increases without a
+  state revision change, late/reordered work cannot revive removed/terminal follows;
+- provider contract tests with fake APNs: update/end headers and content-state shape,
+  a golden payload encoded by the compiled Swift `ContentState` (including its Date
+  encoding, not blindly copying TypeScript epoch-millisecond fields), payload <=4 KB,
+  stale/dismissal dates, expired lease suppresses delivery, rotating/invalid token
+  removal, transient backoff and no cross-environment token reuse;
+- device integration: correlate server publication/receipt/display timestamps with
+  real foreground, suspension, OS termination and force-quit results, dropped
+  heartbeats, lost end push, offline expiry and reconnect. Provider acceptance alone
+  is not proof of displayed freshness.
+
 ## Owner decisions, signing and measurement gate
 
-Before a native implementation, owner approval is needed for the proposed iOS-first
-Live Activity surface, exact disclosure/opt-in copy and default, tolerated stale age
-and service lifetime, and whether Android ships snapshot-only or waits for a live
-adapter. These decisions do not block reviewing this isolated prototype.
+The iOS-first, default-off, explicit per-service disclosure and provisional 60-second
+expiry assumptions are authorized for this experiment. They are not approval blockers.
+Production freshness/lifetime, final copy and Android release policy remain future
+product decisions, not reasons to stop independent native prototyping.
 
-Native validation needs an authorized Apple team, extension bundle ID and App Group,
-matching app/extension entitlements and provisioning, ActivityKit/push capability,
-registered physical devices and signed development builds; verify generated targets
-and EAS credentials rather than assuming the SDK upgrade supplies them. No signing,
-production settings/credentials or store release is authorized by this ticket.
+An isolated local-only ActivityKit experiment needs a separate app and embedded
+extension with `NSSupportsLiveActivities`, shared ActivityAttributes and
+`pushType: nil`. It needs **no App Group or push entitlement** when it shares only
+ActivityKit attributes. Unsigned simulator builds need no Apple team. Physical
+installation needs actual development signing and matching profiles for the two
+isolated bundle IDs, device inclusion and Developer Mode. App Groups are needed
+only if later sharing files/defaults; APNs capability/provider is needed only for
+remote updates. Do not assume the SDK upgrade or the production EAS profile supplies
+these. No production settings/credential changes or store release is authorized.
 See [Expo app extensions](https://docs.expo.dev/build-reference/app-extensions/) and
 [physical iOS development builds](https://docs.expo.dev/tutorial/eas/ios-development-build-for-devices/).
 
-**Not measured here:** foreground/background/termination refresh latency, push
-reliability, battery cost, physical expiration, native builds or signing. Do not mark
+Unsigned simulator app/extension compilation and a signed generic iOS development
+build succeeded for the isolated harness; deep signature verification and entitlement
+inspection also passed. Development signing uses the existing authorized team and
+new isolated identifiers, not the production app's profiles. No App Group/push
+capability was added. Signing is not currently an owner-action blocker.
+
+**Not measured here:** real-service foreground/background/termination refresh
+latency, push reliability, battery cost or physical-device expiration. Do not mark
 #277 delivered based on unit tests, app screenshots or a simulator-only demo.
 The next native experiment must record device/OS/build, source revision, consent,
 network/power state, server-issued/received/displayed times, p50/p95/max latency,
@@ -152,8 +260,9 @@ missed/coalesced updates and battery/energy observations for:
   supported service languages. Localize labels and announce ordinal/status/freshness
   without relying on color, trimming away freshness or showing bogus percentages.
 
-A UI follow-up must include actual application **Before/After** captures at the same
-viewport/theme/state, plus native device demonstrations and signed-extension evidence.
-This data/design PR has no changed UI and no UI capture claim. Live delivery remains
-incomplete until the backend/native contracts and physical measurements satisfy the
-owner-approved freshness policy.
+The standalone native UI now requires actual application **Before/After** captures
+at the same viewport/theme/state. Capture and native runtime validation are still
+in progress; a pre-opt-in capture of the new harness alone is not a prior-source
+baseline. Keep this PR a draft until a truthful comparison and applicable experiment
+checks are recorded. Live delivery remains incomplete until backend/native contracts
+and physical end-to-end measurements satisfy the original criteria.

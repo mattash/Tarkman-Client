@@ -1,0 +1,259 @@
+{
+  "baselineRevision": "d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d",
+  "candidateSource": "ticket working tree with isolated standalone native harness",
+  "baselineDependencies": "private cloned baseline node_modules; lockfile matches original baseline exactly",
+  "normalization": "replace only absolute checkout apps/mobile roots with <mobile-root>; compare entire autolinking objects including relative podspec paths and all metadata",
+  "environment": "TARKMAN_SIRI_SPIKE and TARKMAN_WIDGET_SPIKE unset; EXPO_NO_DOTENV=1 introspection",
+  "checks": {
+    "completeAutolinkingGraphEqual": true,
+    "entitlementsEqual": true,
+    "normalInlineTargetsEmpty": true,
+    "noNormalLiveActivities": true,
+    "noNormalPushEntitlement": true,
+    "noNormalAppGroup": true,
+    "unchanged:apps/mobile/package.json": true,
+    "unchanged:apps/mobile/package-lock.json": true,
+    "unchanged:apps/mobile/app.json": true
+  },
+  "moduleCount": 33,
+  "modules": [
+    {
+      "package": "@expo/dom-webview",
+      "version": "58.0.2",
+      "pods": [
+        "ExpoDomWebView"
+      ]
+    },
+    {
+      "package": "@expo/log-box",
+      "version": "58.0.15",
+      "pods": [
+        "ExpoLogBox"
+      ]
+    },
+    {
+      "package": "expo",
+      "version": "58.0.25",
+      "pods": [
+        "Expo"
+      ]
+    },
+    {
+      "package": "expo-asset",
+      "version": "58.0.21",
+      "pods": [
+        "ExpoAsset"
+      ]
+    },
+    {
+      "package": "expo-camera",
+      "version": "58.0.14",
+      "pods": [
+        "ExpoCamera"
+      ]
+    },
+    {
+      "package": "expo-clipboard",
+      "version": "58.0.4",
+      "pods": [
+        "ExpoClipboard"
+      ]
+    },
+    {
+      "package": "expo-constants",
+      "version": "58.0.16",
+      "pods": [
+        "EXConstants"
+      ]
+    },
+    {
+      "package": "expo-crypto",
+      "version": "58.0.8",
+      "pods": [
+        "ExpoCrypto"
+      ]
+    },
+    {
+      "package": "expo-dev-client",
+      "version": "58.0.20",
+      "pods": [
+        "expo-dev-client"
+      ]
+    },
+    {
+      "package": "expo-dev-launcher",
+      "version": "58.0.20",
+      "pods": [
+        "expo-dev-launcher"
+      ]
+    },
+    {
+      "package": "expo-dev-menu",
+      "version": "58.0.13",
+      "pods": [
+        "expo-dev-menu"
+      ]
+    },
+    {
+      "package": "expo-dev-menu-interface",
+      "version": "58.0.2",
+      "pods": [
+        "expo-dev-menu-interface"
+      ]
+    },
+    {
+      "package": "expo-eas-client",
+      "version": "58.0.2",
+      "pods": [
+        "EASClient"
+      ]
+    },
+    {
+      "package": "expo-file-system",
+      "version": "58.0.13",
+      "pods": [
+        "ExpoFileSystem"
+      ]
+    },
+    {
+      "package": "expo-font",
+      "version": "58.0.12",
+      "pods": [
+        "ExpoFont"
+      ]
+    },
+    {
+      "package": "expo-glass-effect",
+      "version": "58.0.5",
+      "pods": [
+        "ExpoGlassEffect"
+      ]
+    },
+    {
+      "package": "expo-json-utils",
+      "version": "58.0.1",
+      "pods": [
+        "EXJSONUtils"
+      ]
+    },
+    {
+      "package": "expo-keep-awake",
+      "version": "58.0.4",
+      "pods": [
+        "ExpoKeepAwake"
+      ]
+    },
+    {
+      "package": "expo-linking",
+      "version": "58.0.17",
+      "pods": [
+        "ExpoLinking"
+      ]
+    },
+    {
+      "package": "expo-localization",
+      "version": "58.0.5",
+      "pods": [
+        "ExpoLocalization"
+      ]
+    },
+    {
+      "package": "expo-location",
+      "version": "58.0.22",
+      "pods": [
+        "ExpoLocation"
+      ]
+    },
+    {
+      "package": "expo-manifests",
+      "version": "58.0.1",
+      "pods": [
+        "EXManifests"
+      ]
+    },
+    {
+      "package": "expo-modules-core",
+      "version": "58.1.0",
+      "pods": [
+        "ExpoModulesCore",
+        "ExpoModulesWorklets"
+      ]
+    },
+    {
+      "package": "expo-modules-jsi",
+      "version": "58.0.23",
+      "pods": [
+        "ExpoModulesJSI"
+      ]
+    },
+    {
+      "package": "expo-network",
+      "version": "58.0.5",
+      "pods": [
+        "ExpoNetwork"
+      ]
+    },
+    {
+      "package": "expo-router",
+      "version": "58.0.31",
+      "pods": [
+        "ExpoRouter"
+      ]
+    },
+    {
+      "package": "expo-secure-store",
+      "version": "58.0.3",
+      "pods": [
+        "ExpoSecureStore"
+      ]
+    },
+    {
+      "package": "expo-sqlite",
+      "version": "58.0.17",
+      "pods": [
+        "ExpoSQLite"
+      ]
+    },
+    {
+      "package": "expo-status-bar",
+      "version": "58.0.5",
+      "pods": [
+        "ExpoStatusBar"
+      ]
+    },
+    {
+      "package": "expo-structured-headers",
+      "version": "58.0.1",
+      "pods": [
+        "EXStructuredHeaders"
+      ]
+    },
+    {
+      "package": "expo-system-ui",
+      "version": "58.0.7",
+      "pods": [
+        "ExpoSystemUI"
+      ]
+    },
+    {
+      "package": "expo-updates",
+      "version": "58.0.22",
+      "pods": [
+        "EXUpdates"
+      ]
+    },
+    {
+      "package": "expo-updates-interface",
+      "version": "58.0.1",
+      "pods": [
+        "EXUpdatesInterface"
+      ]
+    }
+  ],
+  "normalEntitlements": {
+    "com.apple.developer.associated-domains": [
+      "applinks:web.tarkman.app"
+    ]
+  },
+  "limitation": "Full Info.plist template is not compared: baseline has generated native directory and identity-only baseline override; compare native module graph, actual entitlement mods and Activity-specific settings."
+}
