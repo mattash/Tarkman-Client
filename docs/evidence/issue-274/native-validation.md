@@ -2,7 +2,7 @@
 
 ## Status
 
-**Incomplete:** matched native comparisons, repeated-occurrence/keyboard navigation and the corrected long-passage repeat-selection case pass. VoiceOver audible/focus validation is **UNVERIFIED**: device/accessibility testing is now stopped under the owner's explicit hold. VoiceOver was restored to its recorded OFF state and queried as disabled; no other phone accessibility setting or notification choice was changed by Library. No authorization or operator-action prompt remains pending. Do not resume device/accessibility testing without new owner direction.
+**Incomplete:** matched native comparisons, repeated-occurrence/keyboard navigation and the corrected long-passage repeat-selection case pass. VoiceOver audible/focus validation is **UNVERIFIED**. The owner requested restoration of changed phone accessibility settings; the broader physical-testing pause and phone handback were orchestration coordination decisions, not a separate owner instruction to stop every device action. VoiceOver was restored to its recorded OFF state and queried as disabled; no other phone accessibility setting or notification choice was changed by Library. No operator prompt is pending. The coordination hold remains until a specific slot is released; no new VoiceOver enablement is authorized, and its acceptance decision remains pending.
 
 ## Actual application and source identity
 
@@ -42,7 +42,7 @@ An initial external QA route-context cache issue was corrected with a byte-ident
 | Previous/Next wrap and dismissal | Passed |
 | Native accessibility labels / controls | Actual XCTest accessibility queries pass; not a substitute for VoiceOver |
 | Native long-paragraph passage geometry | Corrected `bdc1c45`: both initial late jump and same-target keyboard Search pass, with actual settled screenshots inspected |
-| VoiceOver focus and announcements | **UNVERIFIED**; first-use notification prompt appeared, then owner stopped testing. VoiceOver restored OFF and verified; hold remains |
+| VoiceOver focus and announcements | **UNVERIFIED**; first-use notification prompt appeared. Owner requested restoration; orchestration paused physical testing. VoiceOver restored OFF and verified; coordination hold remains |
 | Offline native saved-copy search | Passed with intentionally unavailable content API; seeded-copy provenance above |
 | Rapid native input | Also reproduced on pinned main `d459fa5e`; not introduced by this PR. Underlying native/test-input cause remains undetermined |
 
