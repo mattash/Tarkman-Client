@@ -84,7 +84,9 @@ registration/token bridge preparation; real HTTP/APNs activation remains off.
 
 A pre-opt-in screenshot of this revision is a **same-revision before/after**, not an actual previous-source baseline. The existing shared simulator installation `app.tarkman0.2.7` reportedly lacks Activities/extension, but its exact installed revision is unknown; it was not altered or used as a source baseline. Simulator evidence cannot establish APNs delivery, server latency, production background correctness, device power behavior, Android feasibility or production readiness. Dynamic Island expanded/minimal code compilation is not by itself visual evidence of every system presentation.
 
-Actual run observations and capture inventory are recorded in [EVIDENCE](<EVIDENCE.md>).
+Original checkpoint observations are recorded in [EVIDENCE](<EVIDENCE.md>).
+The continuation's [matched actual v1 Before/After and terminated stale evidence](<../../../../docs/service-progress-v1-evidence/README.md>)
+identifies both native source revisions, scenario and measured redraw limitation.
 
 ## Private physical metadata observer (not visual acceptance)
 
