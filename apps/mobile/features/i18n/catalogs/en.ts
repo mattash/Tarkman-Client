@@ -33,6 +33,16 @@ export const en = {
     "refresh": "Refresh preview"
 },
   library: {
+    find: 'Find in text',
+    findPlaceholder: 'Word or phrase',
+    findHelp: 'Search this reading language.',
+    findSearching: 'Searching…',
+    findEmpty: 'No matches in this reading language.',
+    findCount: '{current} of {count} matches',
+    findCountLimited: '{current} of first {count} matches — refine your search.',
+    findPrevious: 'Previous match',
+    findNext: 'Next match',
+    findClose: 'Close find',
     share: 'Share',
     shareTitle: 'Share {name}',
     shareMessage: 'Read {name} in the Tarkman Prayer Library.',

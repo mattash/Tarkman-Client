@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { AccessibilityInfo, findNodeHandle, Platform, useWindowDimensions, View } from 'react-native'
 import { router, useCanGoBack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
@@ -12,7 +12,9 @@ import { SegmentedControl } from '../../components/SegmentedControl'
 import { spacing } from '../../design/tokens'
 import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
-import { PartList } from '../live/PartList'
+import { PartList, type PassageJump } from '../live/PartList'
+import { ReaderFind } from './ReaderFind'
+import { resolveTextJump, type TextJumpTarget } from './textFind'
 import { languageAbbreviations } from '../live/languageAbbreviations'
 import type { LivePart } from '../live/contracts'
 import { usePreferences } from '../preferences/PreferencesProvider'
@@ -37,6 +39,18 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   const { colors } = useTheme()
   const { anchor: shareAnchor, busy, notice, manual, dismiss, share } = useShareService(), compact = useWindowDimensions().width < 360
   const [sheet, setSheet] = useState<'language' | 'preferences' | null>(null)
+  const [finding, setFinding] = useState(false)
+  const [passageJump, setPassageJump] = useState<PassageJump | undefined>(undefined)
+  const findOpener = useRef<React.ComponentRef<typeof View>>(null)
+  const jumpSequence = useRef(0)
+  const closeFind = () => {
+    setFinding(false); setPassageJump(undefined)
+    if (Platform.OS === 'web') findOpener.current?.focus()
+    else {
+      const handle = findNodeHandle(findOpener.current)
+      if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle)
+    }
+  }
   const languageOpener = useRef<React.ComponentRef<typeof View>>(null), preferencesOpener = useRef<React.ComponentRef<typeof View>>(null), explanationOpener = useRef<React.ComponentRef<typeof View>>(null)
   // With no live position, the book explains the part at the top of the screen.
   const [topKey, setTopKey] = useState<string | undefined>(undefined)
@@ -65,6 +79,11 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
     // The explicit retry counter intentionally restarts this focus-scoped request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controller, id, sameEnvironment, state.ready, attempt, validId, snapshot]))
+  const jumpToPassage = useCallback((target: TextJumpTarget | null, focus = false) => {
+    const resolved = target && snapshot ? resolveTextJump(snapshot.bundle, target, preferences.language) : null
+    setPassageJump(resolved && target ? { key: `library:${target.liturgyPartId}`, language: preferences.language,
+      start: resolved.start, end: resolved.end, requestId: ++jumpSequence.current, focus } : undefined)
+  }, [snapshot, preferences.language])
   const revoked = state.revoked.includes(id)
   if (revoked && snapshot) setSnapshot(null)
   const parts = useMemo<LivePart[]>(() => snapshot?.bundle.parts.map(p => ({
@@ -84,7 +103,9 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
     paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
     <BackButton iconOnly onPress={back}>{backLabel}</BackButton>
     {reading && <View style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', gap: spacing.xs, marginLeft: 'auto', flexShrink: 0 }}>
-      {controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" iconOnly disabled={busy}
+      <AppButton testID="library-reader-find-open" ref={findOpener} variant="quiet" icon="search" iconOnly selected={finding}
+        onPress={() => finding ? closeFind() : setFinding(true)}>{t('library.find')}</AppButton>
+      {!compact && controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" iconOnly disabled={busy}
         accessibilityLabel={t('library.shareTitle', { name: snapshot.bundle.liturgy.name })}
         onPress={() => share(id, snapshot.bundle.liturgy.name)}>{t('library.share')}</AppButton>}
       <AppButton testID="library-reader-language" ref={languageOpener} variant="quiet" selected icon={compact ? undefined : 'languages'} labelMaxFontSizeMultiplier={1.3} labelNumberOfLines={1}
@@ -100,6 +121,9 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   </View>
   const details = reading ? <View testID="library-reader-details" style={{ paddingHorizontal: spacing.page, paddingBottom: spacing.md, gap: spacing.sm }}>
     <AppText variant="heading">{snapshot.bundle.liturgy.name}</AppText>
+    {compact && controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" disabled={busy}
+      accessibilityLabel={t('library.shareTitle', { name: snapshot.bundle.liturgy.name })}
+      onPress={() => share(id, snapshot.bundle.liturgy.name)}>{t('library.share')}</AppButton>}
     {snapshot.savedAt && stored?.bundle && <AppText variant="caption" tone="muted">{t('library.downloaded')}</AppText>}
     {stored?.bundle && stored.bundle.revision !== snapshot.bundle.revision && <AppText variant="caption" accessibilityLiveRegion="polite">{t('library.reopen')}</AppText>}
   </View> : undefined
@@ -113,9 +137,11 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">
     {toolbar}
+    {finding && reading && <ReaderFind bundle={snapshot.bundle} language={preferences.language} jump={jumpToPassage} close={closeFind} />}
     {reading && controller.enabled && validId && <>{!!notice && <View style={{ paddingHorizontal: spacing.page, paddingVertical: spacing.xs }}><ShareNotice notice={notice} /></View>}<ShareManualModal manual={manual} dismiss={dismiss} openerRef={shareAnchor} /></>}
     <PartList parts={parts} following={false} language={preferences.language} selectedLanguages={preferences.selectedLanguages}
       readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={details}
+      passageJump={finding && passageJump?.language === preferences.language ? passageJump : undefined}
       topPartChanged={part => setTopKey(part?.key)} open={part => { opener.current = null; setDetail(occurrence(part)) }} />
     <AppModal visible={detail !== null} onDismiss={() => setDetail(null)} openerRef={opener} title={t('library.details')}>
       {detail && <>
