@@ -68,6 +68,13 @@ test.each(['ended', 'deleted'] as const)('%s is terminal until a new explicit fo
   }
 })
 
+test('a newer deletion refines ended state without reviving the follow or retaining metadata', () => {
+  const ended = accepted({ status: 'ended' })
+  const deleted = acceptProgress(ended, 'a', publication({ sequence: 2, status: 'deleted' }), now)
+  expect(describeProgress(deleted, now)).toMatchObject({ status: 'deleted', title: null, url: null, role: null })
+  expect(acceptProgress(deleted, 'a', publication({ sequence: 3, status: 'active' }), now)).toBe(deleted)
+})
+
 test('paused and unavailable never collapse into active', () => {
   expect(describeProgress(accepted({ status: 'paused' }), now + 60_000)).toMatchObject({ status: 'paused', freshness: 'stale' })
   expect(describeProgress(accepted({ status: 'unavailable' }), now)).toMatchObject({ status: 'unavailable', progress: null, role: null })

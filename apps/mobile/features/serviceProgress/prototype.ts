@@ -60,8 +60,10 @@ function terminal(status: ProgressPublication['status']): boolean {
 }
 /** The eventual transport must validate/authenticate wire input before calling this typed reducer. */
 export function acceptProgress(state: ProgressFollow, generation: string, publication: ProgressPublication, now: number): ProgressFollow {
+  // Deletion can refine an ended follow to clear retained metadata, but can never revive it.
   if (state.removed || generation !== state.generation || publication.sessionId !== state.sessionId ||
-      (state.snapshot && terminal(state.snapshot.status))) return state
+      (state.snapshot && terminal(state.snapshot.status) &&
+        !(state.snapshot.status === 'ended' && publication.status === 'deleted'))) return state
   if (!positiveInteger(publication.sequence) || (state.snapshot && publication.sequence <= state.snapshot.sequence) ||
       !timestamp(now) || !timestamp(publication.issuedAt) || !timestamp(publication.expiresAt) ||
       publication.issuedAt > now || publication.expiresAt <= publication.issuedAt ||

@@ -1,0 +1,58 @@
+{
+  "sourceRevision": "d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d",
+  "trackedOverride": "Only apps/mobile/app.json ios.bundleIdentifier changed to app.tarkman.progressbaseline for installation isolation; app UI/Metro source unchanged",
+  "fixtureRuntimeChanges": "Existing synthetic public reader fixture: loopback port8190,session42,currentRole/first occurrence role Reader,active,current ordinal1,total3; no authenticated data or app implementation change",
+  "binary": {
+    "source_revision": "d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d",
+    "CFBundleIdentifier": "app.tarkman.progressbaseline",
+    "CFBundleDisplayName": "Tarkman",
+    "CFBundleShortVersionString": "0.2.7",
+    "NSSupportsLiveActivities": null,
+    "app_extensions": [],
+    "executable_sha256": "97d59158d1709a40a36041227ea3ca1660cb810eb1f2403f5cbb29f13d476bd9",
+    "simulator_udid": "9A1CCE56-0E76-43BA-AF2D-519416C0100D",
+    "simulator_name": "BaselineService3429",
+    "device_type": "iPhone 18 Pro",
+    "runtime": "iOS 27.0",
+    "build_sdk": "iPhoneSimulator27.2",
+    "viewport_points": [
+      402,
+      874
+    ],
+    "viewport_pixels": [
+      1206,
+      2622
+    ],
+    "scale": 3,
+    "appearance": "light",
+    "content_size": "large",
+    "status_bar_time": "system actual time (override cleared for final matched captures)",
+    "final_scenario_role": "Reader",
+    "final_scenario_current_position": 1,
+    "final_scenario_total_parts": 3,
+    "final_reader_capture_utc": "2026-11-14T19:56:51.141Z",
+    "final_nc_capture_utc": "2026-11-14T19:56:55.921Z",
+    "code_signing_allowed": "NO"
+  },
+  "scenario": "English,light/default large,actualNov14 system clock with no override,default wallpaper,iPhone18Pro/iOS27.0,402x874points@3x",
+  "surface": "NotificationCenter / LockScreen-style system presentation; not a physically locked phone",
+  "captures": [
+    {
+      "file": "docs/service-progress-evidence/before-original-reader.png",
+      "sha256": "8ba9d188ae7b8f82e986a371d611810367df3d7d9bbeed28be4722ad46c869fc",
+      "capturedAt": "2026-11-14T19:56:51.141Z",
+      "format": "PNG",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "file": "docs/service-progress-evidence/before-system-no-activity.png",
+      "sha256": "8888f2d87027c2c4b4245fd6f9512b758da8cc56a0e81ad2465ef289ed186822",
+      "capturedAt": "2026-11-14T19:56:55.921Z",
+      "format": "PNG",
+      "width": 1206,
+      "height": 2622
+    }
+  ],
+  "validation": "Original unsigned native build/install passed; external XCTest asserted actual OurFather text and Reader current-part accessibility before capture; source commit and isolation-only tracked diff independently verified; copied images visually inspected; own servers stopped."
+}

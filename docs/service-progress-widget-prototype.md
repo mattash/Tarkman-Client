@@ -88,7 +88,8 @@ feed bounded serialized props rather than importing this module into their callb
   missing current occurrence, incomplete/empty/changed manifests suppress ordinal
   and role. One part is “1 of 1”, not “100% complete”. No ETA is computed.
 - Status and freshness are independent. Active/paused can become stale; unavailable
-  is not silently active; ended/deleted are terminal for this follow. Removal clears
+  is not silently active; ended/deleted cannot revive this follow. A newer deletion
+  may refine an ended snapshot to clear its retained title/link. Removal clears
   retained content and rejects queued publications. Native adapters must additionally
   unregister/end/delete their surface and subscription. The TypeScript prototype does
   no I/O; the separate native harness only starts/updates/ends a local fixture Activity.
@@ -112,14 +113,17 @@ is installed. The native payload is a small Codable fixture, not a connected
 implementation of the TypeScript publication contract or backend transport.
 
 Real simulator consent plus the system permission produced an Activity visible
-after explicit process termination. A continuously visible card still retained its
-ordinal/role at 75 seconds; later closing/reopening Notification Center, without
-relaunching the app, displayed the genuine stale branch with ordinal/role hidden.
-Thus **stale-on-redraw is observed; an exact 60-second onscreen transition is not**.
-The current renderer always qualifies retained content as **Last reported part**.
-The final capture revision reads back ActivityKit's returned staleDate and state;
-its visual comparison remains pending. This is measured OS behavior to review, not
-an assertion of real-time delivery or a reason to silently relax #277's criteria.
+after explicit process termination. The final run confirmed ActivityKit returned a
+staleDate exactly 60 seconds after its source update. Nevertheless the continuously
+visible card retained ordinal/role at 75 seconds, including an immediate surface
+reopen. A later still around 180 seconds after the second request displayed the
+genuine stale branch with ordinal/role hidden, without app relaunch or forced flags.
+Thus **eventual native stale rendering is observed; an exact 60-second onscreen
+transition or redraw-on-reopen guarantee is not**. The renderer always qualifies
+retained content as **Last reported part**. [Inspected capture evidence](<../apps/mobile/prototypes/service-progress-ios/EVIDENCE.md>)
+records the actual times and source hashes. The [matched original-source comparison](<service-progress-evidence/README.md>)
+is captured and inspected. This is measured OS behavior to review, not an assertion
+of real-time delivery or a reason to silently relax #277's criteria.
 
 ### Expiry without another app run
 
@@ -260,9 +264,9 @@ missed/coalesced updates and battery/energy observations for:
   supported service languages. Localize labels and announce ordinal/status/freshness
   without relying on color, trimming away freshness or showing bogus percentages.
 
-The standalone native UI now requires actual application **Before/After** captures
-at the same viewport/theme/state. Capture and native runtime validation are still
-in progress; a pre-opt-in capture of the new harness alone is not a prior-source
-baseline. Keep this PR a draft until a truthful comparison and applicable experiment
-checks are recorded. Live delivery remains incomplete until backend/native contracts
-and physical end-to-end measurements satisfy the original criteria.
+Actual application **Before/After** captures now compare the original-source reader
+and the isolated native prototype on the same system surface, service/occurrence/role,
+viewport and theme; see the [comparison and provenance](<service-progress-evidence/README.md>).
+A new-harness pre-opt-in capture is supplementary, not the prior-source baseline.
+Live delivery remains incomplete until backend/native contracts and physical
+end-to-end measurements satisfy the original criteria.
