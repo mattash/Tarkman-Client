@@ -10,6 +10,7 @@ import { PartList } from '../features/live/PartList'
 import { normalizeParts, type LivePart } from '../features/live/contracts'
 
 let mockTextTop = 0
+let mockTextWidth = 400
 let mockMeasurements = 0
 let mockWebNode: object | undefined
 jest.mock('react-native', () => {
@@ -19,9 +20,16 @@ jest.mock('react-native', () => {
   Object.defineProperty(mocked, 'View', { value: React.forwardRef((props: import('react-native').ViewProps, ref) => {
     React.useImperativeHandle(ref, () => mockWebNode ?? ({ measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => {
       mockMeasurements++
-      done(0, props.testID === 'reading-frame' ? 0 : mockTextTop, 400, props.testID === 'reading-frame' ? 80 : 100000)
+      done(0, props.testID === 'reading-frame' ? 0 : mockTextTop, props.testID === 'reading-frame' ? 400 : mockTextWidth, props.testID === 'reading-frame' ? 80 : 100000)
     } }))
     return <actual.View {...props} />
+  }) })
+  Object.defineProperty(mocked, 'Text', { value: React.forwardRef((props: import('react-native').TextProps, ref) => {
+    // Outer native Text owns real bounds; nested VirtualText is not a measurable View.
+    React.useImperativeHandle(ref, () => ({ measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => {
+      done(0, mockTextTop, mockTextWidth, 100000)
+    } }))
+    return <actual.Text {...props} />
   }) })
   return mocked
 })
@@ -51,7 +59,7 @@ async function scroll(top: number) {
   await fireEvent.scroll(screen.getByTestId('reading-list'), { nativeEvent: { contentOffset: { y: top } } })
   await settle()
 }
-afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); mockTextTop = 0; mockMeasurements = 0; mockWebNode = undefined })
+afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); mockTextTop = 0; mockTextWidth = 400; mockMeasurements = 0; mockWebNode = undefined })
 
 describe('precise optional visible passages', () => {
   it('uses bounded actual glyph geometry on web without onTextLayout or pixel/source interpolation', async () => {
@@ -119,6 +127,72 @@ describe('precise optional visible passages', () => {
     expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start, end: start + 'Later 100.'.length })
   })
 
+  it.each(['layout-first', 'text-layout-first'] as const)('qualifies child stanza ranges against measured wrapper width with %s reflow events', async order => {
+    jest.useFakeTimers()
+    const first = 'Opening.'
+    const later = ['Later first.', 'Later second.']
+    const source = `${first}\r\n\r\n${later.join('\r\n')}`
+    const data = parts(source)
+    const callback = jest.fn()
+    await render(reader(data, callback), { wrapper })
+    const childLayout = (width: number) => fireEvent(screen.getByText(later.join('\n')), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width, height: 80 } } })
+    await childLayout(400)
+    await layout(first, [first])
+    await layout(later.join('\n'), later)
+    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20 } } })
+    await fireEvent(screen.getByTestId(`visible-stanza-${first.length + 4}`), 'layout', { nativeEvent: { layout: { y: 40, height: 80 } } })
+    await settle()
+    expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start: 0, end: first.length })
+    callback.mockClear()
+    // Reflow can precede both wrapper and child layout events. The wrapper's actual
+    // measured width must reach the child range lookup, not permit its old lines.
+    mockTextWidth = 240
+    await scroll(40)
+    expect(callback).not.toHaveBeenCalled()
+    if (order === 'layout-first') {
+      await childLayout(240)
+      await scroll(40)
+      expect(callback).not.toHaveBeenCalled()
+      await layout(later.join('\n'), later, 40)
+    } else {
+      await layout(later.join('\n'), later, 40)
+      await scroll(40)
+      expect(callback).not.toHaveBeenCalled()
+      await childLayout(240)
+    }
+    await scroll(40)
+    const start = source.indexOf(later[0])
+    expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start, end: start + later[0].length })
+  })
+
+  it('requires fresh stanza bounds after a reading-context change even when child lines are fresh', async () => {
+    jest.useFakeTimers()
+    const first = 'Opening.'
+    const later = ['Later first.', 'Later second.']
+    const source = `${first}\r\n\r\n${later.join('\r\n')}`
+    const data = parts(source)
+    const callback = jest.fn()
+    const view = await render(reader(data, callback), { wrapper })
+    await layout(first, [first])
+    await layout(later.join('\n'), later)
+    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20 } } })
+    const stanza = screen.getByTestId(`visible-stanza-${first.length + 4}`)
+    await fireEvent(stanza, 'layout', { nativeEvent: { layout: { y: 40, height: 40 } } })
+    await settle()
+    expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start: 0, end: first.length })
+    callback.mockClear()
+    await view.rerender(reader(data, callback, 'larger'))
+    await fireEvent(screen.getByText(later.join('\n')), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 80 } } })
+    await layout(later.join('\n'), later, 40)
+    // Old y=40 would select Later second.; the current stanza actually starts at80.
+    await scroll(80)
+    expect(callback).not.toHaveBeenCalled()
+    await fireEvent(screen.getByTestId(`visible-stanza-${first.length + 4}`), 'layout', { nativeEvent: { layout: { y: 80, height: 80 } } })
+    await scroll(80)
+    const start = source.indexOf(later[0])
+    expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start, end: start + later[0].length })
+  })
+
   it('discards recycled row geometry and reports fresh source identity after reflow', async () => {
     jest.useFakeTimers()
     const callback = jest.fn()
@@ -147,6 +221,8 @@ describe('precise optional visible passages', () => {
     await scroll(0)
     expect(latest).not.toHaveBeenCalled()
     await view.rerender(reader(data, latest, 'larger'))
+    await scroll(40)
+    expect(latest).not.toHaveBeenCalled()
     await layout('First word next.', ['First word', ' next.'], 40)
     await scroll(40)
     expect(latest).toHaveBeenCalledTimes(1)

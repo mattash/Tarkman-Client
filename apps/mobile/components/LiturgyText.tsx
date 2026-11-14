@@ -18,49 +18,76 @@ export interface VisibleTextLayout {
   onChange?(): void
   measure(report: (top: number, height: number) => void): void
   /** Viewport bounds relative to this text, returning original UTF-16 source offsets. */
-  range(top: number, bottom: number): { start: number; end: number } | undefined
+  range(top: number, bottom: number, width?: number): { start: number; end: number } | undefined
 }
 export interface LiturgyTextProps extends Omit<AppTextProps, 'children'> { text: string | null | undefined; readingSize?: ReadingSize; compactStanzas?: boolean; blocks?: boolean; passageHighlight?: PassageHighlight; registerVisibleText?(layout: VisibleTextLayout): () => void }
 export function LiturgyText({ text, selectable = true, language = 'en', tone = 'default', readingSize = 'standard', compactStanzas = false, blocks = false, passageHighlight, registerVisibleText, variant = 'liturgy', style, ...props }: LiturgyTextProps) {
+  const { fontScale, width: windowWidth, scale } = useWindowDimensions()
+  const fontReady = useReadingFont()
+  // Capture and jumps share layout qualification, never request identity.
+  const styleKey = JSON.stringify(StyleSheet.flatten(style))
+  const geometry = useMemo(() => ({ text, language, readingSize, variant, fontReady, fontScale, windowWidth, scale, styleKey,
+    maxFontSizeMultiplier: props.maxFontSizeMultiplier, numberOfLines: props.numberOfLines, adjustsFontSizeToFit: props.adjustsFontSizeToFit,
+    minimumFontScale: props.minimumFontScale, textBreakStrategy: props.textBreakStrategy,
+    lineBreakStrategyIOS: props.lineBreakStrategyIOS, ellipsizeMode: props.ellipsizeMode,
+    dynamicTypeRamp: props.dynamicTypeRamp, hyphenation: props.android_hyphenationFrequency,
+  }), [text, language, readingSize, variant, fontReady, fontScale, windowWidth, scale, styleKey,
+    props.maxFontSizeMultiplier, props.numberOfLines, props.adjustsFontSizeToFit, props.minimumFontScale,
+    props.textBreakStrategy, props.lineBreakStrategyIOS, props.ellipsizeMode, props.dynamicTypeRamp, props.android_hyphenationFrequency])
+  const lines = useRef<{ geometry: object; width?: number; values: { end: number; y: number; height: number }[];
+    visible?: { y: number; height: number; start: number; end: number }[] } | undefined>(undefined)
+  const textWidth = useRef<number | undefined>(undefined)
+  const activeGeometry = useRef(geometry)
   const visibleNode = useRef<ComponentRef<typeof View> | null>(null)
   const stanzaFrame = useRef<ComponentRef<typeof View> | null>(null)
   const visibleLayout = useRef<VisibleTextLayout | undefined>(undefined)
-  const visibleLines = useRef<{ y: number; height: number; start: number; end: number }[]>([])
   const children = useRef(new Map<number, { layout: VisibleTextLayout }>())
-  const stanzaBounds = useRef(new Map<number, { y: number; height: number }>())
-  const visibilityIdentity = `${language}:${readingSize}:${text ?? ''}`
-  const activeVisibility = useRef(visibilityIdentity)
+  const stanzaBounds = useRef(new Map<number, { geometry: object; y: number; height: number }>())
+  const activeVisibility = useRef<object | undefined>(geometry)
   useLayoutEffect(() => {
-    activeVisibility.current = visibilityIdentity
-    visibleLines.current = []
-    return () => { activeVisibility.current = '' }
-  }, [visibilityIdentity])
+    activeVisibility.current = geometry
+    return () => { activeVisibility.current = undefined }
+  }, [geometry])
   useLayoutEffect(() => {
     if (!registerVisibleText || !text?.trim()) return
-    const identity = visibilityIdentity
+    const identity = geometry
+    let measuredWidth: number | undefined
     let webSource: ReturnType<typeof visibleSource> | undefined
     const layout: VisibleTextLayout = {
       measure(report) {
         const node = stanzaFrame.current ?? visibleNode.current
         if (!node?.measureInWindow) { report(0, 0); return }
         node.measureInWindow((_x, y, width, height) => {
-          report(y, activeVisibility.current === identity && width > 0 ? height : 0)
+          if (activeVisibility.current !== identity || node !== (stanzaFrame.current ?? visibleNode.current)) { report(0, 0); return }
+          measuredWidth = width
+          if (Platform.OS !== 'web' && !stanzaFrame.current) {
+            const cached = lines.current
+            if (cached?.geometry !== identity || cached.width !== width
+              || (textWidth.current !== undefined && textWidth.current !== width)) { report(0, 0); return }
+          }
+          report(y, width > 0 ? height : 0)
         })
       },
-      range(top, bottom) {
+      range(top, bottom, parentWidth) {
         if (activeVisibility.current !== identity) return
         if (stanzaFrame.current) {
           for (const [start, child] of children.current) {
             const bounds = stanzaBounds.current.get(start)
-            if (!bounds || bounds.y + bounds.height <= top || bounds.y >= bottom) continue
-            const range = child.layout.range(top - bounds.y, bottom - bounds.y)
+            if (!bounds || bounds.geometry !== identity || bounds.y + bounds.height <= top || bounds.y >= bottom) continue
+            const range = child.layout.range(top - bounds.y, bottom - bounds.y, parentWidth ?? measuredWidth)
             if (range) return { start: start + range.start, end: start + range.end }
           }
           return
         }
         if (Platform.OS === 'web') return webVisibleRange(visibleNode.current, webSource ??= visibleSource(text), top, bottom)
+        // A current source range is only meaningful in the matching native layout.
+        const cached = lines.current
+        const width = parentWidth ?? measuredWidth
+        if (cached?.geometry !== identity || cached.width === undefined
+          || (textWidth.current !== undefined && cached.width !== textWidth.current)
+          || (width !== undefined && cached.width !== width)) return
         // Prefer a legible line, not a sliver disappearing beyond the top edge.
-        const measured = visibleLines.current
+        const measured = cached.visible ?? []
         let low = 0, high = measured.length
         while (low < high) {
           const mid = Math.floor((low + high) / 2)
@@ -74,25 +101,9 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
     visibleLayout.current = layout
     const unregister = registerVisibleText(layout)
     return () => { visibleLayout.current = undefined; unregister() }
-  }, [registerVisibleText, visibilityIdentity, text])
+  }, [registerVisibleText, geometry, text])
   const anchor = useRef<ComponentRef<typeof Text> | null>(null)
   const textFrame = useRef<ComponentRef<typeof Text> | null>(null)
-  const { fontScale, width: windowWidth, scale } = useWindowDimensions()
-  const fontReady = useReadingFont()
-  // Native may not emit onTextLayout again when only the jump request changes.
-  // Cache all line geometry by the content/layout inputs, never by request identity.
-  const styleKey = JSON.stringify(StyleSheet.flatten(style))
-  const geometry = useMemo(() => ({ text, language, readingSize, variant, fontReady, fontScale, windowWidth, scale, styleKey,
-    maxFontSizeMultiplier: props.maxFontSizeMultiplier, numberOfLines: props.numberOfLines, adjustsFontSizeToFit: props.adjustsFontSizeToFit,
-    minimumFontScale: props.minimumFontScale, textBreakStrategy: props.textBreakStrategy,
-    lineBreakStrategyIOS: props.lineBreakStrategyIOS, ellipsizeMode: props.ellipsizeMode,
-    dynamicTypeRamp: props.dynamicTypeRamp, hyphenation: props.android_hyphenationFrequency,
-  }), [text, language, readingSize, variant, fontReady, fontScale, windowWidth, scale, styleKey,
-    props.maxFontSizeMultiplier, props.numberOfLines, props.adjustsFontSizeToFit, props.minimumFontScale,
-    props.textBreakStrategy, props.lineBreakStrategyIOS, props.ellipsizeMode, props.dynamicTypeRamp, props.android_hyphenationFrequency])
-  const lines = useRef<{ geometry: object; width?: number; values: { end: number; y: number; height: number }[] } | undefined>(undefined)
-  const textWidth = useRef<number | undefined>(undefined)
-  const activeGeometry = useRef(geometry)
   const activeHighlight = useRef(passageHighlight)
   useLayoutEffect(() => {
     activeHighlight.current = passageHighlight
@@ -242,7 +253,8 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
           return () => { children.current.delete(start) }
         } : undefined} />
       return registerVisibleText ? <View key={index} testID={`visible-stanza-${start}`} onLayout={event => {
-        stanzaBounds.current.set(start, event.nativeEvent.layout)
+        if (activeVisibility.current !== geometry) return
+        stanzaBounds.current.set(start, { ...event.nativeEvent.layout, geometry })
         visibleLayout.current?.onChange?.()
       }}>{content}</View> : content
     })}</View>
@@ -254,6 +266,7 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
     if (activeGeometry.current !== geometry) return
     const width = event.nativeEvent.layout.width
     textWidth.current = width
+    visibleLayout.current?.onChange?.()
   } : props.onLayout} onTextLayout={passageHighlight || registerVisibleText ? event => {
     props.onTextLayout?.(event)
     if (activeGeometry.current !== geometry) return
@@ -276,13 +289,16 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
         visibleValues.push({ y: line.y, height: line.height, start: positions[start + first].start, end: positions[start + last - 1].end })
       }
     }
-    if (positions) { visibleLines.current = visibleValues; visibleLayout.current?.onChange?.() }
-    const cached: NonNullable<typeof lines.current> = { geometry, values }
+    const cached: NonNullable<typeof lines.current> = { geometry, values, visible: positions ? visibleValues : undefined }
     lines.current = cached
     // Qualify these lines by their native Text width. Either native event may arrive
     // first: a later onLayout must not erase a fresh map, nor validate an old-width one.
-    textFrame.current?.measureInWindow?.((_x, _y, width) => {
-      if (activeGeometry.current === geometry && lines.current === cached && width > 0) cached.width = width
+    const measuredText = textFrame.current
+    measuredText?.measureInWindow?.((_x, _y, width) => {
+      if (activeGeometry.current === geometry && lines.current === cached && measuredText === textFrame.current && width > 0) {
+        cached.width = width
+        visibleLayout.current?.onChange?.()
+      }
     })
   } : props.onTextLayout} variant={variant} style={[variant === 'liturgy' ? readingSizes[readingSize] : undefined, style]} selectable={selectable} language={missing ? 'en' : language} tone={missing ? 'muted' : tone}>
     {missing ? t('liturgyText.translationUnavailable') : styledRuns(parseMarkdown(text!), text!)}
