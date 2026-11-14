@@ -35,6 +35,7 @@ enum SiriSpikeDiagnostics {
 
   private static let jsStages: Set<String> = [
     "module:available", "module:unavailable", "root:waiting", "root:ready",
+    "app:active", "app:inactive", "app:background", "app:unknown",
     "queue:received", "route:accepted", "ack:ok", "handler:error",
   ]
 

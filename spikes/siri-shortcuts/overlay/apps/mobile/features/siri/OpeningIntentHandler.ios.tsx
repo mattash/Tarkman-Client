@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { AppState } from 'react-native'
 import { router, useRootNavigationState } from 'expo-router'
 import { isAvailable, removePendingInvocationAsync, useAppIntents } from 'expo-app-intents'
 import { useLibrary } from '../library/LibraryProvider'
@@ -12,6 +13,12 @@ export function OpeningIntentHandler() {
   const ready = Boolean(navigation?.key) && state.ready
   useEffect(() => { recordSpikeDiagnostic(isAvailable() ? 'module:available' : 'module:unavailable') }, [])
   useEffect(() => { recordSpikeDiagnostic(ready ? 'root:ready' : 'root:waiting') }, [ready])
+  useEffect(() => {
+    const record = (state: string | null | undefined) => recordSpikeDiagnostic(['active', 'inactive', 'background'].includes(state ?? '') ? `app:${state}` : 'app:unknown')
+    record(AppState.currentState)
+    const subscription = AppState.addEventListener('change', record)
+    return () => subscription.remove()
+  }, [])
   return ready ? <ReadyOpeningIntentHandler /> : null
 }
 
