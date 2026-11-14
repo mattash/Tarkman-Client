@@ -22,12 +22,17 @@ widget = project.new_target(:app_extension, 'ServiceProgressLiveActivity', :ios,
   target.add_file_references([project.main_group.new_file('Shared/ServiceAttributes.swift'),
                               project.main_group.new_file('Shared/ServiceContentState.swift'),
                               project.main_group.new_file('Shared/ServicePublicationV1.swift'),
-                              project.main_group.new_file('Shared/ServicePublicationActivity.swift')])
+                              project.main_group.new_file('Shared/ServicePublicationActivity.swift'),
+                              project.main_group.new_file('Shared/ServicePublicationValidation.swift'),
+                              project.main_group.new_file('Shared/ServicePublicationView.swift')])
   resources = project.main_group.new_variant_group('Localizable.strings')
   ['en', 'ru'].each { |lang| resources.new_file("Resources/#{lang}.lproj/Localizable.strings").name = lang }
   target.resources_build_phase.add_file_reference(resources)
 end
-app.add_file_references([project.main_group.new_file('App/PrototypeApp.swift')])
+app.add_file_references([project.main_group.new_file('App/PrototypeApp.swift'),
+                         project.main_group.new_file('Shared/ServiceRegistrationTransport.swift'),
+                         project.main_group.new_file('Shared/ServiceRegistrationURLSessionHTTP.swift'),
+                         project.main_group.new_file('Shared/ServiceActivityRegistrationBridge.swift')])
 widget.add_file_references([project.main_group.new_file('Widget/ServiceActivityWidget.swift')])
 app.build_configurations.each do |c|
   c.build_settings.merge!({

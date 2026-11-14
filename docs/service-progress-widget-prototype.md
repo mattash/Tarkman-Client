@@ -8,6 +8,13 @@ unchanged. The standalone harness has its own app/extension identity and synthet
 public fixture; it is not a production widget, backend connection or substitute
 launcher presented as delivered live progress.
 
+Continuation #282 now implements the [versioned v1 native contract, semantic
+projection/renderer and default-disabled registration adapters](<../apps/mobile/prototypes/service-progress-ios/PUBLICATION-V1.md>)
+inside that isolated harness. It still runs local synthetic publications with
+`pushType: nil`; backend/provider/physical acceptance is not delivered. The
+checkpoint observations below remain historical evidence, not measurements of
+remote delivery by the continuation.
+
 ## Proposed platform boundary
 
 The owner's follow-up authorizes an explicitly opted-in **iOS Live Activity** first,

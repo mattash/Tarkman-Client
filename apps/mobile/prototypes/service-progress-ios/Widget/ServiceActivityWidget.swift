@@ -5,56 +5,54 @@ import WidgetKit
 @main
 struct ServiceActivityWidget: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: ServiceAttributes.self) { context in
-            VStack(alignment: .leading, spacing: 6) {
-                Text("synthetic").font(.caption.bold())
-                progress(context)
-                HStack {
-                    Text("updated")
-                    Text(context.state.updatedAt, style: .time)
-                }.font(.caption)
-                Text("publicLink").font(.caption)
-            }
-            .padding()
-            .activityBackgroundTint(Color.black)
-            .activitySystemActionForegroundColor(.white)
-            .foregroundStyle(.white)
-            .widgetURL(ServiceAttributes.publicURL)
+        ActivityConfiguration(for: ServicePublicationIdentity.self) { context in
+            let presentation = ServicePublicationValidator.presentation(
+                context.state, identity: context.attributes, now: Date(), nativeIsStale: context.isStale)
+            ServicePublicationCard(presentation: presentation)
+                .padding()
+                .activityBackgroundTint(Color.black)
+                .activitySystemActionForegroundColor(.white)
+                .foregroundStyle(.white)
+                .widgetURL(presentation.tapURL)
         } dynamicIsland: { context in
-            DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) { Text("service42").font(.caption) }
-                DynamicIslandExpandedRegion(.trailing) { Text("syntheticShort").font(.caption) }
-                DynamicIslandExpandedRegion(.center) { progress(context) }
+            let presentation = ServicePublicationValidator.presentation(
+                context.state, identity: context.attributes, now: Date(), nativeIsStale: context.isStale)
+            return DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    if let title = presentation.title { Text(verbatim: title).font(.caption).lineLimit(2) }
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    ServicePublicationProgressView(presentation: presentation)
+                }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack {
-                        Text("updated")
-                        Text(context.state.updatedAt, style: .time)
-                        Text("publicLink")
-                    }.font(.caption2)
+                    if let updatedAt = presentation.updatedAt {
+                        HStack {
+                            Text("updated")
+                            Text(updatedAt, style: .time)
+                            if presentation.tapURL != nil { Text("publicLink") }
+                        }.font(.caption2)
+                    }
                 }
             } compactLeading: {
-                Text(context.isStale ? "staleShort" : "syntheticShort")
+                Text(presentation.freshness == .stale ? "staleShort" : "syntheticShort")
             } compactTrailing: {
-                if context.isStale { Image(systemName: "clock.badge.exclamationmark") }
-                else { Text("\(context.state.ordinal)/3") }
+                compactProgress(presentation)
             } minimal: {
-                if context.isStale { Image(systemName: "clock.badge.exclamationmark").accessibilityLabel(Text("stale")) }
-                else { Text("\(context.state.ordinal)/3") }
+                compactProgress(presentation)
             }
-            .widgetURL(ServiceAttributes.publicURL)
+            .widgetURL(presentation.tapURL)
         }
     }
+
     @ViewBuilder
-    private func progress(_ context: ActivityViewContext<ServiceAttributes>) -> some View {
-        if context.isStale {
-            Text("stale").font(.headline)
+    private func compactProgress(_ presentation: ServicePublicationPresentation) -> some View {
+        if presentation.freshness == .stale {
+            Image(systemName: "clock.badge.exclamationmark").accessibilityLabel(Text("stale"))
+        } else if presentation.freshness == .recent,
+                  let ordinal = presentation.ordinal, let total = presentation.total {
+            Text("\(ordinal)/\(total)")
         } else {
-            HStack {
-                Text("part")
-                Text("\(context.state.ordinal)/3").monospacedDigit()
-                Text(LocalizedStringKey(context.state.role))
-                if context.state.paused { Text("paused") }
-            }.font(.headline)
+            Image(systemName: "questionmark.circle").accessibilityLabel(Text("publicationUnavailable"))
         }
     }
 }

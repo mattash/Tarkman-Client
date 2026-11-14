@@ -38,7 +38,7 @@ struct PublicationV1Golden {
             precondition((aps["stale-date"] as! NSNumber).doubleValue == expected.expiresAt.timeIntervalSince1970)
             precondition(aps["event"] as? String == (name == "deleted" ? "end" : "update"))
             if name == "deleted" {
-                precondition((aps["dismissal-date"] as! NSNumber).doubleValue == expected.updatedAt.timeIntervalSince1970)
+                precondition((aps["dismissal-date"] as! NSNumber).doubleValue == expected.updatedAt.timeIntervalSince1970 - 1)
             }
             let stateData = try JSONSerialization.data(withJSONObject: aps["content-state"]!)
             let decodedState = try decoder.decode(ServicePublicationV1.self, from: stateData)

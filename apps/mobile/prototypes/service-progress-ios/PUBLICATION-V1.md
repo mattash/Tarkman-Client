@@ -3,9 +3,10 @@
 Coordinated with [backend #552](https://github.com/mattash/Tarkman/issues/552).
 The [Foundation type](<Shared/ServicePublicationV1.swift>) is bound to ActivityKit
 by [ServicePublicationIdentity conformance](<Shared/ServicePublicationActivity.swift>),
-compiled into the isolated app and extension. **Neither the current renderer nor
-Activity request uses this new type yet.** The existing five-field synthetic
-`ServiceAttributes.ContentState` stays separate; no token/provider is activated.
+compiled into the isolated app and extension. The local harness now requests and
+renders this v1 type with synthetic public fixtures and `pushType: nil`. The old
+five-field `ServiceAttributes.ContentState` is retained only for baseline golden
+verification and cleanup of earlier experiment Activities; no provider is activated.
 
 ## Wire shape
 
@@ -48,15 +49,72 @@ artifacts/publication-v1-golden Tests/Fixtures
 ```
 
 `publication-v1-attributes.json` pins immutable attributes separately from APNs
-update payloads. Active, unknown-total paused, coherently empty and deleted/end
-fixtures pin the exact compiled encoding, identity, reference/Unix dates,
+update payloads. The deleted/end envelope uses `dismissal-date = timestamp - 1`
+(an explicitly past time for immediate dismissal), matching the backend provider.
+Active, unknown-total paused, coherently empty and deleted/end fixtures pin the exact compiled encoding, identity, reference/Unix dates,
 nil omission/null decoding, explicit zero and bounded synthetic payload size.
 They are synthetic examples; no token, management secret or real service is stored.
 
-**Codable decoding is not semantic validation or authentication.** These fixtures
-and plain data types do not enforce generation, sequence/replay, status/role/size,
-clock/skew, title bounds, expiry, source coherence or terminal lifecycle. Provider
-and native adapter still need those checks and a renderer that safely handles
-unknown/stale progress before registration can be connected. Native token
-observation, registration/removal/rotation, real APNs provisioning, physical
-end-to-end delivery/latency/battery and visual acceptance remain incomplete.
+## Native semantics and inactive registration boundary
+
+[Validator and foreground store](<Shared/ServicePublicationValidation.swift>) now
+check schema, immutable service/generation identity, canonical lowercase UUID,
+positive sequence, supported status, bounded title and finite source/expiry/clock.
+They fail conservative on future-issued source or a window beyond 60 seconds.
+Presentation suppresses incoherent/unknown occurrence progress and unknown roles;
+known zero remains distinct from unknown. Expiry or native `isStale` hides ordinal
+and role without another publication. Terminal states clear title/progress/tap;
+removal clears the foreground snapshot and rejects late callbacks. The local
+foreground store rejects non-increasing sequence/backwards source time and latches
+terminal state. The [shared renderer](<Shared/ServicePublicationView.swift>) uses
+this projection on Lock Screen/Island and the local fixture preview. Retained
+progress always says **Last reported part**, never live/current/percent/ETA.
+
+**The stateless Widget renderer cannot compare a prior sequence.** Backend source
+validation uses integer seconds; a higher custom sequence may share the same APNs
+`timestamp`. OS acceptance/display ordering, same-second coalescing and retry/end
+emission policy require separate provider proof in backend #552. A local store's
+sequence checks are not terminated-app replay protection or an OS-redraw deadline.
+
+[Registration transport](<Shared/ServiceRegistrationTransport.swift>) matches the
+capability-authenticated seven-field PUT, bodyless DELETE and bounded receipt from
+backend #553 at `2053e7547ffbfacee8d8fe5c4bc205abfa91837c`. It is **disabled by
+default**, has no default HTTP driver/base URL, and is tested only with synthetic
+injected asynchronous HTTP. MainActor serialization and a sending gate protect
+mutation across suspension; actual I/O does not block the UI actor. It validates lease/receipt/identity, pins ambiguous rotation retries,
+invalidates locally before removal and prevents stale follow callbacks/switches.
+Request/response/debug/error representations redact sensitive values; actual
+request headers/body remain sensitive and must never be logged or persisted.
+
+[Native token bridge](<Shared/ServiceActivityRegistrationBridge.swift>) is likewise
+default-disabled and is **not constructed by the local harness**. It prepares
+serialized ActivityKit `pushTokenUpdates` observation, hex token rotation and local
+end plus revocation retry. No `.token` Activity request, real HTTP driver, endpoint
+activation, capability/provider key, APNs entitlement or background timer is added.
+The concrete [asynchronous HTTPS driver](<Shared/ServiceRegistrationURLSessionHTTP.swift>)
+is also default-disabled, requires an explicit bare HTTPS origin and is never
+constructed by the harness. It denies redirects/authentication credential reuse,
+uses ephemeral no-cache/no-cookie/no-credential-storage configuration, bounds
+streamed response bytes and sanitizes transport errors. Policy tests do not issue
+outbound requests. No real endpoint/provider activation or remote receipt is claimed.
+
+```sh
+swiftc Shared/ServicePublicationV1.swift Shared/ServicePublicationValidation.swift \
+  Tests/PublicationValidationTests.swift -o artifacts/publication-validation-tests
+artifacts/publication-validation-tests
+swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
+  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
+  Shared/ServiceRegistrationURLSessionHTTP.swift Tests/RegistrationTransportTests.swift \
+  -o artifacts/registration-transport-tests
+artifacts/registration-transport-tests
+swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
+  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
+  Shared/ServiceRegistrationURLSessionHTTP.swift Tests/RegistrationHTTPTests.swift \
+  -o artifacts/registration-http-tests
+artifacts/registration-http-tests
+```
+
+**Codable decoding is not authentication.** The native surface checks cannot
+establish backend public-read authority or APNs emission order. Actual HTTP/provider
+activation, authenticated remote update/end delivery, real physical lifecycle,
+latency/battery, Android and full visual/accessibility acceptance remain incomplete.
