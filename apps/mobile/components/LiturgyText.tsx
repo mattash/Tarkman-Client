@@ -13,8 +13,68 @@ export interface PassageHighlight {
   /** Called with the first highlighted glyph's window bounds (not the whole row). */
   onMeasure?(y: number, height: number, anchor: ComponentRef<typeof Text>): void
 }
-export interface LiturgyTextProps extends Omit<AppTextProps, 'children'> { text: string | null | undefined; readingSize?: ReadingSize; compactStanzas?: boolean; blocks?: boolean; passageHighlight?: PassageHighlight }
-export function LiturgyText({ text, selectable = true, language = 'en', tone = 'default', readingSize = 'standard', compactStanzas = false, blocks = false, passageHighlight, variant = 'liturgy', style, ...props }: LiturgyTextProps) {
+export interface VisibleTextLayout {
+  /** Observer-owned invalidation hook, called after fresh line/stanza geometry arrives. */
+  onChange?(): void
+  measure(report: (top: number, height: number) => void): void
+  /** Viewport bounds relative to this text, returning original UTF-16 source offsets. */
+  range(top: number, bottom: number): { start: number; end: number } | undefined
+}
+export interface LiturgyTextProps extends Omit<AppTextProps, 'children'> { text: string | null | undefined; readingSize?: ReadingSize; compactStanzas?: boolean; blocks?: boolean; passageHighlight?: PassageHighlight; registerVisibleText?(layout: VisibleTextLayout): () => void }
+export function LiturgyText({ text, selectable = true, language = 'en', tone = 'default', readingSize = 'standard', compactStanzas = false, blocks = false, passageHighlight, registerVisibleText, variant = 'liturgy', style, ...props }: LiturgyTextProps) {
+  const visibleNode = useRef<ComponentRef<typeof View> | null>(null)
+  const stanzaFrame = useRef<ComponentRef<typeof View> | null>(null)
+  const visibleLayout = useRef<VisibleTextLayout | undefined>(undefined)
+  const visibleLines = useRef<{ y: number; height: number; start: number; end: number }[]>([])
+  const children = useRef(new Map<number, { layout: VisibleTextLayout }>())
+  const stanzaBounds = useRef(new Map<number, { y: number; height: number }>())
+  const visibilityIdentity = `${language}:${readingSize}:${text ?? ''}`
+  const activeVisibility = useRef(visibilityIdentity)
+  useLayoutEffect(() => {
+    activeVisibility.current = visibilityIdentity
+    visibleLines.current = []
+    return () => { activeVisibility.current = '' }
+  }, [visibilityIdentity])
+  useLayoutEffect(() => {
+    if (!registerVisibleText || !text?.trim()) return
+    const identity = visibilityIdentity
+    let webSource: ReturnType<typeof visibleSource> | undefined
+    const layout: VisibleTextLayout = {
+      measure(report) {
+        const node = stanzaFrame.current ?? visibleNode.current
+        if (!node?.measureInWindow) { report(0, 0); return }
+        node.measureInWindow((_x, y, width, height) => {
+          report(y, activeVisibility.current === identity && width > 0 ? height : 0)
+        })
+      },
+      range(top, bottom) {
+        if (activeVisibility.current !== identity) return
+        if (stanzaFrame.current) {
+          for (const [start, child] of children.current) {
+            const bounds = stanzaBounds.current.get(start)
+            if (!bounds || bounds.y + bounds.height <= top || bounds.y >= bottom) continue
+            const range = child.layout.range(top - bounds.y, bottom - bounds.y)
+            if (range) return { start: start + range.start, end: start + range.end }
+          }
+          return
+        }
+        if (Platform.OS === 'web') return webVisibleRange(visibleNode.current, webSource ??= visibleSource(text), top, bottom)
+        // Prefer a legible line, not a sliver disappearing beyond the top edge.
+        const measured = visibleLines.current
+        let low = 0, high = measured.length
+        while (low < high) {
+          const mid = Math.floor((low + high) / 2)
+          if (measured[mid].y + measured[mid].height / 2 < top) low = mid + 1
+          else high = mid
+        }
+        const line = measured[low]
+        return line && line.y + line.height / 2 < bottom ? { start: line.start, end: line.end } : undefined
+      },
+    }
+    visibleLayout.current = layout
+    const unregister = registerVisibleText(layout)
+    return () => { visibleLayout.current = undefined; unregister() }
+  }, [registerVisibleText, visibilityIdentity, text])
   const anchor = useRef<ComponentRef<typeof Text> | null>(null)
   const textFrame = useRef<ComponentRef<typeof Text> | null>(null)
   const { fontScale, width: windowWidth, scale } = useWindowDimensions()
@@ -169,26 +229,38 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
     for (const stanza of stanzas) { starts.push(sourceOffset); sourceOffset += stanza.length }
     const firstMatch = passageHighlight ? stanzas.findIndex((stanza, index) => index % 2 === 0
       && passageHighlight.end > starts[index] && passageHighlight.start < starts[index] + stanza.length) : -1
-    return <View>{stanzas.map((stanza, index) => {
+    return <View ref={registerVisibleText ? stanzaFrame : undefined} collapsable={registerVisibleText ? false : undefined}>{stanzas.map((stanza, index) => {
       const start = starts[index]
       const localHighlight = index % 2 === 0 && passageHighlight && passageHighlight.end > start && passageHighlight.start < start + stanza.length
         ? { ...passageHighlight, onMeasure: index === firstMatch ? passageHighlight.onMeasure : undefined, start: Math.max(0, passageHighlight.start - start), end: Math.min(stanza.length, passageHighlight.end - start) } : undefined
-      return index % 2 === 0
-        ? stanza.length > 0 ? <LiturgyText key={index} {...props} variant={variant} style={style} text={stanza} language={language} tone={tone} selectable={selectable} readingSize={readingSize} passageHighlight={localHighlight} /> : null
-        : <View key={index} style={{ height: spacing.stanza * fontScale * (readingSizes[readingSize].lineHeight / 38) * (stanza.replace(/\r\n?/g, '\n').split('\n').length - 2) }} />
+      if (index % 2 !== 0) return <View key={index} style={{ height: spacing.stanza * fontScale * (readingSizes[readingSize].lineHeight / 38) * (stanza.replace(/\r\n?/g, '\n').split('\n').length - 2) }} />
+      if (!stanza.length) return null
+      const content = <LiturgyText key={index} {...props} variant={variant} style={style} text={stanza} language={language} tone={tone} selectable={selectable} readingSize={readingSize} passageHighlight={localHighlight}
+        registerVisibleText={registerVisibleText ? layout => {
+          layout.onChange = () => visibleLayout.current?.onChange?.()
+          children.current.set(start, { layout })
+          return () => { children.current.delete(start) }
+        } : undefined} />
+      return registerVisibleText ? <View key={index} testID={`visible-stanza-${start}`} onLayout={event => {
+        stanzaBounds.current.set(start, event.nativeEvent.layout)
+        visibleLayout.current?.onChange?.()
+      }}>{content}</View> : content
     })}</View>
   }
   // Nested native Text preserves paragraph breaks and selection without a DOM renderer.
   // AppText forwards React 19's ref prop to its outer native Text via its existing prop spread.
-  const body = <><AppText {...props} {...(passageHighlight ? { ref: textFrame } : {})} onLayout={passageHighlight ? event => {
+  const body = <><AppText {...props} {...(passageHighlight || registerVisibleText ? { ref: textFrame } : {})} onLayout={passageHighlight || registerVisibleText ? event => {
     props.onLayout?.(event)
     if (activeGeometry.current !== geometry) return
     const width = event.nativeEvent.layout.width
     textWidth.current = width
-  } : props.onLayout} onTextLayout={passageHighlight ? event => {
+  } : props.onLayout} onTextLayout={passageHighlight || registerVisibleText ? event => {
     props.onTextLayout?.(event)
     if (activeGeometry.current !== geometry) return
-    const displayed = parseMarkdown(text ?? '').map(run => run.text).join('')
+    const mapped = registerVisibleText && !missing ? parseMarkdownSource(text ?? '') : undefined
+    const displayed = mapped ? mapped.runs.map(run => run.text).join('') : parseMarkdown(text ?? '').map(run => run.text).join('')
+    const positions = mapped?.offsets.flat()
+    const visibleValues: { y: number; height: number; start: number; end: number }[] = []
     let offset = 0
     const values: { end: number; y: number; height: number }[] = []
     for (const line of event.nativeEvent.lines) {
@@ -199,7 +271,12 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
       const end = start + line.text.length
       offset = end
       values.push({ end, y: line.y, height: line.height })
+      const first = line.text.search(/\S/u), last = line.text.trimEnd().length
+      if (positions && first >= 0 && positions[start + first] && positions[start + last - 1]) {
+        visibleValues.push({ y: line.y, height: line.height, start: positions[start + first].start, end: positions[start + last - 1].end })
+      }
     }
+    if (positions) { visibleLines.current = visibleValues; visibleLayout.current?.onChange?.() }
     const cached: NonNullable<typeof lines.current> = { geometry, values }
     lines.current = cached
     // Qualify these lines by their native Text width. Either native event may arrive
@@ -210,5 +287,58 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
   } : props.onTextLayout} variant={variant} style={[variant === 'liturgy' ? readingSizes[readingSize] : undefined, style]} selectable={selectable} language={missing ? 'en' : language} tone={missing ? 'muted' : tone}>
     {missing ? t('liturgyText.translationUnavailable') : styledRuns(parseMarkdown(text!), text!)}
   </AppText>{failureNotice}</>
-  return passageHighlight ? <View collapsable={false}>{body}</View> : body
+  return passageHighlight || registerVisibleText ? <View ref={visibleNode} collapsable={false}>{body}</View> : body
+}
+
+/** RN web does not emit onTextLayout. DOM ranges locate a visible line without pixel/source interpolation.
+ * Binary searches bound layout reads even for a very long passage; no offscreen rows are mounted. */
+function visibleSource(source: string) {
+  const mapped = parseMarkdownSource(source)
+  return { displayed: mapped.runs.map(run => run.text).join(''), positions: mapped.offsets.flat() }
+}
+function webVisibleRange(node: ComponentRef<typeof View> | null, { displayed, positions }: ReturnType<typeof visibleSource>, top: number, bottom: number) {
+  const element = node as unknown as HTMLElement | null
+  if (!element?.ownerDocument?.createRange) return
+  const document = element.ownerDocument
+  const walker = document.createTreeWalker(element, 4 /* SHOW_TEXT */)
+  const nodes: { node: Node; start: number; end: number }[] = []
+  let length = 0
+  for (let current = walker.nextNode(); current; current = walker.nextNode()) {
+    const start = length
+    length += current.textContent?.length ?? 0
+    nodes.push({ node: current, start, end: length })
+  }
+  if (!length || length !== displayed.length) return
+  const origin = element.getBoundingClientRect().top
+  const range = document.createRange()
+  const rect = (index: number) => {
+    const entry = nodes.find(value => index >= value.start && index < value.end)!
+    range.setStart(entry.node, index - entry.start)
+    range.setEnd(entry.node, Math.min(entry.end - entry.start, index - entry.start + (displayed.codePointAt(index)! > 0xffff ? 2 : 1)))
+    return range.getBoundingClientRect()
+  }
+  let low = 0, high = length
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    const bounds = rect(mid)
+    if ((bounds.top + bounds.bottom) / 2 - origin < top) low = mid + 1
+    else high = mid
+  }
+  let start = low
+  while (start < length && /\s/u.test(displayed[start])) start++
+  if (start >= length) return
+  // Never split an emoji's UTF-16 surrogate pair.
+  if (start > 0 && /[\uDC00-\uDFFF]/u.test(displayed[start])) start--
+  const first = rect(start)
+  if ((first.top + first.bottom) / 2 - origin >= bottom || first.bottom - origin <= top) return
+  low = start + 1; high = length
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    if (rect(mid).top > first.top + 1) high = mid
+    else low = mid + 1
+  }
+  let end = low
+  while (end > start && /\s/u.test(displayed[end - 1])) end--
+  if (end < length && /[\uDC00-\uDFFF]/u.test(displayed[end]) && /[\uD800-\uDBFF]/u.test(displayed[end - 1])) end++
+  return end > start ? { start: positions[start].start, end: positions[end - 1].end } : undefined
 }

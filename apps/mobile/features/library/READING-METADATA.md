@@ -1,50 +1,71 @@
-# Bookmarks/resume preparation (#276)
+# Exact-passage bookmarks and resume (#276)
 
-**Incomplete and not wired into the application.** Completion depends on #274
-merging first. Its occurrence-aware passage jump contract must be reused; this
-preparation deliberately introduces no alternative scroll/jump implementation.
+**Draft / not ready for merge.** Provisionally stacked on #280 at
+`ec8876e13b84964ba0ac5ef83a9db95e945ecaf7`. Reconcile to its accepted final main
+commit before readiness. Real native evidence and accessibility validation remain
+pending the coordinated phone slot; do not substitute mobile-sized web images.
 
-## Prepared storage boundary
+## Address and restoration
 
-`readingMetadata.ts` takes a `KeyValueAdapter`; it has no platform, network,
-authentication or live-reader imports. Each versioned key is scoped by the
-controller's normalized environment and liturgy ID. Records hold one resume
-anchor and up to 100 explicit bookmarks. Anchors retain revision, occurrence ID,
-language and original-text UTF-16 offset, never reusable part ID alone, pixel
-coordinates, copied prayer text, titles or service cursors. The offset shape
-remains subject to alignment with #274's final contract before integration.
+`PassageAnchor` is the exact `TextJumpTarget` from #280: liturgy ID, immutable
+revision, active language, occurrence (`liturgyPartId`), reusable part ID,
+occurrence index, and nonempty original-source UTF-16 `[start,end)`. The metadata
+key separately scopes it to the controller's normalized environment. Every open
+uses `resolveTextJump`; no fallback by reusable part, ordinal, new revision or
+pixel offset is permitted. Unsupported personal-reader languages are unavailable
+rather than silently relabelled. Opening a valid saved passage explicitly selects
+its saved reading language and uses the existing `PassageJump` rendering request.
 
-Writes/removals/reads serialize across clients sharing an adapter. Invalid or
-unsupported stored schemas yield an empty record; known fields are projected,
-not arbitrary response objects. There is no migration from the unrelated
-`tarkman.last-reading.v1` session shortcut. Storage operations return failure
-rather than interrupting reading. A failed delete is not reported as success.
+The optional `PartList.passageVisible` callback reports the first meaningful
+visible active-language line, even inside long occurrences and compact stanzas.
+Native uses actual `onTextLayout` geometry with the Markdown source map; web uses
+DOM glyph ranges because RN web has no `onTextLayout`. Only mounted rows are
+measured, on a 120ms throttle, with recycled-row/async generation guards. No new
+required props or behavior are added to live-follow callers.
 
-## Remaining integration after #274
+Saved passages are available in the service header and reading preferences.
+Bookmarks can be opened/removed; reading position can be cleared separately.
+Initial layout does not overwrite a previous continuation. Resume persistence
+starts after manual browsing or an explicit saved jump, debounces for 500ms and
+flushes on unmount. Clearing the position disables that flush until new browsing.
+A failed metadata hydration does not enable passive autosave. Revision/missing
+occurrence/missing text produce an explicit unavailable state. When content cannot
+be loaded, the stored entries remain removable, but cannot open or fetch content.
 
-- Bind the final passage anchor to #274's occurrence-aware navigation contract.
-  Capture a meaningful visible text position, including long virtualized parts;
-  never substitute only the top occurrence or a raw screen/pixel offset.
-- Restore only against the opened immutable bundle. Revision mismatch, missing
-  occurrence, missing language/text or invalid offset must produce an explicit
-  unavailable state, not a silent jump to another passage. Reading size changes
-  should retain text identity. Language changes must not reinterpret offsets.
-- Add accessible save/open/remove bookmark and clear-reading-position actions
-  using mobile primitives and typed translations. Keep the Today session shortcut
-  unchanged and never issue a live-follow/control command.
-- Bind metadata removal and invalidation to confirmed download deletion and
-  authoritative revocation, including races with in-flight resume saves. A clear
-  orders earlier queued writes only; the reader must stop submitting new writes
-  after removal. Metadata must not fetch/recreate deleted content or bypass the
-  Library's unavailable state. Reading metadata contains no cached content.
-- Choose the platform adapter explicitly: native on-device persistence and web
-  localStorage metadata do not imply durable web prayer downloads, service worker
-  availability or offline browser cold start. No cross-device sync.
-- Add deterministic navigation/offline/lifecycle interaction tests alongside the
-  storage tests; run the full mobile checks, web export and shared-reader guard.
-  Capture matched actual Before/After application evidence after integration,
-  including large text and accessibility focus. This storage-only preparation
-  changes no rendered UI and has no application captures.
+## Local persistence and removal
 
-No human decision or permission is currently needed. #274 is a sequencing
-prerequisite, not authorization to complete or merge this draft early.
+`readingMetadata.ts` projects only typed anchors; no prayer text, titles, live
+session IDs or service cursors are stored. A bounded versioned environment record
+holds per-liturgy resume plus at most 100 bookmarks per liturgy (at most 1000
+liturgies / 2,097,152 serialized UTF-16 units per environment). Clear-all includes
+online-only reading records, not just downloads in the current controller.
+Corrupt/unknown/provisional occurrenceId-offset schemas fail closed. The live
+`tarkman.last-reading.v1` shortcut is neither migrated nor changed.
+
+All metadata reads/writes/removals share an adapter queue. The controller issues a
+content-generation lease per reader opening. Remove/revoke/clear-all invalidates
+leases synchronously, clears open snapshots, cancels old content transfers, and
+queues metadata deletion after preceding saves. Guarded queued operations recheck
+the lease after storage awaits; a late old reader cannot recreate cleared records.
+An explicit later reader can acquire a new lease only through normal content
+availability. Storage deletion failures remain reported, never claimed successful.
+No metadata operation downloads content or invokes live controls.
+
+Native metadata uses the existing on-device SQLite key-value adapter. Web uses a
+strict localStorage adapter that reports blocked reads/deletes as failures.
+Browser clearing/private-session restrictions can remove this metadata; it is not
+account sync, encrypted private storage or a durable browser prayer download.
+Available native downloaded bundles remain readable offline. Web prayer content
+still requires the existing online application/API path; metadata persistence
+**does not establish offline browser cold start**.
+
+## Verification and remaining gates
+
+Focused storage, lifecycle, reader interactions and precise passage-visibility
+coverage includes repeated parts, revision replacement, missing content, multiple
+liturgies/environments, storage failure/retry, language/size changes, deletion,
+revocation, clear-all, pending writes/transfers and stale callbacks. Run the full
+mobile suite, typecheck/lint, copy/UI gates, web export and `npm run reader:check`.
+Matched actual web evidence is in `docs/evidence/issue-276`; native Before/After,
+physical accessibility/focus and offline cold-start checks remain explicit gates.
+No phone access or production-app changes are part of this preparatory work.

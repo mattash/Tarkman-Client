@@ -1,6 +1,7 @@
 import { LibraryError, parseBundle, type Bundle, type CatalogItem, type FailureCode } from './contracts'
 import type { LibraryApi } from './api'
 import type { LibraryRepository, SavedItem } from './repository'
+import { emptyReadingMetadata, type PassageAnchor, type ReadingMetadataResult, type ReadingMetadataStatus, type ReadingMetadataStore } from './readingMetadata'
 export interface LibraryState {
   ready: boolean; items: SavedItem[]; catalog: CatalogItem[]; recommended: CatalogItem[]; dismissed: boolean
   corrupt: number; loading: boolean; next: number | null; checkedAt: number | null; error?: FailureCode
@@ -10,7 +11,7 @@ export interface LibraryState {
 }
 interface Job { id: number; save: boolean; readers: number; durableClaimants: number; completion: Promise<Bundle | undefined>; controller: AbortController; run(): Promise<void>; done(): void }
 /** One environment per controller. Disposal permanently invalidates all its work. */
-export function createLibrary(environment: string, api: LibraryApi | null, store: LibraryRepository, now = Date.now) {
+export function createLibrary(environment: string, api: LibraryApi | null, store: LibraryRepository, now = Date.now, readingStore?: ReadingMetadataStore) {
   let state: LibraryState = { ready: false, items: [], catalog: [], recommended: [], dismissed: false, corrupt: 0,
     loading: false, next: null, checkedAt: null, status: {}, failures: {}, revoked: [] }
   const listeners = new Set<() => void>(), jobs = new Map<number, Job>(), queue: Job[] = []
@@ -51,6 +52,8 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     }
   }
   const generations = new Map<number, number>()
+  let generationCounter = 0, allGeneration = 0
+  const removals = new Map<number | 'all', Promise<void>>()
   // Only recovery of the failed local operation clears its warning.
   const localFailures = new Set<'hydrate' | 'dismiss' | `remove:${number | 'all'}`>()
   const emit = (patch: Partial<LibraryState>) => { if (!disposed) { state = { ...state, ...patch }; listeners.forEach(l => l()) } }
@@ -59,8 +62,29 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     else localFailures.delete(operation)
     return localFailures.size ? 'storage' as const : undefined
   }
-  const epoch = (id: number) => generations.get(id) ?? 0
-  const invalidate = (id: number) => { generations.set(id, epoch(id) + 1); jobs.get(id)?.controller.abort() }
+  const epoch = (id: number) => generations.get(id) ?? allGeneration
+  const current = (id: number, lease: number) => !disposed && epoch(id) === lease
+  const invalidate = (id: number) => { generations.set(id, ++generationCounter); jobs.get(id)?.controller.abort() }
+  const scope = (id: number) => ({ environment, liturgyId: id })
+  async function readingWrite(id: number, lease: number, operation: (valid: () => boolean) => Promise<boolean>): Promise<ReadingMetadataStatus> {
+    const valid = () => current(id, lease) && !removals.has(id) && !removals.has('all')
+    if (!valid()) return 'stale'
+    if (!readingStore) return 'unsupported'
+    const success = await operation(valid)
+    return !valid() ? 'stale' : success ? 'ready' : 'storage'
+  }
+  const reading = {
+    async read(id: number, lease = epoch(id)): Promise<ReadingMetadataResult> {
+      const valid = () => current(id, lease) && !removals.has(id) && !removals.has('all')
+      if (!valid()) return { status: 'stale', value: emptyReadingMetadata() }
+      if (!readingStore) return { status: 'unsupported', value: emptyReadingMetadata() }
+      return readingStore.readResult(scope(id), valid)
+    },
+    saveResume: (id: number, anchor: PassageAnchor, lease: number) => readingWrite(id, lease, valid => readingStore!.saveResume(scope(id), anchor, valid)),
+    addBookmark: (id: number, anchor: PassageAnchor, lease: number) => readingWrite(id, lease, valid => readingStore!.addBookmark(scope(id), anchor, valid)),
+    removeBookmark: (id: number, anchor: PassageAnchor, lease: number) => readingWrite(id, lease, valid => readingStore!.removeBookmark(scope(id), anchor, valid)),
+    clearResume: (id: number, lease: number) => readingWrite(id, lease, valid => readingStore!.clearResume(scope(id), valid)),
+  }
   const item = (id: number) => state.items.find(i => i.id === id)
   function hydrate() {
     if (!hydration) hydration = store.hydrate(environment).then(result => emit({ ...result, ready: true, storageError: localFailure('hydrate', false) }), () => { hydration = undefined; emit({ ready: true, storageError: localFailure('hydrate', true) }) })
@@ -72,18 +96,37 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
       void job.run().finally(() => { active--; if (jobs.get(job.id) === job) jobs.delete(job.id); job.done(); pump() })
     }
   }
-  async function remove(id?: number, revoked = false) {
-    await hydrate()
-    const ids = id === undefined ? new Set([...state.items.map(i => i.id), ...jobs.keys()]) : new Set([id])
-    ids.forEach(invalidate)
-    if (revoked && id !== undefined) emit({ revoked: [...new Set([...state.revoked, id])] })
-    try {
-      await store.remove(environment, id)
-      const status = { ...state.status }, failures = { ...state.failures }
-      ids.forEach(i => { delete status[i]; delete failures[i] })
-      if (id === undefined) for (const operation of localFailures) { if (operation.startsWith('remove:')) localFailures.delete(operation) }
-      emit({ items: state.items.filter(i => !ids.has(i.id)), status, failures, storageError: localFailure(`remove:${id ?? 'all'}`, false), ...(id === undefined ? { corrupt: 0 } : {}) })
-    } catch { emit({ storageError: localFailure(`remove:${id ?? 'all'}`, true) }); throw new LibraryError('storage') }
+  function remove(id?: number, revoked = false): Promise<void> {
+    // Invalidate synchronously, before hydration or storage can yield to an open reader.
+    if (id === undefined) {
+      allGeneration = ++generationCounter; generations.clear()
+      jobs.forEach(job => job.controller.abort())
+    } else invalidate(id)
+    emit(revoked && id !== undefined ? { revoked: [...new Set([...state.revoked, id])] } : {})
+    // Enqueue metadata deletion now, after earlier saves, even if content hydration fails.
+    const cleared = readingStore ? (id === undefined ? readingStore.clearEnvironment(environment) : readingStore.clear(scope(id))) : Promise.resolve(true)
+    const removalKey = id ?? 'all', previous = [...removals.values()]
+    const operation = Promise.resolve().then(async () => {
+      await Promise.all(previous.map(promise => promise.catch(() => {})))
+      await hydrate()
+      try {
+        const results = await Promise.allSettled([store.remove(environment, id), cleared])
+        const contentRemoved = results[0].status === 'fulfilled'
+        const metadataRemoved = results[1].status === 'fulfilled' && results[1].value
+        if (contentRemoved) {
+          const status = { ...state.status }, failures = { ...state.failures }
+          for (const savedId of new Set([...Object.keys(status).map(Number), ...Object.keys(failures).map(Number)])) {
+            if (id === undefined || savedId === id) { delete status[savedId]; delete failures[savedId] }
+          }
+          emit({ items: state.items.filter(i => id !== undefined && i.id !== id), status, failures, ...(id === undefined ? { corrupt: 0 } : {}) })
+        }
+        if (!contentRemoved || !metadataRemoved) throw new LibraryError('storage')
+        if (id === undefined) for (const failed of localFailures) { if (failed.startsWith('remove:')) localFailures.delete(failed) }
+        emit({ storageError: localFailure(`remove:${id ?? 'all'}`, false) })
+      } catch { emit({ storageError: localFailure(`remove:${id ?? 'all'}`, true) }); throw new LibraryError('storage') }
+    }).finally(() => { if (removals.get(removalKey) === operation) removals.delete(removalKey) })
+    removals.set(removalKey, operation)
+    return operation
   }
   function cancelRefresh() {
     catalogGeneration++
@@ -136,6 +179,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     return metadata
   }
   function onlineResult(job: Job, signal?: AbortSignal): Promise<Bundle | undefined> {
+    const generation = epoch(job.id)
     job.readers++
     return new Promise(resolve => {
       let settled = false
@@ -146,7 +190,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
         job.readers--
         // An explicit save waiting behind an online read owns its continued work.
         if (abandoned && !job.save && !job.readers && !job.durableClaimants) job.controller.abort()
-        resolve(bundle)
+        resolve(current(job.id, generation) && !job.controller.signal.aborted ? bundle : undefined)
       }
       const abort = () => finish(undefined, true)
       signal?.addEventListener('abort', abort)
@@ -156,7 +200,9 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
   }
   async function request(id: number, save: boolean, signal?: AbortSignal): Promise<Bundle | undefined> {
     const started = cancellation, requestedGeneration = epoch(id)
-    await hydrate()
+    const pendingRemovals = [removals.get('all'), removals.get(id)].filter((pending): pending is Promise<void> => !!pending)
+    if (pendingRemovals.length) await Promise.all(pendingRemovals)
+    if (!state.ready || !hydration) await hydrate()
     if (started !== cancellation || requestedGeneration !== epoch(id)) throw new LibraryError('cancelled')
     if (!save && signal?.aborted) return
     if (disposed || !api || (save && !store.durable)) throw new LibraryError('unsupported')
@@ -187,7 +233,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     const completion = new Promise<Bundle | undefined>(resolve => { resolveCompletion = resolve })
     let job!: Job
     const promise = new Promise<void>(done => {
-      job = { id, save, readers: 0, durableClaimants: 0, completion, controller, done: () => { done(); resolveCompletion(result) }, run: async () => {
+      job = { id, save, readers: 0, durableClaimants: 0, completion, controller, done: () => { done(); resolveCompletion(valid() ? result : undefined) }, run: async () => {
         try {
           if (!valid()) throw new LibraryError('cancelled')
           if (save) {
@@ -259,7 +305,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
     })
     if (!save) return onlineResult(job, signal)
     await promise
-    return result
+    return valid() ? result : undefined
   }
   function cancel() {
     cancellation++
@@ -271,6 +317,7 @@ export function createLibrary(environment: string, api: LibraryApi | null, store
   }
   return {
     environment, durable: store.durable, enabled: !!api,
+    reading, readingEpoch: epoch, isContentCurrent: current,
     getSnapshot: () => state,
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
     hydrate, refresh, cancelRefresh, remove, request,

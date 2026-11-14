@@ -4,7 +4,7 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import type { Language } from '@tarkman/core'
 import { AppText } from '../../components/AppText'
 import { AppButton } from '../../components/AppButton'
-import { LiturgyText, type PassageHighlight } from '../../components/LiturgyText'
+import { LiturgyText, type PassageHighlight, type VisibleTextLayout } from '../../components/LiturgyText'
 import { useTheme } from '../../design/ThemeProvider'
 import { readingSizes, spacing, touchTarget, type ReadingSize } from '../../design/tokens'
 import { sampleLanguages } from '../../design/samples'
@@ -18,12 +18,14 @@ const READING_WIDTH = 1152
 export interface PassageJump { key: string; language: Language; start: number; end: number; requestId: number; focus?: boolean }
 
 export function PartList({ parts, currentKey, following, language, selectedLanguages, manual, open, switchLanguage,
-  browseSettled, browseMoved, browseMomentum, readingSize = 'standard', paused = false, header, compact = false, topPartChanged, passageJump }: {
+  browseSettled, browseMoved, browseMomentum, readingSize = 'standard', paused = false, header, compact = false, topPartChanged, passageJump, passageVisible }: {
   parts: LivePart[]; currentKey?: string; following: boolean; language: Language; selectedLanguages: readonly Language[]
   browseSettled?(): void; browseMoved?(): void; browseMomentum?(): void; manual(dragging?: boolean): void; open(part: LivePart): void; switchLanguage?(language: Language): void; readingSize?: ReadingSize
   paused?: boolean; header?: ReactElement; compact?: boolean; passageJump?: PassageJump
   /** The first part at least half on screen, for readers without a live position to explain. */
   topPartChanged?(part: LivePart | undefined): void
+  /** First meaningful visible line in the active reading language, in original UTF-16 source offsets. */
+  passageVisible?(passage: { key: string; language: Language; start: number; end: number }): void
 }) {
   const { fontScale } = useWindowDimensions()
   const [frameWidth, setFrameWidth] = useState(0)
@@ -68,6 +70,60 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
   // Rows are memoized and recycled; they reach the latest callbacks through this ref instead of new functions each render.
   const actions = useRef({ manual, open, switchLanguage, topPartChanged })
   useEffect(() => { actions.current = { manual, open, switchLanguage, topPartChanged } }, [manual, open, switchLanguage, topPartChanged])
+  const reportingPassage = !!passageVisible
+  const visibleCallback = useRef(passageVisible)
+  const visibleRows = useRef(new Map<string, { language: Language; layout: VisibleTextLayout }>())
+  const visibilityTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const visibilityGeneration = useRef(0)
+  const lastVisible = useRef('')
+  const invalidateVisibility = useCallback(() => { visibilityGeneration.current++ }, [])
+  useLayoutEffect(() => { visibleCallback.current = passageVisible }, [passageVisible])
+  const scheduleVisibility = useCallback(() => {
+    if (!visibleCallback.current || visibilityTimer.current) return
+    visibilityTimer.current = setTimeout(() => {
+      visibilityTimer.current = undefined
+      const generation = ++visibilityGeneration.current
+      frame.current?.measureInWindow((_x, top, _width, height) => {
+        if (height <= 0 || generation !== visibilityGeneration.current) return
+        const rows = [...visibleRows.current.entries()]
+        let pending = rows.length
+        const found: { key: string; language: Language; start: number; end: number; y: number }[] = []
+        for (const [key, entry] of rows) entry.layout.measure((y, rowHeight) => {
+          if (generation !== visibilityGeneration.current || visibleRows.current.get(key) !== entry) return
+          if (y < top + height && y + rowHeight > top) {
+            const range = entry.layout.range(top - y, top + height - y)
+            if (range) found.push({ key, language: entry.language, ...range, y: Math.max(y, top) })
+          }
+          if (--pending === 0 && found.length) {
+            found.sort((a, b) => a.y - b.y)
+            const first = found[0]
+            const passage = { key: first.key, language: first.language, start: first.start, end: first.end }
+            const identity = JSON.stringify(passage)
+            if (identity !== lastVisible.current) {
+              lastVisible.current = identity
+              visibleCallback.current?.(passage)
+            }
+          }
+        })
+      })
+    }, 120)
+  }, [])
+  const registerVisible = useCallback((key: string, rowLanguage: Language, layout: VisibleTextLayout) => {
+    const entry = { language: rowLanguage, layout }
+    layout.onChange = scheduleVisibility
+    visibleRows.current.set(key, entry)
+    scheduleVisibility()
+    return () => { if (visibleRows.current.get(key) === entry) visibleRows.current.delete(key); visibilityGeneration.current++ }
+  }, [scheduleVisibility])
+  useEffect(() => {
+    lastVisible.current = ''
+    scheduleVisibility()
+    return () => {
+      if (visibilityTimer.current) clearTimeout(visibilityTimer.current)
+      visibilityTimer.current = undefined
+      invalidateVisibility()
+    }
+  }, [reportingPassage, language, readingSize, frameWidth, fontScale, scheduleVisibility, invalidateVisibility])
   const { t } = useI18n()
   const stopFollowing = useCallback(() => { jumpDeadline.current = 0; actions.current.manual() }, [])
   const openPart = useCallback((part: LivePart) => actions.current.open(part), [])
@@ -135,39 +191,42 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
     else if (languageChanged && !jumpIdentity) list.current?.scrollToOffset({ offset: manualOffset.current, animated: false })
   }, [target, language, following, layoutKey, jumpIdentity])
 
-  return <View ref={frame} collapsable={false} testID="reading-frame" style={{ flex: 1 }} onLayout={event => setFrameWidth(event.nativeEvent.layout.width)}
+  return <View ref={frame} collapsable={false} testID="reading-frame" style={{ flex: 1 }} onLayout={event => { setFrameWidth(event.nativeEvent.layout.width); scheduleVisibility() }}
     {...(Platform.OS === 'web' ? { onWheel: stopFollowing, onTouchMove: stopFollowing,
       onKeyDown: (event: object) => { if ('key' in event && ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(String(event.key))) stopFollowing() } } : {})}>
     <FlashList testID="reading-list" ref={list} data={parts} keyExtractor={p => p.key}
       // Opening straight onto the live part avoids drawing and scrolling past everything before it.
       initialScrollIndex={jumpIdentity ? jumpIndex : following && index > 0 ? index : undefined} onLoad={() => { if (jumpIdentity) jumpToOccurrence(); else target() }}
-      extraData={`${currentKey}:${index}:${layoutKey}:${paused}:${gutter}:${page}:${jumpIdentity ?? ''}`} onScrollBeginDrag={() => { jumpDeadline.current = 0; actions.current.manual(true) }}
+      extraData={`${currentKey}:${index}:${layoutKey}:${paused}:${gutter}:${page}:${jumpIdentity ?? ''}:${reportingPassage}`} onScrollBeginDrag={() => { jumpDeadline.current = 0; actions.current.manual(true) }}
       // Status pills live in the list header. FlashList keeps the first visible part anchored by default,
       // so a status change never moves prayer text.
       onScrollEndDrag={browseSettled} onMomentumScrollEnd={browseSettled} onMomentumScrollBegin={browseMomentum}
       {...(topPartChanged ? { onViewableItemsChanged: reportTopPart, viewabilityConfig: { itemVisiblePercentThreshold: 50 } } : {})}
-      onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y; browseMoved?.() }} scrollEventThrottle={100}
+      onScroll={event => { manualOffset.current = event.nativeEvent.contentOffset.y; visibilityGeneration.current++; scheduleVisibility(); browseMoved?.() }} scrollEventThrottle={100}
+      onContentSizeChange={passageVisible ? scheduleVisibility : undefined}
       ListHeaderComponent={header ? <View style={{ paddingHorizontal: gutter }}>{header}</View> : null}
       // Room for the floating Return to live button, so the last part can scroll clear of it.
       ListFooterComponent={<View style={{ height: spacing.xxl + touchTarget + spacing.lg }} />}
       ListEmptyComponent={<AppText style={{ padding: page, paddingHorizontal: page + gutter }}>{t('common.noReadingParts')}</AppText>}
-      renderItem={({ item, index: itemIndex }) => <ReadingRow item={item} current={item.key === currentKey} past={index >= 0 && itemIndex < index}
+      renderItem={({ item, index: itemIndex, target: renderTarget }) => <ReadingRow item={item} current={item.key === currentKey} past={index >= 0 && itemIndex < index}
         paused={paused} language={language} visibleLanguages={visibleLanguages} alternativesFrom={alternativesFrom} compare={compare}
         columnWidth={columnWidth} columnIndent={columnIndent} page={page} gutter={gutter} readingSize={readingSize}
         passageHighlight={jumpIdentity && item.key === passageJump?.key ? passageHighlight : undefined}
-         onSwipeStart={stopFollowing} open={openPart} readIn={readIn} />} />
+         registerVisible={passageVisible && (!renderTarget || renderTarget === 'Cell') ? registerVisible : undefined} onSwipeStart={stopFollowing} open={openPart} readIn={readIn} />} />
   </View>
 }
 
 const ReadingRow = memo(function ReadingRow({ item, current, past, paused, language, visibleLanguages, alternativesFrom, compare, columnWidth, columnIndent,
-  page, gutter, readingSize, onSwipeStart, open, readIn, passageHighlight }: {
+  page, gutter, readingSize, onSwipeStart, open, readIn, passageHighlight, registerVisible }: {
   item: LivePart; current: boolean; past: boolean; paused: boolean; language: Language; visibleLanguages: readonly Language[]
   alternativesFrom: readonly Language[]; compare: boolean; columnWidth: number | undefined; columnIndent: number; page: number; gutter: number
   passageHighlight?: PassageHighlight
+  registerVisible?(key: string, language: Language, layout: VisibleTextLayout): () => void
   readingSize: ReadingSize; onSwipeStart(): void; open(part: LivePart): void; readIn?(language: Language): void
 }) {
   const { colors, scheme } = useTheme()
   const { t } = useI18n()
+  const registerText = useCallback((layout: VisibleTextLayout) => registerVisible?.(item.key, language, layout) ?? (() => {}), [registerVisible, item.key, language])
   const alternatives = alternativesFrom.filter(value => item.text[value]?.trim())
   // The row's live-state rule already identifies the active reading column. Keeping its
   // column rule would draw two competing accents, while older rows retain their column rule.
@@ -194,7 +253,7 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
         borderLeftColor: visibleLanguage === language ? colors.currentRule : colors.divider }}>
         {compare && <AppText variant="label">{t(visibleLanguage === language ? 'partList.readingColumn' : 'partList.comparisonColumn',
           { language: sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage })}</AppText>}
-        <LiturgyText passageHighlight={visibleLanguage === language ? passageHighlight : undefined} language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
+        <LiturgyText registerVisibleText={registerVisible && visibleLanguage === language ? registerText : undefined} passageHighlight={visibleLanguage === language ? passageHighlight : undefined} language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
         {!item.text[visibleLanguage]?.trim() && readIn && alternatives.length > 0 && <View style={{ gap: spacing.sm }}>
           <AppText variant="caption" tone="muted">{t('partList.chooseAnother')}</AppText>
           {alternatives.map(value => <AppButton key={value} variant="secondary" onPress={() => readIn(value)}>

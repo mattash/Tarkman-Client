@@ -1,61 +1,77 @@
 import type { KeyValueAdapter } from '@tarkman/core'
 import { LANGUAGES, LibraryError, type BundleLanguage } from './contracts'
+import type { TextJumpTarget } from './textFind'
 
 const PREFIX = 'tarkman.library-reading.v1:'
 export const MAX_BOOKMARKS = 100
 const MAX_RECORD_LENGTH = 128 * 1024
+const MAX_ENVIRONMENT_LENGTH = 2 * 1024 * 1024
+const MAX_LITURGIES = 1000
 
-/** No content, titles, session IDs or live cursor state belongs in this record. */
-export interface PassageAnchor {
-  revision: string
-  occurrenceId: number
-  language: BundleLanguage
-  /** UTF-16 offset in the original occurrence text, not a pixel offset or normalized search text. */
-  offset: number
-}
+/** Exact #280 address; no content, titles, session IDs or live cursor state. */
+export type PassageAnchor = TextJumpTarget
 export interface ReadingMetadata {
   version: 1
   resume: PassageAnchor | null
   bookmarks: PassageAnchor[]
 }
 export interface ReadingScope { environment: string; liturgyId: number }
-
-function empty(): ReadingMetadata { return { version: 1, resume: null, bookmarks: [] } }
+export type ReadingMetadataStatus = 'ready' | 'storage' | 'stale' | 'unsupported'
+export interface ReadingMetadataResult { status: ReadingMetadataStatus; value: ReadingMetadata }
+export function emptyReadingMetadata(): ReadingMetadata { return { version: 1, resume: null, bookmarks: [] } }
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
-function isAnchor(value: unknown): value is PassageAnchor {
+function positive(value: unknown): boolean { return Number.isSafeInteger(value) && (value as number) > 0 }
+export function isPassageAnchor(value: unknown): value is PassageAnchor {
   return object(value) && typeof value.revision === 'string' && /^[A-Za-z0-9._:-]{1,256}$/.test(value.revision) &&
-    Number.isSafeInteger(value.occurrenceId) && (value.occurrenceId as number) > 0 &&
-    LANGUAGES.includes(value.language as BundleLanguage) && Number.isSafeInteger(value.offset) && (value.offset as number) >= 0 && (value.offset as number) <= 1024 * 1024
+    positive(value.liturgyId) && positive(value.liturgyPartId) && positive(value.partId) &&
+    Number.isSafeInteger(value.occurrenceIndex) && (value.occurrenceIndex as number) >= 0 && (value.occurrenceIndex as number) < 20000 &&
+    LANGUAGES.includes(value.language as BundleLanguage) && Number.isSafeInteger(value.start) && Number.isSafeInteger(value.end) &&
+    (value.start as number) >= 0 && (value.end as number) > (value.start as number) && (value.end as number) <= 1024 * 1024
 }
 function project(anchor: PassageAnchor): PassageAnchor {
-  return { revision: anchor.revision, occurrenceId: anchor.occurrenceId, language: anchor.language, offset: anchor.offset }
+  const { liturgyId, revision, language, liturgyPartId, partId, occurrenceIndex, start, end } = anchor
+  return { liturgyId, revision, language, liturgyPartId, partId, occurrenceIndex, start, end }
 }
 function same(a: PassageAnchor, b: PassageAnchor): boolean {
-  return a.revision === b.revision && a.occurrenceId === b.occurrenceId && a.language === b.language && a.offset === b.offset
+  return a.liturgyId === b.liturgyId && a.revision === b.revision && a.language === b.language &&
+    a.liturgyPartId === b.liturgyPartId && a.partId === b.partId && a.occurrenceIndex === b.occurrenceIndex && a.start === b.start && a.end === b.end
 }
-function key(scope: ReadingScope): string {
-  if (!scope.environment || scope.environment.length > 2048 || !Number.isSafeInteger(scope.liturgyId) || scope.liturgyId <= 0) throw new LibraryError('invalid')
-  // The caller supplies the controller's normalized environment, never a URL from a link.
-  return `${PREFIX}${encodeURIComponent(scope.environment)}:${scope.liturgyId}`
+function key(environment: string): string {
+  if (!environment || environment.length > 2048) throw new LibraryError('invalid')
+  return `${PREFIX}${encodeURIComponent(environment)}`
 }
+function validScope(scope: ReadingScope): void { key(scope.environment); if (!positive(scope.liturgyId)) throw new LibraryError('invalid') }
 
-/** Unknown schemas and corrupt records fail closed; never migrate the unrelated live-session shortcut. */
+/** Provisional occurrenceId/offset records and unknown schemas fail closed, without migration. */
 export function parseReadingMetadata(raw: string | null): ReadingMetadata {
-  if (!raw || raw.length > MAX_RECORD_LENGTH) return empty()
+  if (!raw || raw.length > MAX_RECORD_LENGTH) return emptyReadingMetadata()
   try {
     const value: unknown = JSON.parse(raw)
-    if (!object(value) || value.version !== 1 || (value.resume !== null && !isAnchor(value.resume)) ||
-      !Array.isArray(value.bookmarks) || value.bookmarks.length > MAX_BOOKMARKS || !value.bookmarks.every(isAnchor)) return empty()
+    if (!object(value) || value.version !== 1 || (value.resume !== null && !isPassageAnchor(value.resume)) ||
+      !Array.isArray(value.bookmarks) || value.bookmarks.length > MAX_BOOKMARKS || !value.bookmarks.every(isPassageAnchor)) return emptyReadingMetadata()
     const bookmarks: PassageAnchor[] = []
     for (const anchor of value.bookmarks) if (!bookmarks.some(saved => same(saved, anchor))) bookmarks.push(project(anchor))
     return { version: 1, resume: value.resume === null ? null : project(value.resume as PassageAnchor), bookmarks }
-  } catch { return empty() }
+  } catch { return emptyReadingMetadata() }
 }
-
-// Share a queue across clients using the same adapter: a resume write must not lose a bookmark,
-// and clear/remove must finish after already-enqueued writes. Failures must not poison the queue.
+// One bounded environment record is also the index: clear-all includes online-only reading.
+function parseEnvironment(raw: string | null): Record<string, ReadingMetadata> {
+  const records: Record<string, ReadingMetadata> = {}
+  if (!raw || raw.length > MAX_ENVIRONMENT_LENGTH) return records
+  try {
+    const value: unknown = JSON.parse(raw)
+    if (!object(value) || value.version !== 1 || !object(value.liturgies) || Object.keys(value.liturgies).length > MAX_LITURGIES) return records
+    for (const [id, entry] of Object.entries(value.liturgies)) {
+      if (!/^[1-9]\d*$/.test(id) || !positive(Number(id))) continue
+      const parsed = parseReadingMetadata(JSON.stringify(entry))
+      if ((parsed.resume && parsed.resume.liturgyId !== Number(id)) || parsed.bookmarks.some(a => a.liturgyId !== Number(id))) continue
+      if (parsed.resume || parsed.bookmarks.length) records[id] = parsed
+    }
+  } catch { /* Corrupt data is never content or a reason to fail reading. */ }
+  return records
+}
 const queues = new WeakMap<KeyValueAdapter, Promise<unknown>>()
 function serial<T>(store: KeyValueAdapter, operation: () => Promise<T>): Promise<T> {
   const next = (queues.get(store) ?? Promise.resolve()).then(operation)
@@ -63,51 +79,66 @@ function serial<T>(store: KeyValueAdapter, operation: () => Promise<T>): Promise
   return next
 }
 
-/** Storage only. Opening content and resolving the anchor remain the reader's responsibility. */
 export function createReadingMetadataStore(store: KeyValueAdapter) {
-  async function mutate(scope: ReadingScope, update: (value: ReadingMetadata) => ReadingMetadata | null): Promise<boolean> {
+  async function mutate(scope: ReadingScope, update: (value: ReadingMetadata) => ReadingMetadata | null, valid = () => true): Promise<boolean> {
     try {
-      const storageKey = key(scope)
+      validScope(scope)
+      scope = { ...scope }
       return await serial(store, async () => {
-        const value = update(parseReadingMetadata(await store.get(storageKey)))
+        if (!valid()) return false
+        const storageKey = key(scope.environment), records = parseEnvironment(await store.get(storageKey))
+        if (!valid()) return false
+        const value = update(records[scope.liturgyId] ?? emptyReadingMetadata())
         if (value === null) return false
-        if (!value.resume && !value.bookmarks.length) await store.remove(storageKey)
-        else await store.set(storageKey, JSON.stringify(value))
-        return true
+        if (!value.resume && !value.bookmarks.length) delete records[scope.liturgyId]
+        else records[scope.liturgyId] = value
+        if (Object.keys(records).length > MAX_LITURGIES) return false
+        const raw = JSON.stringify({ version: 1, liturgies: records })
+        if (raw.length > MAX_ENVIRONMENT_LENGTH) return false
+        if (!Object.keys(records).length) await store.remove(storageKey)
+        else await store.set(storageKey, raw)
+        return valid()
       })
     } catch { return false }
   }
-  return {
-    async read(scope: ReadingScope): Promise<ReadingMetadata> {
-      try { const storageKey = key(scope); return await serial(store, async () => parseReadingMetadata(await store.get(storageKey))) }
-      catch { return empty() }
+  const client = {
+    async readResult(scope: ReadingScope, valid = () => true): Promise<ReadingMetadataResult> {
+      try {
+        validScope(scope)
+        scope = { ...scope }
+        return await serial(store, async () => {
+          if (!valid()) return { status: 'stale', value: emptyReadingMetadata() }
+          const records = parseEnvironment(await store.get(key(scope.environment)))
+          return valid() ? { status: 'ready', value: records[scope.liturgyId] ?? emptyReadingMetadata() } : { status: 'stale', value: emptyReadingMetadata() }
+        })
+      } catch { return { status: 'storage', value: emptyReadingMetadata() } }
     },
-    saveResume(scope: ReadingScope, anchor: PassageAnchor): Promise<boolean> {
-      if (!isAnchor(anchor)) return Promise.resolve(false)
+    async read(scope: ReadingScope): Promise<ReadingMetadata> { return (await client.readResult(scope)).value },
+    saveResume(scope: ReadingScope, anchor: PassageAnchor, valid?: () => boolean): Promise<boolean> {
+      if (!isPassageAnchor(anchor) || anchor.liturgyId !== scope.liturgyId) return Promise.resolve(false)
       const saved = project(anchor)
-      return mutate(scope, value => ({ ...value, resume: saved }))
+      return mutate(scope, value => ({ ...value, resume: saved }), valid)
     },
-    clearResume(scope: ReadingScope): Promise<boolean> {
-      return mutate(scope, value => ({ ...value, resume: null }))
-    },
-    addBookmark(scope: ReadingScope, anchor: PassageAnchor): Promise<boolean> {
-      if (!isAnchor(anchor)) return Promise.resolve(false)
+    clearResume(scope: ReadingScope, valid?: () => boolean): Promise<boolean> { return mutate(scope, value => ({ ...value, resume: null }), valid) },
+    addBookmark(scope: ReadingScope, anchor: PassageAnchor, valid?: () => boolean): Promise<boolean> {
+      if (!isPassageAnchor(anchor) || anchor.liturgyId !== scope.liturgyId) return Promise.resolve(false)
       const saved = project(anchor)
       return mutate(scope, value => {
         if (value.bookmarks.some(existing => same(existing, saved))) return value
         if (value.bookmarks.length >= MAX_BOOKMARKS) return null
         return { ...value, bookmarks: [...value.bookmarks, saved] }
-      })
+      }, valid)
     },
-    removeBookmark(scope: ReadingScope, anchor: PassageAnchor): Promise<boolean> {
-      if (!isAnchor(anchor)) return Promise.resolve(false)
+    removeBookmark(scope: ReadingScope, anchor: PassageAnchor, valid?: () => boolean): Promise<boolean> {
+      if (!isPassageAnchor(anchor) || anchor.liturgyId !== scope.liturgyId) return Promise.resolve(false)
       const saved = project(anchor)
-      return mutate(scope, value => ({ ...value, bookmarks: value.bookmarks.filter(existing => !same(existing, saved)) }))
+      return mutate(scope, value => ({ ...value, bookmarks: value.bookmarks.filter(existing => !same(existing, saved)) }), valid)
     },
-    /** Also usable for confirmed removal/revocation; does not request or recreate a download. */
-    async clear(scope: ReadingScope): Promise<boolean> {
-      try { const storageKey = key(scope); await serial(store, () => store.remove(storageKey)); return true }
-      catch { return false }
+    clear(scope: ReadingScope): Promise<boolean> { return mutate(scope, () => emptyReadingMetadata()) },
+    async clearEnvironment(environment: string): Promise<boolean> {
+      try { const storageKey = key(environment); await serial(store, () => store.remove(storageKey)); return true } catch { return false }
     },
   }
+  return client
 }
+export type ReadingMetadataStore = ReturnType<typeof createReadingMetadataStore>
