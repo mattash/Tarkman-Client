@@ -36,7 +36,11 @@ contention was interrupted after UI test timeouts; CI ran the complete suite
 successfully. The compiler-only probe below passed as documented. Both the
 initial report-only tree and `ef31dede` received complete scoped-clean independent
 GPT-6.1 Sol reviews. Those reviews did not establish native/device readiness or
-catch the native-graph boundary error; the revised isolation still needs checking.
+catch the native-graph boundary error. The revised external prototype also passed
+its full **100 suites / 1,327 tests**, typecheck, lint, prebuild, CocoaPods install
+and an iOS JS export. Tests were run with build-only Library flags unset; those
+flags otherwise intentionally conflict with configuration-contract assertions.
+The final revised head still needs its independent review.
 
 Physical discovery initially found `passcodeRequired=true`; the owner then
 confirmed unlocking, and a subsequent device query confirmed
@@ -48,8 +52,30 @@ was actively compiling, but was intentionally stopped before installation when
 orchestration review established the default native-graph change. No native-build pass
 or failure is inferred from that interruption. The generated project was retired
 outside the normal app, and no production profile was reused.
-Actual signed-install, Siri/Shortcuts cold/warm/error and Before/After device
-visual evidence remain outstanding; **this draft is not ready**.
+The corrected external **baseline** has since completed a real signed Release
+build and physical install. Signature verification passed; the development
+profile names `FHF872BAQR.app.tarkman.sirispike`, deployment minimum is **16.4**,
+and the signed app claims no production URL scheme, associated domains or App
+Groups. Opening public liturgy 1 through its isolated URL rendered the existing
+reader on the physical iPhone. This is **not** a Siri/Shortcuts demonstration.
+
+### Before — actual pinned main baseline
+
+Source `d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d`, isolation-only config, no new
+intent dependency/Swift/handler. iPhone 15 Pro, iOS 27.2, 1179×2556 pixels,
+light theme, English, public Divine Liturgy (ID 1), top of the online reader.
+No worker preference changes or data reset. See the
+[capture record](../../../spikes/siri-shortcuts/evidence/before.json).
+
+![Before: genuine physical baseline reader](../../../spikes/siri-shortcuts/evidence/before-reader.png)
+
+### After — still outstanding
+
+The separate prototype signed native build is running. Its signed install,
+actual Shortcuts/Siri cold/warm/error runs and a matching changed-revision
+capture remain outstanding; **this draft is not ready**. The phone was released
+for the parallel Library QA work after baseline capture; the next install/capture
+requires a coordinated slot.
 
 Use the [external preparation workflow](../../../spikes/siri-shortcuts/README.md),
 not a normal-app native build command. It exports the pinned main revision,

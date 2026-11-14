@@ -76,3 +76,8 @@ unconditional isolated configuration, baseline absence of native/JS integration,
 path rejection and unchanged production source bytes. Test copies remain in the
 OS temporary directory for inspection. After preparation, the prototype copy can
 run its existing tests using `npx jest tests/siri-opening.test.ts tests/siri-handler.test.tsx --runInBand`.
+For the full suite, unset build-only `EXPO_PUBLIC_LIBRARY_ENABLED`,
+`EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_LIBRARY_API_URL`,
+`EXPO_PUBLIC_LIBRARY_TEST_CAPABILITY`, and `EXPO_PUBLIC_LIBRARY_FIXTURE_BUILD`
+in the test shell: configuration-contract tests intentionally exercise absent
+flags. Set the public Library flags again only for native bundling/device use.
