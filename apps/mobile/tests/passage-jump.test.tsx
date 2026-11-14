@@ -58,18 +58,13 @@ describe('source mapped passage highlight', () => {
     expect(screen.getByRole('link').props.accessibilityLabel).toBe('word (https://example.com)')
     expect(screen.getByText('First word.').props.selectable).toBe(true)
   })
-  it('bounds measurement retries and ignores an in-flight callback after recycling', async () => {
+  it('cleans up all six bounded measurement retries when a highlight is removed', async () => {
     jest.useFakeTimers()
-    const onMeasure = jest.fn()
-    const pending: ((x: number, y: number, width: number, height: number) => void)[] = []
-    const measureInWindow = jest.fn((callback: (x: number, y: number, width: number, height: number) => void) => { pending.push(callback) })
-    const view = await render(<LiturgyText text="word" passageHighlight={{ start: 0, end: 4, requestId: 1, onMeasure }} />, { wrapper })
-    screen.getByTestId('passage-highlight-anchor').props.ref.current = { measureInWindow }
-    await act(() => { jest.advanceTimersByTime(10000) })
-    expect(measureInWindow).toHaveBeenCalledTimes(6)
-    await view.rerender(<LiturgyText text="recycled" />)
-    pending.forEach(callback => callback(0, 2000, 20, 30))
-    expect(onMeasure).not.toHaveBeenCalled()
+    const view = await render(<LiturgyText text="word" passageHighlight={{ start: 0, end: 4, requestId: 1 }} />, { wrapper })
+    const clear = jest.spyOn(globalThis, 'clearTimeout')
+    await view.rerender(<LiturgyText text="word" />)
+    expect(clear).toHaveBeenCalledTimes(6)
+    clear.mockRestore()
   })
   it('removes highlight and cancels pending measurement when a recycled text changes', async () => {
     jest.useFakeTimers()

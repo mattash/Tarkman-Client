@@ -1,0 +1,22 @@
+{
+  "phase": "before",
+  "app": "http://localhost:8082",
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "text": "\n\n\nEN\n\n\nSynthetic service\n\nChoir\nPeace\n\nChoir\nPeace\n\nPriest\nThis part changes according to the church calendar.",
+      "errors": []
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "text": "\n\n\nEN\n\n\nSynthetic service\n\nChoir\nEnglish · reading\nPeace\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace\n\nChoir\nEnglish · reading\nPeace\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace\n\nPriest\nEnglish · reading\nThis part changes according to the church calendar.\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace",
+      "errors": []
+    }
+  ]
+}

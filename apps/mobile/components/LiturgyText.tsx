@@ -135,7 +135,8 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
   if (compactStanzas && !missing && !text!.includes('```') && /\n\s*\n/.test(text!)) {
     // Keep authored line breaks inside each selectable stanza. Blank lines become
     // proportional space between stanzas instead of a full empty line between them.
-    const stanzas = text!.split(/((?:\r\n?|\n)[ \t]*(?:\r\n?|\n)(?:[ \t]*(?:\r\n?|\n))*)/)
+    // Do not backtrack one CRLF into two separate line breaks; offsets stay raw.
+    const stanzas = text!.split(/((?:\r\n|\r(?!\n)|\n)[ \t]*(?:\r\n|\r(?!\n)|\n)(?:[ \t]*(?:\r\n|\r(?!\n)|\n))*)/)
     let sourceOffset = 0
     const starts: number[] = []
     for (const stanza of stanzas) { starts.push(sourceOffset); sourceOffset += stanza.length }
