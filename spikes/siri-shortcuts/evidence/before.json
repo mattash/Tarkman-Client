@@ -1,0 +1,22 @@
+{
+  "kind": "actual-physical-application-capture",
+  "baselineSource": "d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d",
+  "preparation": "Pinned main app/packages/shared Metro resolvers with baseline isolation-only config; no intent dependency, plugin, declarations or JS handler",
+  "installedBundleIdentifier": "app.tarkman.sirispike",
+  "configuration": "Release, development-signed, minimum iOS 16.4",
+  "device": "iPhone 15 Pro",
+  "os": "iOS 27.2",
+  "capturedAt": "2026-11-14T11:50:00-08:00",
+  "capturedAtPrecision": "minute shown in device status bar",
+  "viewportPixels": { "width": 1179, "height": 2556 },
+  "theme": "light",
+  "readingLanguage": "English",
+  "liturgyId": 1,
+  "liturgyName": "Divine Liturgy",
+  "state": "online public reader, top of reading, no worker preference changes or data reset performed",
+  "invocation": "isolated custom URL passed to verified baseline app via devicectl; NOT a Siri or Shortcuts invocation",
+  "image": "before-reader.png",
+  "sha256": "356eb176b5fbb988af4587356de506b5306cfbcb0c41d79ef9b2d64dfc05fbd1",
+  "productionApp": "Not replaced or launched; distinct signed bundle identifier, no production URL scheme, associated domains or App Groups",
+  "limitations": "This capture verifies the pre-existing reader baseline only. It does not demonstrate the new native action. Matching changed capture and physical invocation evidence remain required."
+}
