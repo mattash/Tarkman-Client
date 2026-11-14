@@ -1,5 +1,11 @@
 # Isolated opening-only Siri prototype
 
+**Timeboxed disposition: [finished NO-GO report](<NO-GO.md>).** The reproduction
+sources below are research artifacts, not production integration or a verified
+Shortcut/Siri feature. Positive entry/cold-warm/safety acceptance remains
+unfulfilled. All phone work is held; these commands are not authorization to
+resume it or extend the spike indefinitely.
+
 This directory is an inert overlay, **not** part of the normal mobile app or its
 native dependency graph. Expo autolinks installed native dependencies even when
 a config plugin/JS handler is disabled; an environment flag alone is not isolation.

@@ -1,6 +1,15 @@
 # Opening-only Siri / Shortcuts feasibility (#275)
 
-## Current checkpoint
+## Final timeboxed disposition — NO-GO
+
+The [finished negative feasibility report](<../../../spikes/siri-shortcuts/NO-GO.md>)
+records the API/build/OS/foreground/indexing findings, failure demonstration,
+verification gaps and narrowly bounded production follow-up. It completes the
+NO-GO recommendation, **not positive feature acceptance**. Required successful
+entry/cold-warm and safety verification remains unfulfilled, not passed or
+relabelled as optional polish. No further phone work is authorized.
+
+## Evidence record — not positive feature acceptance
 
 **Do not claim verified Siri opening: the first actual cold voice attempt failed
 after Liturgy ID prompting; its cause remains undetermined. Production rollout
@@ -11,7 +20,7 @@ typed-Shortcuts request, but exact entry method/operator identity are unverified
 it is not a verified typed-Shortcuts or spoken Siri pass.
 
 The initial report below records the first evidence checkpoint. Following the
-owner's continuation request, this draft also contains a native prototype,
+owner's continuation request, this report also retains a native prototype,
 **prepared in a separate copy outside the normal mobile dependency graph**.
 The production app/data must never be replaced for this test.
 
@@ -154,7 +163,8 @@ parameter, a typed-Shortcuts entry or retroactively make the voice attempt pass.
 No phone access, operator prompt or rerun was used to repair provenance. Warm/repeat, invalid/stale, actual offline, deletion/revocation and
 additional Siri outcomes remain **NOT RUN**, not inferred from unit tests or this
 single success. See the [bounded verification matrix and go/no-go](../../../spikes/siri-shortcuts/verification-matrix.md).
-**This spike is not production-ready and this draft remains incomplete.**
+**Positive implementation acceptance remains incomplete. The final NO-GO report
+is complete and does not claim those missing outcomes.**
 
 Use the [external preparation workflow](../../../spikes/siri-shortcuts/README.md),
 not a normal-app native build command. It exports the pinned main revision,

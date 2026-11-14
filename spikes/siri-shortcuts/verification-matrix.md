@@ -1,5 +1,11 @@
 # Bounded opening-only verification matrix
 
+The [final timeboxed NO-GO report](<NO-GO.md>) is complete. This matrix preserves
+unfulfilled original verification expectations; it is not an ongoing implicit
+test authorization or a claim that those expectations are optional production
+polish. Device work is held. Missing physical outcomes do not prevent a negative
+recommendation, but must be resolved before any positive acceptance/rollout.
+
 ## Evidence boundary
 
 - **Observed cold native String1 execution; entry/operator unverified:** new
