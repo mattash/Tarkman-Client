@@ -35,7 +35,7 @@ export const en = {
   library: {
     savedPassages: 'Saved passages',
     savePassage: 'Bookmark this passage',
-    savedPassagesHelp: 'Bookmarks and reading positions stay on this device. Opening a saved passage uses its reading language.',
+    savedPassagesHelp: 'Saved places stay on this device and open in their reading language. Removing a saved service also clears its saved places.',
     savedPassagesEmpty: 'No bookmarked passages yet.',
     savedPassage: 'Passage {number} · {language}',
     resumeReading: 'Resume reading',
@@ -122,7 +122,7 @@ export const en = {
     "noExplanations": "There are no explanations for this part yet.",
     "manage": "Prayer Library",
     "clear": "Remove all saved services",
-    "clearConfirm": "Remove all services saved in Prayer Library and any waiting to be saved? Your saved live service and reading preferences will stay.",
+    "clearConfirm": "Remove all Prayer Library downloads, waiting downloads, bookmarks and reading positions for this server? Your saved live service and reading preferences will stay.",
     "errors": {
         "invalid": "Something went wrong with this service. Anything you saved is still here.",
         "rate-limited": "Requests are paused. Please try again later. Your saved copies are still available.",
