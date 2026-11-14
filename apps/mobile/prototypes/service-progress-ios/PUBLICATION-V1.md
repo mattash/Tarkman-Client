@@ -83,6 +83,12 @@ default**, has no default HTTP driver/base URL, and is tested only with syntheti
 injected asynchronous HTTP. MainActor serialization and a sending gate protect
 mutation across suspension; actual I/O does not block the UI actor. It validates lease/receipt/identity, pins ambiguous rotation retries,
 invalidates locally before removal and prevents stale follow callbacks/switches.
+A provably never-attempted follow removes locally without DELETE; used IDs and
+generations remain invalidated. An explicit monotonic PUT-attempted fact is set
+before HTTP suspension and survives pending clearing, so ambiguous/in-flight or
+previously attempted registrations still require remote acknowledgement. Removal
+returns `.neverAttempted` or `.acknowledged` for caller recovery, not an inference
+from token/version0 after an error.
 Request/response/debug/error representations redact sensitive values; actual
 request headers/body remain sensitive and must never be logged or persisted.
 

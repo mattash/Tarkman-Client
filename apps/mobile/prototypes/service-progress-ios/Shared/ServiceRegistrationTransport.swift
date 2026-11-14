@@ -34,6 +34,10 @@ enum ServiceRegistrationFailure: Error {
     case pendingReplacement, transport, rejected(Int), invalidReceipt
 }
 
+enum ServiceRegistrationRemoval: Equatable {
+    case neverAttempted, acknowledged
+}
+
 struct ServiceRegistrationReceipt: Equatable {
     let id: UUID
     let tokenVersion: Int
@@ -57,12 +61,13 @@ final class ServiceRegistrationTransport: CustomStringConvertible, CustomDebugSt
         var pending: String?
         var leaseExpiresAt: Date?
         var removing = false
+        var attemptedPut = false // Monotonic fact; never infer from cleared pending/version.
     }
     private let enabled: Bool
     private let http: ServiceRegistrationHTTP?
     private let now: () -> Date
     private var follow: Follow?
-    private var removed = Set<ServiceRegistrationFollow>()
+    private var removed: [ServiceRegistrationFollow: ServiceRegistrationRemoval] = [:]
     private var usedIDs = Set<UUID>()
     private var usedGenerations = Set<String>()
     private var sending = false
@@ -125,6 +130,8 @@ final class ServiceRegistrationTransport: CustomStringConvertible, CustomDebugSt
         let request = ServiceRegistrationRequest(method: "PUT", path: path(handle),
             headers: ["Content-Type": "application/json", "X-Service-Activity-Secret": state.secret],
             body: try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]))
+        state.attemptedPut = true
+        follow = state // Persist intent BEFORE the first suspension/HTTP boundary.
         let response = try await send(request)
         guard response.status == 200 else { throw ServiceRegistrationFailure.rejected(response.status) }
         let receipt = try validate(response, handle: handle, version: version, leaseSeconds: leaseSeconds)
@@ -138,20 +145,29 @@ final class ServiceRegistrationTransport: CustomStringConvertible, CustomDebugSt
 
     // Local invalidation precedes I/O. Failed deletion can only retry deletion;
     // callbacks cannot register/rotate it, nor switch identity until acknowledged.
-    func remove(_ handle: ServiceRegistrationFollow) async throws {
+    @discardableResult
+    func remove(_ handle: ServiceRegistrationFollow) async throws -> ServiceRegistrationRemoval {
         try gate()
-        if removed.contains(handle) { return }
+        if let result = removed[handle] { return result }
         guard var state = follow, state.handle == handle else { throw ServiceRegistrationFailure.staleFollow }
         state.removing = true
         state.token = nil
         state.pending = nil
         follow = state
+        if !state.attemptedPut {
+            // Nothing could exist remotely. Invalidate identity locally; retain
+            // used IDs/generations so late callbacks and re-follows cannot reuse it.
+            removed[handle] = .neverAttempted
+            follow = nil
+            return .neverAttempted
+        }
         let response = try await send(ServiceRegistrationRequest(method: "DELETE", path: path(handle),
             headers: ["X-Service-Activity-Secret": state.secret], body: nil))
         guard response.status == 204 else { throw ServiceRegistrationFailure.rejected(response.status) }
         guard noStore(response), response.body.isEmpty else { throw ServiceRegistrationFailure.invalidReceipt }
-        removed.insert(handle)
+        removed[handle] = .acknowledged
         follow = nil
+        return .acknowledged
     }
 
     private func gate() throws {

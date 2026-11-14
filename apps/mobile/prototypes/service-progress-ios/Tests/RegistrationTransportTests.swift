@@ -108,12 +108,12 @@ private struct RegistrationTransportTests {
             await fails(.invalidInput) { _ = try await adapter.register(handle, token: "1234", leaseSeconds: lease) }
         }
         fake.onSend = {
-            await fails(.busy) { try await adapter.remove(handle) }
+            await fails(.busy) { _ = try await adapter.remove(handle) }
         }
         _ = try await adapter.register(handle, token: "1234")
         fake.onSend = nil
         fake.fail = true
-        await fails(.transport) { try await adapter.remove(handle) }
+        await fails(.transport) { _ = try await adapter.remove(handle) }
         await fails(.staleFollow) { _ = try await adapter.register(handle, token: "5678") }
         await fails(.removalRequired) { _ = try adapter.begin(identity: identity, activityID: "a", capability: capability) }
         fake.fail = false
@@ -164,6 +164,53 @@ private struct RegistrationTransportTests {
         let deletes = expiryHTTP.requests.count
         try await expiring.remove(expiringHandle)
         check(expiryHTTP.requests.count == deletes, "Idempotent removal")
+        // A local follow before ANY PUT must not call backend DELETE (unknown IDs return 404).
+        let (untouchedHTTP, untouched, untouchedHandle) = try setup()
+        untouchedHTTP.status = 404
+        let localRemoval = try await untouched.remove(untouchedHandle)
+        check(localRemoval == .neverAttempted && untouchedHTTP.requests.isEmpty, "Never-attempted removal is local")
+        await fails(.staleFollow) { _ = try await untouched.register(untouchedHandle, token: "aabb") }
+        await fails(.invalidInput) { _ = try untouched.begin(identity: identity, activityID: "a", capability: capability) }
+        await fails(.invalidInput) {
+            _ = try untouched.begin(identity: nextIdentity, activityID: "a", capability: capability, id: untouchedHandle.id)
+        }
+        _ = try untouched.begin(identity: nextIdentity, activityID: "fresh", capability: capability)
+        check(try await untouched.remove(untouchedHandle) == .neverAttempted && untouchedHTTP.requests.isEmpty,
+              "Repeated old local removal never touches fresh follow")
+
+        // First PUT in flight cannot be classified as never attempted.
+        let (firstHTTP, firstTransport, firstHandle) = try setup()
+        firstHTTP.onSend = {
+            await fails(.busy) { _ = try await firstTransport.remove(firstHandle) }
+        }
+        _ = try await firstTransport.register(firstHandle, token: "aabb")
+        firstHTTP.onSend = nil
+        check(try await firstTransport.remove(firstHandle) == .acknowledged, "Attempted registration needs remote acknowledgement")
+        check(firstHTTP.requests.map(\.method) == ["PUT", "DELETE"], "First-attempt in-flight safety")
+
+        // Clearing pending during DELETE never erases the monotonic attempted fact.
+        // Test both a pre-receipt transport failure and an accepted PUT with lost receipt.
+        for committed in [false, true] {
+            let (ambiguousHTTP, ambiguous, ambiguousHandle) = try setup()
+            if committed { ambiguousHTTP.receiptOverride = Data("{}".utf8) }
+            else { ambiguousHTTP.fail = true }
+            await fails(committed ? .invalidReceipt : .transport) {
+                _ = try await ambiguous.register(ambiguousHandle, token: "aabb")
+            }
+            ambiguousHTTP.fail = false
+            ambiguousHTTP.receiptOverride = nil
+            ambiguousHTTP.status = 404
+            await fails(.rejected(404)) { _ = try await ambiguous.remove(ambiguousHandle) }
+            await fails(.rejected(404)) { _ = try await ambiguous.remove(ambiguousHandle) }
+            check(ambiguousHTTP.requests.map(\.method) == ["PUT", "DELETE", "DELETE"],
+                  "Ambiguous version0/pending-cleared removal still retries remotely")
+            await fails(.removalRequired) {
+                _ = try ambiguous.begin(identity: nextIdentity, activityID: "fresh", capability: capability)
+            }
+            ambiguousHTTP.status = 200
+            check(try await ambiguous.remove(ambiguousHandle) == .acknowledged, "Ambiguous removal requires explicit204")
+            _ = try ambiguous.begin(identity: nextIdentity, activityID: "fresh", capability: capability)
+        }
         print("RegistrationTransportTests: \(checks) checks passed (synthetic HTTP only)")
     }
 }

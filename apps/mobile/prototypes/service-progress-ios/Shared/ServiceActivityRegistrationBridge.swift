@@ -62,20 +62,22 @@ final class ServiceActivityRegistrationBridge {
 
     // Revoke locally even if the server cannot currently acknowledge removal.
     // Keep the old handle for idempotent deletion retry; no new follow can start.
-    func remove() async throws {
+    @discardableResult
+    func remove() async throws -> ServiceRegistrationRemoval? {
         guard !removing else { throw ServiceRegistrationFailure.busy }
         removing = true
         defer { removing = false }
         tokenTask?.cancel()
         tokenTask = nil
-        guard let previous = current else { return }
+        guard let previous = current else { return nil }
         revoked = true
         previous.coordinator.cancel()
         await previous.activity.end(nil, dismissalPolicy: .immediate)
         do {
-            try await transport.remove(previous.follow)
+            let result = try await transport.remove(previous.follow)
             current = nil
             failure = nil
+            return result
         } catch let error as ServiceRegistrationFailure {
             failure = error
             throw error
