@@ -18,6 +18,7 @@ struct PrototypeView: View {
     @State private var paused = false
     @State private var variant = "ordered"
     @State private var busy = true
+    @State private var remoteActive = false
     @State private var status = "off"
     @State private var requestMetadata = ""
     private let roles = ["priest", "choir", "people"]
@@ -39,16 +40,16 @@ struct PrototypeView: View {
                     Toggle(disclose ? "revokeDisclosure" : "allowDisclosure", isOn: $disclose)
                         .toggleStyle(.button)
                         .accessibilityIdentifier("disclosure")
-                        .disabled(busy)
+                        .disabled(busy || remoteActive)
                         .onChange(of: disclose) { enabled in
-                            if !enabled {
+                            if !enabled && !remoteActive {
                                 busy = true
                                 Task { await remove() }
                             }
                         }
                     Text("disclosureHelp").font(.footnote)
                     Button("start") { start() }
-                        .disabled(!disclose || activity != nil || busy || scenePhase != .active)
+                        .disabled(!disclose || activity != nil || busy || remoteActive || scenePhase != .active)
                     Text(LocalizedStringKey(status)).accessibilityIdentifier("status")
                         .accessibilityValue(requestMetadata)
                 }
@@ -64,11 +65,15 @@ struct PrototypeView: View {
                         busy = true
                         Task { await remove() }
                     }
-                }.disabled(activity == nil || busy || scenePhase != .active)
+                }.disabled(activity == nil || busy || remoteActive || scenePhase != .active)
                 if let store {
                     Section("publicationPreview") {
                         ServicePublicationCard(presentation: store.presentation(now: Date()))
                     }
+                }
+                ServiceRemoteExperimentView(remoteActive: $remoteActive, ready: !busy) {
+                    disclose = false
+                    await remove()
                 }
                 Text("expiryHelp").font(.footnote)
             }
@@ -106,7 +111,7 @@ struct PrototypeView: View {
     }
 
     private func start() {
-        guard disclose, scenePhase == .active, activity == nil, !busy else { return }
+        guard disclose, scenePhase == .active, activity == nil, !busy, !remoteActive else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { status = "unavailable"; return }
         generation = UUID().uuidString.lowercased()
         sequence = 0; ordinal = 1; paused = false; variant = "ordered"

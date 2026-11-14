@@ -1,0 +1,52 @@
+import SwiftUI
+
+struct ServiceRemoteExperimentView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var caller = ServiceRemoteExperimentController()
+    @Binding var remoteActive: Bool
+    let ready: Bool
+    let beforeStart: () async -> Void
+
+    var body: some View {
+        Section("remoteSection") {
+            Text("remoteExperimentHelp").font(.footnote)
+            Text(LocalizedStringKey(caller.messageKey)).accessibilityIdentifier("remoteStatus")
+            TextField("remoteServiceID", text: $caller.serviceInput)
+                .keyboardType(.numberPad)
+                .accessibilityIdentifier("remoteServiceID")
+                .disabled(!caller.canVerify || !ready || scenePhase != .active)
+            Button("remoteVerify") { Task { await caller.verifySelection() } }
+                .disabled(!caller.canVerify || !ready || scenePhase != .active)
+            if let selected = caller.selection {
+                Text(verbatim: selected.title).font(.headline)
+                Text("remoteDisclosureHelp").font(.footnote)
+                Toggle("remoteAllowDisclosure", isOn: $caller.disclosed)
+                    .disabled(caller.busy || scenePhase != .active)
+                    .onChange(of: caller.disclosed) { allowed in
+                        if !allowed && caller.isActive && !caller.busy {
+                            Task { await caller.remove(); remoteActive = caller.isActive }
+                        }
+                    }
+            }
+            Button("remoteStart") {
+                // Block local fixture requests before cleanup suspends; the remote
+                // controller rechecks consent, selection age and durable recovery.
+                remoteActive = true
+                Task {
+                    await beforeStart()
+                    await caller.start()
+                    remoteActive = caller.isActive
+                }
+            }.disabled(!caller.canStart || !ready || scenePhase != .active)
+            Button("remoteRetry") { Task { await caller.retryRegistration() } }
+                .disabled(!caller.isActive || caller.busy || scenePhase != .active)
+            Button("remoteRevoke", role: .destructive) {
+                Task { await caller.remove(); remoteActive = caller.isActive }
+            }.disabled((!caller.isActive && !caller.pendingRecovery) || caller.busy || scenePhase != .active)
+            if caller.pendingRecovery {
+                Text("remoteRecoveryHelp").font(.footnote)
+            }
+        }
+        .onChange(of: caller.isActive) { remoteActive = $0 }
+    }
+}

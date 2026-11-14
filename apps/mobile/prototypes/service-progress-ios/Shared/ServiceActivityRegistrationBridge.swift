@@ -1,10 +1,10 @@
 import ActivityKit
 import Foundation
 
-// Explicitly inactive preparation. The local harness requests pushType:nil and
-// never constructs this bridge. No provider, URLSession, background timer or push
-// capability is enabled here. An explicitly configured caller must supply consent,
-// a cryptographically random capability and a reviewed registration HTTP driver.
+// Default-disabled native adapter. The default local fixture requests pushType:nil;
+// only the explicitly configured development caller constructs this bridge after
+// public selection and fresh disclosure. No provider, background timer or production
+// capability is activated here. Caller supplies a random capability and trusted HTTP.
 @MainActor
 final class ServiceActivityRegistrationBridge {
     private let enabled: Bool
@@ -21,15 +21,26 @@ final class ServiceActivityRegistrationBridge {
         self.enabled = enabled
     }
 
-    func observe(_ activity: Activity<ServicePublicationIdentity>, disclosed: Bool, capability: String) throws {
+    func observe(_ activity: Activity<ServicePublicationIdentity>, disclosed: Bool, capability: String,
+                 registrationID: UUID = UUID(), beforeTokenObservation: () throws -> Void = {}) throws {
         guard enabled else { throw ServiceRegistrationFailure.disabled }
         guard disclosed else { throw ServiceRegistrationFailure.invalidInput }
         guard current == nil else { throw ServiceRegistrationFailure.removalRequired }
-        let follow = try transport.begin(identity: activity.attributes, activityID: activity.id, capability: capability)
+        let follow = try transport.begin(identity: activity.attributes, activityID: activity.id,
+                                         capability: capability, id: registrationID)
         let coordinator = ServiceRegistrationCoordinator(transport: transport, follow: follow)
         current = (activity, follow, coordinator)
         revoked = false
         failure = nil
+        do { try beforeTokenObservation() }
+        catch {
+            // No token task/PUT exists yet; retain the invalidated local handle
+            // so caller cleanup receives the genuine never-attempted proof.
+            coordinator.cancel()
+            revoked = true
+            failure = .transport
+            throw ServiceRegistrationFailure.transport
+        }
         tokenTask = Task { [weak self] in
             for await bytes in activity.pushTokenUpdates {
                 guard !Task.isCancelled, let self, self.current?.follow == follow else { return }
@@ -60,6 +71,14 @@ final class ServiceActivityRegistrationBridge {
 
     var needsRegistrationRetry: Bool { !revoked && (current?.coordinator.needsRetry ?? false) }
 
+    // Native end/dismissal also invalidates token callbacks without starting HTTP.
+    func invalidateLocally() {
+        tokenTask?.cancel()
+        tokenTask = nil
+        revoked = true
+        current?.coordinator.cancel()
+    }
+
     // Revoke locally even if the server cannot currently acknowledge removal.
     // Keep the old handle for idempotent deletion retry; no new follow can start.
     @discardableResult
@@ -67,11 +86,8 @@ final class ServiceActivityRegistrationBridge {
         guard !removing else { throw ServiceRegistrationFailure.busy }
         removing = true
         defer { removing = false }
-        tokenTask?.cancel()
-        tokenTask = nil
+        invalidateLocally()
         guard let previous = current else { return nil }
-        revoked = true
-        previous.coordinator.cancel()
         await previous.activity.end(nil, dismissalPolicy: .immediate)
         do {
             let result = try await transport.remove(previous.follow)

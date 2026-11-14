@@ -4,16 +4,23 @@ Coordinated with [backend #552](https://github.com/mattash/Tarkman/issues/552).
 The [Foundation type](<Shared/ServicePublicationV1.swift>) is bound to ActivityKit
 by [ServicePublicationIdentity conformance](<Shared/ServicePublicationActivity.swift>),
 compiled into the isolated app and extension. The local harness now requests and
-renders this v1 type with synthetic public fixtures and `pushType: nil`. The old
+renders this v1 type with synthetic public fixtures and `pushType: nil` by default.
+The separately gated [development caller](<REMOTE-EXPERIMENT.md>) wires verified
+public selection to an actual `.token` request/registration/removal path, off by
+default and not yet measured against APNs. The old
 five-field `ServiceAttributes.ContentState` is retained only for baseline golden
 verification and cleanup of earlier experiment Activities; no provider is activated.
 
 ## Wire shape
 
 `ServicePublicationIdentity` immutable attributes: `serviceID: Int` and
-`generation: String` (UUID). A future renderer must compare both against the
-content to isolate same-service re-follows without executing the app. The
-content's `sessionID` corresponds to the attribute's `serviceID`.
+`generation: String` (UUID). The renderer compares both against the content to
+isolate same-service re-follows without executing the app. The content's
+`sessionID` corresponds to the attribute's `serviceID`. An optional app-originated
+`readerOrigin: String?` binds development IDs to their explicitly trusted reader;
+malformed supplied origins fail closed. Nil is omitted, preserving the historical
+two-field attributes golden byte-for-byte. It is not a dynamic content or
+registration field, and update pushes need no new server field.
 
 `ServicePublicationV1` required content fields:
 - `schemaVersion: Int` (1), `sessionID: Int`, `generation: String`, `sequence: Int`;
@@ -93,7 +100,9 @@ Request/response/debug/error representations redact sensitive values; actual
 request headers/body remain sensitive and must never be logged or persisted.
 
 [Native token bridge](<Shared/ServiceActivityRegistrationBridge.swift>) is likewise
-default-disabled and is **not constructed by the local harness**. It prepares
+default-disabled and is **not constructed in default local mode**. The explicitly
+configured development caller supplies verified selection/fresh disclosure and
+persists recovery through a pre-observation hook before any token task/PUT. It prepares
 serialized ActivityKit `pushTokenUpdates` observation, hex token rotation and local
 end plus revocation retry. Its [testable coordinator](<Shared/ServiceRegistrationCoordinator.swift>)
 retains a failed/ambiguous candidate, reconciles that exact token/version before
@@ -104,8 +113,8 @@ cancels/clears queued reconciliation before ending/revoking, and rejects registr
 retry afterward. No foreground retry entry point implies background execution. No `.token` Activity request, real HTTP driver, endpoint
 activation, capability/provider key, APNs entitlement or background timer is added.
 The concrete [asynchronous HTTPS driver](<Shared/ServiceRegistrationURLSessionHTTP.swift>)
-is also default-disabled, requires an explicit bare HTTPS origin and is never
-constructed by the harness. It denies redirects/authentication credential reuse,
+is also default-disabled and requires an explicit bare HTTPS origin. It is only
+constructed through the separately configured opt-in caller, never default mode. It denies redirects/authentication credential reuse,
 uses ephemeral no-cache/no-cookie/no-credential-storage configuration, bounds
 streamed response bytes and sanitizes transport errors. Policy tests do not issue
 outbound requests. No real endpoint/provider activation or remote receipt is claimed.

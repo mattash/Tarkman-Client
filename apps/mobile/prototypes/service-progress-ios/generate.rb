@@ -2,7 +2,33 @@
 # Use the existing CocoaPods xcodeproj gem; no gem installation required.
 require 'xcodeproj'
 require 'fileutils'
+require 'uri'
 Dir.chdir(__dir__)
+# This affects ONLY the separate experiment. No default endpoint or activation.
+remote_flag = ENV.fetch('SERVICE_PROGRESS_REMOTE_EXPERIMENT', '0')
+abort 'SERVICE_PROGRESS_REMOTE_EXPERIMENT must be 0 or 1' unless ['0', '1'].include?(remote_flag)
+remote_enabled = remote_flag == '1'
+remote_info = { 'ServiceProgressRemoteEnabled' => remote_enabled }
+{
+  'SERVICE_PROGRESS_DEVELOPMENT_ORIGIN' => 'ServiceProgressDevelopmentOrigin',
+  'SERVICE_PROGRESS_DEVELOPMENT_READER_ORIGIN' => 'ServiceProgressDevelopmentReaderOrigin'
+}.each do |variable, key|
+  origin = ENV[variable]
+  abort "Missing explicit #{variable}" if remote_enabled && (origin.nil? || origin.empty?)
+  next if origin.nil? || origin.empty?
+  begin
+    parsed = URI.parse(origin)
+    valid = parsed.scheme == 'https' && parsed.host && !parsed.host.empty? &&
+      parsed.userinfo.nil? && parsed.query.nil? && parsed.fragment.nil? && parsed.path.empty? &&
+      (1..65535).include?(parsed.port)
+  rescue URI::InvalidURIError
+    valid = false
+  end
+  abort "Invalid bare HTTPS origin in #{variable}" unless valid
+  remote_info[key] = origin
+end
+# A typed Boolean plist avoids treating the string "NO" as an enabled flag.
+Xcodeproj::Plist.write_to_path(remote_info, 'ServiceProgressPrototype.generated.plist')
 project = Xcodeproj::Project.new('ServiceProgressPrototype.xcodeproj')
 project.root_object.attributes['LastUpgradeCheck'] = '1600'
 project.root_object.known_regions = ['en', 'ru']
@@ -30,6 +56,12 @@ widget = project.new_target(:app_extension, 'ServiceProgressLiveActivity', :ios,
   target.resources_build_phase.add_file_reference(resources)
 end
 app.add_file_references([project.main_group.new_file('App/PrototypeApp.swift'),
+                         project.main_group.new_file('App/ServiceRemoteExperimentController.swift'),
+                         project.main_group.new_file('App/ServiceRemoteExperimentView.swift'),
+                         project.main_group.new_file('Shared/ServiceRemoteExperimentConfiguration.swift'),
+                         project.main_group.new_file('Shared/ServicePublicSelection.swift'),
+                         project.main_group.new_file('Shared/ServiceExperimentJournal.swift'),
+                         project.main_group.new_file('Shared/ServiceExperimentKeychain.swift'),
                          project.main_group.new_file('Shared/ServiceRegistrationTransport.swift'),
                          project.main_group.new_file('Shared/ServiceRegistrationCoordinator.swift'),
                          project.main_group.new_file('Shared/ServiceRegistrationURLSessionHTTP.swift'),
@@ -38,10 +70,12 @@ widget.add_file_references([project.main_group.new_file('Widget/ServiceActivityW
 app.build_configurations.each do |c|
   c.build_settings.merge!({
     'PRODUCT_BUNDLE_IDENTIFIER' => 'app.tarkman.progressprototype',
+    'INFOPLIST_FILE' => 'ServiceProgressPrototype.generated.plist',
     'INFOPLIST_KEY_NSSupportsLiveActivities' => 'YES',
     'INFOPLIST_KEY_UILaunchScreen_Generation' => 'YES',
     'INFOPLIST_KEY_UIApplicationSceneManifest_Generation' => 'YES'
   })
+  c.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/RemoteExperiment.entitlements' if remote_enabled
 end
 widget.build_configurations.each do |c|
   c.build_settings.merge!({

@@ -5,8 +5,9 @@ import Foundation
 ///   Tests/PublicationValidationTests.swift -o /tmp/publication-validation-tests
 /// /tmp/publication-validation-tests
 @main
+@MainActor
 struct PublicationValidationTests {
-    static let generation = "a1111111-2222-4333-8444-555555555555"
+    nonisolated static let generation = "a1111111-2222-4333-8444-555555555555"
     static let identity = ServicePublicationIdentity(serviceID: 42, generation: generation)
     static let source = Date(timeIntervalSinceReferenceDate: 1_000)
     static var assertions = 0
@@ -45,6 +46,7 @@ struct PublicationValidationTests {
 
     static func main() {
         identityAndEnvelope()
+        readerOrigins()
         clocksAndStaleness()
         coherenceAndRoles()
         foregroundOrdering()
@@ -85,6 +87,51 @@ struct PublicationValidationTests {
         let badService = ServicePublicationIdentity(serviceID: 0, generation: generation)
         check(!ServicePublicationValidator.isValid(state(service: 0), identity: badService, now: source), "identity must be positive")
         check(project(state(status: "paused")).status == "paused", "paused supported")
+    }
+
+    static func readerOrigins() {
+        check(project(state()).tapURL?.absoluteString == "https://web.tarkman.app/sessions/42/parts",
+              "nil origin preserves historical baseline only")
+        for origin in ["https://reader.example.invalid", "https://reader.example.invalid:8443",
+                       "https://reader.example.invalid:1", "https://reader.example.invalid:65535"] {
+            let configured = ServicePublicationIdentity(serviceID: 77, generation: generation, readerOrigin: origin)
+            let value = state(service: 77)
+            let result = ServicePublicationValidator.presentation(value, identity: configured, now: source)
+            check(result.freshness == .recent && result.ordinal == 2, "configured origin remains valid")
+            check(result.tapURL?.absoluteString == origin + "/sessions/77/parts", "configured origin and selected service used exactly")
+            let url = URLComponents(url: result.tapURL!, resolvingAgainstBaseURL: false)!
+            check(url.user == nil && url.password == nil && url.query == nil && url.fragment == nil,
+                  "configured tap never contains credentials/query/fragment")
+            var store = ServicePublicationStore(identity: configured)
+            check(store.accept(value, now: source), "store accepts configured immutable origin")
+            check(store.presentation(now: source).tapURL == result.tapURL, "foreground and stateless routes agree")
+        }
+        let malformed = [
+            "", "http://reader.example.invalid", "//reader.example.invalid", "reader.example.invalid",
+            "https://user@reader.example.invalid", "https://user:password@reader.example.invalid",
+            "https://@reader.example.invalid", "https://reader.example.invalid/",
+            "https://reader.example.invalid/sessions/999/parts", "https://reader.example.invalid/..",
+            "https://reader.example.invalid?token=synthetic", "https://reader.example.invalid?",
+            "https://reader.example.invalid#fragment", "https://reader.example.invalid#",
+            "https://reader.example.invalid:0", "https://reader.example.invalid:65536",
+            "https://reader.example.invalid:-1", "https://reader.example.invalid:notaport",
+            "https://reader.example.invalid:", "https://reader.example.invalid:99999999999999999999999",
+            "https://", "https:///reader.example.invalid", "https://reader..example.invalid",
+            "https://-reader.example.invalid", "https://reader.example.invalid.",
+            " https://reader.example.invalid", "https://reader.example.invalid\n",
+            "https://reader.example.invalid\\evil", "https://reader%2eexample.invalid",
+            "https://reader.example.invalid%2f@web.tarkman.app",
+        ]
+        for origin in malformed {
+            let configured = ServicePublicationIdentity(serviceID: 42, generation: generation, readerOrigin: origin)
+            check(!ServicePublicationValidator.isValid(state(), identity: configured, now: source), "malformed supplied origin fails closed: \(origin)")
+            let result = ServicePublicationValidator.presentation(state(), identity: configured, now: source)
+            check(result.status == "invalid" && result.freshness == .invalid, "bad origin produces invalid projection")
+            checkEmpty(result)
+            check(result.updatedAt == nil, "bad origin clears payload, never fallback to production")
+            var store = ServicePublicationStore(identity: configured)
+            check(!store.accept(state(), now: source), "store rejects malformed origin configuration")
+        }
     }
 
     static func clocksAndStaleness() {

@@ -28,6 +28,7 @@ enum ServicePublicationValidator {
         let clock = now.timeIntervalSinceReferenceDate
         return state.schemaVersion == 1
             && identity.serviceID > 0 && state.sessionID == identity.serviceID
+            && readerURL(identity: identity) != nil
             && canonicalUUID(identity.generation) && state.generation == identity.generation
             && state.sequence > 0 && statuses.contains(state.status)
             && (state.serviceTitle?.count ?? 0) <= 120
@@ -84,8 +85,8 @@ enum ServicePublicationValidator {
         return ServicePublicationPresentation(
             status: state.status, freshness: freshness, title: state.serviceTitle,
             ordinal: ordinal, total: total, role: role, updatedAt: state.updatedAt,
-            // Construct only the known, credential-free HTTPS reader route.
-            tapURL: URL(string: "https://web.tarkman.app/sessions/\(identity.serviceID)/parts")
+            // Origin is immutable follow configuration, never dynamic content.
+            tapURL: readerURL(identity: identity)
         )
     }
 
@@ -100,6 +101,34 @@ enum ServicePublicationValidator {
             status: status, freshness: freshness, title: nil, ordinal: nil,
             total: nil, role: nil, updatedAt: nil, tapURL: nil
         )
+    }
+
+    /// A supplied origin fails closed: malformed configuration never silently
+    /// redirects a development service ID to the production reader. Nil alone
+    /// retains the historical synthetic baseline's known public origin.
+    private static func readerURL(identity: ServicePublicationIdentity) -> URL? {
+        let origin = identity.readerOrigin ?? "https://web.tarkman.app"
+        // Reject escapes, whitespace, credentials and any path before URL parsing
+        // can normalize them. Accept DNS/IPv4 or bracketed IPv6 authority only.
+        let authorityPattern = #"^https://(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:]+\])(?::[0-9]{1,5})?$"#
+        guard identity.serviceID > 0,
+              origin.utf8.allSatisfy({ $0 > 32 && $0 < 127 }),
+              origin.range(of: authorityPattern, options: .regularExpression) != nil,
+              var components = URLComponents(string: origin),
+              components.scheme == "https", let host = components.host, !host.isEmpty,
+              components.user == nil, components.password == nil,
+              components.path.isEmpty, components.query == nil, components.fragment == nil else { return nil }
+        if let port = components.port, !(1...65535).contains(port) { return nil }
+        if !host.hasPrefix("[") {
+            // Reject malformed DNS labels rather than relying on URL's permissive
+            // host parser. No resolution or network request is performed.
+            let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+            guard host.count <= 253, labels.allSatisfy({ label in
+                !label.isEmpty && label.count <= 63 && label.first != "-" && label.last != "-"
+            }) else { return nil }
+        }
+        components.path = "/sessions/\(identity.serviceID)/parts"
+        return components.url
     }
 
     private static func canonicalUUID(_ value: String) -> Bool {

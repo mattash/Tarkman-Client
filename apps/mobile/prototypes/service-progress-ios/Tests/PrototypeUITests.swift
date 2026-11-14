@@ -13,6 +13,23 @@ final class PrototypeUITests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
     }
+    func testMatchedRemoteCallerOff() {
+        let app = XCUIApplication()
+        app.launch()
+        let consent = app.descendants(matching: .any).matching(identifier: "disclosure").firstMatch
+        XCTAssertTrue(consent.waitForExistence(timeout: 20))
+        XCTAssertEqual(app.staticTexts["disclosureState"].label, "Public Lock Screen disclosure for service 42: OFF")
+        for _ in 0..<3 { app.swipeUp() }
+        let remoteStatus = app.staticTexts["remoteStatus"]
+        XCTAssertTrue(remoteStatus.waitForExistence(timeout: 10))
+        XCTAssertEqual(remoteStatus.label, "Development remote experiment is off")
+        XCTAssertFalse(app.buttons["Verify public service"].isEnabled)
+        XCTAssertFalse(app.buttons["Start selected development follow"].isEnabled)
+        XCTAssertFalse(app.textFields["remoteServiceID"].isEnabled)
+        capture("matched-remote-caller-default-off")
+        app.terminate()
+    }
+
     // Same scenario for the real pre-v1 and v1 renderer comparison on an owned simulator.
     func testMatchedNativeCard() {
         continueAfterFailure = false

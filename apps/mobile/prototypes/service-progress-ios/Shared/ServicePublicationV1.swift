@@ -24,4 +24,13 @@ struct ServicePublicationV1: Codable, Hashable {
 struct ServicePublicationIdentity: Codable, Hashable {
     let serviceID: Int
     let generation: String
+    // Optional app-originated public reader origin. Nil preserves the historical
+    // fixture wire; dev service IDs must never silently open a production service.
+    let readerOrigin: String?
+
+    init(serviceID: Int, generation: String, readerOrigin: String? = nil) {
+        self.serviceID = serviceID
+        self.generation = generation
+        self.readerOrigin = readerOrigin
+    }
 }
