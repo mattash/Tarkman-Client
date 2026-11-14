@@ -2,7 +2,7 @@
 
 ## Status
 
-**Incomplete:** genuine matched native Before/After captures and successful repeated-occurrence/keyboard navigation evidence are available. Long-passage geometry, VoiceOver and a rapid-input diagnostic remain outstanding. Device UI-automation authorization is verified; no authorization prompt remains pending. This record does not claim readiness.
+**Incomplete:** genuine matched native Before/After captures and successful repeated-occurrence/keyboard navigation evidence are available. Initial late-paragraph navigation passes, but reselecting that same match exposes a geometry regression being corrected. VoiceOver remains pending. Device UI-automation authorization is verified; no authorization prompt remains pending. This record does not claim readiness.
 
 ## Actual application and source identity
 
@@ -41,16 +41,22 @@ An initial external QA route-context cache issue was corrected with a byte-ident
 | Native repeated-occurrence find and keyboard Search | Passed with exact native input; screenshots show first/second occurrence |
 | Previous/Next wrap and dismissal | Passed |
 | Native accessibility labels / controls | Actual XCTest accessibility queries pass; not a substitute for VoiceOver |
-| Native long-paragraph passage geometry | Pending; distinct synthetic liturgy 702 prepared with a late `lantern` match |
+| Native long-paragraph passage geometry | Initial late `lantern` jump passes; same-target reselection failed before the correction below; native revalidation pending |
 | VoiceOver focus and announcements | Pending; enabling VoiceOver alone will not count as validation |
 | Offline native saved-copy search | Passed with intentionally unavailable content API; seeded-copy provenance above |
-| Rapid native input | Diagnostic pending; some single-call XCTest `Peace` inputs lost characters, also reproduced in the unchanged catalog field |
+| Rapid native input | Also reproduced on pinned main `d459fa5e`; not introduced by this PR. Underlying native/test-input cause remains undetermined |
 
 The external XCTest transport has no app target/dependency and targets only the already-running QA identifier. It does not launch/reset/uninstall the production app. Its generic iOS build/signature verification and five actual native stages pass: reader inspection, exact query, keyboard Search, navigation/wrap, and dismissal. The owner completed the device's UI Automation authorization locally; no passcode was requested, read or logged. Initial failed input/transport attempts are retained internally rather than counted as passes.
 
-A three-trial bulk-input diagnostic produced `Pace`, `Peace`, `Pce` from single-call XCTest `Peace` typing. A valid control in the unchanged catalog search produced `Pe`. These observations do not yet distinguish synthetic-key delivery from shared native controlled-input behavior. Per-character verification passed, but it does not exonerate rapid input; the diagnostic is not silently relabelled as a search-engine failure or a proven transport-only issue.
+A three-trial bulk-input diagnostic produced `Pace`, `Peace`, `Pce` from single-call XCTest `Peace` typing. A valid control in the unchanged catalog search produced `Pe`. The same valid control on pinned-main source `d459fa5e` produced `Pace`. This establishes that the behavior was not introduced by Find; it does not distinguish synthetic-key delivery from shared native controlled-input behavior. Per-character verification passed. No shared input redesign or claimed rapid-input fix is included.
 
-Local mobile verification passes: 100 suites / 1,341 tests, typecheck, lint, web export and reader boundary guard. The posted application head also passes repository CI and a complete independent GPT-6.1 Sol P0–P2 review. These do not replace the outstanding native checks.
+### Preserved same-target native regression
+
+Liturgy 702 contains one 7,230-character English paragraph ending `Exact passage lantern is here.` [Initial late jump](./after-ios-long-initial.png) reaches the highlighted word. With that glyph already measured, keyboard Search issues a fresh request for the same single match. The [pre-correction native result](./before-ios-long-reselect-fix.png), application source `ec8876e`, incorrectly returns to the row start. A passing `1 of 1` counter is not counted as passing geometry.
+
+The source correction caches native line ranges by actual source/layout context, not request object identity; it qualifies them using the outer native Text width and retains current request/node/context guards. Deterministic native VirtualText tests reuse the same measured paragraph with a new request and **no new text-layout event**, test both native layout-event orders, reject stale source/scale/language/width data and verify recovery. Actual corrected native geometry remains to be rechecked before readiness.
+
+Local mobile verification passes: 101 suites / 1,359 tests, typecheck, full lint and reader boundary guard; prior web/Android exports pass. The earlier application head passed repository CI and an independent GPT-6.1 Sol P0–P2 review before the native repeat-selection regression was established. The corrected head requires its own final verification/review; earlier results do not replace outstanding native checks.
 
 ## Earlier Simulator limitation
 

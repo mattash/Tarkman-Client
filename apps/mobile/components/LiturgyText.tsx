@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ComponentRef } from 'react'
-import { Linking, Platform, Text, View, useWindowDimensions } from 'react-native'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentRef } from 'react'
+import { Linking, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { parseMarkdown, parseMarkdownBlocks, safeHttpsUrl, type TextRun } from '../design/markdown'
 import { parseMarkdownSource } from '../design/markdownSource'
 import { useTheme } from '../design/ThemeProvider'
@@ -16,44 +16,71 @@ export interface PassageHighlight {
 export interface LiturgyTextProps extends Omit<AppTextProps, 'children'> { text: string | null | undefined; readingSize?: ReadingSize; compactStanzas?: boolean; blocks?: boolean; passageHighlight?: PassageHighlight }
 export function LiturgyText({ text, selectable = true, language = 'en', tone = 'default', readingSize = 'standard', compactStanzas = false, blocks = false, passageHighlight, variant = 'liturgy', style, ...props }: LiturgyTextProps) {
   const anchor = useRef<ComponentRef<typeof Text> | null>(null)
-  const textFrame = useRef<ComponentRef<typeof View> | null>(null)
-  const lineAnchor = useRef<{ y: number; height: number; request: PassageHighlight } | undefined>(undefined)
+  const textFrame = useRef<ComponentRef<typeof Text> | null>(null)
+  const { fontScale, width: windowWidth, scale } = useWindowDimensions()
+  const fontReady = useReadingFont()
+  // Native may not emit onTextLayout again when only the jump request changes.
+  // Cache all line geometry by the content/layout inputs, never by request identity.
+  const styleKey = JSON.stringify(StyleSheet.flatten(style))
+  const geometry = useMemo(() => ({ text, language, readingSize, variant, fontReady, fontScale, windowWidth, scale, styleKey,
+    maxFontSizeMultiplier: props.maxFontSizeMultiplier, numberOfLines: props.numberOfLines, adjustsFontSizeToFit: props.adjustsFontSizeToFit,
+    minimumFontScale: props.minimumFontScale, textBreakStrategy: props.textBreakStrategy,
+    lineBreakStrategyIOS: props.lineBreakStrategyIOS, ellipsizeMode: props.ellipsizeMode,
+    dynamicTypeRamp: props.dynamicTypeRamp, hyphenation: props.android_hyphenationFrequency,
+  }), [text, language, readingSize, variant, fontReady, fontScale, windowWidth, scale, styleKey,
+    props.maxFontSizeMultiplier, props.numberOfLines, props.adjustsFontSizeToFit, props.minimumFontScale,
+    props.textBreakStrategy, props.lineBreakStrategyIOS, props.ellipsizeMode, props.dynamicTypeRamp, props.android_hyphenationFrequency])
+  const lines = useRef<{ geometry: object; width?: number; values: { end: number; y: number; height: number }[] } | undefined>(undefined)
+  const textWidth = useRef<number | undefined>(undefined)
+  const activeGeometry = useRef(geometry)
   const activeHighlight = useRef(passageHighlight)
   useLayoutEffect(() => {
     activeHighlight.current = passageHighlight
+    activeGeometry.current = geometry
     return () => { activeHighlight.current = undefined }
-  }, [passageHighlight])
+  }, [passageHighlight, geometry])
   useEffect(() => {
     if (!passageHighlight) return
+    const mapped = parseMarkdownSource(text ?? '')
+    let selectedOffset = 0
+    let found = false
+    for (const positions of mapped.offsets) {
+      const local = positions.findIndex(position => position.end > passageHighlight.start && position.start < passageHighlight.end)
+      if (local >= 0) { selectedOffset += local; found = true; break }
+      selectedOffset += positions.length
+    }
     // Nested native Text can finish layout after the row's onLayout/FlashList onLoad.
     // A bounded retry also accommodates fonts and FlashList's deferred initial positioning.
     const timers = [0, 80, 200, 450, 900, 1600].map(delay => setTimeout(() => {
       const node = anchor.current
       const report = (y: number, height: number) => {
-        if (node && activeHighlight.current === passageHighlight && node === anchor.current && height > 0) {
+        if (node && activeHighlight.current === passageHighlight && activeGeometry.current === geometry && node === anchor.current && height > 0) {
           passageHighlight.onMeasure?.(y, height, node)
         }
       }
       // Native nested Text is a virtual node on some RN versions. onTextLayout
       // supplies exact line geometry when its own measureInWindow is unavailable.
-      const line = lineAnchor.current
-      if (Platform.OS !== 'web' && line?.request === passageHighlight) {
+      const cached = lines.current
+      const line = found && cached?.geometry === geometry && cached.width !== undefined
+        && (textWidth.current === undefined || cached.width === textWidth.current)
+        ? cached.values.find(value => selectedOffset < value.end) : undefined
+      if (Platform.OS !== 'web' && line) {
         textFrame.current?.measureInWindow?.((_x, y, width, height) => {
-          if (width > 0 && height > 0) report(y + line.y, line.height)
+          // Reject an old-width map even if native reflow precedes its onLayout event.
+          if (lines.current === cached && width === cached?.width && height > 0
+            && (textWidth.current === undefined || width === textWidth.current)) report(y + line.y, line.height)
         })
       } else node?.measureInWindow?.((_x, y, width, height) => {
         if (width > 0) report(y, height)
       })
     }, delay))
     return () => { timers.forEach(clearTimeout) }
-  }, [passageHighlight, text, language, readingSize])
+  }, [passageHighlight, text, geometry])
   // Keyed to the text it happened on, so a reused row showing another part does not carry the message over.
   const [failedText, setFailedText] = useState<string | null>(null)
   const linkFailed = failedText !== null && failedText === text
   const { colors } = useTheme()
   const { t } = useI18n()
-  const { fontScale } = useWindowDimensions()
-  const fontReady = useReadingFont()
   const missing = text == null || text.trim().length === 0
   const failureNotice = linkFailed && <AppText variant="caption" accessibilityRole="alert">{t('liturgyText.linkFailed')}</AppText>
   // One nested Text per inline form, shared by every paragraph-shaped block below.
@@ -152,30 +179,36 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
     })}</View>
   }
   // Nested native Text preserves paragraph breaks and selection without a DOM renderer.
-  const body = <><AppText {...props} onTextLayout={passageHighlight ? event => {
+  // AppText forwards React 19's ref prop to its outer native Text via its existing prop spread.
+  const body = <><AppText {...props} {...(passageHighlight ? { ref: textFrame } : {})} onLayout={passageHighlight ? event => {
+    props.onLayout?.(event)
+    if (activeGeometry.current !== geometry) return
+    const width = event.nativeEvent.layout.width
+    textWidth.current = width
+  } : props.onLayout} onTextLayout={passageHighlight ? event => {
     props.onTextLayout?.(event)
-    const mapped = parseMarkdownSource(text ?? '')
-    let selectedOffset = 0
-    let found = false
-    for (const positions of mapped.offsets) {
-      const local = positions.findIndex(position => position.end > passageHighlight.start && position.start < passageHighlight.end)
-      if (local >= 0) { selectedOffset += local; found = true; break }
-      selectedOffset += positions.length
-    }
-    if (!found) return
-    const displayed = mapped.runs.map(run => run.text).join('')
+    if (activeGeometry.current !== geometry) return
+    const displayed = parseMarkdown(text ?? '').map(run => run.text).join('')
     let offset = 0
+    const values: { end: number; y: number; height: number }[] = []
     for (const line of event.nativeEvent.lines) {
       const start = displayed.indexOf(line.text, offset)
-      const end = (start < 0 ? offset : start) + line.text.length
-      if (selectedOffset < end) {
-        lineAnchor.current = { y: line.y, height: line.height, request: passageHighlight }
-        break
-      }
+      // Native lines are substrings of the rendered text. A recycled row can
+      // deliver an old payload through the current handler; never invent offsets.
+      if (start < 0) return
+      const end = start + line.text.length
       offset = end
+      values.push({ end, y: line.y, height: line.height })
     }
+    const cached: NonNullable<typeof lines.current> = { geometry, values }
+    lines.current = cached
+    // Qualify these lines by their native Text width. Either native event may arrive
+    // first: a later onLayout must not erase a fresh map, nor validate an old-width one.
+    textFrame.current?.measureInWindow?.((_x, _y, width) => {
+      if (activeGeometry.current === geometry && lines.current === cached && width > 0) cached.width = width
+    })
   } : props.onTextLayout} variant={variant} style={[variant === 'liturgy' ? readingSizes[readingSize] : undefined, style]} selectable={selectable} language={missing ? 'en' : language} tone={missing ? 'muted' : tone}>
     {missing ? t('liturgyText.translationUnavailable') : styledRuns(parseMarkdown(text!), text!)}
   </AppText>{failureNotice}</>
-  return passageHighlight ? <View ref={textFrame} collapsable={false}>{body}</View> : body
+  return passageHighlight ? <View collapsable={false}>{body}</View> : body
 }
