@@ -2,14 +2,14 @@
 
 ## Status
 
-**Incomplete:** genuine matched native Before/After captures and successful repeated-occurrence/keyboard navigation evidence are available. Initial late-paragraph navigation passes, but reselecting that same match exposes a geometry regression being corrected. VoiceOver remains pending. Device UI-automation authorization is verified; no authorization prompt remains pending. This record does not claim readiness.
+**Incomplete:** matched native comparisons, repeated-occurrence/keyboard navigation and the corrected long-passage repeat-selection case pass. VoiceOver audible/focus validation is **UNVERIFIED**: device/accessibility testing is now stopped under the owner's explicit hold. VoiceOver was restored to its recorded OFF state and queried as disabled; no other phone accessibility setting or notification choice was changed by Library. No authorization or operator-action prompt remains pending. Do not resume device/accessibility testing without new owner direction.
 
 ## Actual application and source identity
 
 - Physical iPhone 15 Pro, iOS 27.2, portrait 393×852 logical points / 1179×2556 pixels.
 - Isolated signed development app **Tarkman Find QA**, `app.tarkman.libraryfindqa`, version 0.2.7 (build 1), Expo SDK 58. The installed production `app.tarkman` and its data were not replaced, cleared or used.
-- One native Debug client loads both baseline and changed JavaScript. Baseline application source is `d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d`; changed application source is `ec8876e13b84964ba0ac5ef83a9db95e945ecaf7`.
-- All 276 baseline and 279 changed files under the application routes, components, design, features and shared packages were compared against their exact Git blobs, with no mismatches. QA-only differences are the isolated native identity/configuration, dependency-resolution guards and native build/cache tooling—not rendering source.
+- One native Debug client loads both baseline and changed JavaScript. Baseline source is `d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d`. Initial changed captures used `ec8876e13b84964ba0ac5ef83a9db95e945ecaf7` (same tree as `15daa79` after reviewer-credit message rewriting); the corrected late-passage captures use `bdc1c45f44b69e9b0cb503c894279a75ae3ecf12`.
+- All 276 baseline and 279 changed rendering/shared files were compared against their exact Git blobs, with no mismatches, including a fresh comparison against corrected source `bdc1c45`. QA-only differences are the isolated native identity/configuration, dependency-resolution guards and native build/cache tooling—not rendering source.
 - QA configuration removes production update/EAS/universal-link claims, disables updates and Sentry reporting, and uses only synthetic content. Existing authorized development signing was used; no store submission or production credential change occurred.
 
 ## Matched scenario
@@ -41,8 +41,8 @@ An initial external QA route-context cache issue was corrected with a byte-ident
 | Native repeated-occurrence find and keyboard Search | Passed with exact native input; screenshots show first/second occurrence |
 | Previous/Next wrap and dismissal | Passed |
 | Native accessibility labels / controls | Actual XCTest accessibility queries pass; not a substitute for VoiceOver |
-| Native long-paragraph passage geometry | Initial late `lantern` jump passes; same-target reselection failed before the correction below; native revalidation pending |
-| VoiceOver focus and announcements | Pending; enabling VoiceOver alone will not count as validation |
+| Native long-paragraph passage geometry | Corrected `bdc1c45`: both initial late jump and same-target keyboard Search pass, with actual settled screenshots inspected |
+| VoiceOver focus and announcements | **UNVERIFIED**; first-use notification prompt appeared, then owner stopped testing. VoiceOver restored OFF and verified; hold remains |
 | Offline native saved-copy search | Passed with intentionally unavailable content API; seeded-copy provenance above |
 | Rapid native input | Also reproduced on pinned main `d459fa5e`; not introduced by this PR. Underlying native/test-input cause remains undetermined |
 
@@ -54,9 +54,11 @@ A three-trial bulk-input diagnostic produced `Pace`, `Peace`, `Pce` from single-
 
 Liturgy 702 contains one 7,230-character English paragraph ending `Exact passage lantern is here.` [Initial late jump](./after-ios-long-initial.png) reaches the highlighted word. With that glyph already measured, keyboard Search issues a fresh request for the same single match. The [pre-correction native result](./before-ios-long-reselect-fix.png), application source `ec8876e`, incorrectly returns to the row start. A passing `1 of 1` counter is not counted as passing geometry.
 
-The source correction caches native line ranges by actual source/layout context, not request object identity; it qualifies them using the outer native Text width and retains current request/node/context guards. Deterministic native VirtualText tests reuse the same measured paragraph with a new request and **no new text-layout event**, test both native layout-event orders, reject stale source/scale/language/width data and verify recovery. Actual corrected native geometry remains to be rechecked before readiness.
+The source correction caches native line ranges by actual source/layout context, not request object identity; it qualifies them using the outer native Text width and retains current request/node/context guards. Deterministic native VirtualText tests reuse the same measured paragraph with a new request and **no new text-layout event**, test both native layout-event orders, reject stale source/scale/language/width data and verify recovery.
 
-Local mobile verification passes: 101 suites / 1,359 tests, typecheck, full lint and reader boundary guard; prior web/Android exports pass. The earlier application head passed repository CI and an independent GPT-6.1 Sol P0–P2 review before the native repeat-selection regression was established. The corrected head requires its own final verification/review; earlier results do not replace outstanding native checks.
+[After correction — same-target native Search](./after-ios-long-reselect-fix.png), source `bdc1c45`, shows the late highlighted `lantern` passage still visible after keyboard dismissal and reselecting the same match. The original and corrected repeat captures use the same fixture, language, reading size, light theme and 1179×2556 viewport. Both initial and repeat native stages passed on the corrected source; geometry was checked visually rather than inferred from the counter. The verified P2 review thread was resolved without a completion reply.
+
+Local mobile verification passes: 101 suites / 1,359 tests, typecheck, full lint and reader boundary guard; prior web/Android exports pass. The earlier application head passed repository CI and an independent GPT-6.1 Sol P0–P2 review before the native repeat-selection regression was established. Corrected application head `bdc1c45` passes hosted CI (15/15) and the preserved real native initial/repeat cases. Final current-head independent review is still to be recorded; these results do not waive the unverified VoiceOver gate.
 
 ## Earlier Simulator limitation
 
