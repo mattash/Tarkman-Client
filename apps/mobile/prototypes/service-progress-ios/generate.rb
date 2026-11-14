@@ -31,6 +31,7 @@ widget = project.new_target(:app_extension, 'ServiceProgressLiveActivity', :ios,
 end
 app.add_file_references([project.main_group.new_file('App/PrototypeApp.swift'),
                          project.main_group.new_file('Shared/ServiceRegistrationTransport.swift'),
+                         project.main_group.new_file('Shared/ServiceRegistrationCoordinator.swift'),
                          project.main_group.new_file('Shared/ServiceRegistrationURLSessionHTTP.swift'),
                          project.main_group.new_file('Shared/ServiceActivityRegistrationBridge.swift')])
 widget.add_file_references([project.main_group.new_file('Widget/ServiceActivityWidget.swift')])

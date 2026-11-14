@@ -89,7 +89,13 @@ request headers/body remain sensitive and must never be logged or persisted.
 [Native token bridge](<Shared/ServiceActivityRegistrationBridge.swift>) is likewise
 default-disabled and is **not constructed by the local harness**. It prepares
 serialized ActivityKit `pushTokenUpdates` observation, hex token rotation and local
-end plus revocation retry. No `.token` Activity request, real HTTP driver, endpoint
+end plus revocation retry. Its [testable coordinator](<Shared/ServiceRegistrationCoordinator.swift>)
+retains a failed/ambiguous candidate, reconciles that exact token/version before
+one latest queued rotation and bounds each drain to two PUTs. The bridge exposes
+`retryRegistration()` even if no new token event arrives, plus
+`needsRegistrationRetry`; a false return indicates bounded work remains. Removal
+cancels/clears queued reconciliation before ending/revoking, and rejects registration
+retry afterward. No foreground retry entry point implies background execution. No `.token` Activity request, real HTTP driver, endpoint
 activation, capability/provider key, APNs entitlement or background timer is added.
 The concrete [asynchronous HTTPS driver](<Shared/ServiceRegistrationURLSessionHTTP.swift>)
 is also default-disabled, requires an explicit bare HTTPS origin and is never
@@ -112,6 +118,11 @@ swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
   Shared/ServiceRegistrationURLSessionHTTP.swift Tests/RegistrationHTTPTests.swift \
   -o artifacts/registration-http-tests
 artifacts/registration-http-tests
+swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
+  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
+  Shared/ServiceRegistrationCoordinator.swift Tests/RegistrationCoordinatorTests.swift \
+  -o artifacts/registration-coordinator-tests
+artifacts/registration-coordinator-tests
 ```
 
 **Codable decoding is not authentication.** The native surface checks cannot
