@@ -1,0 +1,62 @@
+{
+  "nativeSourceRevision": "15e4e8e2a842e9ed2c370b0251b5d9b5c112c159",
+  "sourceSHA256": {
+    "App/PrototypeApp.swift": "72dd591167384b80410f32291de21757fc63e4f2be2f84588c61d37d09db8f98",
+    "Shared/ServiceAttributes.swift": "1fa2510b095c0a3289744f42db26e5ad52d6fdd0e3d0386e9d1b0f0748b88419",
+    "Widget/ServiceActivityWidget.swift": "ddf857f058585aeba1f8b7b910c9f7091a5ada2c991793f524bcc1347045a890",
+    "Widget/Info.plist": "06edf60e0409256d9ec848620e97ba14d8849764f66f030e4dc44b936b0259f3",
+    "Resources/en.lproj/Localizable.strings": "873fd992421bf382af7a2824778c7c480efc75d4bed590587a24e515c46af511",
+    "Resources/ru.lproj/Localizable.strings": "780076d116c7af39011cb7e9ae32a770aa161ba9920b43313b95adc411e8a4a0",
+    "generate.rb": "fb89622d66c8da83983a03f9ecb4ff967229dfe0a27b9bba9bccb932ad5933d3",
+    "Tests/PrototypeUITests.swift": "2081027d40963903813fc4a55a9280661aa540b85cd6f8f178f3bc895d5ac1c5"
+  },
+  "scenario": "synthetic public service42, ordinal1of3 Reader, iPhone18Pro/iOS27.0,1206x2622 portrait,light/default wallpaper",
+  "captures": [
+    {
+      "file": "docs/service-progress-evidence/after-disclosure-off.png",
+      "format": "PNG",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "648d70520ac4c68a4f0605e22e0968dcad741880ac86665eec6e282c24bf5ea7",
+      "capturedAt": "2026-11-14T19:31:48.199000+00:00",
+      "timestampSource": "xcresult attachment manifest"
+    },
+    {
+      "file": "docs/service-progress-evidence/after-foreground-requested.png",
+      "format": "PNG",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "92cf2a752962258c7a9ab99ba0c23c51ef31877cb778421f504ff76660fd2588",
+      "capturedAt": "2026-11-14T19:31:58.186000+00:00",
+      "timestampSource": "xcresult attachment manifest"
+    },
+    {
+      "file": "docs/service-progress-evidence/after-background-reported.png",
+      "format": "PNG",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "e1148196a1fc25ddbfba3c37063bef2e6ed2393e8028b1bfc739300ed07eb59f",
+      "capturedAt": "2026-11-14T19:32:16.137000+00:00",
+      "timestampSource": "xcresult attachment manifest"
+    },
+    {
+      "file": "docs/service-progress-evidence/after-terminated-75s.png",
+      "format": "PNG",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "dca382be78b5e05a2354e1d9656abbb4205ed6692b195abd7dc218ccc0dc37a5",
+      "capturedAt": "2026-11-14T19:33:36.466000+00:00",
+      "timestampSource": "xcresult attachment manifest"
+    },
+    {
+      "file": "docs/service-progress-evidence/after-stale-observed.png",
+      "format": "PNG",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "45ac050069a7af8816dff14ed77882786f10034eaf00a6d197f9d3d2f86a32d9",
+      "capturedAt": "2026-11-14T19:37:11.868163+00:00",
+      "timestampSource": "simctl still filesystem timestamp; native run reported19:37:10Z"
+    }
+  ],
+  "nativeResult": "2 UI tests passed; visual inspection separately confirms final native stale rendering, but75s cached snapshot retained ordinal/role. No exact60s redraw guarantee. No APNs or physical-device measurement."
+}

@@ -1,0 +1,6 @@
+*.xcodeproj/
+.derivedData/
+.deviceDerivedData/
+artifacts/
+build.log
+*.xcuserstate
