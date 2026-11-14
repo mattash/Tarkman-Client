@@ -74,6 +74,11 @@ native adapter. No token observation, registration endpoint, provider credential
 push entitlement or `pushType: .token` is enabled by this golden. The harness still
 requests `pushType: nil`; no remote delivery is claimed.
 
+The separately compiled [versioned v1 contract and goldens](<PUBLICATION-V1.md>)
+now pin the proposed real-service wire fields and immutable follow generation.
+They are bound to a new ActivityAttributes type but are not yet requested or
+rendered by this harness; provider/native validation and transport remain pending.
+
 ## Evidence limits
 
 A pre-opt-in screenshot of this revision is a **same-revision before/after**, not an actual previous-source baseline. The existing shared simulator installation `app.tarkman0.2.7` reportedly lacks Activities/extension, but its exact installed revision is unknown; it was not altered or used as a source baseline. Simulator evidence cannot establish APNs delivery, server latency, production background correctness, device power behavior, Android feasibility or production readiness. Dynamic Island expanded/minimal code compilation is not by itself visual evidence of every system presentation.
