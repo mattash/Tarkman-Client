@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import type { TextProps } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { ReadingFontContext } from '../design/readingFont'
-import { LiturgyText, type PassageHighlight } from '../components/LiturgyText'
+import { LiturgyText, type PassageHighlight, type VisibleTextLayout } from '../components/LiturgyText'
 
 let mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 }
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ __esModule: true, default: () => mockDimensions }))
@@ -54,6 +54,35 @@ it('reuses native line geometry for the same range with a new request, without a
   await view.rerender(<LiturgyText testID="body" text={text} passageHighlight={request(2, repeated)} />)
   await tick()
   expect(repeated).toHaveBeenLastCalledWith(8300, 40, expect.objectContaining(mockAnchor))
+})
+
+it('keeps visible-line capture and repeated bookmark jumps on the same native geometry without a fresh layout', async () => {
+  jest.useFakeTimers()
+  const measured = jest.fn<NonNullable<PassageHighlight['onMeasure']>>()
+  let visible: VisibleTextLayout | undefined
+  const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+  const view = await render(<LiturgyText testID="body" text={text} registerVisibleText={register} />, { wrapper })
+  await layout()
+  await textLayout()
+  expect(visible?.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
+  // Bookmark/open adds a highlight to text that was already measured for resume capture.
+  await view.rerender(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(1, measured)} />)
+  await tick()
+  expect(measured).toHaveBeenLastCalledWith(8300, 40, expect.objectContaining(mockAnchor))
+  measured.mockClear()
+  await view.rerender(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(2, measured)} />)
+  await tick()
+  expect(measured).toHaveBeenLastCalledWith(8300, 40, expect.objectContaining(mockAnchor))
+  expect(visible?.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
+  measured.mockClear()
+  await view.rerender(<LiturgyText testID="body" text={text} readingSize="larger" registerVisibleText={register} passageHighlight={request(3, measured)} />)
+  await tick()
+  expect(measured).not.toHaveBeenCalled()
+  expect(visible?.range(8200, 8400)).toBeUndefined()
+  await textLayout(6400)
+  await tick()
+  expect(measured).toHaveBeenLastCalledWith(6500, 40, expect.objectContaining(mockAnchor))
+  expect(visible?.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
 })
 
 it('rejects an old row payload delivered through the current text-layout handler and recovers on fresh lines', async () => {

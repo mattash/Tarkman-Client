@@ -1,9 +1,12 @@
 # Exact-passage bookmarks and resume (#276)
 
 **Draft / not ready for merge.** Provisionally stacked on #280 at
-`ec8876e13b84964ba0ac5ef83a9db95e945ecaf7`. Reconcile to its accepted final main
-commit before readiness. Real native evidence and accessibility validation remain
-pending the coordinated phone slot; do not substitute mobile-sized web images.
+`7aa34e13fb04cfdf6c110255d8591f4467a81e69`, including its corrected repeated-native-jump
+geometry cache. Reconcile to its accepted final main commit before readiness.
+#276 native evidence and audible/focus accessibility validation remain unverified.
+The owner has stopped physical phone/accessibility testing and returned the phone
+to personal use; further owner direction is required before resuming, not another
+worker's slot release. No new owner prompt. Do not substitute mobile-sized web images.
 
 ## Address and restoration
 
