@@ -1,9 +1,7 @@
 {
   "phase": "after",
   "app": "http://localhost:8097",
-  "sourceRevision": "e375f95167e86fe411aff15cfa5008119737b7d8",
-  "capturedHead": "ed7f67764adb94937f9e276cd05a35b730e06601",
-  "revisionNote": "Final verified runtime commit; only tests/docs differ from captured HEAD. No runtime recapture required.",
+  "sourceRevision": "87b18be2359a42467852e33ff990085e9af6527e",
   "long": false,
   "results": [
     {

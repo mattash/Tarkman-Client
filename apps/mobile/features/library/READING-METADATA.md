@@ -4,9 +4,11 @@
 `7aa34e13fb04cfdf6c110255d8591f4467a81e69`, including its corrected repeated-native-jump
 geometry cache. Reconcile to its accepted final main commit before readiness.
 #276 native evidence and audible/focus accessibility validation remain unverified.
-The owner has stopped physical phone/accessibility testing and returned the phone
-to personal use; further owner direction is required before resuming, not another
-worker's slot release. No new owner prompt. Do not substitute mobile-sized web images.
+The owner requested restoration of changed phone accessibility settings. Physical
+phone work is paused by orchestration coordination until a specific slot is
+released; no new VoiceOver enablement or owner prompt is authorized. Separately
+authorized owned-simulator validation must not be presented as physical-phone or
+VoiceOver proof. Do not substitute mobile-sized web images for native evidence.
 
 ## Address and restoration
 
