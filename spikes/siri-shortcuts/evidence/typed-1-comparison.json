@@ -1,0 +1,45 @@
+{
+  "result": "passed for one cold typed native-Shortcuts opening",
+  "testedOverlayRevision": "4ce6d8e28d35553d4fced3a6eecd367af792cfb4",
+  "installedApp": { "bundleIdentifier": "app.tarkman.sirispike", "version": "0.2.7", "build": "1", "configuration": "development-signed Release", "minimumOS": "16.4" },
+  "device": "iPhone 15 Pro, iOS 27.2",
+  "invocationProvenance": {
+    "operator": "owner",
+    "method": "New native Shortcuts workflow using Tarkman Siri Spike → Open Liturgy, typed literal String 1 in Liturgy ID, run once",
+    "operatorConfirmation": "Owner directly confirmed that this action opened the liturgy",
+    "publicCoordinationAcknowledgment": "https://github.com/mattash/Tarkman-Client/issues/275#issuecomment-6885182904",
+    "ordinaryUrlUsedForThisRun": false,
+    "spokenSiriUsedForThisRun": false,
+    "unattendedAudioVideoRecording": false
+  },
+  "preconditionsVerified": {
+    "currentDeviceUnlocked": true,
+    "strictSignatureValid": true,
+    "runtimeDiagnosticCollectionLive": true,
+    "nativeModuleAvailable": true,
+    "rootNavigationAndLibraryReady": true,
+    "noNativePerformBeforeComparison": true,
+    "isolatedProcessTerminatedAndAbsenceVerified": true
+  },
+  "phaseEvidence": {
+    "file": "typed-1-phase-events.json",
+    "resolvedInputClassification": "exact-one",
+    "resolvedInputUtf8ByteCount": 1,
+    "nativeValidation": "accepted",
+    "invocationId": "B536D316-5B67-4BB7-8907-C16D5D13BE1A",
+    "sameIdStages": ["native:dispatch-returned", "queue:received", "route:accepted", "ack:ok"],
+    "processBeforeTermination": 58263,
+    "newProcessAfterRun": 58321,
+    "foregroundObservedAfterStartup": true,
+    "persistedNativePendingQueueAfterAcknowledgment": []
+  },
+  "readerResult": {
+    "observed": "Divine Liturgy existing reader, public ID1, English, light theme, top of reading",
+    "image": "after-reader-shortcuts-typed-1.png",
+    "imageSha256": "2d331fe139e99128453550328cda42cfb10c6076f4aefe76f88df898cdc1b45f",
+    "viewportPixels": { "width": 1179, "height": 2556 }
+  },
+  "privacy": "Only allowlisted bounded own-app phase events are published; no whole preferences, raw speech, unrelated phone UI or production app data",
+  "originalVoiceAttempt": "FAILED after parameter prompting; cause remains undetermined. This typed-literal success does not show what the original speech resolved to or retroactively make it pass.",
+  "limits": "One cold typed run is not warm/repeat, invalid/stale, offline, deletion/revocation or Siri speech verification. Route/ack markers alone are not reader proof; the operator confirmation and actual reader capture are separate corroborating observations. Phone released to Library/widget after bounded observation."
+}

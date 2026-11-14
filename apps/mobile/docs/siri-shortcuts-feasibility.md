@@ -5,7 +5,9 @@
 **Do not claim verified Siri opening: the first actual cold voice attempt failed
 after Liturgy ID prompting; its cause remains undetermined. Production rollout
 is no-go on the current evidence.** A separate URL/preflight success is not a
-voice pass.
+voice pass. One subsequent **cold native Shortcuts run with typed literal `1`**
+has now passed with correlated native/JS phases and the actual reader; this is
+not a spoken Siri pass.
 
 The initial report below records the first evidence checkpoint. Following the
 owner's continuation request, this draft also contains a native prototype,
@@ -45,7 +47,8 @@ catch the native-graph boundary error. The revised external prototype also passe
 its full **100 suites / 1,327 tests**, typecheck, lint, prebuild, CocoaPods install
 and an iOS JS export. Tests were run with build-only Library flags unset; those
 flags otherwise intentionally conflict with configuration-contract assertions.
-The final revised head still needs its independent review.
+Exact posted-head review status and its limits are recorded in the PR; earlier
+scoped reviews do not certify later device outcomes.
 
 Physical discovery initially found `passcodeRequired=true`; the owner then
 confirmed unlocking, and a subsequent device query confirmed
@@ -108,10 +111,37 @@ UUIDs, own process context and input classification/byte count. It never retains
 raw speech, reading content or URLs, adds no indexing/telemetry and changes no
 validation, navigation or acknowledgment semantics. Native classifier checks,
 101 suites/1,335 tests, typecheck, lint, signed native build and strict signature
-verification pass. A **typed literal `1` in the native Shortcuts action** is the
-prepared comparison; no unchanged voice repeat was requested. The phone was
-released to Library QA before rebuilding. That comparison and subsequent
-cold/warm/error proof remain outstanding; **this draft is not ready**.
+verification pass. No unchanged voice repeat was requested.
+
+### Cold typed native Shortcuts comparison — passed once
+
+The signed diagnostic `4ce6d8e28d35553d4fced3a6eecd367af792cfb4` binary was
+actually installed as `app.tarkman.sirispike` version0.2.7(1). Live preference
+markers proved native runtime creation, module availability and router/Library
+readiness. The verified isolated process was then terminated; a device query
+confirmed no process before the owner ran a new native Shortcuts action with
+**typed literal String `1`**. No ordinary URL was used for this run.
+
+The owner confirmed the liturgy opened. A new process recorded exact-one input
+classification/one UTF8 byte, accepted validation, and a dispatch UUID matching
+JS receipt, accepted route and successful acknowledgment. The actual reader
+shows Divine Liturgy. This is combined operator/native/JS/reader evidence—not a
+reader screenshot alone. [Comparison provenance](../../../spikes/siri-shortcuts/evidence/typed-1-comparison.json)
+and [allowlisted phase events](../../../spikes/siri-shortcuts/evidence/typed-1-phase-events.json).
+
+**After — actual cold typed-Shortcuts reader.** Same iPhone15Pro/iOS27.2,
+1179×2556, light theme, English, public ID1 and top-of-reader state as Before;
+changed revision `4ce6d8e28d35553d4fced3a6eecd367af792cfb4`.
+
+![After: actual cold typed-Shortcuts result, not spoken Siri proof](../../../spikes/siri-shortcuts/evidence/after-reader-shortcuts-typed-1.png)
+
+The phone was explicitly released to Library/widget continuation after this
+bounded observation. The original spoken-ID failure remains failed with unknown
+cause; typed success does not establish its resolved parameter or retroactively
+make it pass. Warm/repeat, invalid/stale, actual offline, deletion/revocation and
+additional Siri outcomes remain **NOT RUN**, not inferred from unit tests or this
+single success. See the [bounded verification matrix and go/no-go](../../../spikes/siri-shortcuts/verification-matrix.md).
+**This spike is not production-ready and this draft remains incomplete.**
 
 Use the [external preparation workflow](../../../spikes/siri-shortcuts/README.md),
 not a normal-app native build command. It exports the pinned main revision,

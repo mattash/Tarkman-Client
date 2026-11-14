@@ -90,7 +90,15 @@ macOS/Xcode and is explicitly skipped elsewhere.
 The first actual owner-operated voice attempt **failed after Siri prompted for
 Liturgy ID and the owner answered “1.”** An ordinary URL opening the reader is
 not evidence that this voice action succeeded. Preserve that failure and its
-[provenance](evidence/voice-attempt-1.json) even if a later typed/Shortcut path works.
+[provenance](<evidence/voice-attempt-1.json>) even if a later typed/Shortcut path works.
+
+One subsequent **cold typed native Shortcuts run passed**: the owner ran the
+literal `1` action, native input/dispatch and JS receipt/route/ack shared one
+UUID, persisted pending queue was empty afterward, and the actual reader opened.
+See [comparison provenance](<evidence/typed-1-comparison.json>),
+[allowlisted phase events](<evidence/typed-1-phase-events.json>) and the
+[bounded remaining matrix/go-no-go](<verification-matrix.md>). This is not proof
+of spoken Siri success, warm/repeat/error, actual offline or revocation.
 
 The diagnostic overlay preserves the existing String input and canonical-ID
 validation. It keeps at most 32 local phase events in the isolated app's standard
