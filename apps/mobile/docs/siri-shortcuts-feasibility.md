@@ -1,6 +1,57 @@
 # Opening-only Siri / Shortcuts feasibility (#275)
 
-## Decision and scope
+## Current checkpoint
+
+The initial report below records the first evidence checkpoint. Following the
+owner's continuation request, this draft also contains an **opt-in isolated
+native prototype**, not a production integration. `TARKMAN_SIRI_SPIKE=1` changes
+only the development build to `app.tarkman.sirispike` / `tarkman-siri-spike`,
+removes production universal-link claims and the EAS project/update endpoint,
+and compiles the app-target opening action. Without that flag the app config
+remains unchanged. The production app/data must never be replaced for this test.
+
+The root handler is additionally gated by the isolated build's `extra.siriSpike`;
+it waits for router and Library readiness, validates canonical IDs, navigates
+only to the existing reader, serializes pending invocations, and acknowledges
+after route application. Acknowledgment failure can retry without repeating
+navigation within that consumer's lifetime. Cross-process exactly-once delivery
+is not promised; reader navigation uses replacement rather than stacking copies.
+No new content cache, indexing, entity catalog or service command is added.
+
+Baseline checks passed: **98 suites / 1,305 tests**, typecheck, lint and web export.
+The compiler-only probe below passed as documented. The initial report-only
+committed tree received a complete scoped-clean independent GPT-6.1 Sol review;
+that is not a review of subsequent prototype code.
+
+Physical discovery initially found `passcodeRequired=true`; the owner then
+confirmed unlocking, and a subsequent device query confirmed
+`passcodeRequired=false`. A public catalog request returned HTTP 200 with
+production liturgy ID **1 (Divine Liturgy)**, suitable for the next device test
+rather than synthetic fixture 701. Isolated iOS prebuild and CocoaPods install
+passed. The actual signed build is being attempted with team `FHF872BAQR` and
+the isolated bundle identifier; no production profile is being reused.
+Actual signed-install, Siri/Shortcuts cold/warm/error and Before/After device
+visual evidence remain outstanding; **this draft is not ready**.
+
+Reproduction from `apps/mobile` (requires the authorized development team):
+
+```sh
+TARKMAN_SIRI_SPIKE=1 npx expo prebuild --platform ios --no-install
+# Keep the same opt-in/config environment for every native build stage.
+(cd ios && TARKMAN_SIRI_SPIKE=1 LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install)
+TARKMAN_SIRI_SPIKE=1 SENTRY_DISABLE_AUTO_UPLOAD=true \
+  EXPO_PUBLIC_LIBRARY_ENABLED=1 EXPO_PUBLIC_API_URL=https://www.tarkman.app \
+  npx expo run:ios --device --configuration Release
+node --test app-intents/config.test.cjs
+```
+
+Verify the generated app's bundle ID is `app.tarkman.sirispike` before installing.
+The isolated scheme is `tarkman-siri-spike:///liturgies/1`; the prototype has no
+production universal-link association. Running that URL is a navigation check,
+not a substitute for invoking the actual Open Liturgy action from Shortcuts/Siri.
+Do not publish this binary through a production EAS project/channel.
+
+## Initial decision and scope (report-only checkpoint)
 
 **Go for a bounded native prototype; no-go for production rollout on this evidence.**
 This is the go/no-go-report alternative requested in
