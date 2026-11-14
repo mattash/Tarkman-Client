@@ -71,9 +71,15 @@ No worker preference changes or data reset. See the
 
 ### After — still outstanding
 
-The separate prototype signed native build is running. Its signed install,
-actual Shortcuts/Siri cold/warm/error runs and a matching changed-revision
-capture remain outstanding; **this draft is not ready**. The phone was released
+The separate prototype signed native Release build has passed, including
+app-target metadata extraction and shortcut-language training. Strict signature,
+minimum OS 16.4 and isolated entitlements/profile checks pass. Compiled metadata
+contains the discoverable foreground `OpenLiturgyIntent`, required `liturgyId`,
+and English launch phrase, with no entities; see the
+[native build record](../../../spikes/siri-shortcuts/evidence/native-build.json).
+Its signed install, actual Shortcuts/Siri cold/warm/error runs and a matching
+changed-revision capture remain outstanding; **this draft is not ready**.
+The phone was released
 for the parallel Library QA work after baseline capture; the next install/capture
 requires a coordinated slot.
 
