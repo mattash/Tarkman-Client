@@ -3,15 +3,25 @@
 ## Current checkpoint
 
 The initial report below records the first evidence checkpoint. Following the
-owner's continuation request, this draft also contains an **opt-in isolated
-native prototype**, not a production integration. `TARKMAN_SIRI_SPIKE=1` changes
-only the development build to `app.tarkman.sirispike` / `tarkman-siri-spike`,
-removes production universal-link claims and the EAS project/update endpoint,
-and compiles the app-target opening action. Without that flag the app config
-remains unchanged. The production app/data must never be replaced for this test.
+owner's continuation request, this draft also contains a native prototype,
+**prepared in a separate copy outside the normal mobile dependency graph**.
+The production app/data must never be replaced for this test.
 
-The root handler is additionally gated by the isolated build's `extra.siriSpike`;
-it waits for router and Library readiness, validates canonical IDs, navigates
+An earlier config-gated attempt was insufficient: even with the flag unset,
+Expo autolinking resolved the experimental `expo-app-intents` dependency and
+its nested `@expo/ui`. The config equality tests proved only config equality,
+not native-graph isolation. Human review caught this boundary error. The normal
+mobile manifest, lockfile and layout are therefore restored to main; prototype
+sources and dependency installation now belong only to the separate prepared
+copy. Do not use the superseded `TARKMAN_SIRI_SPIKE` workflow in the normal app.
+After restoring and running a fresh normal `npm ci`, actual unflagged Expo
+Apple autolinking resolves **33 modules, with neither `expo-app-intents` nor
+`@expo/ui` present**. The normal manifest, lockfile and layout match the pinned
+main bytes; the separate preparation/path/source-preservation tests pass.
+
+Only the prepared prototype imports/mounts the root handler; the normal app
+and prepared baseline do not. It waits for router and Library readiness,
+validates canonical IDs, navigates
 only to the existing reader, serializes pending invocations, and acknowledges
 after route application. Acknowledgment failure can retry without repeating
 navigation within that consumer's lifetime. Cross-process exactly-once delivery
@@ -19,32 +29,32 @@ is not promised; reader navigation uses replacement rather than stacking copies.
 No new content cache, indexing, entity catalog or service command is added.
 
 Baseline checks passed: **98 suites / 1,305 tests**, typecheck, lint and web export.
-The compiler-only probe below passed as documented. The initial report-only
-committed tree received a complete scoped-clean independent GPT-6.1 Sol review;
-that is not a review of subsequent prototype code.
+The earlier prototype head `ef31dede` passed CI: **100 suites / 1,327 tests**,
+typecheck, lint and web export. A local full-suite attempt under severe compiler
+contention was interrupted after UI test timeouts; CI ran the complete suite
+successfully. The compiler-only probe below passed as documented. Both the
+initial report-only tree and `ef31dede` received complete scoped-clean independent
+GPT-6.1 Sol reviews. Those reviews did not establish native/device readiness or
+catch the native-graph boundary error; the revised isolation still needs checking.
 
 Physical discovery initially found `passcodeRequired=true`; the owner then
 confirmed unlocking, and a subsequent device query confirmed
 `passcodeRequired=false`. A public catalog request returned HTTP 200 with
 production liturgy ID **1 (Divine Liturgy)**, suitable for the next device test
-rather than synthetic fixture 701. Isolated iOS prebuild and CocoaPods install
-passed. The actual signed build is being attempted with team `FHF872BAQR` and
-the isolated bundle identifier; no production profile is being reused.
+rather than synthetic fixture 701. The earlier iOS prebuild and CocoaPods install
+passed. A signed build with team `FHF872BAQR` and the isolated bundle identifier
+was actively compiling, but was intentionally stopped before installation when
+human review established the default native-graph change. No native-build pass
+or failure is inferred from that interruption. The generated project was retired
+outside the normal app, and no production profile was reused.
 Actual signed-install, Siri/Shortcuts cold/warm/error and Before/After device
 visual evidence remain outstanding; **this draft is not ready**.
 
-Reproduction from `apps/mobile` (requires the authorized development team):
-
-```sh
-TARKMAN_SIRI_SPIKE=1 npx expo prebuild --platform ios --no-install
-# Keep the same opt-in/config environment for every native build stage.
-(cd ios && TARKMAN_SIRI_SPIKE=1 LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install)
-TARKMAN_SIRI_SPIKE=1 SENTRY_DISABLE_AUTO_UPLOAD=true \
-  EXPO_PUBLIC_LIBRARY_ENABLED=1 EXPO_PUBLIC_API_URL=https://www.tarkman.app \
-  npx expo run:ios --device --configuration Release
-node --test app-intents/config.test.cjs
-```
-
+Use the [external preparation workflow](../../../spikes/siri-shortcuts/README.md),
+not a normal-app native build command. It exports the pinned main revision,
+prepares a genuine baseline without the action and a prototype with the action,
+and installs experimental dependencies only in the prototype copy. Both copies
+unconditionally use the same isolated identity, including when no flag is set.
 Verify the generated app's bundle ID is `app.tarkman.sirispike` before installing.
 The isolated scheme is `tarkman-siri-spike:///liturgies/1`; the prototype has no
 production universal-link association. Running that URL is a navigation check,

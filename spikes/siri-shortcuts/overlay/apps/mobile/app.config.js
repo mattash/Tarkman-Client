@@ -1,9 +1,6 @@
-// Native Siri spike only. Normal builds retain app.json unchanged.
+// Used only in the prepared external clone. Isolation is unconditional.
 module.exports = ({ config }) => {
-  if (process.env.TARKMAN_SIRI_SPIKE !== '1') {
-    return config;
-  }
-
+  const baseline = false; // Replaced only by prepare.mjs --baseline.
   // Never inherit the production EAS project or its OTA update endpoint.
   // A separate EAS project must be provisioned explicitly before a cloud build.
   const extra = { ...config.extra };
@@ -25,10 +22,10 @@ module.exports = ({ config }) => {
       package: 'app.tarkman.sirispike',
       intentFilters: [],
     },
-    extra: { ...extra, siriSpike: true },
+    extra: { ...extra, siriSpike: !baseline },
     updates: { enabled: false },
-    plugins: [...(config.plugins ?? []), 'expo-app-intents'],
-    experiments: {
+    plugins: baseline ? config.plugins : [...(config.plugins ?? []), 'expo-app-intents'],
+    experiments: baseline ? config.experiments : {
       ...config.experiments,
       inlineModules: {
         ...config.experiments?.inlineModules,

@@ -1,6 +1,4 @@
 import '../global.css'
-import Constants from 'expo-constants'
-import { OpeningIntentHandler } from '../features/siri/OpeningIntentHandler'
 import { LibraryProvider } from '../features/library/LibraryProvider'
 import { OnboardingNavigation } from '../features/onboarding/OnboardingNavigation'
 import { OnboardingProvider } from '../features/onboarding/OnboardingProvider'
@@ -35,7 +33,6 @@ function RootContent() {
   const safe = { paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }
   return <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
     <OnboardingNavigation />
-    {Constants.expoConfig?.extra?.siriSpike === true && <OpeningIntentHandler />}
     <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     <ReadingFontProvider><AuthProvider apiBase={readerConfig().endpoints?.api}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background, ...safe } }}>
