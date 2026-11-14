@@ -1,6 +1,12 @@
 import XCTest
 
 final class PrototypeUITests: XCTestCase {
+    override func setUpWithError() throws {
+        #if !targetEnvironment(simulator)
+        throw XCTSkip("Full-screen captures and broad system permission queries are owned-simulator-only.")
+        #endif
+    }
+
     func capture(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name

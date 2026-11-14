@@ -80,9 +80,54 @@ A pre-opt-in screenshot of this revision is a **same-revision before/after**, no
 
 Actual run observations and capture inventory are recorded in [EVIDENCE](<EVIDENCE.md>).
 
+## Private physical metadata observer (not visual acceptance)
+
+Use a coordinated physical-device slot, never run the simulator capture suite on
+the shared phone. `PhysicalObservationTests` operates only the isolated synthetic
+app's visible consent/Start controls, then Home/Notification Center. It never taps
+system permission buttons, dumps a UI tree or explicitly attaches screenshots.
+It records only synthetic request metadata and fixed label-presence booleans at
+background/termination/75s/180s; inaccessible labels or missing permission are
+inconclusive, not proof of displayed freshness. Cleanup relaunches only this
+prototype to remove its Activities. XCTest termination is not user force-quit/OS
+eviction; Notification Center is not a physical lock demonstration.
+
+Prepare a separate manifest **after** signed `build-for-testing`. The script
+preserves `__TESTROOT__` resolution by requiring the output beside the input and
+refuses overwrite/other app targets. Use a new manifest/result name per run:
+
+```sh
+python3 -m unittest discover -s Tests -p 'test_private_observer.py'
+python3 prepare-private-observer.py \
+  .deviceDerivedData/Build/Products/ServiceProgressPrototype_iphoneos27.2-arm64.xctestrun \
+  .deviceDerivedData/Build/Products/PrivateObserver-01.xctestrun
+umask 077
+mkdir -p artifacts/private-observation
+chmod 700 artifacts/private-observation
+xcodebuild test-without-building \
+  -xctestrun .deviceDerivedData/Build/Products/PrivateObserver-01.xctestrun \
+  -destination 'platform=iOS,id=<coordinated-physical-UDID>' \
+  -only-testing:ServiceProgressUITests/PhysicalObservationTests/testSyntheticTerminatedObservation \
+  -parallel-testing-enabled NO -collect-test-diagnostics never \
+  -resultBundlePath artifacts/private-observation/Observation-01.xcresult \
+  > artifacts/private-observation/Observation-01.log 2>&1
+```
+
+The original generated manifest defaults to **screen recording** and
+`deleteOnSuccess`. The private copy instead sets `PreferredScreenCaptureFormat`
+to `screenshots`, both attachment lifetimes to `keepNever`, and selects only the
+metadata observer. These are **retention controls**, not a promise that XCTest
+never transiently acquires system pixels or logs accessibility details. Disable
+verbose diagnostics as shown, and keep **all raw results/logs/build artifacts
+private and local**; never upload them to GitHub or feed them into code-review
+context. Export only independently inspected, allowlisted synthetic facts. No
+physical observation has been completed merely by preparing this runner.
+
 ## Native UI-test capture without a Simulator GUI
 
-The optional XCTest UI target taps the real disclosure toggle and Start button (no launch-argument consent bypass), backgrounds using Home, opens the system Notification Center/Lock Screen surface, deliberately terminates the app using XCTest, and captures again after 75 seconds without relaunch. Its image attachments require visual inspection: a passing interaction test alone does not establish that every system surface rendered correctly.
+The optional XCTest UI target is guarded to skip on physical devices: its full-screen Notification Center captures and broad system permission queries are appropriate only on an owned synthetic simulator, not the shared owner's phone. A signed physical build-for-testing alone does not make this capture suite safe for physical acceptance.
+
+On the owned simulator it taps the real disclosure toggle and Start button (no launch-argument consent bypass), backgrounds using Home, opens the system Notification Center/Lock Screen surface, deliberately terminates the app using XCTest, and captures again after 75 seconds without relaunch. Its image attachments require visual inspection: a passing interaction test alone does not establish that every system surface rendered correctly.
 
 ```sh
 xcodebuild -project ServiceProgressPrototype.xcodeproj \

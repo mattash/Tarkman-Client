@@ -48,7 +48,8 @@ embed.dst_subfolder_spec = '13'
 embed.add_file_reference(widget.product_reference).settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
 tests = project.new_target(:ui_test_bundle, 'ServiceProgressUITests', :ios, '16.4')
 tests.add_dependency(app)
-tests.add_file_references([project.main_group.new_file('Tests/PrototypeUITests.swift')])
+tests.add_file_references([project.main_group.new_file('Tests/PrototypeUITests.swift'),
+                           project.main_group.new_file('Tests/PhysicalObservationTests.swift')])
 tests.build_configurations.each do |c|
   c.build_settings.merge!({ 'PRODUCT_BUNDLE_IDENTIFIER' => 'app.tarkman.progressprototype.UITests',
     'SWIFT_VERSION' => '5.0', 'GENERATE_INFOPLIST_FILE' => 'YES',
