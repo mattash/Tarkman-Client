@@ -41,9 +41,9 @@ function copyNewTree(source, destination) {
 export function prepare({ destination, baseline = false, install = true }) {
   const output = validateDestination(destination)
   // Only immutable, pinned tracked files. Never copy local node_modules, credentials, or native output.
-  const tree = run('git', ['ls-tree', '-r', BASE, '--', 'apps/mobile', 'packages', 'vercel.json'], repository, { stdio: 'pipe', encoding: 'utf8' })
+  const tree = run('git', ['ls-tree', '-r', BASE, '--', 'apps/mobile', 'packages', 'tools/metro', 'vercel.json'], repository, { stdio: 'pipe', encoding: 'utf8' })
   if (tree.split('\n').some(line => line.startsWith('120000 '))) throw new Error('Pinned archive contains a symlink')
-  const archive = run('git', ['archive', BASE, 'apps/mobile', 'packages', 'vercel.json'], repository, { stdio: 'pipe', maxBuffer: 256 * 1024 * 1024 })
+  const archive = run('git', ['archive', BASE, 'apps/mobile', 'packages', 'tools/metro', 'vercel.json'], repository, { stdio: 'pipe', maxBuffer: 256 * 1024 * 1024 })
   fs.mkdirSync(output) // Exclusive: never overwrite, reuse, or delete any destination.
   run('tar', ['-xf', '-', '-C', output], repository, { input: archive, stdio: ['pipe', 'inherit', 'inherit'] })
   const mobile = path.join(output, 'apps/mobile')

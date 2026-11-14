@@ -10,7 +10,8 @@ The production app/data must never be replaced for this test.
 An earlier config-gated attempt was insufficient: even with the flag unset,
 Expo autolinking resolved the experimental `expo-app-intents` dependency and
 its nested `@expo/ui`. The config equality tests proved only config equality,
-not native-graph isolation. Human review caught this boundary error. The normal
+not native-graph isolation. Automated orchestration review on the owner's behalf
+caught this boundary error; this was not human code-review approval. The normal
 mobile manifest, lockfile and layout are therefore restored to main; prototype
 sources and dependency installation now belong only to the separate prepared
 copy. Do not use the superseded `TARKMAN_SIRI_SPIKE` workflow in the normal app.
@@ -44,7 +45,7 @@ production liturgy ID **1 (Divine Liturgy)**, suitable for the next device test
 rather than synthetic fixture 701. The earlier iOS prebuild and CocoaPods install
 passed. A signed build with team `FHF872BAQR` and the isolated bundle identifier
 was actively compiling, but was intentionally stopped before installation when
-human review established the default native-graph change. No native-build pass
+orchestration review established the default native-graph change. No native-build pass
 or failure is inferred from that interruption. The generated project was retired
 outside the normal app, and no production profile was reused.
 Actual signed-install, Siri/Shortcuts cold/warm/error and Before/After device

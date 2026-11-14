@@ -16,8 +16,9 @@ node spikes/siri-shortcuts/prepare.mjs --baseline /private/tmp/tarkman-siri-befo
 node spikes/siri-shortcuts/prepare.mjs /private/tmp/tarkman-siri-after-275
 ```
 
-The script exports only `apps/mobile`, `packages`, and root `vercel.json`
-(required by the universal-links tests) from immutable base commit
+The script exports only `apps/mobile`, `packages`, `tools/metro` (the real shared
+Jest/Metro resolvers), and root `vercel.json` (universal-links test fixture) from
+immutable base commit
 `d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d`, then runs `npm ci` in the copied
 mobile app. The prototype additionally overlays Swift, its JS opening handler,
 and tests, patches the root layout exactly once, and runs

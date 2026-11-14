@@ -30,6 +30,8 @@ test('pinned prototype and genuine baseline are isolated without touching produc
     const output = prepare({ destination: path.join(temp, baseline ? 'before' : 'after'), baseline, install: false })
     const mobile = path.join(output, 'apps/mobile')
     assert.ok(fs.existsSync(path.join(output, 'vercel.json')), 'universal-links fixture must be exported')
+    assert.equal(typeof require(path.join(mobile, 'scripts/jest-resolver.js')), 'function', 'real shared Jest resolver must load from the prepared copy')
+    assert.equal(typeof require(path.join(output, 'tools/metro/single-react-native.js')).guardReactNative, 'function', 'Metro guard must be exported')
     const configure = require(path.join(mobile, 'app.config.js'))
     const original = require(path.join(mobile, 'app.json')).expo
     const snapshot = structuredClone(original)
