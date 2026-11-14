@@ -2,6 +2,11 @@
 
 ## Current checkpoint
 
+**Do not claim verified Siri opening: the first actual cold voice attempt failed
+after Liturgy ID prompting; its cause remains undetermined. Production rollout
+is no-go on the current evidence.** A separate URL/preflight success is not a
+voice pass.
+
 The initial report below records the first evidence checkpoint. Following the
 owner's continuation request, this draft also contains a native prototype,
 **prepared in a separate copy outside the normal mobile dependency graph**.
@@ -69,19 +74,44 @@ No worker preference changes or data reset. See the
 
 ![Before: genuine physical baseline reader](../../../spikes/siri-shortcuts/evidence/before-reader.png)
 
-### After — still outstanding
+### After — changed-reader URL preflight only, NOT voice proof
 
-The separate prototype signed native Release build has passed, including
-app-target metadata extraction and shortcut-language training. Strict signature,
-minimum OS 16.4 and isolated entitlements/profile checks pass. Compiled metadata
-contains the discoverable foreground `OpenLiturgyIntent`, required `liturgyId`,
-and English launch phrase, with no entities; see the
+The separate prototype signed native Release build and physical install passed,
+including app-target metadata extraction and shortcut-language training. Strict
+signature, minimum OS 16.4 and isolated entitlements/profile checks pass.
+Compiled metadata contains the discoverable foreground `OpenLiturgyIntent`,
+required `liturgyId`, and English launch phrase, with no entities; see the
 [native build record](../../../spikes/siri-shortcuts/evidence/native-build.json).
-Its signed install, actual Shortcuts/Siri cold/warm/error runs and a matching
-changed-revision capture remain outstanding; **this draft is not ready**.
-The phone was released
-for the parallel Library QA work after baseline capture; the next install/capture
-requires a coordinated slot.
+The installed prototype also rendered the public reader through its ordinary
+isolated URL. Same device, viewport, theme, language, liturgy and top-of-reader
+state as Before; no worker preference changes or data reset. Prototype code
+revision `07344207d22f18dbb305dab65821ea2219cd3826`; see the
+[preflight capture record](../../../spikes/siri-shortcuts/evidence/after-url-preflight.json).
+
+![After: changed-reader URL preflight, not Siri success](../../../spikes/siri-shortcuts/evidence/after-reader-url-preflight.png)
+
+### Actual cold voice attempt — failed after parameter prompt
+
+The owner performed the requested compiled phrase, observed Siri ask for Liturgy
+ID, answered “1,” and reported “Something went wrong, please try again.” The app
+had been terminated and a device query confirmed no isolated process before the
+request. A new isolated process was present afterward, but the current screen
+was no longer the Siri result and is excluded from publication. Narrow app
+preference inspection found neither pending nor corrupted invocation key.
+This does not prove the resolved String, native perform/validation/dispatch,
+JavaScript receipt/acknowledgment or reader outcome. In particular, word “one”
+versus digit “1” remains a hypothesis, not a diagnosis. Full provenance and
+limits: [first voice attempt](../../../spikes/siri-shortcuts/evidence/voice-attempt-1.json).
+
+A diagnostic-only build now records at most 32 local native/JS phase markers,
+UUIDs, own process context and input classification/byte count. It never retains
+raw speech, reading content or URLs, adds no indexing/telemetry and changes no
+validation, navigation or acknowledgment semantics. Native classifier checks,
+101 suites/1,335 tests, typecheck, lint, signed native build and strict signature
+verification pass. A **typed literal `1` in the native Shortcuts action** is the
+prepared comparison; no unchanged voice repeat was requested. The phone was
+released to Library QA before rebuilding. That comparison and subsequent
+cold/warm/error proof remain outstanding; **this draft is not ready**.
 
 Use the [external preparation workflow](../../../spikes/siri-shortcuts/README.md),
 not a normal-app native build command. It exports the pinned main revision,

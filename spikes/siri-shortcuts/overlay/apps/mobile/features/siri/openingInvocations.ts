@@ -14,7 +14,11 @@ export function openingPath(invocation: OpeningInvocation): `/liturgies/${string
 }
 
 /** Stable per-mounted-consumer serialization; failed acknowledgments remain pending. */
-export function createOpeningConsumer(navigate: (path: `/liturgies/${string}`) => void, acknowledge: (id: string) => Promise<void>) {
+export function createOpeningConsumer(navigate: (path: `/liturgies/${string}`) => void, acknowledge: (id: string) => Promise<void>,
+  observe?: (stage: 'queue:received' | 'route:accepted' | 'ack:ok' | 'handler:error', id: string) => void | Promise<void>) {
+  const record = (stage: 'queue:received' | 'route:accepted' | 'ack:ok' | 'handler:error', id: string) => {
+    try { void Promise.resolve(observe?.(stage, id)).catch(() => {}) } catch { /* Observation cannot change the action. */ }
+  }
   const applied = new Set<string>()
   let tail = Promise.resolve()
   return (invocations: readonly OpeningInvocation[]) => {
@@ -22,13 +26,17 @@ export function createOpeningConsumer(navigate: (path: `/liturgies/${string}`) =
       for (const invocation of invocations) {
         const path = openingPath(invocation)
         if (path === null) continue
+        record('queue:received', invocation.id)
         try {
           if (!applied.has(invocation.id)) {
             navigate(path)
             applied.add(invocation.id)
+            record('route:accepted', invocation.id)
           }
           await acknowledge(invocation.id)
+          record('ack:ok', invocation.id)
         } catch {
+          record('handler:error', invocation.id)
           // A later queue event can retry acknowledgment, without repeating navigation.
           // No success dialog: dispatch/route acceptance is not reader-content success.
         }

@@ -42,3 +42,21 @@ it('acknowledges invalid targets after showing the error route but leaves unknow
   expect(acknowledge).toHaveBeenCalledTimes(1)
   expect(acknowledge).toHaveBeenCalledWith('bad')
 })
+it('observes queue, accepted route and acknowledgment without recording input content', async () => {
+  const observe = jest.fn<(stage: string, id: string) => void>()
+  await createOpeningConsumer(() => {}, async () => {}, observe)([invocation()])
+  expect(observe.mock.calls).toEqual([['queue:received', 'one'], ['route:accepted', 'one'], ['ack:ok', 'one']])
+})
+it.each(['throw', 'reject'] as const)('diagnostic %s never prevents navigation or acknowledgment', async mode => {
+  const navigate = jest.fn(), acknowledge = jest.fn(async () => {})
+  const observe = () => { if (mode === 'throw') throw new Error('diagnostic'); return Promise.reject(new Error('diagnostic')) }
+  await createOpeningConsumer(navigate, acknowledge, observe)([invocation()])
+  expect(navigate).toHaveBeenCalledTimes(1)
+  expect(acknowledge).toHaveBeenCalledTimes(1)
+})
+it('records handler error without acknowledging a failed navigation', async () => {
+  const observe = jest.fn<(stage: string, id: string) => void>(), acknowledge = jest.fn(async () => {})
+  await createOpeningConsumer(() => { throw new Error('route') }, acknowledge, observe)([invocation()])
+  expect(observe.mock.calls).toEqual([['queue:received', 'one'], ['handler:error', 'one']])
+  expect(acknowledge).not.toHaveBeenCalled()
+})

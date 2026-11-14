@@ -16,14 +16,18 @@ struct OpenLiturgyIntent: AppIntent {
 
   @MainActor
   func perform() async throws -> some IntentResult {
+    SiriSpikeDiagnostics.record(.performEntered, input: liturgyId)
     guard isCanonicalLiturgyId(liturgyId) else {
+      SiriSpikeDiagnostics.record(.validationRejected)
       throw InvalidLiturgyId()
     }
+    SiriSpikeDiagnostics.record(.validationAccepted)
 
-    await AppIntentDispatcher.shared.dispatch(
+    let invocationId = await AppIntentDispatcher.shared.dispatch(
       name: "openLiturgy",
       params: ["liturgyId": .string(liturgyId)]
     )
+    SiriSpikeDiagnostics.record(.dispatchReturned, invocationId: invocationId)
     // Dispatch only queues an opening request; it does not confirm that the liturgy exists.
     return .result()
   }

@@ -7,7 +7,14 @@ final class AppIntentsSetup: Module {
   public func definition() -> ExpoModulesCore.ModuleDefinition {
     Name("AppIntentsSetup")
 
+    AsyncFunction("recordDiagnostic") { (stage: String, invocationId: String) async in
+      await SiriSpikeDiagnostics.recordJS(stage: stage, invocationId: invocationId)
+    }
+
     OnCreate {
+      Task { @MainActor in
+        SiriSpikeDiagnostics.record(.runtimeCreated)
+      }
       Task {
         await AppIntentDispatcher.shared.setShortcutsRefreshHandler {
           AppShortcuts.updateAppShortcutParameters()

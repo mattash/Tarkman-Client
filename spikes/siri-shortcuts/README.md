@@ -68,16 +68,60 @@ service control. Native dispatch queues a request, not a claim that content load
 ## Checks (no dependency installation)
 
 ```sh
-node --test spikes/siri-shortcuts/prepare.test.mjs
+node --test spikes/siri-shortcuts/prepare.test.mjs spikes/siri-shortcuts/native-validation.test.mjs
 ```
 
 These tests export disposable pinned copies without npm/network work and verify
 unconditional isolated configuration, baseline absence of native/JS integration,
 path rejection and unchanged production source bytes. Test copies remain in the
 OS temporary directory for inspection. After preparation, the prototype copy can
-run its existing tests using `npx jest tests/siri-opening.test.ts tests/siri-handler.test.tsx --runInBand`.
+run its existing tests using `npx jest tests/siri-opening.test.ts tests/siri-handler.test.tsx tests/siri-diagnostics.test.ts --runInBand`.
 For the full suite, unset build-only `EXPO_PUBLIC_LIBRARY_ENABLED`,
 `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_LIBRARY_API_URL`,
 `EXPO_PUBLIC_LIBRARY_TEST_CAPABILITY`, and `EXPO_PUBLIC_LIBRARY_FIXTURE_BUILD`
 in the test shell: configuration-contract tests intentionally exercise absent
 flags. Set the public Library flags again only for native bundling/device use.
+The native classifier test compiles actual Swift helper/validator source and
+never calls persistence functions or changes host UserDefaults; it requires
+macOS/Xcode and is explicitly skipped elsewhere.
+
+## Failed voice result and prepared diagnostic comparison
+
+The first actual owner-operated voice attempt **failed after Siri prompted for
+Liturgy ID and the owner answered “1.”** An ordinary URL opening the reader is
+not evidence that this voice action succeeded. Preserve that failure and its
+[provenance](evidence/voice-attempt-1.json) even if a later typed/Shortcut path works.
+
+The diagnostic overlay preserves the existing String input and canonical-ID
+validation. It keeps at most 32 local phase events in the isolated app's standard
+UserDefaults key `app.tarkman.sirispike.diagnostics.events`: fixed stage,
+timestamp, own bundle/process context, optional invocation UUID, and only input
+classification/UTF8 byte count—not raw speech, reading content or URLs. Native
+and JS writes serialize on the main actor within the process. Diagnostics are
+best-effort, never awaited by the navigation/acknowledgment consumer, and cannot
+fail the action. No synchronization, cross-process durability guarantee,
+indexing or external logging is added.
+
+After an independently verified signed diagnostic build is installed in a
+coordinated phone slot, compare a Shortcuts **Open Liturgy** action from
+**Tarkman Siri Spike** with a typed literal Liturgy ID `1` against the failed
+spoken-parameter path. Do not repeat the same voice step without a concrete
+correction or this prepared phase comparison. Inspect native perform/validation,
+dispatch-returned UUID, module/readiness, queue receipt, route acceptance and ack
+markers. Accepted route/ack is not proof that reader content loaded; inspect the
+actual reader too. Native dispatch-returned can appear after JS receipt because
+of actor scheduling. Absent markers alone do not prove a speech conversion bug.
+
+Copy only the isolated app's preferences for diagnosis, and never publish the
+whole plist or unrelated phone screens:
+
+```sh
+xcrun devicectl device copy from --device DEVICE_UDID \
+  --domain-type appDataContainer --domain-identifier app.tarkman.sirispike \
+  --source Library/Preferences/app.tarkman.sirispike.plist \
+  --destination /private/tmp/siri-spike-preferences.plist
+```
+
+The optional live-service tab may show an ActionCable configuration notice in
+this Library-only build. Do not change production settings or treat that notice
+as the outcome of an intent; the public Library reader is separately configured.
