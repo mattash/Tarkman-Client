@@ -1,0 +1,16 @@
+{
+  "app": "http://localhost:8083",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "syntheticParagraphs": 100,
+  "query": "lantern",
+  "bounds": {
+    "x": 173.125,
+    "y": 213,
+    "width": 6.921875,
+    "height": 33
+  },
+  "errors": []
+}

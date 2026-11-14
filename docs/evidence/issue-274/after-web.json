@@ -1,0 +1,21 @@
+{
+  "app": "http://localhost:8083",
+  "results": [
+    {
+      "width": 390,
+      "errors": [],
+      "keyboardEnter": "second occurrence",
+      "nextWrap": "first occurrence",
+      "escape": "closed find",
+      "noMatch": "explicit empty state"
+    },
+    {
+      "width": 1440,
+      "errors": [],
+      "keyboardEnter": "second occurrence",
+      "nextWrap": "first occurrence",
+      "escape": "closed find",
+      "noMatch": "explicit empty state"
+    }
+  ]
+}

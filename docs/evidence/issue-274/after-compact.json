@@ -1,0 +1,38 @@
+{
+  "viewport": {
+    "width": 320,
+    "height": 844
+  },
+  "toolbar": {
+    "width": 320,
+    "scrollWidth": 320,
+    "buttons": [
+      {
+        "label": "Services",
+        "x": 8,
+        "right": 56
+      },
+      {
+        "label": "Find in text",
+        "x": 99.875,
+        "right": 147.875
+      },
+      {
+        "label": "Choose reading language",
+        "x": 151.875,
+        "right": 208
+      },
+      {
+        "label": "About this part",
+        "x": 212,
+        "right": 260
+      },
+      {
+        "label": "Reading preferences",
+        "x": 264,
+        "right": 312
+      }
+    ]
+  },
+  "overflow": false
+}
