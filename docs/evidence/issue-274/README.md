@@ -22,12 +22,8 @@ An initial browser run exposed Escape not dismissing find; the implementation ow
 
 The supplementary 320px run also passes: toolbar width/scrollWidth both 320, every toolbar button within x=8..312, document overflow false (`after-compact.json`). `after-web-320-larger.png` uses the largest in-app reading-size choice, not simulated OS accessibility scaling.
 
-## iOS availability and blockers
+## Native iOS evidence — incomplete
 
-macOS native accessibility and screen-recording permissions granted. Xcode-select reports `/Applications/Xcode.app/Contents/Developer`. CoreSimulator iOS 27 available. Booted named `Tarkman iOS27`, UDID `48A13996-F47B-44AD-AB5B-08FDEBF9C261`. Existing app `app.tarkman`, v0.2.7 build 1, IsDeveloperApp=1; compatibility/source provenance not established. Simulator screenshot 1206x2622 (402x874 logical at 3x); light appearance.
+The initial Simulator limitation has been superseded by the owner-provided physical iPhone and a distinct signed QA client. A genuine main-baseline reader capture is now available at 393×852 logical points / 1179×2556 pixels: [Before iOS](./before-ios-393-light.png).
 
-However actual Simulator.app is missing: `open -a Simulator` says application not found; expected Xcode Developer Applications directory absent; `xcrun --find Simulator` fails. Agent-desktop snapshot returns APP_NOT_FOUND. Maestro and agent-browser are not on PATH; ~/.maestro/bin absent. simctl openurl triggers OS `Open in Tarkman?` confirmation and cannot tap it. Direct launch succeeds but deep link remains blocked by that confirmation. Raw simctl screenshot is a blocker diagnostic, NOT a baseline Library screen, and NOT proof the baseline bundle is running.
-
-Diagnostic captures: `/tmp/library274-ios-status.png`, `/tmp/library274-ios-status2.png`. No actual iOS Before/After pair obtained. Do not label mobile-sized web as iOS evidence. No physical iPhone connection claimed, no Expo Go fallback, no cloud build or huge dependency install.
-
-Alternatives: complete existing Xcode installation with Simulator GUI and operate through agent-desktop; or reuse preinstalled authorized Maestro/idb on another host with matching development client. Then launch baseline fixture Metro first, dismiss link confirmation, open `/liturgies/701`, capture light/en/default-scale at 402x874; reload matching implementation Metro for After. Physical-device test requires approved reachable test endpoint (phone localhost is not Mac loopback), matching signed client and device access. Screenshot evidence alone does not establish VoiceOver, keyboard, offline durability or universal links.
+[Native source identity, scenario and verification record](./native-validation.md) documents the isolated app, actual saved-copy hydration, exact baseline/changed source revisions and remaining gates. Matched native After, passage geometry, keyboard and VoiceOver checks are still pending; this handoff remains incomplete. Mobile-sized web is not labelled iOS, and seeded saved content is not represented as an app-initiated network download.
