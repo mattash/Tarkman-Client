@@ -87,18 +87,23 @@ macOS/Xcode and is explicitly skipped elsewhere.
 
 ## Failed voice result and prepared diagnostic comparison
 
-The first actual owner-operated voice attempt **failed after Siri prompted for
+The first reported owner voice attempt **failed after Siri prompted for
 Liturgy ID and the owner answered “1.”** An ordinary URL opening the reader is
 not evidence that this voice action succeeded. Preserve that failure and its
 [provenance](<evidence/voice-attempt-1.json>) even if a later typed/Shortcut path works.
 
-One subsequent **cold typed native Shortcuts run passed**: the owner ran the
-literal `1` action, native input/dispatch and JS receipt/route/ack shared one
-UUID, persisted pending queue was empty afterward, and the actual reader opened.
-See [comparison provenance](<evidence/typed-1-comparison.json>),
-[allowlisted phase events](<evidence/typed-1-phase-events.json>) and the
-[bounded remaining matrix/go-no-go](<verification-matrix.md>). This is not proof
-of spoken Siri success, warm/repeat/error, actual offline or revocation.
+Subsequent **cold native String1 execution and reader display were observed**:
+exact-one input/dispatch and JS receipt/route/ack share one UUID, persisted
+pending queue is empty afterward, and the reader is visible. The requested
+scenario was typed Shortcuts, but the later Executor user-role completion
+message has no retained sender/channel/exact time and does not identify the
+entry. Earlier owner-operated/typed-entry claims were contextual inferences,
+now withdrawn; the automated orchestration acknowledgment is not testimony.
+See [qualified provenance](<evidence/typed-1-comparison.json>),
+[unchanged phase events](<evidence/typed-1-phase-events.json>) and the
+[bounded remaining matrix/go-no-go](<verification-matrix.md>). No end-to-end
+Shortcuts/Siri, warm/repeat/error, actual offline or revocation pass is claimed;
+no rerun or owner prompt is requested to repair provenance.
 
 The diagnostic overlay preserves the existing String input and canonical-ID
 validation. It keeps at most 32 local phase events in the isolated app's standard

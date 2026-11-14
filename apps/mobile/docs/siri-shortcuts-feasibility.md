@@ -5,9 +5,10 @@
 **Do not claim verified Siri opening: the first actual cold voice attempt failed
 after Liturgy ID prompting; its cause remains undetermined. Production rollout
 is no-go on the current evidence.** A separate URL/preflight success is not a
-voice pass. One subsequent **cold native Shortcuts run with typed literal `1`**
-has now passed with correlated native/JS phases and the actual reader; this is
-not a spoken Siri pass.
+voice pass. A subsequent **cold native AppIntent execution with resolved String
+`1`** has correlated native/JS phases and a reader capture. It followed a queued
+typed-Shortcuts request, but exact entry method/operator identity are unverified;
+it is not a verified typed-Shortcuts or spoken Siri pass.
 
 The initial report below records the first evidence checkpoint. Following the
 owner's continuation request, this draft also contains a native prototype,
@@ -113,32 +114,44 @@ validation, navigation or acknowledgment semantics. Native classifier checks,
 101 suites/1,335 tests, typecheck, lint, signed native build and strict signature
 verification pass. No unchanged voice repeat was requested.
 
-### Cold typed native Shortcuts comparison — passed once
+### Requested typed-ID comparison — native execution observed, entry unverified
 
 The signed diagnostic `4ce6d8e28d35553d4fced3a6eecd367af792cfb4` binary was
 actually installed as `app.tarkman.sirispike` version0.2.7(1). Live preference
 markers proved native runtime creation, module availability and router/Library
 readiness. The verified isolated process was then terminated; a device query
-confirmed no process before the owner ran a new native Shortcuts action with
-**typed literal String `1`**. No ordinary URL was used for this run.
+confirmed no process before the worker queued a request for a new native
+Shortcuts action with **typed literal String `1`**. A later unwrapped user-role
+message in the Executor conversation reported completion/opening. Its retained
+record has no sender account, transport/source-channel or exact receipt time;
+it does not explicitly describe workflow creation, typing or the entry used.
+Surrounding runtime samples bound its session position between14:19:15 and
+14:29:23 PST on2026-11-14, not an exact confirmation timestamp. The earlier
+owner-operated/owner-confirmed wording was an inference and is withdrawn.
+The public orchestration acknowledgment was based on the worker report, not
+independent human testimony. Internal source pointers are retained in the ticket
+report, not published as GitHub evidence.
 
-The owner confirmed the liturgy opened. A new process recorded exact-one input
-classification/one UTF8 byte, accepted validation, and a dispatch UUID matching
-JS receipt, accepted route and successful acknowledgment. The actual reader
-shows Divine Liturgy. This is combined operator/native/JS/reader evidence—not a
-reader screenshot alone. [Comparison provenance](../../../spikes/siri-shortcuts/evidence/typed-1-comparison.json)
-and [allowlisted phase events](../../../spikes/siri-shortcuts/evidence/typed-1-phase-events.json).
+Separately, a new process recorded exact-one input classification/one UTF8 byte,
+accepted validation and a dispatch UUID matching JS receipt, accepted route and
+successful acknowledgment; the persisted queue was empty afterward. The actual
+reader shows Divine Liturgy. These genuine native/JS/process/reader observations
+remain intact, but do not identify the operator or entry method. The worker
+issued no ordinary reader URL after cold setup; unknown operator activity must
+not be inferred from that fact. [Qualified comparison provenance](../../../spikes/siri-shortcuts/evidence/typed-1-comparison.json)
+and [unchanged allowlisted phase events](../../../spikes/siri-shortcuts/evidence/typed-1-phase-events.json).
 
-**After — actual cold typed-Shortcuts reader.** Same iPhone15Pro/iOS27.2,
+**After — actual reader following observed native String1 execution; entry unverified.** Same iPhone15Pro/iOS27.2,
 1179×2556, light theme, English, public ID1 and top-of-reader state as Before;
 changed revision `4ce6d8e28d35553d4fced3a6eecd367af792cfb4`.
 
-![After: actual cold typed-Shortcuts result, not spoken Siri proof](../../../spikes/siri-shortcuts/evidence/after-reader-shortcuts-typed-1.png)
+![After: actual reader, caller and entry method unverified](../../../spikes/siri-shortcuts/evidence/after-reader-shortcuts-typed-1.png)
 
 The phone was explicitly released to Library/widget continuation after this
 bounded observation. The original spoken-ID failure remains failed with unknown
-cause; typed success does not establish its resolved parameter or retroactively
-make it pass. Warm/repeat, invalid/stale, actual offline, deletion/revocation and
+cause; the later native String1 observations do not establish its resolved
+parameter, a typed-Shortcuts entry or retroactively make the voice attempt pass.
+No phone access, operator prompt or rerun was used to repair provenance. Warm/repeat, invalid/stale, actual offline, deletion/revocation and
 additional Siri outcomes remain **NOT RUN**, not inferred from unit tests or this
 single success. See the [bounded verification matrix and go/no-go](../../../spikes/siri-shortcuts/verification-matrix.md).
 **This spike is not production-ready and this draft remains incomplete.**

@@ -2,23 +2,28 @@
 
 ## Evidence boundary
 
-- **PASS, one physical cold typed run:** owner-created native Shortcuts action,
-  literal String `1`, new process, accepted native validation, one UUID correlated
-  through dispatch/JS receipt/route/ack, and the actual Divine Liturgy reader.
+- **Observed cold native String1 execution; entry/operator unverified:** new
+  process, exact-one classification, accepted native validation, one UUID
+  correlated through dispatch/JS receipt/route/ack, and actual Divine Liturgy
+  reader. A typed-Shortcuts action was requested, followed by an unattributed
+  Executor user-role completion message; it does not prove owner identity,
+  workflow creation/typing or exact entry. An automated acknowledgment of the
+  worker report is not independent human testimony.
   [Provenance](<evidence/typed-1-comparison.json>),
   [allowlisted events](<evidence/typed-1-phase-events.json>).
 - **FAIL, actual spoken-ID attempt:** Siri reached the Liturgy ID prompt; the owner
   answered “1” and reported a generic failure. Resolved String and original
   native/JS stages remain unknown. Typed success does not explain or reverse it.
   [Original failure](<evidence/voice-attempt-1.json>).
-- Unit tests, native metadata/builds, URL preflight and the successful single
-  typed run do **not** establish the remaining physical outcomes below.
+- Unit tests, native metadata/builds, URL preflight and the later native String1
+  observations do **not** establish a typed-Shortcuts entry or remaining physical
+  outcomes below. No rerun or owner prompt is requested to repair provenance.
 
 ## One remaining matrix
 
 | Case | Current physical result | Bounded next check / required evidence |
 | --- | --- | --- |
-| Cold typed `1` | **PASS once** | Already preserved; do not repeat merely to obtain another screenshot. |
+| Cold requested typed `1` | **Native String1/process/reader observed; entry unverified** | Preserve observations and source limits. Do not rerun merely to repair provenance or obtain a screenshot. |
 | Warm/repeated typed `1` | **NOT RUN** | Same existing isolated action; confirm same process, new invocation UUID, route/ack, actual reader and no accumulating reader stack. |
 | Invalid typed `0` | **NOT RUN** | Only the test shortcut: temporarily use `0`, expect native validation rejection with no dispatch/JS route; capture actual error, then restore `1`. Other malformed/safe-boundary vectors are unit coverage, not physical passes. |
 | Canonical but authoritatively unavailable ID | **NOT RUN** | Controlled fixture ID701/702 with exact v1 `public_liturgy_unavailable` response; actual reader refusal. Do not guess a production missing ID: generic404 maps to transport failure, not authoritative revocation. |
@@ -59,8 +64,10 @@ exactly-once content-success guarantee.
 
 ## Current go/no-go
 
-**GO only for further bounded opening-only investigation:** one cold native
-Shortcuts→native→JS→existing-reader path works with a typed fixed ID.
+**GO only for further bounded opening-only investigation:** cold native
+AppIntent→JS phases and a reader result are observed for resolved String1.
+The operator and entry method are not independently established; this is not a
+verified end-to-end typed-Shortcuts or spoken Siri pass.
 
 **NO-GO for production Siri readiness or full acceptance:** the actual spoken-ID
 failure is unresolved and the warm/error/offline/deletion/revocation physical
