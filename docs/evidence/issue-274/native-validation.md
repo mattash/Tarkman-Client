@@ -2,7 +2,7 @@
 
 ## Status
 
-**Incomplete:** a genuine native Before capture is available; the matched After and native interaction/accessibility checks are still pending the next coordinated phone slot. This record does not claim readiness.
+**Incomplete:** genuine matched native Before/After captures and successful repeated-occurrence/keyboard navigation evidence are available. Long-passage geometry, VoiceOver and a rapid-input diagnostic remain outstanding. Device UI-automation authorization is verified; no authorization prompt remains pending. This record does not claim readiness.
 
 ## Actual application and source identity
 
@@ -24,22 +24,31 @@ The schema-2 native SQLite database was seeded **only in this isolated QA app**,
 
 [Before capture](./before-ios-393-light.png) shows the actual main-baseline reader, `Synthetic service`, `Saved on this device`, both repeated `Peace` passages and the existing fallback. The first-run developer education sheet was independently observed dismissed before capture. The SDK's floating developer gear is QA tooling, not a production control.
 
-### After — pending
+### After — actual changed reader
 
-The first changed-client attempt displayed Expo Router's welcome screen because a shared transform cache retained the baseline archive's absolute route context. This is not accepted as an After capture. Physical, byte-identical isolation of the Router package plus private transform/file-map caches corrected the generated bundle to the changed archive's real 30-route context. No product source or global cache was changed. The corrected bundle still requires actual native rendering and interaction verification.
+[Matched After capture](./after-ios-393-light.png) shows the same native reader and saved copy with Find available. The full-device Before/After pair is 1179×2556 pixels, with the same viewport, theme, language and reading size.
+
+Native XCTest then opened Find, entered exact `Peace` using native keyboard events with per-character value verification, observed `1 of 2 matches`, and used keyboard Search to select `2 of 2`. Previous/Next and both wrap directions passed; Close preserved the readable content. [First occurrence](./after-ios-find-first.png) and [second occurrence selected by keyboard Search](./after-ios-find-second.png) visibly distinguish the repeated passages. These additional app-window XCTest captures are 1178×2556 pixels (native window rounding), not resized web images.
+
+An initial external QA route-context cache issue was corrected with a byte-identical physical Router copy and private transform/file-map caches. The corrected real 30-route bundle was inspected and the actual changed native reader verified. No product source or global cache was changed.
 
 ## Verification record
 
 | Check | Current evidence |
 | --- | --- |
 | Native baseline / saved-copy hydration | Observed and captured |
-| Matched native After | Pending |
-| Native repeated-occurrence find and keyboard Return | Pending; signed standalone XCTest transport prepared, not yet run |
+| Matched native After | Observed and captured |
+| Native repeated-occurrence find and keyboard Search | Passed with exact native input; screenshots show first/second occurrence |
+| Previous/Next wrap and dismissal | Passed |
+| Native accessibility labels / controls | Actual XCTest accessibility queries pass; not a substitute for VoiceOver |
 | Native long-paragraph passage geometry | Pending; distinct synthetic liturgy 702 prepared with a late `lantern` match |
-| VoiceOver focus, labels and announcements | Pending; enabling VoiceOver alone will not count as validation |
-| Offline native search | Pending; API is intentionally unavailable and content is already saved |
+| VoiceOver focus and announcements | Pending; enabling VoiceOver alone will not count as validation |
+| Offline native saved-copy search | Passed with intentionally unavailable content API; seeded-copy provenance above |
+| Rapid native input | Diagnostic pending; some single-call XCTest `Peace` inputs lost characters, also reproduced in the unchanged catalog field |
 
-The external XCTest transport has no app target/dependency and targets only the already-running QA identifier. It does not launch/reset/uninstall the production app. Its generic iOS build and signature verification pass; actual device execution/permissions are not inferred from that build.
+The external XCTest transport has no app target/dependency and targets only the already-running QA identifier. It does not launch/reset/uninstall the production app. Its generic iOS build/signature verification and five actual native stages pass: reader inspection, exact query, keyboard Search, navigation/wrap, and dismissal. The owner completed the device's UI Automation authorization locally; no passcode was requested, read or logged. Initial failed input/transport attempts are retained internally rather than counted as passes.
+
+A three-trial bulk-input diagnostic produced `Pace`, `Peace`, `Pce` from single-call XCTest `Peace` typing. A valid control in the unchanged catalog search produced `Pe`. These observations do not yet distinguish synthetic-key delivery from shared native controlled-input behavior. Per-character verification passed, but it does not exonerate rapid input; the diagnostic is not silently relabelled as a search-engine failure or a proven transport-only issue.
 
 Local mobile verification passes: 100 suites / 1,341 tests, typecheck, lint, web export and reader boundary guard. The posted application head also passes repository CI and a complete independent GPT-6.1 Sol P0–P2 review. These do not replace the outstanding native checks.
 
