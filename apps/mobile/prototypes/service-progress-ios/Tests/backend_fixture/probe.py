@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Opt-in real socket checks; synthetic capabilities/tokens stay in memory."""
 import argparse
+from contextlib import contextmanager
+import http.client
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -14,6 +16,24 @@ import uuid
 def require(condition):
     if not condition:
         raise ValueError('HTTP contract or receipt mismatch')
+
+
+@contextmanager
+def bodyless_delete(port, path, headers):
+    # Exercise the native EOF shape explicitly: neither Content-Length nor Transfer-Encoding.
+    connection = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
+    try:
+        connection.putrequest('DELETE', path, skip_accept_encoding=True)
+        for key, value in headers.items():
+            connection.putheader(key, value)
+        connection.endheaders()
+        response = connection.getresponse()
+        try:
+            yield response
+        finally:
+            response.close()
+    finally:
+        connection.close()
 
 
 def main(argv=None):
@@ -45,16 +65,21 @@ def main(argv=None):
             headers['X-Service-Activity-Secret'] = secret
         wire = urllib.request.Request(args.origin + path, method=method, headers=headers,
                                       data=json.dumps(body).encode() if body is not None else None)
-        try:
-            response = http.open(wire, timeout=10)
-        except urllib.error.HTTPError as error:
-            response = error
-        with response:
+        if method == 'DELETE':
+            response = bodyless_delete(port, path, headers)
+        else:
+            try:
+                response = http.open(wire, timeout=10)
+            except urllib.error.HTTPError as error:
+                response = error
+        with response as response:
             raw = response.read(4097)
             record = {'alias': alias, 'method': method, 'status': response.status,
                       'expected': status, 'bytes': len(raw), 'date': response.headers.get('Date'),
                       'cache_control': response.headers.get('Cache-Control'),
                       'at': datetime.now(timezone.utc).isoformat()}
+            if method == 'DELETE':
+                record['request_framing'] = 'no-content-length-or-transfer-encoding'
             results.append(record)
             require(len(raw) <= 4096 and response.status == status)
             require('no-store' in (record['cache_control'] or '') and record['date'])

@@ -1,5 +1,6 @@
 """No downloads, Rails, PostgreSQL connections or server launches."""
 import contextlib
+import errno
 import hashlib
 import importlib.util
 import io
@@ -12,7 +13,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlsplit
 
 sys.dont_write_bytecode = True
@@ -23,6 +24,156 @@ spec.loader.exec_module(runner)
 
 
 class GuardTests(unittest.TestCase):
+    def test_real_test_entrypoint_separates_schema_and_example_processes(self):
+        proof = {'backend_sha': runner.SHA, 'archive_sha256': 'synthetic', 'critical_sources': {}}
+        for negative in (False, True):
+            with self.subTest(negative=negative), tempfile.TemporaryDirectory(prefix='sp277-guard-') as directory:
+                root = Path(directory).resolve()
+                for name in ('src', 'home', 'tmp', 'gems', 'bundle', 'socket', 'evidence', 'pg'):
+                    (root / name).mkdir(mode=0o700)
+                (root / 'pg/PG_VERSION').write_text('16')
+                (root / runner.MARKER).write_text(json.dumps({'root': str(root), **proof}))
+                with patch.object(runner, 'verify_archive', return_value=proof), patch.object(runner.subprocess, 'check_output', return_value='ruby 3.3.13 synthetic'), patch.object(runner, 'run') as run:
+                    arguments = ['test', '--enabled', '--root', str(root), '--database', 'sp277_guard_test']
+                    if negative:
+                        arguments.append('--negative-control')
+                    self.assertEqual(runner.main(arguments), 0)
+                    self.assertEqual(run.call_count, 2)
+                    self.assertEqual(run.call_args_list[0].args[0][-1], 'prepare')
+                    self.assertEqual(run.call_args_list[1].args[0][-1], 'negative' if negative else 'ordinary')
+                    self.assertEqual(run.call_args_list[0].kwargs['env']['RAILS_ENV'], 'test')
+                    self.assertTrue(all('/sp277_guard_test?' in call.kwargs['env']['DATABASE_URL'] for call in run.call_args_list))
+        source = (HERE / 'specs.rb').read_text()
+        self.assertLess(source.index("if mode == 'prepare'"), source.index("require 'rspec/core'"))
+        self.assertIn('ActiveRecord::Base.connection_pool.disconnect!', source)
+        self.assertIn("raise 'test schema must be prepared in a separate process' if connection.tables.empty?", source)
+
+    def test_real_main_rejects_redirected_or_nonprivate_pg_before_any_resource(self):
+        proof = {'backend_sha': runner.SHA, 'archive_sha256': 'synthetic', 'critical_sources': {}}
+        for kind in ('symlink', 'nonprivate', 'missing', 'marker_symlink'):
+            for action in ('postgres', 'serve', 'schema', 'test', 'create-db'):
+                with self.subTest(kind=kind, action=action), tempfile.TemporaryDirectory(prefix='sp277-guard-') as directory:
+                    base = Path(directory).resolve()
+                    root = base / 'sp277-owned'
+                    root.mkdir(mode=0o700)
+                    for name in ('src', 'home', 'tmp', 'gems', 'bundle', 'socket', 'evidence'):
+                        (root / name).mkdir(mode=0o700)
+                    (root / runner.MARKER).write_text(json.dumps({'root': str(root), **proof}))
+                    outside = base / 'outside-pg'
+                    outside.mkdir(mode=0o700)
+                    (outside / 'PG_VERSION').write_text('16')
+                    if kind == 'symlink':
+                        (root / 'pg').symlink_to(outside, target_is_directory=True)
+                    elif kind == 'nonprivate':
+                        (root / 'pg').mkdir(mode=0o755)
+                        (root / 'pg').chmod(0o755)
+                        (root / 'pg/PG_VERSION').write_text('16')
+                    elif kind == 'marker_symlink':
+                        (root / 'pg').mkdir(mode=0o700)
+                        (root / 'pg/PG_VERSION').symlink_to(outside / 'PG_VERSION')
+                    resources = ('Popen', 'check_output', 'run')
+                    with contextlib.ExitStack() as stack:
+                        stack.enter_context(patch.object(runner, 'verify_archive', return_value=proof))
+                        blocked = [stack.enter_context(patch.object(runner.subprocess, name, side_effect=AssertionError('resource operation reached'))) for name in resources]
+                        blocked.append(stack.enter_context(patch.object(runner.os, 'execve', side_effect=AssertionError('resource operation reached'))))
+                        blocked.append(stack.enter_context(patch.object(runner, 'create_database', side_effect=AssertionError('resource operation reached'))))
+                        blocked.append(stack.enter_context(patch.object(runner.socket, 'socket', side_effect=AssertionError('resource operation reached'))))
+                        with self.assertRaises(ValueError):
+                            runner.main([action, '--enabled', '--root', str(root), '--database', 'sp277_guard_test'])
+                        for operation in blocked:
+                            operation.assert_not_called()
+
+    def test_prepare_adoption_legitimately_allows_absent_pg(self):
+        proof = {'backend_sha': runner.SHA, 'archive_sha256': 'synthetic', 'critical_sources': {}}
+        with tempfile.TemporaryDirectory(prefix='sp277-guard-') as directory:
+            root = Path(directory).resolve()
+            for name in ('src', 'home', 'tmp', 'gems', 'bundle', 'socket', 'evidence'):
+                (root / name).mkdir(mode=0o700)
+            with patch.object(runner, 'verify_archive', return_value=proof):
+                self.assertEqual(runner.main(['adopt', '--enabled', '--root', str(root)]), 0)
+                runner.validate_root(root)
+                self.assertFalse((root / 'pg').exists())
+                with self.assertRaises(ValueError):
+                    runner.validate_pg_directory(root, required=True)
+                (root / 'pg').mkdir(mode=0o700)
+                (root / 'pg/PG_VERSION').write_text('16')
+                runner.validate_pg_directory(root, required=True)
+                with patch.object(runner.os, 'getuid', return_value=os.getuid() + 1), self.assertRaises(ValueError):
+                    runner.validate_pg_directory(root, required=True)
+
+    def test_ruby_pre_rails_pg_defense_rejects_real_filesystem_redirects(self):
+        ruby = shutil.which('ruby')
+        if not ruby:
+            self.skipTest('Ruby unavailable; no installation attempted')
+        for filename in ('server.rb', 'specs.rb'):
+            source = (HERE / filename).read_text()
+            start = source.index('def validate_owned_pg!')
+            guard = source[start:source.index('\nend\n', start) + 5]
+            self.assertLess(source.index('validate_owned_pg!(root) # Before Rails'), source.index("require File.join(root, 'src/config/environment')"))
+            for kind, expected in (('valid', True), ('symlink', False), ('nonprivate', False), ('foreign_uid', False)):
+                with self.subTest(filename=filename, kind=kind), tempfile.TemporaryDirectory(prefix='sp277-guard-') as directory:
+                    base = Path(directory).resolve()
+                    root = base / 'sp277-owned'
+                    root.mkdir(mode=0o700)
+                    (root / 'socket').mkdir(mode=0o700)
+                    outside = base / 'outside-pg'
+                    outside.mkdir(mode=0o700)
+                    (outside / 'PG_VERSION').write_text('16')
+                    if kind == 'symlink':
+                        (root / 'pg').symlink_to(outside, target_is_directory=True)
+                    else:
+                        (root / 'pg').mkdir(mode=0o700)
+                        (root / 'pg/PG_VERSION').write_text('16')
+                        if kind == 'nonprivate':
+                            (root / 'pg').chmod(0o755)
+                    uid_override = 'module Process; def self.uid; -1; end; end;' if kind == 'foreign_uid' else ''
+                    script = guard + '\n' + uid_override + "begin; validate_owned_pg!(ARGV.fetch(0)); puts 'true'; rescue StandardError; puts 'false'; end"
+                    result = subprocess.run([ruby, '-e', script, str(root)], text=True, capture_output=True, check=True, timeout=10)
+                    self.assertEqual(json.loads(result.stdout), expected)
+
+    def test_bodyless_delete_probe_omits_framing_headers_and_closes(self):
+        probe_spec = importlib.util.spec_from_file_location('fixture_probe_delete', HERE / 'probe.py')
+        probe = importlib.util.module_from_spec(probe_spec)
+        probe_spec.loader.exec_module(probe)
+        connection = Mock()
+        response = connection.getresponse.return_value
+        with patch.object(probe.http.client, 'HTTPConnection', return_value=connection):
+            with probe.bodyless_delete(18777, '/synthetic-path', {'X-Service-Activity-Secret': 'synthetic'}) as received:
+                self.assertIs(received, response)
+        connection.putrequest.assert_called_once_with('DELETE', '/synthetic-path', skip_accept_encoding=True)
+        self.assertEqual(connection.putheader.call_args_list[0].args, ('X-Service-Activity-Secret', 'synthetic'))
+        self.assertEqual(connection.putheader.call_count, 1)
+        connection.endheaders.assert_called_once_with()
+        response.close.assert_called_once_with()
+        connection.close.assert_called_once_with()
+        connection = Mock()
+        connection.getresponse.side_effect = OSError('synthetic transport failure')
+        with patch.object(probe.http.client, 'HTTPConnection', return_value=connection), self.assertRaises(OSError):
+            with probe.bodyless_delete(18777, '/synthetic-path', {}):
+                self.fail('no response expected')
+        connection.close.assert_called_once_with()
+
+    def test_ruby_body_read_normalizes_eof_but_preserves_bounds(self):
+        ruby = shutil.which('ruby')
+        if not ruby:
+            self.skipTest('Ruby unavailable; no installation attempted')
+        source = (HERE / 'server.rb').read_text()
+        expression = next(line.strip() for line in source.splitlines() if line.strip().startswith("body = env.fetch('rack.input')"))
+        script = "require 'json'; class Input; def initialize(value); @value=value; end; def read(limit); raise unless limit==4097; @value; end; end; puts JSON.generate(JSON.parse(STDIN.read).map do |value|; env={'rack.input'=>Input.new(value)}; " + expression + "; [body.bytesize,body.empty?,body.bytesize>4096]; end)"
+        result = subprocess.run([ruby, '-e', script], input=json.dumps([None, '', 'x', 'x' * 4097]), text=True, capture_output=True, check=True, timeout=10)
+        self.assertEqual(json.loads(result.stdout), [[0, True, False], [0, True, False], [1, False, False], [4097, False, True]])
+        self.assertIn("next reject.call(422, 'fixture_delete_body') unless body.empty?", source)
+
+    def test_failure_diagnostic_preserves_stage_errno_not_arbitrary_text(self):
+        with patch.object(runner, 'STAGE', 'http_bind_preflight'):
+            record = runner.failure_record(OSError(errno.EADDRINUSE, 'private arbitrary text'))
+        self.assertEqual(record, {'status': 'failed', 'error_class': 'OSError', 'stage': 'http_bind_preflight', 'errno': errno.EADDRINUSE})
+        self.assertNotIn('private', json.dumps(record))
+        self.assertIsNone(runner.failure_record(ValueError('private'))['errno'])
+        source = (HERE / 'runner.py').read_text()
+        self.assertNotIn('SO_REUSEADDR', source)
+        self.assertNotIn('SO_REUSEPORT', source)
+
     def test_probe_default_off_and_origin_guard(self):
         probe_spec = importlib.util.spec_from_file_location('fixture_probe', HERE / 'probe.py')
         probe = importlib.util.module_from_spec(probe_spec)

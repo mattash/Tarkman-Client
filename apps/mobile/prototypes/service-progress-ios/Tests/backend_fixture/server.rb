@@ -8,8 +8,19 @@ require 'stringio'
 require 'time'
 require 'uri'
 
+def validate_owned_pg!(root)
+  [root, File.join(root, 'pg'), File.join(root, 'socket')].each do |path|
+    info = File.lstat(path)
+    raise 'private canonical owned directory required' unless info.directory? && !info.symlink? &&
+      info.uid == Process.uid && (info.mode & 0o077).zero? && File.realpath(path) == path
+  end
+  marker = File.lstat(File.join(root, 'pg', 'PG_VERSION'))
+  raise 'owned PostgreSQL marker required' unless marker.file? && !marker.symlink? && marker.uid == Process.uid
+end
+
 configuration = JSON.parse(File.read(ARGV.fetch(0)))
-root = File.realpath(configuration.fetch('root'))
+root = File.expand_path(configuration.fetch('root'))
+validate_owned_pg!(root) # Before Rails can load initializers or open a connection.
 database = configuration.fetch('database')
 raise 'invalid mode' unless configuration['enabled'] == true && %w[serve schema].include?(configuration['mode'])
 raise 'invalid database name' unless database.match?(/\Asp277_[a-z0-9_]{1,40}\z/)
@@ -19,10 +30,11 @@ ENV['SERVICE_PROGRESS_ENCRYPTION_KEY'] = SecureRandom.hex(32)
 require File.join(root, 'src/config/environment')
 Rails.logger.level = Logger::WARN
 ActiveRecord::Base.logger = nil
+validate_owned_pg!(root)
 facts = ActiveRecord::Base.connection.select_one("SELECT current_database() AS db, current_setting('data_directory') AS dir, current_setting('unix_socket_directories') AS socket, current_setting('port') AS port, current_setting('listen_addresses') AS listen")
 raise 'owned database mismatch' unless facts['db'] == database &&
-  File.realpath(facts.fetch('dir')) == File.realpath(File.join(root, 'pg')) &&
-  File.realpath(facts.fetch('socket')) == File.realpath(File.join(root, 'socket')) &&
+  File.realpath(facts.fetch('dir')) == File.join(root, 'pg') &&
+  File.realpath(facts.fetch('socket')) == File.join(root, 'socket') &&
   facts['port'] == configuration.fetch('pg_port').to_s && facts['listen'] == ''
 $stdout.sync = true
 puts JSON.generate(event: 'owned_database_verified', database:, pg_port: configuration['pg_port'], tcp_disabled: true)
@@ -108,7 +120,7 @@ app = lambda do |env|
       next reject.call(429, 'fixture_mutation_bound') if mutations > 100
       id = registration[1]
       next reject.call(409, 'fixture_identity_bound') if !known_ids.include?(id) && known_ids.size >= 20
-      body = env.fetch('rack.input').read(4097)
+      body = env.fetch('rack.input').read(4097) || ''
       next reject.call(422, 'fixture_body_bound') if body.bytesize > 4096
       if method == 'DELETE'
         next reject.call(422, 'fixture_delete_body') unless body.empty?

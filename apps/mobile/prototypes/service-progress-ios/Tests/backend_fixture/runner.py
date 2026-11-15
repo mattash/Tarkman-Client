@@ -11,6 +11,7 @@ import re
 import shutil
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import tarfile
@@ -22,6 +23,15 @@ RUBY = '/opt/homebrew/opt/ruby@3.3/bin/ruby'
 PG_BIN = '/opt/homebrew/bin'
 HERE = Path(__file__).resolve().parent
 MARKER = '.sp277-owned-fixture.json'
+STAGE = 'arguments'
+
+
+def failure_record(error):
+    # Numeric errno and fixed stage only: no arbitrary exception text/paths/env.
+    return {'status': 'failed', 'error_class': type(error).__name__, 'stage': STAGE,
+            'errno': error.errno if isinstance(error, OSError) and isinstance(error.errno, int) else None}
+
+
 CRITICAL = ('app/services/service_progress.rb', 'app/services/service_progress/apns_provider.rb',
             'app/services/service_progress/apns_curl_http2.rb', 'app/services/service_progress/apns_jwt_auth.rb',
             'app/services/service_progress/development_bootstrap.rb', 'app/services/service_progress/registrations.rb',
@@ -83,16 +93,38 @@ def verify_archive(root):
             'critical_sources': records}
 
 
+def validate_pg_directory(root, required=False):
+    path = root / 'pg'
+    try:
+        metadata = path.lstat()  # Never follow a redirected cluster directory.
+    except FileNotFoundError:
+        if required:
+            raise ValueError('owned PostgreSQL cluster missing')
+        return
+    if (not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.getuid() or
+            metadata.st_mode & 0o077 or path.resolve(strict=True) != path):
+        raise ValueError('private canonical owned PostgreSQL directory required')
+    if required:
+        version = path / 'PG_VERSION'
+        try:
+            info = version.lstat()
+        except FileNotFoundError:
+            raise ValueError('owned PostgreSQL cluster not initialized') from None
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid():
+            raise ValueError('owned PostgreSQL version marker required')
+
+
 def validate_root(root):
-    if not root.is_dir() or root.stat().st_uid != os.getuid() or root.stat().st_mode & 0o077:
+    if root.is_symlink() or root.resolve(strict=True) != root or not root.is_dir() or root.stat().st_uid != os.getuid() or root.stat().st_mode & 0o077:
         raise ValueError('private owned root required')
     manifest = json.loads((root / MARKER).read_text())
     if manifest.get('root') != str(root) or manifest.get('backend_sha') != SHA:
         raise ValueError('owned root manifest mismatch')
     for name in ('src', 'home', 'tmp', 'gems', 'bundle', 'socket', 'evidence'):
         path = root / name
-        if not path.is_dir() or path.is_symlink() or path.resolve().parent != root:
+        if not path.is_dir() or path.is_symlink() or path.resolve().parent != root or path.stat().st_uid != os.getuid():
             raise ValueError('owned directory binding mismatch')
+    validate_pg_directory(root)  # Absence allowed only until explicit initialization.
     actual = verify_archive(root)
     if actual != {key: manifest[key] for key in actual}:
         raise ValueError('pinned source verification mismatch')
@@ -121,6 +153,7 @@ def verify_database_facts(root, pg_port, facts):
 
 
 def create_database(args, root, env):
+    validate_pg_directory(root, required=True)
     # Never use localhost/default server: only this root's already-running socket.
     command = [PG_BIN + '/psql', '-X', '-A', '-t', '-h', str(root / 'socket'), '-p', str(args.pg_port),
                '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c',
@@ -171,18 +204,24 @@ def prepare(args, root):
         env['BUNDLE_BUILD__PG'] = '--with-pg-config=/opt/homebrew/bin/pg_config'
         run([bundle, '_2.5.9_', 'install', '--jobs', '4', '--retry', '1'], cwd=root / 'src', env=env, timeout=1200)
     if args.init_cluster:
+        validate_pg_directory(root)
         run([PG_BIN + '/initdb', '-D', str(root / 'pg'), '-U', 'postgres', '--auth-local=trust', '--auth-host=reject', '--no-locale', '--encoding=UTF8'], cwd=root, env=env)
 
 
 def serve(args, root):
+    global STAGE
+    STAGE = 'owned_root_verification'
     validate_root(root)
+    validate_pg_directory(root, required=True)
     env = clean_environment(root, args.database, args.pg_port)
+    STAGE = 'ruby_version_verification'
     ensure_ruby(root, env)
-    if not (root / 'pg/PG_VERSION').is_file():
-        raise ValueError('owned PostgreSQL cluster missing')
+    validate_pg_directory(root, required=True)
     if args.action == 'serve':
+        STAGE = 'http_bind_preflight'
         with socket.socket() as test:
             test.bind(('127.0.0.1', args.http_port))
+    STAGE = 'runtime_lock_and_configuration'
     lock_path = root / f'.runtime-{args.database}.lock'
     with lock_path.open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -192,7 +231,9 @@ def serve(args, root):
                   'ttl': args.ttl, 'max_reads': args.max_reads}
         config_path.write_text(json.dumps(config))
         os.chmod(config_path, 0o600)  # Contains only nonsecret bindings, never key bytes.
+        STAGE = 'runtime_process_launch'
         child = subprocess.Popen([RUBY, str(HERE / 'server.rb'), str(config_path)], cwd=root / 'src', env=env)
+        STAGE = 'runtime_process_wait'
         previous = {}
         def forward(signum, _frame):
             if child.poll() is None:
@@ -233,10 +274,13 @@ def parser():
 
 
 def main(argv=None):
+    global STAGE
+    STAGE = 'arguments'
     args = parser().parse_args(argv)
     if not args.enabled:
         print(json.dumps({'status': 'disabled'}))
         return 0
+    STAGE = 'argument_validation'
     root = root_path(args.root)
     args.database = database_name(args.database)
     args.pg_port = port_number(args.pg_port)
@@ -245,6 +289,7 @@ def main(argv=None):
         raise ValueError('bounded distinct ports/TTL/read count required')
     if args.action != 'prepare' and (args.download or args.install_dependencies or args.init_cluster):
         raise ValueError('setup flags permitted only with prepare')
+    STAGE = args.action  # argparse choices are fixed, never caller-provided text.
     if args.action == 'prepare':
         prepare(args, root)
     elif args.action == 'adopt':
@@ -253,10 +298,11 @@ def main(argv=None):
         serve(args, root)
     else:
         validate_root(root)
+        if args.action in ('postgres', 'create-db', 'test'):
+            validate_pg_directory(root, required=True)
         env = clean_environment(root, args.database, args.pg_port, 'test' if args.action == 'test' else 'development')
         if args.action == 'postgres':
-            if not (root / 'pg/PG_VERSION').is_file():
-                raise ValueError('owned cluster missing')
+            validate_pg_directory(root, required=True)
             os.execve(PG_BIN + '/postgres', [PG_BIN + '/postgres', '-D', str(root / 'pg'), '-k', str(root / 'socket'), '-p', str(args.pg_port), '-c', 'listen_addresses=', '-c', 'max_connections=20', '-c', 'shared_buffers=32MB'], env)
         elif args.action == 'create-db':
             create_database(args, root, env)
@@ -265,7 +311,11 @@ def main(argv=None):
                 raise ValueError('separate dedicated _test database required')
             ensure_ruby(root, env)
             env['SERVICE_PROGRESS_FENCE_NEGATIVE_CONTROL'] = '1' if args.negative_control else '0'
-            run([RUBY, str(HERE / 'specs.rb'), str(root), args.database, str(args.pg_port), 'negative' if args.negative_control else 'ordinary'], cwd=root / 'src', env=env, timeout=120)
+            # Schema tasks can dirty Rails' first-request reload state. Keep them
+            # out of the Ruby process retaining RSpec class/module references.
+            command = [RUBY, str(HERE / 'specs.rb'), str(root), args.database, str(args.pg_port)]
+            run(command + ['prepare'], cwd=root / 'src', env=env, timeout=60)
+            run(command + ['negative' if args.negative_control else 'ordinary'], cwd=root / 'src', env=env, timeout=120)
         else:
             print(json.dumps({'status': 'verified', 'backend_sha': SHA, 'root': str(root)}))
     return 0
@@ -276,5 +326,5 @@ if __name__ == '__main__':
         sys.exit(main())
     except (ValueError, RuntimeError, OSError, subprocess.SubprocessError, tarfile.TarError) as error:
         # Fixed error class only; no environment, credentials, request or arbitrary exception dump.
-        print(json.dumps({'status': 'failed', 'error_class': type(error).__name__}), file=sys.stderr)
+        print(json.dumps(failure_record(error)), file=sys.stderr)
         sys.exit(1)
