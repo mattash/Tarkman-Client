@@ -26,6 +26,28 @@ Only the baseline bundle-ID isolation override differs from normal source.
 
 ## Actual selected-service flow
 
+The steps describe the **coherent XCTest flow at19:23**, whose result exited0.
+Linked photos are a **state mosaic across repeated runs**, not a continuous photo
+sequence or evidence of one follow/generation. Their original bytes are retained:
+
+| State image | Visible local clock | Capture run / stage |
+| --- | --- | --- |
+| [Reader](<after-322-reader.png>) |19:21| `done314`, after earlier cleanup |
+| [Verified OFF](<after-322-verified-off.png>) |19:12| `corrected-verify`, first corrected verification |
+| [Disclosure ON](<after-322-disclosure-on.png>) |19:23| `coherent-flow`, before separate Start |
+| [Started](<after-322-started.png>) |19:13| `consent-card`, earlier local follow |
+| [System Activity](<after-322-system-activity.png>) |19:23| `coherent-flow`, that run's actual card |
+| [Read-only tap](<after-322-read-only-tap.png>) |19:23| `coherent-flow`, that card's return to reader |
+| [Revoked](<after-322-revoked.png>) / [absent](<after-322-system-removed.png>) |19:19| `revoke`, earlier follow cleanup |
+| [Switch fenced](<after-322-switch-fenced.png>) / [aligned](<after-322-switch-revoked.png>) |19:30–31| `guard-lifecycle`, active42 then explicit revoke before43 |
+| [Foreground return](<after-322-foreground-return.png>) |19:33| focused `hosted-lifecycle`, no active follow |
+
+Do not infer chronology or shared follow identity from file/list order. The
+coherent-flow result separately verifies the actual ordered interaction; the
+combined guard/lifecycle result's immediate activation assertion failed, and the
+focused bounded lifecycle result separately passed. Public provenance uses
+repository-relative source paths; the private original archives remain unchanged.
+
 1. Reader42's explicit action opens the native manager with locked ID42.
 2. [Fresh verification, disclosure OFF](<after-322-verified-off.png>): Start remains
    disabled. No follow is started by presentation or verification.
@@ -73,6 +95,27 @@ The development-client Tools gear is intentionally unchanged in both captures.
 It overlaps most of Done's trailing hit region; the exposed left edge was used and
 dismissal was verified with a bounded nonexistence expectation. No preference was
 changed and no alternative toolbar layout is part of this patch.
+
+## Deleted-reader cleanup correction — separate Before / After
+
+| Before — JS `b160d869`, existing native follow42 | After — JS `32cd1f81`, same installed native `32294c9` |
+| --- | --- |
+| ![Before deleted reader hides management](<before-b160-deleted-reader.png>) | ![After deleted reader retains explicit management](<after-32cd-deleted-reader.png>) |
+
+This separate terminal scenario ran at19:56–20:05, not in the19:23 coherent run.
+A normally consented local follow42 already existed. The private public-read fixture
+then returned authoritative typed404 `code=session_not_found`; generic410 is not
+this reader's deletion contract. Before exited0 at19:58 with gone alert/Back but no
+management or Retry. After loaded released JS with normal devclient Reload (no
+native process termination, reinstall or preference change), then exited0 at20:05:
+management opened the [retained active42 caller](<after-32cd-deleted-manager.png>),
+[explicit revoke completed](<after-32cd-deleted-revoked.png>), Done returned to the
+still-deleted page and [the system card was absent](<after-32cd-deleted-no-activity.png>).
+[Exact source/provenance and limits](<terminal-metadata.json>) distinguish this JS
+fix from the unchanged accepted native captures above. No fresh Verify or Start was
+attempted for deleted42; independent in-memory QA eligibility is not evidence of
+real deleted-service eligibility. Normal native eligibility/disclosure guards are
+unchanged. Original bytes, initial retained-old-JS attempt and private archives remain.
 
 ## Limits and next stage
 
