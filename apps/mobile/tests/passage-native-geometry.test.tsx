@@ -1,9 +1,9 @@
 import { afterEach, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
-import type { TextProps } from 'react-native'
+import type { TextProps, ViewProps } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { ReadingFontContext } from '../design/readingFont'
-import { LiturgyText, type PassageHighlight } from '../components/LiturgyText'
+import { LiturgyText, type PassageHighlight, type VisibleTextLayout } from '../components/LiturgyText'
 
 let mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 }
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ __esModule: true, default: () => mockDimensions }))
@@ -11,12 +11,26 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ __esM
 // Model native VirtualText: its ref exists but cannot supply useful glyph bounds.
 const mockAnchor = { measureInWindow: jest.fn((done: (x: number, y: number, width: number, height: number) => void) => done(0, 0, 0, 0)) }
 let mockNativeWidth = 320
+let mockFrameVersion = 0
 const mockFrame = { measureInWindow: jest.fn((done: (x: number, y: number, width: number, height: number) => void) => done(0, 100, mockNativeWidth, 9000)) }
 jest.mock('react-native/Libraries/Text/Text', () => {
   const React = jest.requireActual<typeof import('react')>('react')
   return { __esModule: true, default: React.forwardRef<unknown, TextProps>((props, ref) => {
-    React.useImperativeHandle(ref, () => props.testID === 'body' ? mockFrame : mockAnchor)
+    const frameVersion = mockFrameVersion
+    const frame = React.useMemo(() => ({ measureInWindow: mockFrame.measureInWindow, frameVersion }), [frameVersion])
+    React.useImperativeHandle(ref, () => props.testID === 'body' ? frame : mockAnchor)
     return React.createElement('Text', props)
+  }) }
+})
+
+jest.mock('react-native/Libraries/Components/View/View', () => {
+  const React = jest.requireActual<typeof import('react')>('react')
+  return { __esModule: true, default: React.forwardRef<unknown, ViewProps>((props, ref) => {
+    // The visible-text wrapper has the same actual native width as its outer Text.
+    const frameVersion = mockFrameVersion
+    const frame = React.useMemo(() => ({ measureInWindow: mockFrame.measureInWindow, frameVersion }), [frameVersion])
+    React.useImperativeHandle(ref, () => frame)
+    return React.createElement('View', props)
   }) }
 })
 
@@ -39,7 +53,8 @@ afterEach(() => {
   jest.clearAllMocks()
   mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 }
   mockNativeWidth = 320
-  mockFrame.measureInWindow.mockImplementation(done => done(0, 100, mockNativeWidth, 9000))
+  mockFrameVersion = 0
+  mockFrame.measureInWindow.mockReset().mockImplementation(done => done(0, 100, mockNativeWidth, 9000))
 })
 
 it('reuses native line geometry for the same range with a new request, without another text-layout event', async () => {
@@ -54,6 +69,116 @@ it('reuses native line geometry for the same range with a new request, without a
   await view.rerender(<LiturgyText testID="body" text={text} passageHighlight={request(2, repeated)} />)
   await tick()
   expect(repeated).toHaveBeenLastCalledWith(8300, 40, expect.objectContaining(mockAnchor))
+})
+
+it('keeps visible-line capture and repeated bookmark jumps on the same native geometry without a fresh layout', async () => {
+  jest.useFakeTimers()
+  const measured = jest.fn<NonNullable<PassageHighlight['onMeasure']>>()
+  let visible: VisibleTextLayout | undefined
+  const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+  const view = await render(<LiturgyText testID="body" text={text} registerVisibleText={register} />, { wrapper })
+  await layout()
+  await textLayout()
+  expect(visible?.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
+  // Bookmark/open adds a highlight to text that was already measured for resume capture.
+  await view.rerender(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(1, measured)} />)
+  await tick()
+  expect(measured).toHaveBeenLastCalledWith(8300, 40, expect.objectContaining(mockAnchor))
+  measured.mockClear()
+  await view.rerender(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(2, measured)} />)
+  await tick()
+  expect(measured).toHaveBeenLastCalledWith(8300, 40, expect.objectContaining(mockAnchor))
+  expect(visible?.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
+  measured.mockClear()
+  await view.rerender(<LiturgyText testID="body" text={text} readingSize="larger" registerVisibleText={register} passageHighlight={request(3, measured)} />)
+  await tick()
+  expect(measured).not.toHaveBeenCalled()
+  expect(visible?.range(8200, 8400)).toBeUndefined()
+  await textLayout(6400)
+  await tick()
+  expect(measured).toHaveBeenLastCalledWith(6500, 40, expect.objectContaining(mockAnchor))
+  expect(visible?.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
+})
+
+it.each(['fontReady', 'fontScale', 'style', 'windowWidth'] as const)('fails visible capture closed after %s changes until matching text layout arrives', async changed => {
+  jest.useFakeTimers()
+  let visible: VisibleTextLayout | undefined
+  const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+  const make = (next: boolean) => <ReadingFontContext.Provider value={!(next && changed === 'fontReady')}>
+    <LiturgyText testID="body" text={text} registerVisibleText={register}
+      style={next && changed === 'style' ? { lineHeight: 60 } : undefined} />
+  </ReadingFontContext.Provider>
+  const view = await render(make(false), { wrapper })
+  await layout()
+  await textLayout()
+  const initial = jest.fn<(top: number, height: number) => void>()
+  visible!.measure(initial)
+  expect(initial).toHaveBeenCalledWith(100, 9000)
+  expect(visible!.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
+  if (changed === 'fontScale') mockDimensions = { ...mockDimensions, fontScale: 1.5 }
+  if (changed === 'windowWidth') mockDimensions = { ...mockDimensions, width: 280 }
+  await view.rerender(make(true))
+  expect(visible!.range(8200, 8400)).toBeUndefined()
+  // A frame event alone (even with the old width) cannot validate old glyph lines.
+  await layout()
+  expect(visible!.range(8200, 8400)).toBeUndefined()
+  await textLayout(6400)
+  expect(visible!.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
+  expect(visible!.range(8200, 8400)).toBeUndefined()
+})
+
+it.each(['geometry', 'node', 'width'] as const)('rejects an in-flight visible measurement from an old %s', async changed => {
+  jest.useFakeTimers()
+  let visible: VisibleTextLayout | undefined
+  const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+  const make = (next: boolean) => <LiturgyText testID="body" text={text} registerVisibleText={register}
+    style={next && changed === 'geometry' ? { lineHeight: 60 } : undefined} />
+  const view = await render(make(false), { wrapper })
+  await layout()
+  await textLayout()
+  expect(visible!.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
+  const pending: ((x: number, y: number, width: number, height: number) => void)[] = []
+  mockFrame.measureInWindow.mockImplementationOnce(done => { pending.push(done) })
+  const stale = jest.fn<(top: number, height: number) => void>()
+  visible!.measure(stale)
+  expect(pending).toHaveLength(1)
+  if (changed === 'node') mockFrameVersion++
+  await view.rerender(make(true))
+  if (changed === 'width') await layout(240)
+  await act(() => { pending[0](0, 100, 320, 9000) })
+  // Reporting zero height is compatible with the public API, but stale bounds are not.
+  expect(stale.mock.calls.some(([, height]) => height > 0)).toBe(false)
+  if (changed !== 'node') expect(visible!.range(8200, 8400)).toBeUndefined()
+  await textLayout(6400)
+  const fresh = jest.fn<(top: number, height: number) => void>()
+  visible!.measure(fresh)
+  expect(fresh).toHaveBeenCalledWith(100, 9000)
+  expect(visible!.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
+})
+
+it.each(['geometry', 'node', 'width'] as const)('rejects an async Text-width qualifier from an old %s and recovers on fresh lines', async changed => {
+  jest.useFakeTimers()
+  let visible: VisibleTextLayout | undefined
+  const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+  const make = (next: boolean) => <LiturgyText testID="body" text={text} registerVisibleText={register}
+    style={next && changed === 'geometry' ? { lineHeight: 60 } : undefined} />
+  const view = await render(make(false), { wrapper })
+  await layout()
+  await textLayout()
+  expect(visible!.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
+  const pending: ((x: number, y: number, width: number, height: number) => void)[] = []
+  mockFrame.measureInWindow.mockImplementationOnce(done => { pending.push(done) })
+  await textLayout(6400)
+  expect(pending).toHaveLength(1)
+  expect(visible!.range(6400, 6600)).toBeUndefined()
+  if (changed === 'node') mockFrameVersion++
+  await view.rerender(make(true))
+  if (changed === 'width') await layout(240)
+  await act(() => { pending[0](0, 100, 320, 9000) })
+  expect(visible!.range(6400, 6600)).toBeUndefined()
+  expect(visible!.range(8200, 8400)).toBeUndefined()
+  await textLayout(6400)
+  expect(visible!.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
 })
 
 it('rejects an old row payload delivered through the current text-layout handler and recovers on fresh lines', async () => {
@@ -138,40 +263,55 @@ it.each([
 ] as const)('keeps fresh width-qualified lines with %s events and changed context=%s', async (order, changedContext) => {
   jest.useFakeTimers()
   const measured = jest.fn<NonNullable<PassageHighlight['onMeasure']>>()
-  const view = await render(<LiturgyText testID="body" text={text} passageHighlight={request(1, measured)} />, { wrapper })
+  let visible: VisibleTextLayout | undefined
+  const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+  const view = await render(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(1, measured)} />, { wrapper })
   await layout()
   await textLayout()
   await tick()
+  expect(visible!.range(8200, 8400)).toEqual({ start: prefix.length, end: text.length })
   measured.mockClear()
   if (changedContext) mockDimensions = { ...mockDimensions, width: 280 }
-  await view.rerender(<LiturgyText testID="body" text={text} passageHighlight={request(2, measured)} />)
+  await view.rerender(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(2, measured)} />)
   mockNativeWidth = 240
   if (order === 'layout-first') {
     await layout(240)
+    expect(visible!.range(8200, 8400)).toBeUndefined()
     await textLayout(6400)
   } else {
+    // Native has reflowed before JS receives onLayout: a measured width must reject old lines.
+    const reflowed = jest.fn<(top: number, height: number) => void>()
+    visible!.measure(reflowed)
+    expect(reflowed.mock.calls.some(([, height]) => height > 0)).toBe(false)
+    expect(visible!.range(8200, 8400)).toBeUndefined()
     await textLayout(6400)
     await layout(240)
   }
   await tick()
+  expect(visible!.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
+  expect(visible!.range(8200, 8400)).toBeUndefined()
   expect(measured).toHaveBeenLastCalledWith(6500, 40, expect.objectContaining(mockAnchor))
   // Another request needs no third text-layout event after either event ordering.
   measured.mockClear()
-  await view.rerender(<LiturgyText testID="body" text={text} passageHighlight={request(3, measured)} />)
+  await view.rerender(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(3, measured)} />)
   await tick()
   expect(measured).toHaveBeenLastCalledWith(6500, 40, expect.objectContaining(mockAnchor))
+  expect(visible!.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
 })
 
 it('keeps fresh lines when their async width measurement completes after onLayout', async () => {
   jest.useFakeTimers()
   const measured = jest.fn<NonNullable<PassageHighlight['onMeasure']>>()
-  const view = await render(<LiturgyText testID="body" text={text} passageHighlight={request(1, measured)} />, { wrapper })
+  let visible: VisibleTextLayout | undefined
+  const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+  const view = await render(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(1, measured)} />, { wrapper })
   await layout()
   await textLayout()
   await tick()
   measured.mockClear()
   mockDimensions = { ...mockDimensions, width: 280 }
-  await view.rerender(<LiturgyText testID="body" text={text} passageHighlight={request(2, measured)} />)
+  await view.rerender(<LiturgyText testID="body" text={text} registerVisibleText={register} passageHighlight={request(2, measured)} />)
+  expect(visible!.range(8200, 8400)).toBeUndefined()
   mockNativeWidth = 240
   const pending: ((x: number, y: number, width: number, height: number) => void)[] = []
   mockFrame.measureInWindow.mockImplementationOnce(done => { pending.push(done) })
@@ -179,9 +319,12 @@ it('keeps fresh lines when their async width measurement completes after onLayou
   await layout(240)
   await tick()
   expect(measured).not.toHaveBeenCalled()
-  pending.forEach(done => done(0, 100, 240, 9000))
+  expect(visible!.range(6400, 6600)).toBeUndefined()
+  await act(() => { pending.forEach(done => done(0, 100, 240, 9000)) })
   await tick()
   expect(measured).toHaveBeenLastCalledWith(6500, 40, expect.objectContaining(mockAnchor))
+  expect(visible!.range(6400, 6600)).toEqual({ start: prefix.length, end: text.length })
+  expect(visible!.range(8200, 8400)).toBeUndefined()
 })
 
 it('rejects old-width geometry when native reflow happens before its onLayout event', async () => {

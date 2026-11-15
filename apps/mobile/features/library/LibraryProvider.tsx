@@ -3,11 +3,15 @@ import { AppState } from 'react-native'
 import { libraryConfiguration } from './config'
 import { createLibrary, type LibraryController } from './downloadCoordinator'
 import { libraryStore } from './store'
+import { readingStorage } from './readingStorage'
+import { createReadingMetadataStore } from './readingMetadata'
+
+const readingMetadataStore = createReadingMetadataStore(readingStorage)
 
 const Context = createContext<LibraryController | null>(null)
 const unavailable = createLibrary('disabled', null, libraryStore)
 export function LibraryProvider({ children, controller }: { children: ReactNode; controller?: LibraryController }) {
-  const instance = useMemo(() => { const config = libraryConfiguration(); return controller ?? createLibrary(config.environment, config.api, libraryStore) }, [controller])
+  const instance = useMemo(() => { const config = libraryConfiguration(); return controller ?? createLibrary(config.environment, config.api, libraryStore, Date.now, readingMetadataStore) }, [controller])
   const lifecycle = useRef(new Map<LibraryController, number>())
   useEffect(() => {
     const versions = lifecycle.current

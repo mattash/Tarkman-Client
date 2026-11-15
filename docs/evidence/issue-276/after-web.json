@@ -1,0 +1,37 @@
+{
+  "phase": "after",
+  "app": "http://localhost:8097",
+  "sourceRevision": "7801efd40e1606acd9d92dd8bb90f481557c1510",
+  "capturedHead": "5ae3759a8ad2850d383ee3db79bdc95bb4765378",
+  "revisionNote": "Captured dirty worktree containing the settled fix; all source hashes verified identical to final sourceRevision commit.",
+  "long": false,
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "initial": "\n\n\n\nEN\n\n\nSynthetic service\n\nSaved passages\n\nChoir\nPeace\n\nChoir\nPeace\n\nPriest\nThis part changes according to the church calendar."
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "initial": "\n\nEN\n\n\nSynthetic service\n\nSaved passages\n\nShare\n\nChoir\nPeace\n\nChoir\nPeace\n\nPriest\nThis part changes according to the church calendar."
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "initial": "\n\n\n\nEN\n\n\nSynthetic service\n\nSaved passages\n\nChoir\nEnglish · reading\nPeace\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace\n\nChoir\nEnglish · reading\nPeace\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace\n\nPriest\nEnglish · reading\nThis part changes according to the church calendar.\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace"
+    }
+  ]
+}

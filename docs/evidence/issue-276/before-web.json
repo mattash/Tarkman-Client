@@ -1,0 +1,35 @@
+{
+  "phase": "before",
+  "app": "http://localhost:8096",
+  "sourceRevision": "7aa34e13fb04cfdf6c110255d8591f4467a81e69",
+  "long": false,
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "initial": "\n\n\n\nEN\n\n\nSynthetic service\n\nChoir\nPeace\n\nChoir\nPeace\n\nPriest\nThis part changes according to the church calendar."
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "initial": "\n\nEN\n\n\nSynthetic service\n\nShare\n\nChoir\nPeace\n\nChoir\nPeace\n\nPriest\nThis part changes according to the church calendar."
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "initial": "\n\n\n\nEN\n\n\nSynthetic service\n\nChoir\nEnglish · reading\nPeace\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace\n\nChoir\nEnglish · reading\nPeace\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace\n\nPriest\nEnglish · reading\nThis part changes according to the church calendar.\nԳրաբար · comparison\nԽաղաղություն\nTranslit · comparison\nPeace"
+    }
+  ]
+}

@@ -1,0 +1,1356 @@
+{
+  "status": "SIMULATOR_SCOPE_VERIFIED",
+  "scope": "Genuine ticket-owned iOS Simulator reader and direct SQLite evidence; no physical-device or VoiceOver pass is claimed.",
+  "simulator": {
+    "udid": "2915F3F2-4C10-4D3D-A261-9580C5F0898D",
+    "model": "iPhone 15 Pro",
+    "runtime": "iOS 27.0",
+    "logicalDimensions": [
+      393,
+      852
+    ],
+    "language": "en",
+    "readingSize": "standard in-app",
+    "scheme": "light",
+    "auth": "signed out"
+  },
+  "images": [
+    {
+      "file": "before-ios-701-clean.png",
+      "sourceArtifact": "before-ios-701-clean.png",
+      "sha256": "b42f587bb2e06cf6ec9504cefc9f0d0269ed57418e9a78c8ec34489a52d17c6b",
+      "bytes": 150988,
+      "format": "PNG",
+      "pixelDimensions": [
+        1179,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-701-clean.png",
+      "sourceArtifact": "after-ios-701-clean.png",
+      "sha256": "f1b09de78f44c91293e1a32254e456a5f897bb71303e02b9b0b03e31d704aad3",
+      "bytes": 162815,
+      "format": "PNG",
+      "pixelDimensions": [
+        1179,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-702-scrolled.png",
+      "sourceArtifact": "after-ios-702-scrolled.png",
+      "sha256": "9dccafb829fe725fed2aa894a5e9411a9b75751842e7eb23b01f7388c7825f52",
+      "bytes": 340019,
+      "format": "PNG",
+      "pixelDimensions": [
+        1179,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-702-saved.png",
+      "sourceArtifact": "after-ios-702-saved.png",
+      "sha256": "3cd2a2bbd33cf0cacce9a51eb54ab08a5b3d08635902c0c2534012fc277857dd",
+      "bytes": 168059,
+      "format": "PNG",
+      "pixelDimensions": [
+        1179,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-702-bookmark-open.png",
+      "sourceArtifact": "transport/attachments-after-long-open-001/01FBF1E3-3D40-416B-8B49-DD956E49A058.png",
+      "sha256": "04ded36187597eb8bb1518e7808211512029039fdbae2649d1fe545259f6c8d2",
+      "bytes": 310660,
+      "format": "PNG",
+      "pixelDimensions": [
+        1178,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-702-relaunched.png",
+      "sourceArtifact": "transport/attachments-after-long-relaunched-001/8C49FB27-E018-494E-AEEE-01B9B0E63D88.png",
+      "sha256": "d58f8790c616a89dbf6ed7a8d620791f1701a75158b58616c98f7caf5cc67258",
+      "bytes": 251308,
+      "format": "PNG",
+      "pixelDimensions": [
+        1178,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-702-resumed.png",
+      "sourceArtifact": "transport/attachments-after-long-resume-001/92C36EB0-AFE0-4632-B87C-3BFB682832DF.png",
+      "sha256": "242d4a5acc0af57e636bb79c2e95e75e20c37dcd7d9f3f37a6edb05f195908ee",
+      "bytes": 310147,
+      "format": "PNG",
+      "pixelDimensions": [
+        1178,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-703-scrolled.png",
+      "sourceArtifact": "after-ios-703-scrolled.png",
+      "sha256": "3b0698aa2cfbfccd8bf37e06aec6804315e9968660e0f0f2cda9c3cb2ec3d89c",
+      "bytes": 351825,
+      "format": "PNG",
+      "pixelDimensions": [
+        1179,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-703-bookmark-open.png",
+      "sourceArtifact": "transport/attachments-after-repeat-open-001/3E64B248-B628-45F7-8999-84BE23213E3C.png",
+      "sha256": "50336ada0e5981a3cee4eda2ddbec2f7ee609c68e1dc03680dc0f609ec57e007",
+      "bytes": 320106,
+      "format": "PNG",
+      "pixelDimensions": [
+        1178,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-702-largest-bookmark-open.png",
+      "sourceArtifact": "transport/attachments-after-largest-open-001/715B7F85-AE96-4C1B-B216-B57F9A02BB4C.png",
+      "sha256": "9ecef58f17589a82429cf3e9daeef03153e9c52f0bf5c729134c29e580ab8ad5",
+      "bytes": 272854,
+      "format": "PNG",
+      "pixelDimensions": [
+        1178,
+        2556
+      ],
+      "copyByteIdentical": true
+    },
+    {
+      "file": "after-ios-702-revision-unavailable.png",
+      "sourceArtifact": "transport/attachments-after-revision-unavailable-001/A591311E-6A71-460B-8DE1-8E491A6F8723.png",
+      "sha256": "47a5ba97598cb3e528a2169782dc0b68158a63f1cc6a6819f2a00c63ca490aff",
+      "bytes": 174444,
+      "format": "PNG",
+      "pixelDimensions": [
+        1178,
+        2556
+      ],
+      "copyByteIdentical": true
+    }
+  ],
+  "hostCopyVerification": {
+    "source_unchanged": true,
+    "changed_files": [
+      "EXConstants.bundle/app.config",
+      "Expo.plist",
+      "Info.plist",
+      "Tarkman"
+    ],
+    "added_files": [
+      "_CodeSignature/CodeResources"
+    ],
+    "removed_files": [],
+    "all_other_files_byte_identical": true,
+    "launcher_compiled_sections_identical": true,
+    "launcher_section_hashes": {
+      "__TEXT,__text": {
+        "size": 6988,
+        "sha256": "450588b82b0835ec9f0e7d660da02018b693bb3aebb396647b1af3a26832ee28"
+      },
+      "__TEXT,__stubs": {
+        "size": 336,
+        "sha256": "3dfc4773ba4978a3b3db18d4f1595398fce0afcec2b813a530184a17036bc4e8"
+      },
+      "__TEXT,__swift5_entry": {
+        "size": 8,
+        "sha256": "f88e39f8e0f2aa491f4e40f3f9bb0e960a83eaf0a58481d57a459ab932b00ff5"
+      },
+      "__TEXT,__const": {
+        "size": 48,
+        "sha256": "565a4280442207ecd18cc6d49f019fe9426571988a0766a657f5b19880ad71c2"
+      },
+      "__TEXT,__cstring": {
+        "size": 565,
+        "sha256": "ad7181a8b5c1c8d463ed982d4c75792653c7c0d5f0ecef9b88c776401da5ff25"
+      },
+      "__TEXT,__oslogstring": {
+        "size": 2894,
+        "sha256": "5279f89fe00c9fa4819e87aabe4b2924718119dd777cb05f69a4c5bec531a473"
+      },
+      "__TEXT,__debug_dylib": {
+        "size": 19,
+        "sha256": "77153c7118a623b43a479599c30d485200d6dbdf18bc072a23ce2d3aa68c045c"
+      },
+      "__TEXT,__debug_instlnm": {
+        "size": 26,
+        "sha256": "87baba700bd902af5fc6e8e6fdb26c39cf50f13b53e1458b53fafda4b3cc7f61"
+      },
+      "__TEXT,__debug_entry": {
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "__TEXT,__unwind_info": {
+        "size": 200,
+        "sha256": "fe5fadd0bf8ae9997c7d9205df7bb0d55e52d98ada352f010ad75c0ce102930b"
+      },
+      "__TEXT,__eh_frame": {
+        "size": 120,
+        "sha256": "557b75dbc76f7d846869e0e99b4cb21b94775a8027b473cc398060c8f4c60750"
+      },
+      "__DATA_CONST,__got": {
+        "size": 232,
+        "sha256": "6298671111d61480cde3651a9e61c2bbfe30a9745bf19281d9107ccaa70e3492"
+      },
+      "__DATA,__common": {
+        "size": 2048,
+        "sha256": null
+      },
+      "__DATA,__bss": {
+        "size": 8,
+        "sha256": null
+      }
+    },
+    "original_launcher_sha256": "97d59158d1709a40a36041227ea3ca1660cb810eb1f2403f5cbb29f13d476bd9",
+    "signed_copy_launcher_sha256": "0b08c9dec7a200bf6ae4d0a969544727df10e796f86e34415a79f00866c10561",
+    "debug_dylib_sha256": "ed1c8501dd7c9d22f9f55ffb69c1a3ca4fee031993d5e2c3940798b301c5e647",
+    "framework_file_hashes": {
+      "Frameworks/ExpoCamera.framework/ExpoCamera": "48ad3062cb5491ee67d3ba5a834bc31bdd3ac94b12c1ea8f3e1f59cfe7f125ad",
+      "Frameworks/ExpoCamera.framework/Info.plist": "78edf6768a6976b939b101f56ddd66111700129fe953372071b73f8c2afe7ce2",
+      "Frameworks/ExpoCamera.framework/_CodeSignature/CodeResources": "025d684eadb98920d40a51cdd6d398dacf45c90564b90c8929636d1986da549f",
+      "Frameworks/ExpoCameraBarcodeScanning.framework/ExpoCameraBarcodeScanning": "5a872fe29f0751ba0040c97bc6a30eacd3e64e77aeb7bb78dc59eaab9d3a79fe",
+      "Frameworks/ExpoCameraBarcodeScanning.framework/Info.plist": "448a2bdd7c271fc6ca6700e04238f110dbccd084c44c5c9ac5ba89654cb08646",
+      "Frameworks/ExpoCameraBarcodeScanning.framework/_CodeSignature/CodeResources": "2174581659614cab6968c2cc168cc76c4cdf4e89d37e1758c89fe2cb54a2c918",
+      "Frameworks/ExpoFileSystem.framework/ExpoFileSystem": "5fe362ba9044d708dbb7f3f35f6147aee4bfda8b417e69709e2a8a557baaebf9",
+      "Frameworks/ExpoFileSystem.framework/Info.plist": "3b3b7e31d35e809da0dcafcfd82e9534591216048f83690d9f68b97931f75143",
+      "Frameworks/ExpoFileSystem.framework/_CodeSignature/CodeResources": "a2aceaa3600efc51c1724abb31bb9caf5c5b822776d2420668e31c2678f47814",
+      "Frameworks/ExpoFileSystem.framework/expo-file-system_ExpoFileSystem.bundle/Info.plist": "3ae3255137b5a30620547c0cc7d01609295619285fba412ecdeb742375908946",
+      "Frameworks/ExpoFileSystem.framework/expo-file-system_ExpoFileSystem.bundle/PrivacyInfo.xcprivacy": "33b0e074f273f588a64ba5632909c6a8cf1f16db8e4cd84c6978bd222dfd65bd",
+      "Frameworks/ExpoFileSystem.framework/expo-file-system_ExpoFileSystem.bundle/_CodeSignature/CodeDirectory": "0c4422f108bcfac1a64d47851c31f974f5803a6804befe0e29bc2713429795c6",
+      "Frameworks/ExpoFileSystem.framework/expo-file-system_ExpoFileSystem.bundle/_CodeSignature/CodeRequirements": "987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986",
+      "Frameworks/ExpoFileSystem.framework/expo-file-system_ExpoFileSystem.bundle/_CodeSignature/CodeResources": "e9fe90e42eb0c96618fb6a1a11fc660b8b26c569b0e0cbade109a13644babfbe",
+      "Frameworks/ExpoFileSystem.framework/expo-file-system_ExpoFileSystem.bundle/_CodeSignature/CodeSignature": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "Frameworks/ExpoFont.framework/ExpoFont": "a8fb0431c8b4b86410880a4c2212a82e5828521d4e6384396a3773690f18c0cc",
+      "Frameworks/ExpoFont.framework/Info.plist": "245a11155e2927c1effe1784e4188f38f2e2bc765517adeb0afc222229e14b71",
+      "Frameworks/ExpoFont.framework/_CodeSignature/CodeResources": "eb93542934f607bca0af29f85c119c21b39fa010a1f7e57a7eda66ed8d63b9df",
+      "Frameworks/ExpoModulesCore.framework/ExpoModulesCore": "2d41cdafae7ecc1b521af5b869473a4fed557078ef10c36c2e7fc8837a78649d",
+      "Frameworks/ExpoModulesCore.framework/Info.plist": "426bd267025d1249d48e839f1ac005be2beb0e2c2f629743fcd7f2cad3f93fd2",
+      "Frameworks/ExpoModulesCore.framework/_CodeSignature/CodeResources": "e3a61b94fd6755ff539ae92fe69461b75ab818ee42fcb4e3a8e01807c0b48798",
+      "Frameworks/ExpoModulesJSI.framework/ExpoModulesJSI": "717db751b8a332acb74bcd708b080ecdbc1992d6b55ca543b5e7d82c546ab24c",
+      "Frameworks/ExpoModulesJSI.framework/Info.plist": "9c0deb362cdfba00ecb484d5f98ffed736ac1147a09e6cdbe46277f4bf89e54e",
+      "Frameworks/ExpoModulesJSI.framework/_CodeSignature/CodeResources": "03c1ef88bb7a558fe1cc06140c8c283aa089d62e5506953f19642cfa70248815",
+      "Frameworks/ExpoModulesWorklets.framework/ExpoModulesWorklets": "1c337e68db5cb4da4f2f9283422bd3b5bbcad3700b36a6b74073e87ce7f76812",
+      "Frameworks/ExpoModulesWorklets.framework/Info.plist": "b163bd1eb8cb13c93e0e1606d3b14848959dbe9467fcc6421ceaa64d1b7b1132",
+      "Frameworks/ExpoModulesWorklets.framework/_CodeSignature/CodeResources": "5cf7539261b1afb74ff284e36d57277b6180c4b8c2b2917497b1f6a5d20fe19d",
+      "Frameworks/React.framework/Info.plist": "6c414e3834f1ebfb96b7552eaf54c550c098f0c09af2fdad177dc436bceebc3f",
+      "Frameworks/React.framework/PrivacyInfo.xcprivacy": "677d9a3f1f255ad8e2c918982b385d801fc0fd0d37c2026ab3259c910fde28c4",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/Info.plist": "31c14a6735128f0048d962b5bdb079c04a240d8bb2bb7b6c9831edbeed9c756a",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ar.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ar.lproj/fbt_language_pack.bin": "be9b027cfb9fb3c25144976e3be19c8dff708da40f98dba98a15526c681fbd45",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/cs.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/cs.lproj/fbt_language_pack.bin": "99d6fb0371d426021367c927628f12e3b7f9372890bb97974432184dd4ba9b87",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/da.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/da.lproj/fbt_language_pack.bin": "27e3705b7077f7823a2d58f8508a292d5ff3ae56f5d6eda67de4dcc43c2d80b9",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/de.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/de.lproj/fbt_language_pack.bin": "3a49b0e28867074f653ab9f5bee34b8683d104965c3037bcead844ac20568429",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/el.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/el.lproj/fbt_language_pack.bin": "c053414af02bc524855d7c54d353e98172aa5954143349f860ad69d1b8541627",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/en-GB.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/en-GB.lproj/fbt_language_pack.bin": "460d10f35a0b8869e01f432dd6ea9027d685a50048409381bacd39c4aca40c69",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/en.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/es-ES.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/es-ES.lproj/fbt_language_pack.bin": "bdaf2e43a99671a585ddb5b72b75eae7a3ffca18e0befcdeb853b5b0274a6a9c",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/es.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/es.lproj/fbt_language_pack.bin": "97543d3b9d17e30d85bdda51add94d7853dec746495dc6bff94daa861eb4e7d3",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/fi.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/fi.lproj/fbt_language_pack.bin": "cca5de0b5a7fea57d54057992a5350a3dc663b148cb7ab39c445b259b4e0fed7",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/fr.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/fr.lproj/fbt_language_pack.bin": "08452fbaf11071f63117b7c0ee44de195d4d6db7fe7c3df360b4bd02853051e4",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/he.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/he.lproj/fbt_language_pack.bin": "d69f2bb2c937e52744beea21f9834a2e3b9d1029b5640250204a3df7b70e5100",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/hi.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/hi.lproj/fbt_language_pack.bin": "64b323639bb7d9c747f74ba625794c24e98bd570524f1dec2c92d0fb0d1ed51a",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/hr.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/hr.lproj/fbt_language_pack.bin": "c96a18336c0f2e86240030e62d988b63896e7137c9da965549d6bad044d31bf4",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/hu.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/hu.lproj/fbt_language_pack.bin": "37822c6aadc2631b7c0f1b8085299e6a32a3a0c581371a50a00913b4d792ff59",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/id.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/id.lproj/fbt_language_pack.bin": "0dcc4aa04a676c5f945bd4d5250b4b5a11751f265211e68fe581ec897ac0fd74",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/it.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/it.lproj/fbt_language_pack.bin": "825232470e74ce9f98111ec331c44fc9e2bc4848dd22d07e4abc8bcceb2e1a8a",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ja.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ja.lproj/fbt_language_pack.bin": "26f8bfbe110fe5120439ebf634a390c8a5e139caf6b03ce67a076a9db9f080ae",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ko.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ko.lproj/fbt_language_pack.bin": "1e21c323273d51d0f11f8dec5e7543141d3059866de2c37ea19e1b5f050948c5",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ms.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ms.lproj/fbt_language_pack.bin": "699c877d7151baac8bd7bb5624c32b86dece4290475c850d8f943b1c1a902a62",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/nb.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/nb.lproj/fbt_language_pack.bin": "183d7dbfdff5722224188b353b81af32f6858b05ad88378d7c9f60738ecff57f",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/nl.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/nl.lproj/fbt_language_pack.bin": "7a3eb47dae0922e71929745673c53e0df8b5e6cfc9758639d6caaa80e764599f",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/pl.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/pl.lproj/fbt_language_pack.bin": "979b47febe727cef65214d54f79d4e94976154ff895d70b6b29a15d90fd4633f",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/pt-PT.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/pt-PT.lproj/fbt_language_pack.bin": "4ea747fc7c6bfc0c5dfee69518d5aa419390e9c008440e810a8fc1e57b8a90e1",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/pt.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/pt.lproj/fbt_language_pack.bin": "ca3de051ff7f946505e9e4b38d1ca895136935ec0ff8ff78fb3ba6129957a3d7",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ro.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ro.lproj/fbt_language_pack.bin": "7a65ea11671985a1d218cb7edfb840538b1a48f731631dac6721bf8112f5e636",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ru.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/ru.lproj/fbt_language_pack.bin": "7bdadcc6fa96b37ab23e9cd54245052fc61dca6dbd239dd5b60d26b5659b4364",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/sk.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/sk.lproj/fbt_language_pack.bin": "64f16a66930b15c860aaa0a22d4f577283662452d2b9f579ca023f4631dc29ac",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/sv.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/sv.lproj/fbt_language_pack.bin": "8db1fdbd500ca956e64e67cc0b41e34707ba283a895a425fad9b8c414ff429c5",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/th.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/th.lproj/fbt_language_pack.bin": "69129b0706f52ccc4f30a6fdafa0c238e91c48e8a51c8ee2c42c3e64ebae55d2",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/tr.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/tr.lproj/fbt_language_pack.bin": "421d66e10a567dcafbdd978568c462ef815280d08b9550306e6df2833a520a43",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/uk.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/uk.lproj/fbt_language_pack.bin": "750e8ad1bf4b7cf7ef0143683546ab07662021e670181a2dbb9075fc1b488245",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/vi.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/vi.lproj/fbt_language_pack.bin": "71b3dd7a9836d3ffef5c1be17c4915eb68105b9030c0c2ba62a34d3b659b9e80",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zh-Hans.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zh-Hans.lproj/fbt_language_pack.bin": "f89453c6614873eac67abf46c5caabd7eb50c7e1f4564027e18fe0b1698aa517",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zh-Hant-HK.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zh-Hant-HK.lproj/fbt_language_pack.bin": "09d0aa3d7a75737e31509693ef3ea832fe25e178c775c54e068a8d7ae443a759",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zh-Hant.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zh-Hant.lproj/fbt_language_pack.bin": "46fd971b378a423c2f509e9b9458fb085d4c2b4d3254f298b3622bea7c283c3f",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zu.lproj/Localizable.strings": "c6e78324c3a5b0ea7666901b03cab311d2e4610769a5da7b7dbdaefb93488261",
+      "Frameworks/React.framework/RCTI18nStrings.bundle/zu.lproj/fbt_language_pack.bin": "bd48e8527839123da9457c82adbd803cc4563f69e76ef1b385fa29734d71b78e",
+      "Frameworks/React.framework/React": "0f8bcb0365659d29a5e0ae9c93bccffa4c966f4c86c30d0b55c022a4df3cc609",
+      "Frameworks/React.framework/_CodeSignature/CodeResources": "3cf3d76e7caac072b517eb69caf6a95eb885aa3d739d6e92b2bb630f3a6edda1",
+      "Frameworks/ReactNativeDependencies.framework/Info.plist": "7f95dae8c42c9465817cacea1d5f1fbfee1f6a8d211111f0037653ed3ac9cbcb",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies": "0f2f705d9e5e8baccbbcaec5475a9428ca959d125c26d926f00d079f96f8673d",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/Info.plist": "6ec15e597848f60794e837fbe7a1cb40e1455e7f1fd45ac0bab1a5ee76aecf4e",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/PrivacyInfo.xcprivacy": "97e32f473284df703a5fc921076956ef84a765ca9e7ba2e7ba61350652d12727",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/_CodeSignature/CodeDirectory": "7daf2ea658a102bb28167442f02553569de5b9fee52f8490eb3693c2782b45b1",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/_CodeSignature/CodeRequirements": "987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/_CodeSignature/CodeRequirements-1": "befc7726961549702c9e9d383fb902199fcb3b92ca6bc82b81ea251408876b10",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/_CodeSignature/CodeResources": "634ae33a795556a501bd53b0c6c98842f1773db7f00809582076e32a717bdfaa",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/_CodeSignature/CodeSignature": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/Info.plist": "00bd56a6e8351de6ad247311b1b9167fb6bc806a7e043f85b1ffcddedfff75ae",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/PrivacyInfo.xcprivacy": "d3559c988dff940d4f758f37a0ba1863208304e33ab0b97c0e3dd5d3762f5f1d",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/_CodeSignature/CodeDirectory": "11faa79f6b05a3a38f743a3f47bfd502d497de0c1addd11ebcbc9daf65747c39",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/_CodeSignature/CodeRequirements": "987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/_CodeSignature/CodeRequirements-1": "b0531b4838d48cefc96d6b7d6ecdf6a828639fd5890fb8cdb7ddcbb139aefc88",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/_CodeSignature/CodeResources": "557fba743e35172838832cca93f1d17e34b8bd696f96eeb3032e529502ea945e",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/_CodeSignature/CodeSignature": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/Info.plist": "e75bdcb2e795f45597efa6e17c870c79403802f4e7436056795701595275d7fe",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/PrivacyInfo.xcprivacy": "0587d155c56a6f4f0647ebc6b6a0bd026615cd610ee8f209a9786b79a96ad335",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/_CodeSignature/CodeDirectory": "544fe315f44dca92367a5ec1cb08f8e1a9fdbc2ab01d911c4228eebf63b45811",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/_CodeSignature/CodeRequirements": "987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/_CodeSignature/CodeRequirements-1": "e6e17f7748ccaebffb120a74ea82b4e9d1dc9a601a605a0bd6157a9215f59292",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/_CodeSignature/CodeResources": "be2989a2daf02505cf3117ce99419580ce849fd1a8200c581bd9acdf8409a440",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/_CodeSignature/CodeSignature": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/Info.plist": "b62cdef0d2b443fbb61a46a2814fd9b503246d4c85f7e0bed5fa781625a0e72a",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/PrivacyInfo.xcprivacy": "0587d155c56a6f4f0647ebc6b6a0bd026615cd610ee8f209a9786b79a96ad335",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/_CodeSignature/CodeDirectory": "ce66dc2de8d64595b1bd8503f9ab946510d1378ecb33284642b9615d7b8785d9",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/_CodeSignature/CodeRequirements": "987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/_CodeSignature/CodeRequirements-1": "39731cabcd89de446dc8a243d0e269c58c16c454d41f103dbfd3173168a6dd29",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/_CodeSignature/CodeResources": "be2989a2daf02505cf3117ce99419580ce849fd1a8200c581bd9acdf8409a440",
+      "Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/_CodeSignature/CodeSignature": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "Frameworks/ReactNativeDependencies.framework/_CodeSignature/CodeResources": "b5676fc915e719cdb3abc2af5d109be6f74e24cde6c3b823f057ec17f4fcbe70",
+      "Frameworks/ZXingObjC.framework/Info.plist": "b4b31b22f3d3f56289f15de533c8a5dccf494c0873a16ab6cf7b73acb9c0f503",
+      "Frameworks/ZXingObjC.framework/ZXingObjC": "a7f8c4494f9f8f1c664f7cc14f6132cd796be6b32fa139fff40c31952c0ad2d1",
+      "Frameworks/ZXingObjC.framework/_CodeSignature/CodeResources": "477900fdddf83b95571f083017af850c2adbb865c4e20444e1b64f8417ec243d",
+      "Frameworks/hermesvm.framework/Info.plist": "0767523a61a3ab293e6e39ea3de61622d833f2dacee418afd89f6a57d67c8119",
+      "Frameworks/hermesvm.framework/hermesvm": "6c4e149edede8bb8a9482bfe55d81b0fd6b66ee925ec557f0f363ed25a5c2865"
+    },
+    "signature_note": "Only copy bundle re-signed ad-hoc without --deep or entitlements; launcher full hash changes due to signature, all compiled sections identical. CodeResources added."
+  },
+  "sqliteAfterThreeNativeSwipes": {
+    "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+      "version": 1,
+      "liturgies": {
+        "702": {
+          "version": 1,
+          "resume": {
+            "liturgyId": 702,
+            "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+            "language": "en",
+            "liturgyPartId": 1001,
+            "partId": 801,
+            "occurrenceIndex": 0,
+            "start": 1121,
+            "end": 1150
+          },
+          "bookmarks": []
+        }
+      }
+    }
+  },
+  "sqliteAfterBookmark": {
+    "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+      "version": 1,
+      "liturgies": {
+        "702": {
+          "version": 1,
+          "resume": {
+            "liturgyId": 702,
+            "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+            "language": "en",
+            "liturgyPartId": 1001,
+            "partId": 801,
+            "occurrenceIndex": 0,
+            "start": 1121,
+            "end": 1150
+          },
+          "bookmarks": [
+            {
+              "liturgyId": 702,
+              "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+              "language": "en",
+              "liturgyPartId": 1001,
+              "partId": 801,
+              "occurrenceIndex": 0,
+              "start": 1121,
+              "end": 1150
+            }
+          ]
+        }
+      }
+    }
+  },
+  "anchorSourceVerification": {
+    "sourceRuntime": "7801efd40e1606acd9d92dd8bb90f481557c1510",
+    "anchor": {
+      "liturgyId": 702,
+      "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+      "language": "en",
+      "liturgyPartId": 1001,
+      "partId": 801,
+      "occurrenceIndex": 0,
+      "start": 1121,
+      "end": 1150
+    },
+    "excerpt": "ordinary words and a distinct",
+    "paragraphPrefix": "Synthetic paragraph 9. This is",
+    "sourceSha256": "4575cd936ebbe629418c261100134114ce5229a546f4402e77162a189caed192",
+    "samePartWithinRow": true,
+    "rawUtf16": true
+  },
+  "excerptStoredInSQLite": false,
+  "testResults": [
+    {
+      "test": "test09NativeManualSwipeLongRow",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-long-swipes-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test09NativeManualSwipeLongRow]' passed (13.952 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 13.952 (13.958) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 13.952 (13.960) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 13.952 (13.963) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test11BookmarkVisibleSourceViaPreferences",
+      "status": "FAIL_EXTERNAL_SELECTOR_BEFORE_WRITE",
+      "sourceArtifact": "transport/run-after-long-bookmark-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test11BookmarkVisibleSourceViaPreferences]' failed (6.839 seconds).",
+        "Executed 1 test, with 1 failure (0 unexpected) in 6.839 (6.845) seconds",
+        "Executed 1 test, with 1 failure (0 unexpected) in 6.839 (6.847) seconds",
+        "Executed 1 test, with 1 failure (0 unexpected) in 6.839 (6.849) seconds",
+        "** TEST EXECUTE FAILED **"
+      ]
+    },
+    {
+      "test": "test11ContinueObservedOpenPreferencesAndBookmark",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-long-bookmark-002.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test11ContinueObservedOpenPreferencesAndBookmark]' passed (14.675 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 14.675 (14.681) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 14.675 (14.683) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 14.675 (14.684) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test12OpenBookmarkAfterModalDismissal",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-long-open-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test12OpenBookmarkAfterModalDismissal]' passed (10.061 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 10.061 (10.070) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 10.061 (10.071) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 10.061 (10.074) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test20CaptureParentStagedLifecycleInitialReader",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-long-relaunched-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test20CaptureParentStagedLifecycleInitialReader]' passed (3.472 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 3.472 (3.483) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 3.472 (3.486) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 3.472 (3.486) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test21ResumeReadingAfterParentLifecycle",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-long-resume-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test21ResumeReadingAfterParentLifecycle]' passed (18.496 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 18.496 (18.514) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 18.496 (18.523) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 18.496 (18.531) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test31ClearReadingPosition",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-long-clear-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test31ClearReadingPosition]' passed (15.266 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 15.266 (15.275) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 15.266 (15.278) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 15.266 (15.280) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test09NativeManualSwipeLongRow",
+      "scenario": "703 repeated occurrence",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-swipes-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test09NativeManualSwipeLongRow]' passed (12.883 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.883 (12.890) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.883 (12.892) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.883 (12.893) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test09NativeManualSwipeLongRow",
+      "scenario": "703 repeated occurrence",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-swipes-002.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test09NativeManualSwipeLongRow]' passed (12.398 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.398 (12.403) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.398 (12.405) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.398 (12.413) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test11BookmarkVisibleSourceViaPreferences",
+      "scenario": "703 repeated occurrence",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-bookmark-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test11BookmarkVisibleSourceViaPreferences]' passed (18.407 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 18.407 (18.412) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 18.407 (18.414) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 18.407 (18.416) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test12OpenBookmarkAfterModalDismissal",
+      "scenario": "703 repeated occurrence",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-open-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test12OpenBookmarkAfterModalDismissal]' passed (8.773 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 8.773 (8.779) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 8.773 (8.784) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 8.773 (8.792) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test30RemoveOnlyBookmark",
+      "scenario": "703 repeated occurrence",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-remove-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test30RemoveOnlyBookmark]' passed (16.263 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 16.263 (16.267) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 16.263 (16.270) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 16.263 (16.274) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test90CloseObservedSavedSheet",
+      "scenario": "703 final clear and reader exit to701",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-remove-close-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test90CloseObservedSavedSheet]' passed (6.051 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 6.051 (6.056) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 6.051 (6.059) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 6.051 (6.063) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test31ClearReadingPosition",
+      "scenario": "703 final clear and reader exit to701",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-clear-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test31ClearReadingPosition]' passed (14.547 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 14.547 (14.553) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 14.547 (14.560) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 14.547 (14.562) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test90CloseObservedSavedSheet",
+      "scenario": "703 final clear and reader exit to701",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-repeat-clear-close-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test90CloseObservedSavedSheet]' passed (5.708 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 5.708 (5.720) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 5.708 (5.721) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 5.708 (5.727) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test01CaptureChangedInitialReader",
+      "scenario": "703 final clear and reader exit to701",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-clear-unrelated-reader-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test01CaptureChangedInitialReader]' passed (3.549 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 3.549 (3.553) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 3.549 (3.553) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 3.549 (3.554) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test14ChooseLargestInAppReadingSize",
+      "scenario": "702 largest in-app reading size",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-largest-size-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test14ChooseLargestInAppReadingSize]' passed (12.784 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.784 (12.788) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.784 (12.792) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.784 (12.797) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test15ReopenExistingBookmarkAtCurrentReadingSize",
+      "scenario": "702 largest in-app reading size",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-largest-open-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test15ReopenExistingBookmarkAtCurrentReadingSize]' passed (17.766 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 17.766 (17.775) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 17.766 (17.777) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 17.766 (17.777) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test41InspectRevisionUnavailableState",
+      "scenario": "702 synthetic revision2",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-revision-unavailable-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test41InspectRevisionUnavailableState]' passed (21.191 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 21.191 (21.196) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 21.191 (21.198) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 21.191 (21.199) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test32RemoveUnavailableBookmarkFromObservedSavedSheet",
+      "scenario": "702 unavailable original revision cleanup",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-unavailable-remove-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test32RemoveUnavailableBookmarkFromObservedSavedSheet]' passed (12.703 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.703 (12.708) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.703 (12.710) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 12.703 (12.712) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    },
+    {
+      "test": "test33ClearUnavailableResumeFromObservedSavedSheet",
+      "scenario": "702 unavailable original revision cleanup",
+      "status": "PASS",
+      "sourceArtifact": "transport/run-after-unavailable-clear-001.log",
+      "resultLines": [
+        "Test Case '-[BookmarkTransportTests.BookmarkTransportTests test33ClearUnavailableResumeFromObservedSavedSheet]' passed (7.597 seconds).",
+        "Executed 1 test, with 0 failures (0 unexpected) in 7.597 (7.603) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 7.597 (7.605) seconds",
+        "Executed 1 test, with 0 failures (0 unexpected) in 7.597 (7.608) seconds",
+        "** TEST EXECUTE SUCCEEDED **"
+      ]
+    }
+  ],
+  "accessibilityCoverage": {
+    "nativeLabelsAndActionStates": "PASS: actual Simulator XCTest labels, enabled/disabled state, modal dismissal and unobscured reader targets",
+    "focusIntentAndOrdering": "PASS deterministic JS/API tests: 11 focused PartList cases plus 13 reader UI cases; platform and layout seams mocked",
+    "focusIntentTest": "apps/mobile/tests/passage-focus.test.tsx",
+    "modalOrderingTest": "apps/mobile/tests/library-reading-positions-ui.test.tsx",
+    "nativeAccessibilityFocus": "NOT VERIFIED: API intent, AX labels, hittability and visible highlights do not prove actual UIKit/VoiceOver focus or spoken announcements",
+    "waiver": "No #276 physical-device waiver assumed; #284 is the separate Find-only deferral"
+  },
+  "dependency": {
+    "pullRequest": 280,
+    "status": "MERGED",
+    "actualSquash": "35fbf4961c0e38cd64910a4126f1e8d7c3ee029f"
+  },
+  "mainReconciliation": {
+    "actualBase": "35fbf4961c0e38cd64910a4126f1e8d7c3ee029f",
+    "ownContinuationReplayByteIdentical": true,
+    "childPatchSha256": "1412486406c285af6fdab23995c5f8331a024b80f975156bc650b14b15fecfd0",
+    "preexistingCapturedRuntimeFilesIdentical": 279,
+    "liturgyTextBlob": "34151989752eabf93b9be208d5545731d1b8c1ce"
+  },
+  "deliveryTracking": "Current required CI and exact posted-head independent review are recorded on PR278; this capture manifest is not a check run.",
+  "unverified": [
+    "physical-device behavior",
+    "actual UIKit/VoiceOver focus and spoken announcements",
+    "native OS Dynamic Type",
+    "native missing-occurrence variant"
+  ],
+  "limitations": [
+    "Synthetic local SQLite seeds 701/702/703, validated by parent parseBundle and JS integrity; native read is not network-download proof.",
+    "SDK58 native compiled host reused from d459 baseline; no heavy app-native rebuild.",
+    "Native AX snapshots are not VoiceOver proof.",
+    "Restacked c325c1d is not the capture revision."
+  ],
+  "lifecycleVerification": {
+    "status": "PASS_SQLITE_PERSISTENCE_AND_PASSIVE_PRESERVATION",
+    "terminatedOwnedQaPid": 83019,
+    "relaunchedOwnedQaPid": 98826,
+    "processIdsSource": "Recorded native app process and explicit owned-Simulator launch output",
+    "snapshots": {
+      "native-metadata-before-relaunch.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1150
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      },
+      "native-metadata-after-terminate.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1150
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      },
+      "native-metadata-after-relaunched-initial.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1150
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      },
+      "native-metadata-after-resume.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1150
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "allSnapshotsEqualAfterBookmark": true,
+    "explicitResumeAction": "PASS",
+    "resumedHighlightGeometry": "PASS_INDEPENDENT_IMAGE_INSPECTION_PARAGRAPH_9_FULL_HIGHLIGHT_BELOW_TOOLBAR_APPROX_Y131_169",
+    "initialReaderAfterRelaunch": "PASS_INDEPENDENT_IMAGE_INSPECTION_PARAGRAPH_1_RESUME_AVAILABLE"
+  },
+  "sqliteAfterClearReadingPosition": {
+    "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+      "version": 1,
+      "liturgies": {
+        "702": {
+          "version": 1,
+          "resume": null,
+          "bookmarks": [
+            {
+              "liturgyId": 702,
+              "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+              "language": "en",
+              "liturgyPartId": 1001,
+              "partId": 801,
+              "occurrenceIndex": 0,
+              "start": 1121,
+              "end": 1150
+            }
+          ]
+        }
+      }
+    }
+  },
+  "repeatedOccurrenceVerification": {
+    "status": "PASS_NATIVE_SECOND_OCCURRENCE_SAVE_OPEN_SOURCE_AND_GEOMETRY",
+    "nativeSwipeCount": 6,
+    "nativeSwipeInvocations": 2,
+    "snapshots": {
+      "native-metadata-after-repeat-first-three.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": null,
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            },
+            "703": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 703,
+                "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+                "language": "en",
+                "liturgyPartId": 1101,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1139,
+                "end": 1166
+              },
+              "bookmarks": []
+            }
+          }
+        }
+      },
+      "native-metadata-after-repeat-six.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": null,
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            },
+            "703": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 703,
+                "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+                "language": "en",
+                "liturgyPartId": 1102,
+                "partId": 801,
+                "occurrenceIndex": 1,
+                "start": 568,
+                "end": 600
+              },
+              "bookmarks": []
+            }
+          }
+        }
+      },
+      "native-metadata-after-repeat-bookmark.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": null,
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            },
+            "703": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 703,
+                "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+                "language": "en",
+                "liturgyPartId": 1102,
+                "partId": 801,
+                "occurrenceIndex": 1,
+                "start": 568,
+                "end": 600
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 703,
+                  "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+                  "language": "en",
+                  "liturgyPartId": 1102,
+                  "partId": 801,
+                  "occurrenceIndex": 1,
+                  "start": 568,
+                  "end": 600
+                }
+              ]
+            }
+          }
+        }
+      },
+      "native-metadata-after-repeat-open.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": null,
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            },
+            "703": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 703,
+                "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+                "language": "en",
+                "liturgyPartId": 1102,
+                "partId": 801,
+                "occurrenceIndex": 1,
+                "start": 568,
+                "end": 600
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 703,
+                  "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+                  "language": "en",
+                  "liturgyPartId": 1102,
+                  "partId": 801,
+                  "occurrenceIndex": 1,
+                  "start": 568,
+                  "end": 600
+                }
+              ]
+            }
+          }
+        }
+      },
+      "native-metadata-after-repeat-remove.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": null,
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            },
+            "703": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 703,
+                "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+                "language": "en",
+                "liturgyPartId": 1102,
+                "partId": 801,
+                "occurrenceIndex": 1,
+                "start": 568,
+                "end": 600
+              },
+              "bookmarks": []
+            }
+          }
+        }
+      }
+    },
+    "anchor": {
+      "liturgyId": 703,
+      "revision": "c0de2f7d27b442a18f73fd8663c3c9de9b08bcd479b5cc1ce87fec41a0763409",
+      "language": "en",
+      "liturgyPartId": 1102,
+      "partId": 801,
+      "occurrenceIndex": 1,
+      "start": 568,
+      "end": 600
+    },
+    "sourceArtifact": "seed/bundle-703.json",
+    "sourceSha256": "41745bc097896e40dfd9e45fcc223b224afd67c87fe9fe85aa6be3c91076ca7c",
+    "rawUtf16": true,
+    "excerpt": "Synthetic continuation for exact",
+    "paragraphPrefix": "Occurrence 2, paragraph 7. ",
+    "imageInspection": "Occurrence 2 paragraph 7 target highlighted fully below toolbar approximately y131..169 logical; occurrence 2 paragraph 8 and 9 follow.",
+    "perLiturgyIsolation702Unchanged": true,
+    "bookmarkRemoval703": "PASS_RETAINING_RESUME_AND_OTHER_LITURGY"
+  },
+  "finalClearExitVerification": {
+    "status": "PASS",
+    "snapshots": {
+      "native-metadata-after-repeat-clear.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": null,
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      },
+      "native-metadata-after-cleared-reader-exit.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": null,
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "703PrunedAfterRemoveThenClear": true,
+    "703NotRevivedOnReaderExitTo701": true,
+    "702BookmarkPreservedAndResumeNull": true
+  },
+  "largestInAppReadingSizeVerification": {
+    "status": "PASS_NATIVE_APP_ONLY_REFLOW_AND_BOOKMARK_REOPEN",
+    "preferencesArtifact": "native-app-reading-size.json",
+    "preferences": {
+      "qaAppOnly": true,
+      "readingSize": "extraLarge",
+      "phoneOrHostPreferencesChanged": false
+    },
+    "metadata": {
+      "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+        "version": 1,
+        "liturgies": {
+          "702": {
+            "version": 1,
+            "resume": {
+              "liturgyId": 702,
+              "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+              "language": "en",
+              "liturgyPartId": 1001,
+              "partId": 801,
+              "occurrenceIndex": 0,
+              "start": 1121,
+              "end": 1141
+            },
+            "bookmarks": [
+              {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1150
+              }
+            ]
+          }
+        }
+      }
+    },
+    "bookmarkUnchanged1121to1150": true,
+    "freshResumeLine1121to1141": "Expected newly measured first larger line, not bookmark mutation",
+    "imageInspection": "Original paragraph9 phrase ordinary words and a distinct wraps across two fully visible highlighted lines below toolbar, approximately y131..239 logical; paragraph10 follows.",
+    "notOSDynamicTypeOrVoiceOverProof": true
+  },
+  "revisionUnavailableVerification": {
+    "status": "PASS_DISABLED_UI_AND_METADATA_UNCHANGED",
+    "preparation": {
+      "syntheticOnly": true,
+      "oldRevision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+      "newRevision": "0e7a03b53db05074058cb67f8012cdff9098c5ea28f900d041e3ede7e64cd34e",
+      "partsUnchanged": true,
+      "metadataUnchanged": true,
+      "parserValidated": true
+    },
+    "snapshots": {
+      "native-metadata-before-revision-change.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1141
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      },
+      "native-metadata-after-revision-unavailable.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1141
+              },
+              "bookmarks": [
+                {
+                  "liturgyId": 702,
+                  "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                  "language": "en",
+                  "liturgyPartId": 1001,
+                  "partId": 801,
+                  "occurrenceIndex": 0,
+                  "start": 1121,
+                  "end": 1150
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "imageInspection": "Resume reading and Passage1 visibly disabled, explicit unavailable-version explanations and Remove passage1/Clear reading position visible.",
+    "actualTestAssertions": [
+      "Passage1 enabled==0",
+      "Resume reading enabled==0",
+      "Remove passage1 enabled==1"
+    ],
+    "disabledJumpAttempted": false,
+    "silentReanchor": false,
+    "staging": "Only owned synthetic702 payload revision was changed in local SQLite; reading metadata preserved. Not network-download proof.",
+    "actualUnavailableRemoveClear": "PASS_ACTUAL_NATIVE_ACTIONS_AND_DIRECT_SQLITE",
+    "missingOccurrenceNativeCase": "NOT_RUN",
+    "cleanupSnapshots": {
+      "native-metadata-after-unavailable-remove.json": {
+        "tarkman.library-reading.v1:https%3A%2F%2Flibrary274-fixture.invalid": {
+          "version": 1,
+          "liturgies": {
+            "702": {
+              "version": 1,
+              "resume": {
+                "liturgyId": 702,
+                "revision": "c7d72978f97b0948b0e8062e7b6d76689b12540ec41f775599abb3eccbecf0ac",
+                "language": "en",
+                "liturgyPartId": 1001,
+                "partId": 801,
+                "occurrenceIndex": 0,
+                "start": 1121,
+                "end": 1141
+              },
+              "bookmarks": []
+            }
+          }
+        }
+      },
+      "native-metadata-after-unavailable-clear.json": {}
+    }
+  },
+  "ownedSimulatorFunctionalEvidence": "COMPLETE_FOR_DOCUMENTED_CASES",
+  "unrunNativeVariants": [
+    "missing occurrence",
+    "OS Dynamic Type"
+  ],
+  "acceptanceNote": "Owned-Simulator cases are verified within the recorded scope, with the continuation reconciled onto actual squash35fbf496. Actual accessibility focus/VoiceOver and physical-device behavior remain unverified, not waived for #276; #284 tracks the separate Find-only deferral. Current required CI and posted-head review are recorded on PR278, not certified by this manifest."
+}

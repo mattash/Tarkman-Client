@@ -1,0 +1,18 @@
+{
+  "sourceRevision": "7801efd40e1606acd9d92dd8bb90f481557c1510",
+  "capturedHead": "5ae3759a8ad2850d383ee3db79bdc95bb4765378",
+  "revisionNote": "Captured dirty worktree containing the settled fix; all source hashes verified identical to final sourceRevision commit.",
+  "errors": [],
+  "consoleErrors": [],
+  "storage": {
+    "tarkman.library-reading.v1:http%3A%2F%2F127.0.0.1%3A4296": "{\"version\":1,\"liturgies\":{\"701\":{\"version\":1,\"resume\":null,\"bookmarks\":[{\"liturgyId\":701,\"revision\":\"04eda5d719a513aae96dfa547dd8ef5b737c081a906180a2ff1933d10e7ff100\",\"language\":\"en\",\"liturgyPartId\":902,\"partId\":801,\"occurrenceIndex\":1,\"start\":0,\"end\":5}]}}}"
+  },
+  "bounds": {
+    "x": 20,
+    "y": 138,
+    "width": 13.65625,
+    "height": 33
+  },
+  "unavailable": "Saved places stay on this device and open in their reading language. Removing a saved service also clears its saved places.\nBookmark this passage\nResume reading\nYour saved reading position is unavailable in this version.\nClear reading position\nPassage 1 · English\nThis passage is unavailable in the opened version. Remove it or reopen the original version if available.\nRemove passage 1",
+  "savedDisabled": true
+}
