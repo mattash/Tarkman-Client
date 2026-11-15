@@ -1,12 +1,102 @@
 import XCTest
 
 final class PrototypeUITests: XCTestCase {
+    override func setUpWithError() throws {
+        #if !targetEnvironment(simulator)
+        throw XCTSkip("Full-screen captures and broad system permission queries are owned-simulator-only.")
+        #endif
+    }
+
     func capture(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
     }
+    func testMatchedRemoteCallerOff() {
+        let app = XCUIApplication()
+        app.launch()
+        let consent = app.descendants(matching: .any).matching(identifier: "disclosure").firstMatch
+        XCTAssertTrue(consent.waitForExistence(timeout: 20))
+        XCTAssertEqual(app.staticTexts["disclosureState"].label, "Public Lock Screen disclosure for service 42: OFF")
+        for _ in 0..<3 { app.swipeUp() }
+        let remoteStatus = app.staticTexts["remoteStatus"]
+        XCTAssertTrue(remoteStatus.waitForExistence(timeout: 10))
+        XCTAssertEqual(remoteStatus.label, "Development remote experiment is off")
+        XCTAssertFalse(app.buttons["Verify public service"].isEnabled)
+        XCTAssertFalse(app.buttons["Start selected development follow"].isEnabled)
+        XCTAssertFalse(app.textFields["remoteServiceID"].isEnabled)
+        capture("matched-remote-caller-default-off")
+        app.terminate()
+    }
+
+    // Same scenario for the real pre-v1 and v1 renderer comparison on an owned simulator.
+    func testMatchedNativeCard() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launch()
+        let consent = app.descendants(matching: .any).matching(identifier: "disclosure").firstMatch
+        XCTAssertTrue(consent.waitForExistence(timeout: 20))
+        XCTAssertEqual(app.staticTexts["disclosureState"].label, "Public Lock Screen disclosure for service 42: OFF")
+        capture("matched-disclosure-off")
+        consent.tap()
+        app.buttons["Start local activity"].tap()
+        XCTAssertEqual(app.staticTexts["status"].label, "Local activity requested — staleDate set to +60s")
+        app.buttons["Advance local part"].tap() // Same occurrence 12, Choir, 2/3 in both revisions.
+        capture("matched-foreground-choir")
+        XCUIDevice.shared.press(.home)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.01))
+            .press(forDuration: 0.1, thenDragTo: springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.8)))
+        let card = springboard.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "SYNTHETIC PUBLIC SERVICE 42")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "Synthetic native card did not render")
+        let choir = springboard.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Choir")).firstMatch
+        XCTAssertTrue(choir.waitForExistence(timeout: 10), "Native role must be localized, not a wire key")
+        capture("matched-system-choir")
+        app.terminate()
+    }
+
+    func testV1SemanticControls() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launch()
+        let consent = app.descendants(matching: .any).matching(identifier: "disclosure").firstMatch
+        XCTAssertTrue(consent.waitForExistence(timeout: 20))
+        consent.tap()
+        app.buttons["Start local activity"].tap()
+        XCTAssertEqual(app.staticTexts["status"].label, "Local activity requested — staleDate set to +60s")
+        func tap(_ label: String) {
+            let button = app.buttons[label]
+            if !button.isHittable { app.swipeUp() }
+            button.tap()
+        }
+        func expectPreview(_ value: String) {
+            let preview = app.descendants(matching: .any).matching(identifier: "service-publication-card").firstMatch
+            let expected = expectation(for: NSPredicate(format: "label CONTAINS %@", value), evaluatedWith: preview)
+            wait(for: [expected], timeout: 10)
+        }
+        tap("Use unknown-total fixture")
+        expectPreview("Last reported progress unknown")
+        capture("v1-unknown-total")
+        tap("Use empty-manifest fixture")
+        expectPreview("No parts in the reported service")
+        capture("v1-empty-manifest")
+        tap("Restore ordered fixture")
+        expectPreview("1/3")
+        tap("Pause locally")
+        expectPreview("Paused")
+        capture("v1-paused")
+        tap("Delete synthetic service")
+        expectPreview("Service removed")
+        let ended = expectation(for: NSPredicate(format: "label == %@", "No activity — disclosure off / removed"),
+                                evaluatedWith: app.staticTexts["status"])
+        wait(for: [ended], timeout: 10)
+        capture("v1-deleted-cleared")
+        app.terminate()
+    }
+
     func testDisclosureAndTerminatedStaleness() {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -41,6 +131,10 @@ final class PrototypeUITests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 75) { expiry.fulfill() }
         wait(for: [expiry], timeout: 85)
         capture("05-terminated-system-surface-after-75s")
+        let later = expectation(description: "Observe eventual native stale rendering without app relaunch")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 105) { later.fulfill() }
+        wait(for: [later], timeout: 115)
+        capture("06-terminated-system-surface-after-180s")
     }
 
     func testZBackgroundOnlyExpiry() {
