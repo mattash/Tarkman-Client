@@ -60,9 +60,14 @@ npx expo prebuild --platform ios --no-install
 Source checks and the host Swift Simulator policy test exercise routing admission,
 coherent public verification, unknown progress, synthetic registration/revocation
 receipts and the default-disabled boundary. An unsigned integrated Simulator app
-plus extension build passes separately from ordinary-app CI. UI/Simulator captures
-and the final PR review record are added as validation finishes; no mock baseline
-or old standalone screenshot is substituted for the actual application.
+plus extension build passes separately from ordinary-app CI. The actual selected
+reader → native manager → real disclosure/Start → local system Activity → read-only
+tap → revoke path, service-switch fence and hosted background-return pass on the
+owned Simulator. [Matched Before/After captures and artifact provenance](<service-progress-app-evidence/README.md>)
+retain the original disabled-manager observation and corrected UIKit lifecycle.
+No mock baseline or old standalone screenshot substitutes for the actual app.
+The [concrete next-stage plan](<service-progress-live-acceptance-plan.md>) separates
+remaining source/provider/cadence/concurrency work from held resource/activation gates.
 
 #277 remains open. Current scope does **not** authorize real APNs, signing/profile
 changes, production activation, store release, phone queries/tests/settings or an
