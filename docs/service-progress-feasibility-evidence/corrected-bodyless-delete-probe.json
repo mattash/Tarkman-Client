@@ -1,0 +1,227 @@
+{
+  "scope": "real HTTP/genuine isolated Rails; synthetic credentials never emitted",
+  "unresolved_identities": 0,
+  "results": [
+    {
+      "alias": "selection-state",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "bytes": 244,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.253974+00:00",
+      "snapshot": {
+        "session": {
+          "id": 42,
+          "date": "2026-11-14",
+          "status": "active",
+          "status_message": null,
+          "revision": 2,
+          "automation_allowed": false,
+          "posture": null,
+          "content_context": "2fbefa93276bfba9",
+          "cursor": {
+            "part_id": 1,
+            "liturgy_part_id": 1,
+            "liturgy_id": 1,
+            "position": 1
+          }
+        }
+      }
+    },
+    {
+      "alias": "selection-detail",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "bytes": 565,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.310249+00:00",
+      "snapshot": {
+        "session": {
+          "id": 42,
+          "date": "2026-11-14",
+          "user_id": 1,
+          "automation_allowed": false,
+          "liturgy": "Synthetic service progress 277",
+          "liturgy_id": 1,
+          "liturgies": [
+            {
+              "id": 1,
+              "name": "Synthetic service progress 277",
+              "position": 1
+            }
+          ],
+          "occupied": false,
+          "num_of_parts": 3,
+          "current_part_position": 1,
+          "current_part_id": 1,
+          "current_liturgy_id": 1,
+          "current_liturgy_part_id": 1,
+          "revision": 2,
+          "cursor": {
+            "part_id": 1,
+            "liturgy_part_id": 1,
+            "liturgy_id": 1,
+            "position": 1
+          },
+          "page": 0,
+          "posture": null,
+          "status": "active",
+          "status_message": null,
+          "options": {},
+          "readings": {
+            "gospel": null,
+            "epistle": null,
+            "prophetic": null
+          }
+        }
+      }
+    },
+    {
+      "alias": "put-initial",
+      "method": "PUT",
+      "status": 200,
+      "expected": 200,
+      "bytes": 105,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.351585+00:00",
+      "body_keys": [
+        "id",
+        "lease_expires_at",
+        "token_version"
+      ],
+      "unexpected_body_keys": false
+    },
+    {
+      "alias": "put-idempotent",
+      "method": "PUT",
+      "status": 200,
+      "expected": 200,
+      "bytes": 105,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.364715+00:00",
+      "body_keys": [
+        "id",
+        "lease_expires_at",
+        "token_version"
+      ],
+      "unexpected_body_keys": false
+    },
+    {
+      "alias": "wrong-capability",
+      "method": "DELETE",
+      "status": 403,
+      "expected": 403,
+      "bytes": 30,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store",
+      "at": "2026-11-15T05:39:51.377369+00:00",
+      "request_framing": "no-content-length-or-transfer-encoding",
+      "body_keys": [
+        "error"
+      ],
+      "unexpected_body_keys": false
+    },
+    {
+      "alias": "delete",
+      "method": "DELETE",
+      "status": 204,
+      "expected": 204,
+      "bytes": 0,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.389717+00:00",
+      "request_framing": "no-content-length-or-transfer-encoding"
+    },
+    {
+      "alias": "put-after-delete",
+      "method": "PUT",
+      "status": 409,
+      "expected": 409,
+      "bytes": 32,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store",
+      "at": "2026-11-15T05:39:51.402433+00:00",
+      "body_keys": [
+        "error"
+      ],
+      "unexpected_body_keys": false
+    },
+    {
+      "alias": "fenced-existing",
+      "method": "POST",
+      "status": 200,
+      "expected": 200,
+      "bytes": 165,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.414549+00:00",
+      "body_keys": [
+        "activity_id",
+        "generation",
+        "id",
+        "revoked",
+        "session_id"
+      ],
+      "unexpected_body_keys": false,
+      "receipt_matches": true
+    },
+    {
+      "alias": "fenced-never-created",
+      "method": "POST",
+      "status": 200,
+      "expected": 200,
+      "bytes": 172,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.433694+00:00",
+      "body_keys": [
+        "activity_id",
+        "generation",
+        "id",
+        "revoked",
+        "session_id"
+      ],
+      "unexpected_body_keys": false,
+      "receipt_matches": true
+    },
+    {
+      "alias": "late-put-after-fence",
+      "method": "PUT",
+      "status": 409,
+      "expected": 409,
+      "bytes": 32,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store",
+      "at": "2026-11-15T05:39:51.447451+00:00",
+      "body_keys": [
+        "error"
+      ],
+      "unexpected_body_keys": false
+    },
+    {
+      "alias": "fenced-idempotent",
+      "method": "POST",
+      "status": 200,
+      "expected": 200,
+      "bytes": 172,
+      "date": "Sun, 15 Nov 2026 05:39:51 GMT",
+      "cache_control": "no-store, must-revalidate, private, max-age=0",
+      "at": "2026-11-15T05:39:51.460799+00:00",
+      "body_keys": [
+        "activity_id",
+        "generation",
+        "id",
+        "revoked",
+        "session_id"
+      ],
+      "unexpected_body_keys": false,
+      "receipt_matches": true
+    }
+  ]
+}

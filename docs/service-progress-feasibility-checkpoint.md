@@ -63,7 +63,20 @@ Normal provider/topic remain fake/unchanged. A synthetic200 is not delivery/disp
 - Genuine disposable backend11 HTTP contract cases and162 existing Rails specs pass.
   Advisory-lock bypass negative control fails both expected cases. An initial50/1
   test failure remains recorded; isolated/rerun50/0 and broader162/0 are not substituted
-  for its history. Fresh source-owned wrapper also underwent offline guard checks.
+  for its history. The first source-owned fresh-schema wrapper then failed162/59:
+  schema preparation and RSpec in one Rails process crossed an autoload epoch.
+  Preparation now runs in a separate verified process; both existing-schema and a
+  genuinely new test database (`initialized:true`) pass162/0, same seed22189/all
+  examples. The source-owned negative control fails both expected cases; no backend
+  model/spec edits or example filters were used. Failure logs remain archived.
+- Root review reproduced an adopted `pg`→outside-directory escape before resource
+  launch. The corrected runner rejects redirected/non-owned/nonprivate clusters and
+  invalid version markers before process/DB actions; Ruby repeats pre-Rails checks.
+ 19 offline guards pass, including20 real-entrypoint unsafe cases with all resource
+  calls intercepted/not called, and legitimate prepare/adopt before initialization.
+  The committed download/gem-install/init combination was not repeated as a second
+  full installation; the original genuine private setup and committed runtime,
+  fresh-test-database, probe and guard paths were executed.
 - Typecheck/lint/UI/i18n/pure-reader guards and139 focused RN cases pass. Initial Node
   global lint issue corrected. Changed Foundation suites pass; one command omitted an
   existing reader-link dependency and was corrected, not a product failure.
@@ -75,20 +88,43 @@ Normal provider/topic remain fake/unchanged. A synthetic200 is not delivery/disp
 [Before](<service-progress-feasibility-evidence/before-memory-manager.png>): actual
 installed native322, byte-identical relevant UI to merged7526, public42 manager before
 verification/selection/disclosure, English/light/iPhone18Pro1206×2622, unchanged gear.
-No mock baseline. Source hashes and installed artifact provenance remain archived.
+No mock baseline. [Redacted source/binary hashes and cohort correlation](<service-progress-feasibility-evidence/provenance-and-correlation.json>)
+verify native inputs against the commit; complete private artifacts remain archived.
 
 [After](<service-progress-feasibility-evidence/after-http-manager.png>): matched
 actual pre-verification manager in the new unsigned HTTP build, same state/theme/
 viewport and unchanged gear. Only help accurately changes to real loopback HTTP;
 no verification/disclosure/Start is inferred from this matched capture.
-**Actual integrated new-HTTP Verify/Start/revoke is pending in this draft.**
-The new unsigned binary is built/installed. Initial actual UI could not select42:
-the fixture rejected `/services.json`; the source now allows only scoped genuine
-listing/timezone and corrects the synthetic civil date. First restart returned a
-redacted OSError; after separately verifying free port/released runtime lock, an
-unchanged-guard bounded restart returned actual listing/state200. Original errno was
-not captured, so TIME_WAIT versus delayed teardown is not asserted as fact. These
-failures are retained. No fresh UI HTTP Verify/Start success is inferred yet.
+The actual new-HTTP UI flow completed at05:26UTC on2026-11-15 (native inputs map
+unchanged to `90cbda678b087229bab67a664a2c79f0eb0a0e2f`):
+
+| UTC | Actual UI / wire evidence |
+| --- | --- |
+|05:26:08–09|Verify42; real fresh selection; disclosure OFF ([capture](<service-progress-feasibility-evidence/http-verified-disclosure-off.png>))|
+|05:26:10–14|Real switch ON, separate Start; actual PUT200; existing one-shot bootstrap rounds1/registrations1 and synthetic HTTP2 status200/protocol2/no network ([UI status, not wire receipt](<service-progress-feasibility-evidence/http-local-started.png>))|
+|05:26:16–18|Explicit revoke; **fixture DELETE500**, then actual exact fenced POST200; controller ended/cleared ([capture](<service-progress-feasibility-evidence/http-ended-cleared.png>))|
+|05:26:20–25|Done returns to real synthetic public reader; no Activity/card remains ([capture](<service-progress-feasibility-evidence/http-no-card.png>))|
+
+One registration row was created in this UI window; parent SQL verified2 total
+rows (earlier Mac + UI),0 unresolved,0 ciphertext and0 prepared publications. This
+is actual registration/fenced recovery correlation, not an inference from the UI's
+explicitly unverified label. The UI cohort **does not prove DELETE204**: the fixture
+read(4097) returned nil for bodyless iOS DELETE and raised before Rails. The wrapper
+now normalizes EOF, and a separate source-owned probe at05:39:51UTC passed11 HTTP
+cases including DELETE204 with explicitly no Content-Length/Transfer-Encoding,
+exact fenced receipts/late409 and0 unresolved identities. Original500/fence200
+cohort is retained rather than relabelled. No remote delivery/display is observed.
+The fixture intentionally supplies no ActionCable/explanations route; the returned
+reader honestly shows polling/unavailable explanations, not healthy real-time proof.
+
+Other retained failures: listing initially rejected `/services.json`; a synthetic
+UTC civil date excluded Los Angeles Today until explicit local-date binding with a
+real revision change. First restart returned a redacted OSError; after separately
+verifying free port/released runtime lock, an unchanged-guard bounded restart
+returned listing/state200. Original errno was not captured, so its cause remains
+unknown. An independently reported macOS TIME_WAIT reproduction establishes a
+platform mechanism only. New failures include fixed stage/numeric errno without
+arbitrary exception values; occupied/unowned-port rejection remains unchanged.
 
 ## Concrete next-stage resource packet (held procedure, not a request)
 
@@ -114,6 +150,15 @@ revoked/ciphertext-null/prepared-null state. Keep unresolved evidence, never sil
 rekey/resume outstanding records. Stop only owned HTTP/PG processes; collect outputs
 and verify listeners/socket gone. No secure-erasure claim or automatic deletion of
 unresolved artifacts.
+
+Actual scoped teardown completed: final native database has4 registration rows
+(Mac, UI, two corrected-probe identities),0 unresolved,0 ciphertext and0 prepared
+publications. The corrected HTTP runner reached its bounded deadline/exited0; the
+owned PostgreSQL cluster was fast-stopped/exited0. Metro and both fixture ports
+8139/8140/18777/18778 are closed; the owned PG socket is gone. No Activity remains.
+Private source/build/run/database artifacts are retained, not deleted or claimed
+securely erased. The [redacted corrected probe](<service-progress-feasibility-evidence/corrected-bodyless-delete-probe.json>)
+is a separate cohort from the recovered UI500 failure.
 
 Actual phone/settings, signing/provisioning, real push and production activation are
 still held. Normal-app identity/Universal Links/OTA/separate production recovery

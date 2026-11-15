@@ -117,7 +117,11 @@ is also default-disabled and requires an explicit bare HTTPS origin. It is only
 constructed through the separately configured opt-in caller, never default mode. It denies redirects/authentication credential reuse,
 uses ephemeral no-cache/no-cookie/no-credential-storage configuration, bounds
 streamed response bytes and sanitizes transport errors. Policy tests do not issue
-outbound requests. No real endpoint/provider activation or remote receipt is claimed.
+outbound requests. No real endpoint/provider activation or remote receipt is claimed
+by those policy tests. The separate [isolated HTTP checkpoint](<../../../../docs/service-progress-feasibility-checkpoint.md>)
+adds an explicit compile-gated Debug Simulator/macOS socket-test constructor;
+default HTTPS/system-trust policy is unchanged. Its actual loopback Rails receipts
+and synthetic provider collaborator are not APNs delivery.
 
 ```sh
 swiftc Shared/ServicePublicationV1.swift Shared/ServicePublicationValidation.swift \
