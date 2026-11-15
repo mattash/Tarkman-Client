@@ -188,8 +188,8 @@ swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
 artifacts/public-selection-tests
 
 swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
-  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
-  Shared/ServiceExperimentJournal.swift Tests/ExperimentJournalTests.swift \
+  Shared/ServicePublicationV1.swift Shared/ServiceRemoteExperimentConfiguration.swift \
+  Shared/ServiceRegistrationTransport.swift Shared/ServiceExperimentJournal.swift Tests/ExperimentJournalTests.swift \
   -o artifacts/experiment-journal-tests
 artifacts/experiment-journal-tests
 
@@ -202,8 +202,8 @@ swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
 artifacts/remote-experiment-flow-tests
 
 swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
-  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
-  Shared/ServiceExperimentJournal.swift Tests/FencedRevocationTests.swift \
+  Shared/ServicePublicationV1.swift Shared/ServiceRemoteExperimentConfiguration.swift \
+  Shared/ServiceRegistrationTransport.swift Shared/ServiceExperimentJournal.swift Tests/FencedRevocationTests.swift \
   -o artifacts/fenced-revocation-tests
 artifacts/fenced-revocation-tests
 ```

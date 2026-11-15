@@ -124,13 +124,13 @@ swiftc Shared/ServicePublicationV1.swift Shared/ServicePublicationValidation.swi
   Tests/PublicationValidationTests.swift -o artifacts/publication-validation-tests
 artifacts/publication-validation-tests
 swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
-  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
-  Shared/ServiceRegistrationURLSessionHTTP.swift Tests/RegistrationTransportTests.swift \
+  Shared/ServicePublicationV1.swift Shared/ServiceRemoteExperimentConfiguration.swift \
+  Shared/ServiceRegistrationTransport.swift Shared/ServiceRegistrationURLSessionHTTP.swift Tests/RegistrationTransportTests.swift \
   -o artifacts/registration-transport-tests
 artifacts/registration-transport-tests
 swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
-  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
-  Shared/ServiceRegistrationURLSessionHTTP.swift Tests/RegistrationHTTPTests.swift \
+  Shared/ServicePublicationV1.swift Shared/ServiceRemoteExperimentConfiguration.swift \
+  Shared/ServiceRegistrationTransport.swift Shared/ServiceRegistrationURLSessionHTTP.swift Tests/RegistrationHTTPTests.swift \
   -o artifacts/registration-http-tests
 artifacts/registration-http-tests
 swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \

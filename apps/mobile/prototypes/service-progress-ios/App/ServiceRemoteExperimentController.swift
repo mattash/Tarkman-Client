@@ -26,6 +26,10 @@ final class ServiceRemoteExperimentController: ObservableObject {
     private var journal: ServiceExperimentJournal?
     private let simulator: ServiceSimulatorFixture?
     var isSimulatorFixture: Bool { simulator != nil }
+    var isSimulatorHTTPFixture: Bool { simulator != nil && configuration?.simulatorHTTPEnabled == true }
+    private var operationOrigin: URL? {
+        isSimulatorHTTPFixture ? configuration?.simulatorAPIOrigin : configuration?.developmentOrigin
+    }
     private var activity: Activity<ServicePublicationIdentity>?
     private var bridge: ServiceActivityRegistrationBridge?
     private var activityTask: Task<Void, Never>?
@@ -49,7 +53,8 @@ final class ServiceRemoteExperimentController: ObservableObject {
         do {
             let storage: any ServiceExperimentSecretStorage
             if let simulator { storage = simulator } else { storage = ServiceExperimentKeychain() }
-            let value = try ServiceExperimentJournal(storage: storage, enabled: true)
+            let value = try ServiceExperimentJournal(storage: storage, enabled: true,
+                simulatorFixtureOrigin: isSimulatorHTTPFixture ? configuration.simulatorAPIOrigin : nil)
             journal = value
             pendingRecovery = value.pendingRevocation != nil
             messageKey = pendingRecovery ? "remoteRevocationPending" : "remoteSelectService"
@@ -59,7 +64,7 @@ final class ServiceRemoteExperimentController: ObservableObject {
     }
 
     func verifySelection() async {
-        guard canVerify, let origin = configuration?.developmentOrigin,
+        guard canVerify, let origin = operationOrigin,
               let id = Int(serviceInput), id > 0 else { messageKey = "remoteInvalidSelection"; return }
         busy = true
         disclosed = false
@@ -68,9 +73,7 @@ final class ServiceRemoteExperimentController: ObservableObject {
         selectionNonce = nonce
         defer { busy = false }
         do {
-            let driver: any ServicePublicSelectionHTTP
-            if let simulator { driver = simulator }
-            else { driver = try ServicePublicSelectionURLSessionHTTP(baseURL: origin, enabled: true) }
+            let driver = try publicSelectionHTTP(origin: origin)
             let verified = try await ServicePublicSelectionVerifier(http: driver, enabled: true).verify(serviceID: id)
             guard selectionNonce == nonce, Int(serviceInput) == id else { return }
             selection = verified
@@ -83,7 +86,7 @@ final class ServiceRemoteExperimentController: ObservableObject {
 
     func start() async {
         guard canStart, let selected = selection, Int(serviceInput) == selected.serviceID,
-              let origin = configuration?.developmentOrigin,
+              let origin = operationOrigin,
               let reader = configuration?.developmentReaderOrigin, let journal,
               journal.recoveryRecord == nil else { return }
         guard UIApplication.shared.applicationState == .active else { messageKey = "remoteForegroundOnly"; return }
@@ -111,14 +114,22 @@ final class ServiceRemoteExperimentController: ObservableObject {
             activity = target
             bridge = next
             // Persist after local begin validation, BEFORE any token observation/PUT.
+            let simulatorToken: Data?
+            if isSimulatorHTTPFixture {
+                // Real servers retain token digests after revocation. A distinct
+                // synthetic per-follow token models that boundary without APNs.
+                var random = SystemRandomNumberGenerator()
+                simulatorToken = Data((0..<32).map { _ in UInt8.random(in: 0...255, using: &random) })
+            } else { simulatorToken = simulator == nil ? nil : Data([0xaa, 0xbb]) }
             try next.observe(target, disclosed: disclosed, capability: capability, registrationID: registrationID,
-                             simulatorToken: simulator == nil ? nil : Data([0xaa, 0xbb])) {
+                             simulatorToken: simulatorToken) {
                 _ = try journal.stage(origin: origin, identity: identity, activityID: target.id,
                                       capability: capability, registrationID: registrationID, consented: self.disclosed)
             }
             isActive = true
             pendingRecovery = false
-            messageKey = simulator == nil ? "remoteObservationStarted" : "remoteSimulatorStarted"
+            messageKey = isSimulatorHTTPFixture ? "remoteSimulatorHTTPStarted" :
+                (simulator == nil ? "remoteObservationStarted" : "remoteSimulatorStarted")
             activityTask = Task { [weak self] in
                 for await state in target.activityStateUpdates {
                     guard !Task.isCancelled, let self, self.activity?.id == target.id else { return }
@@ -166,7 +177,7 @@ final class ServiceRemoteExperimentController: ObservableObject {
     }
 
     func remove() async {
-        guard configured, !busy, let origin = configuration?.developmentOrigin, let journal else { return }
+        guard configured, !busy, let origin = operationOrigin, let journal else { return }
         busy = true
         disclosed = false
         activityTask?.cancel()
@@ -214,8 +225,21 @@ final class ServiceRemoteExperimentController: ObservableObject {
         }
     }
 
+    private func publicSelectionHTTP(origin: URL) throws -> any ServicePublicSelectionHTTP {
+        if let simulator {
+            guard isSimulatorHTTPFixture else { return simulator }
+            guard let wireOrigin = configuration?.simulatorAPIOrigin else { throw ServicePublicSelectionFailure.invalidInput }
+            return try ServicePublicSelectionURLSessionHTTP(baseURL: wireOrigin, enabled: true, simulatorFixture: true)
+        }
+        return try ServicePublicSelectionURLSessionHTTP(baseURL: origin, enabled: true)
+    }
+
     private func registrationHTTP(origin: URL) throws -> any ServiceRegistrationHTTP {
-        if let simulator { return simulator }
+        if let simulator {
+            guard isSimulatorHTTPFixture else { return simulator }
+            guard let wireOrigin = configuration?.simulatorAPIOrigin else { throw ServiceRegistrationFailure.invalidInput }
+            return try ServiceRegistrationURLSessionHTTP(baseURL: wireOrigin, enabled: true, simulatorFixture: true)
+        }
         return try ServiceRegistrationURLSessionHTTP(baseURL: origin, enabled: true)
     }
 

@@ -5,6 +5,12 @@ module.exports = ({ config }) => {
   const simulator = process.env.TARKMAN_SERVICE_PROGRESS_SIMULATOR ?? '0'
   if (simulator !== '0' && simulator !== '1') throw new Error('TARKMAN_SERVICE_PROGRESS_SIMULATOR must be 0 or 1')
   if (simulator === '1' && flag !== '1') throw new Error('Simulator fixture requires the isolated product variant')
+  const simulatorHTTP = process.env.TARKMAN_SERVICE_PROGRESS_SIMULATOR_HTTP ?? '0'
+  if (simulatorHTTP !== '0' && simulatorHTTP !== '1') throw new Error('TARKMAN_SERVICE_PROGRESS_SIMULATOR_HTTP must be 0 or 1')
+  if (simulatorHTTP === '1' && (flag !== '1' || simulator !== '1')) throw new Error('Simulator HTTP requires the isolated Simulator fixture')
+  const device = process.env.TARKMAN_SERVICE_PROGRESS_DEVICE_BUILD ?? '0'
+  if (device !== '0' && device !== '1') throw new Error('TARKMAN_SERVICE_PROGRESS_DEVICE_BUILD must be 0 or 1')
+  if (device === '1' && (flag !== '1' || simulator === '1')) throw new Error('Device generation requires isolated product without Simulator seams')
   // Preserve the exact default graph; do not even load the experimental plugin.
   if (flag === '0') return config
   const origin = key => {
@@ -48,6 +54,22 @@ module.exports = ({ config }) => {
     ServiceProgressRemoteEnabled: true, ServiceProgressDevelopmentOrigin: backend,
     ServiceProgressDevelopmentReaderOrigin: reader }
   if (fixture) Object.assign(next.ios.infoPlist, { ServiceProgressSimulatorFixture: true, ServiceProgressSimulatorAPIOrigin: simulatorAPI })
+  if (simulatorHTTP === '1') {
+    next.extra.serviceProgressSimulatorHTTP = true
+    next.ios.infoPlist.ServiceProgressSimulatorHTTP = true
+  }
+  if (device === '1') {
+    const team = process.env.SERVICE_PROGRESS_DEVELOPMENT_TEAM
+    const hostProfile = process.env.SERVICE_PROGRESS_HOST_PROFILE
+    const extensionProfile = process.env.SERVICE_PROGRESS_EXTENSION_PROFILE
+    const uuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    if (!/^[A-Z0-9]{10}$/.test(team ?? '') || !uuid.test(hostProfile ?? '') || !uuid.test(extensionProfile ?? '') ||
+        hostProfile.toLowerCase() === extensionProfile.toLowerCase()) {
+      throw new Error('Device generation requires explicit team and distinct host/extension profile UUIDs')
+    }
+    next.extra.serviceProgressDeviceBuild = { team, hostProfile, extensionProfile }
+    next.ios.entitlements = { 'aps-environment': 'development' }
+  }
   next.plugins = [...(next.plugins ?? []), './plugins/with-service-progress']
   return next
 }

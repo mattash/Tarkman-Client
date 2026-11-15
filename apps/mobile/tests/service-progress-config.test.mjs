@@ -5,15 +5,18 @@ import { createRequire } from 'node:module'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 
 const require = createRequire(import.meta.url)
 const configure = require('../app.config.js')
 const base = require('../app.json').expo
 const keys = ['TARKMAN_SERVICE_PROGRESS_PRODUCT', 'SERVICE_PROGRESS_DEVELOPMENT_ORIGIN', 'SERVICE_PROGRESS_DEVELOPMENT_READER_ORIGIN',
-  'TARKMAN_SERVICE_PROGRESS_SIMULATOR', 'SERVICE_PROGRESS_SIMULATOR_API_ORIGIN']
-function config(flag, backend = 'https://backend.example.invalid', reader = 'https://reader.example.invalid', simulator, simulatorAPI) {
+  'TARKMAN_SERVICE_PROGRESS_SIMULATOR', 'SERVICE_PROGRESS_SIMULATOR_API_ORIGIN',
+  'TARKMAN_SERVICE_PROGRESS_DEVICE_BUILD', 'SERVICE_PROGRESS_DEVELOPMENT_TEAM', 'SERVICE_PROGRESS_HOST_PROFILE',
+  'SERVICE_PROGRESS_EXTENSION_PROFILE', 'TARKMAN_SERVICE_PROGRESS_SIMULATOR_HTTP']
+function config(flag, backend = 'https://backend.example.invalid', reader = 'https://reader.example.invalid', simulator, simulatorAPI, device, team, host, extension, http) {
   const previous = keys.map(key => process.env[key])
-  for (const [index, value] of [flag, backend, reader, simulator, simulatorAPI].entries()) {
+  for (const [index, value] of [flag, backend, reader, simulator, simulatorAPI, device, team, host, extension, http].entries()) {
     if (value === undefined || value === null) delete process.env[keys[index]]
     else process.env[keys[index]] = value
   }
@@ -226,7 +229,204 @@ test('generated inputs copy single sources and matching widget version; no sourc
   const parsed = require('xcode').project(file).parseSync()
   assert.equal(realEntries(parsed.hash.project.objects.PBXNativeTarget).length, 2)
   const parsedText = parsed.writeSync()
-  plugin.applyProject(parsed, config('1'))
+  plugin.applyProject(parsed, simulatorConfig())
   assert.equal(parsed.writeSync(), parsedText, 'idempotent after actual serialization/parse')
   assert.equal(plugin.manifest.some(([source]) => /podspec|expo-module|package.json|entitlements/.test(source)), false)
+})
+
+const team = 'SYNTH12345'
+const hostProfile = '11111111-1111-1111-1111-111111111111'
+const extensionProfile = '22222222-2222-2222-2222-222222222222'
+const deviceConfig = () => config('1', undefined, undefined, '0', undefined, '1', team, hostProfile, extensionProfile)
+const httpConfig = () => config('1', null, null, '1', loopback, '0', undefined, undefined, undefined, '1')
+
+test('device generation is explicit and rejects invalid, mixed and incomplete inputs', () => {
+  const selected = deviceConfig()
+  assert.deepEqual(selected.extra.serviceProgressDeviceBuild, { team, hostProfile, extensionProfile })
+  assert.deepEqual(selected.ios.entitlements, { 'aps-environment': 'development' })
+  assert.equal(selected.ios.infoPlist.ServiceProgressSimulatorFixture, undefined)
+  for (const flag of ['', 'true', '01', '2']) {
+    assert.throws(() => config('1', undefined, undefined, undefined, undefined, flag))
+    assert.throws(() => config('0', undefined, undefined, undefined, undefined, flag))
+  }
+  for (const product of ['0', undefined]) assert.throws(() => config(product, undefined, undefined, '0', undefined, '1', team, hostProfile, extensionProfile))
+  for (const inputs of [[undefined, hostProfile, extensionProfile], ['short', hostProfile, extensionProfile],
+    [team, undefined, extensionProfile], [team, hostProfile, undefined], [team, hostProfile, hostProfile],
+    [team, 'profile name', extensionProfile], [team, hostProfile, `${extensionProfile}\n`]]) {
+    assert.throws(() => config('1', undefined, undefined, '0', undefined, '1', ...inputs))
+  }
+  assert.throws(() => config('1', null, null, '1', loopback, '1', team, hostProfile, extensionProfile))
+  const plugin = require('../plugins/with-service-progress.js')
+  for (const [section, key, value] of [['extra', 'serviceProgressSimulatorFixture', true],
+    ['extra', 'serviceProgressSimulatorHTTP', true], ['info', 'ServiceProgressSimulatorHTTP', true],
+    ['info', 'ServiceProgressSimulatorAPIOrigin', loopback]]) {
+    const mixed = globalThis.structuredClone(selected)
+    ;(section === 'extra' ? mixed.extra : mixed.ios.infoPlist)[key] = value
+    assert.throws(() => plugin.applyProject(fixture(), mixed))
+  }
+})
+
+test('Simulator HTTP has separate strict opt-in and preserves sealed bindings', () => {
+  const selected = httpConfig()
+  assert.equal(selected.extra.serviceProgressSimulatorHTTP, true)
+  assert.equal(selected.ios.infoPlist.ServiceProgressSimulatorHTTP, true)
+  assert.equal(selected.ios.infoPlist.ServiceProgressDevelopmentOrigin, 'https://backend.service-progress.invalid')
+  assert.equal(selected.ios.infoPlist.ServiceProgressSimulatorAPIOrigin, loopback)
+  assert.equal(simulatorConfig().extra.serviceProgressSimulatorHTTP, undefined)
+  for (const flag of ['', 'true', '01', '2']) assert.throws(() => config('1', null, null, '1', loopback, '0', undefined, undefined, undefined, flag))
+  for (const product of ['0', undefined]) assert.throws(() => config(product, null, null, '1', loopback, '0', undefined, undefined, undefined, '1'))
+  assert.throws(() => config('1', undefined, undefined, '0', loopback, '0', undefined, undefined, undefined, '1'))
+  assert.throws(() => config('1', null, null, '1', loopback, '1', team, hostProfile, extensionProfile, '1'))
+})
+
+test('generated device project has separate manual signing, development host capability and signed embed', t => {
+  const plugin = require('../plugins/with-service-progress.js')
+  const selected = deviceConfig()
+  const project = fixture()
+  plugin.applyProject(project, selected)
+  const objects = project.hash.project.objects
+  for (const [id, target] of realEntries(objects.PBXNativeTarget)) {
+    const widget = unquote(target.name) === 'ServiceProgressLiveActivity'
+    for (const ref of objects.XCConfigurationList[target.buildConfigurationList].buildConfigurations) {
+      const settings = objects.XCBuildConfiguration[ref.value].buildSettings
+      assert.equal(unquote(settings.PRODUCT_BUNDLE_IDENTIFIER), `app.tarkman.progressprototype${widget ? '.LiveActivity' : ''}`)
+      assert.equal(settings.DEVELOPMENT_TEAM, team)
+      assert.equal(settings.CODE_SIGN_STYLE, 'Manual')
+      assert.equal(unquote(settings.CODE_SIGN_IDENTITY), 'Apple Development')
+      assert.equal(settings.CODE_SIGNING_ALLOWED, 'YES')
+      assert.equal(unquote(settings.PROVISIONING_PROFILE_SPECIFIER), widget ? extensionProfile : hostProfile)
+      assert.equal(unquote(settings.CODE_SIGN_ENTITLEMENTS), `ServiceProgressGenerated/${widget ? 'Widget/Widget' : 'App/RemoteExperiment'}.entitlements`)
+      assert.equal(settings.SERVICE_PROGRESS_BUILD_MODE, 'device')
+      assert.equal(settings.SUPPORTED_PLATFORMS, 'iphoneos')
+    }
+    if (!widget) assert.equal(project.getFirstProject().firstProject.attributes.TargetAttributes[id].SystemCapabilities['com.apple.Push'].enabled, 1)
+  }
+  const embed = realEntries(objects.PBXCopyFilesBuildPhase)[0][1]
+  assert.equal(Number(embed.dstSubfolderSpec), 13)
+  assert.deepEqual(objects.PBXBuildFile[embed.files[0].value].settings.ATTRIBUTES, ['CodeSignOnCopy', 'RemoveHeadersOnCopy'])
+  const before = project.writeSync()
+  plugin.applyProject(project, selected)
+  assert.equal(project.writeSync(), before)
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'service-progress-device-config-'))
+  t.after(() => { assert.ok(directory.startsWith(path.join(os.tmpdir(), 'service-progress-device-config-'))); fs.rmSync(directory, { recursive: true, force: true }) })
+  plugin.copyInputs(path.resolve(import.meta.dirname, '..'), directory, selected)
+  const readPlist = name => require('@expo/plist').default.parse(fs.readFileSync(path.join(directory, 'ServiceProgressGenerated', name), 'utf8'))
+  assert.deepEqual({ ...readPlist('App/RemoteExperiment.entitlements') }, { 'aps-environment': 'development' })
+  assert.deepEqual({ ...readPlist('Widget/Widget.entitlements') }, {})
+  const info = readPlist('Widget/Info.plist')
+  assert.equal(info.CFBundleShortVersionString, selected.version)
+  assert.equal(info.ServiceProgressSimulatorFixture, undefined)
+  assert.equal(info.ServiceProgressSimulatorTapScheme, undefined)
+  assert.equal(info.ServiceProgressSimulatorHTTP, undefined)
+  for (const next of [config('1'), simulatorConfig(), httpConfig()]) {
+    plugin.copyInputs(path.resolve(import.meta.dirname, '..'), directory, selected)
+    plugin.copyInputs(path.resolve(import.meta.dirname, '..'), directory, next)
+    assert.deepEqual({ ...readPlist('App/RemoteExperiment.entitlements') }, {})
+    assert.deepEqual({ ...readPlist('Widget/Widget.entitlements') }, {})
+    assert.equal(readPlist('Widget/Info.plist').ServiceProgressSimulatorFixture, next.extra.serviceProgressSimulatorFixture)
+  }
+  const file = path.join(directory, 'synthetic.pbxproj')
+  fs.writeFileSync(file, before)
+  const parsed = require('xcode').project(file).parseSync()
+  const parsedText = parsed.writeSync()
+  plugin.applyProject(parsed, selected)
+  assert.equal(parsed.writeSync(), parsedText)
+})
+
+test('same parsed project restores device-owned state for unsigned and Simulator without clobbering existing settings', t => {
+  const plugin = require('../plugins/with-service-progress.js')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'service-progress-transitions-'))
+  t.after(() => { assert.ok(directory.startsWith(path.join(os.tmpdir(), 'service-progress-transitions-'))); fs.rmSync(directory, { recursive: true, force: true }) })
+  const file = path.join(directory, 'synthetic.pbxproj')
+  const roundtrip = project => { fs.writeFileSync(file, project.writeSync()); return require('xcode').project(file).parseSync() }
+  for (const populated of [false, true]) {
+    for (const [selected, mode] of [[config('1'), 'unsigned'], [simulatorConfig(), 'simulator'], [httpConfig(), 'simulator']]) {
+      let project = fixture()
+      plugin.applyProject(project, config('1'))
+      const objects = project.hash.project.objects
+      const appID = project.getFirstTarget().uuid
+      if (populated) {
+        for (const [, build] of realEntries(objects.XCBuildConfiguration)) {
+          if (unquote(build.name) === 'Debug') Object.assign(build.buildSettings, {
+            DEVELOPMENT_TEAM: 'ORIGINAL12', CODE_SIGN_STYLE: 'Automatic', CODE_SIGN_IDENTITY: '"Original Synthetic Identity"',
+            PROVISIONING_PROFILE_SPECIFIER: '"Original Synthetic Profile"', PROVISIONING_PROFILE: 'legacy-synthetic-profile',
+            CODE_SIGN_ENTITLEMENTS: '"Original.entitlements"', CODE_SIGNING_REQUIRED: 'NO',
+            SUPPORTED_PLATFORMS: '"iphoneos iphonesimulator"', SDKROOT: 'auto',
+            '"CODE_SIGN_IDENTITY[sdk=iphoneos*]"': '"Unrelated Conditional Identity"', CUSTOM_SETTING: 'keep' })
+        }
+        project.getFirstProject().firstProject.attributes.TargetAttributes = {
+          [appID]: { DevelopmentTeam: 'ORIGINAL12', SystemCapabilities: {
+            'com.apple.Push': { enabled: 0, CustomMetadata: 'preserve' }, 'com.apple.BackgroundModes': { enabled: 1 } } },
+          unrelatedTarget: { SystemCapabilities: { 'com.apple.Push': { enabled: 1 } } } }
+        const embed = realEntries(objects.PBXCopyFilesBuildPhase)[0][1]
+        objects.PBXBuildFile[embed.files[0].value].settings.EXTRA_EMBED_SETTING = 'keep'
+        objects.PBXBuildFile[embed.files[0].value].settings.ATTRIBUTES.push('UnrelatedAttribute')
+      }
+      project = roundtrip(project)
+      const baseline = JSON.parse(JSON.stringify(project.hash.project.objects))
+      plugin.applyProject(project, deviceConfig())
+      project = roundtrip(project)
+      plugin.applyProject(project, selected)
+      project = roundtrip(project)
+      const result = project.hash.project.objects
+      const attributes = project.getFirstProject().firstProject.attributes
+      assert.equal(attributes.ServiceProgressDeviceOwnershipV1, undefined)
+      assert.deepEqual(JSON.parse(JSON.stringify(attributes)), baseline.PBXProject[project.getFirstProject().uuid].attributes)
+      for (const [id, build] of realEntries(result.XCBuildConfiguration)) {
+        const expected = { ...baseline.XCBuildConfiguration[id].buildSettings, SERVICE_PROGRESS_BUILD_MODE: mode }
+        assert.deepEqual(JSON.parse(JSON.stringify(build.buildSettings)), expected)
+      }
+      const embed = realEntries(result.PBXCopyFilesBuildPhase)[0][1]
+      for (const ref of embed.files) assert.deepEqual(JSON.parse(JSON.stringify(result.PBXBuildFile[ref.value].settings)), baseline.PBXBuildFile[ref.value].settings)
+      assert.equal(realEntries(result.PBXNativeTarget).length, 2)
+      const stable = project.writeSync()
+      plugin.applyProject(project, selected)
+      assert.equal(project.writeSync(), stable)
+    }
+  }
+})
+
+test('device cleanup preserves later edits by other owners and fails closed without ownership metadata', () => {
+  const plugin = require('../plugins/with-service-progress.js')
+  const project = fixture()
+  plugin.applyProject(project, deviceConfig())
+  const objects = project.hash.project.objects
+  const build = objects.XCBuildConfiguration.A00000000000000000000005.buildSettings
+  build.DEVELOPMENT_TEAM = 'NEWOWNER12'
+  const attributes = project.getFirstProject().firstProject.attributes
+  attributes.TargetAttributes[project.getFirstTarget().uuid].SystemCapabilities['com.apple.BackgroundModes'] = { enabled: 1 }
+  const embed = realEntries(objects.PBXCopyFilesBuildPhase)[0][1]
+  const embedFile = objects.PBXBuildFile[embed.files[0].value]
+  embedFile.settings.ATTRIBUTES.push('LaterExternalAttribute')
+  plugin.applyProject(project, config('1'))
+  assert.deepEqual(embedFile.settings.ATTRIBUTES, ['RemoveHeadersOnCopy', 'LaterExternalAttribute'])
+  assert.equal(build.DEVELOPMENT_TEAM, 'NEWOWNER12')
+  assert.equal(build.PROVISIONING_PROFILE_SPECIFIER, undefined)
+  assert.equal(attributes.TargetAttributes[project.getFirstTarget().uuid].SystemCapabilities['com.apple.Push'], undefined)
+  assert.deepEqual(attributes.TargetAttributes[project.getFirstTarget().uuid].SystemCapabilities['com.apple.BackgroundModes'], { enabled: 1 })
+  plugin.applyProject(project, deviceConfig())
+  delete attributes.ServiceProgressDeviceOwnershipV1
+  assert.throws(() => plugin.applyProject(project, config('1')), /lacks ownership record/)
+})
+
+test('actual generated shell guards reject Release and wrong SDK even after Expo evaluation', () => {
+  const plugin = require('../plugins/with-service-progress.js')
+  for (const [selected, platform] of [[deviceConfig(), 'iphoneos'], [simulatorConfig(), 'iphonesimulator'], [httpConfig(), 'iphonesimulator']]) {
+    const project = fixture()
+    plugin.applyProject(project, selected)
+    const objects = project.hash.project.objects
+    for (const [, target] of realEntries(objects.PBXNativeTarget)) {
+      const guard = objects.PBXShellScriptBuildPhase[target.buildPhases[0].value]
+      assert.ok(guard, 'guard runs before source compilation')
+      assert.equal(guard.alwaysOutOfDate, 1)
+      // Execute only the generated boundary script with synthetic Xcode variables;
+      // no xcodebuild, provisioning, codesign or device operation is performed.
+      const script = JSON.parse(guard.shellScript)
+      const run = (configuration, sdk) => spawnSync('/bin/sh', ['-c', script], { env: {
+        SERVICE_PROGRESS_BUILD_MODE: 'unsigned', CONFIGURATION: configuration, PLATFORM_NAME: sdk } }).status
+      assert.equal(run('Debug', platform), 0)
+      for (const configuration of ['Release', 'Profile', '']) assert.notEqual(run(configuration, platform), 0)
+      assert.notEqual(run('Debug', platform === 'iphoneos' ? 'iphonesimulator' : 'iphoneos'), 0)
+    }
+  }
 })
