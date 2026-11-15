@@ -57,25 +57,30 @@ owner's explicit hold; restoration of accessibility settings did not lift it.
 | Matching provider environment/host | Sandbox, `api.sandbox.push.apple.com` |
 | Widget identifier (not the APNs topic base) | `app.tarkman.progressprototype.LiveActivity` |
 
-The deployed backend `c6489b9b` currently fixes `ServiceProgress.topic` to
+The earlier backend foundation `c6489b9b` fixes the normal `ServiceProgress.topic` to
 `org.tarkman.progress.experiment.push-type.liveactivity`, which **does not match**
 this app ([cross-repository configuration review](<https://github.com/mattash/Tarkman-Client/pull/282#issuecomment-6886063233>)).
 This caller does not rename either app, send a user-selected topic or override
-production defaults to hide that mismatch. Backend #554 provides concrete
-collaborators but intentionally no runtime provider/key-loader/scheduler activation
-path. Deployment alone cannot deliver to this app's token.
+production defaults to hide that mismatch. Backend #554 supplied concrete
+collaborators but no runtime provider/key-loader/scheduler activation path; #557
+adds separate isolated construction without changing those normal defaults.
+Deployment alone cannot deliver to this app's token.
 
-The next implementation dependency is a **separate isolated development bootstrap**:
-explicitly bind the exact topic above to sandbox; construct the concrete provider
-through trusted auth/HTTP injection; supply key material through an approved secure
-boundary; and explicitly drain the existing development fixture/outbox without
-adding a production initializer, recurring job or default factory change. The
-bootstrap should prove routing/configuration/expiry and redacted failures with
-synthetic collaborators first, including rejecting a wrong topic/environment.
-It must not accept topic/environment from a public registration body. Real
-provisioning, credentials, pushes and physical observations remain subsequent
-explicitly authorized gates, not actions performed by this handoff. No secure
-access request is justified merely by the missing bootstrap code.
+The bounded backend source/test dependency is now merged as
+[backend #557](<https://github.com/mattash/Tarkman/pull/557>),
+`46481161509155d04e3fcf60ce7928ea19f9614b`. It prepares separately invoked isolated
+sandbox/topic construction, trusted auth/HTTP injection and bounded fixture/outbox
+drain; normal factory/topic/config remain unchanged. Backend verification and
+fence-bypass race controls are recorded there, separately from this native suite.
+This is not activation, an app provisioning result or actual APNs delivery.
+
+The remaining integration work must connect the real selected-service product
+flow to this caller without adding experimental modules/entitlements to ordinary
+builds. The enabled-native test path must bind the exact identifiers above and
+use an expressly authorized isolated configuration. Actual secure auth injection,
+provisioning, pushes and physical observations remain subsequent explicit gates,
+not actions performed by this handoff. No credential-access failure or owner key
+request is inferred from source preparation alone.
 
 ## Actual caller flow
 
@@ -150,10 +155,11 @@ subject field permits exact-byte Keychain erasure. Missing/extra/wrong/null fiel
 non-Boolean acknowledgement, wrong origin/identity, non200 or storage error retain
 recovery. The concrete driver bounds and validates this POST separately from legacy
 PUT/DELETE. The receipt must mean durable server fencing against a late PUT; a
-mere absent-row observation is not enough. Backend implementation/review and live
-support are not claimed by these fake-only native tests. Until the endpoint is
-supported and returns a valid authoritative receipt, a new remote follow remains
-blocked. No automatic expiry-based erasure or fallback acceptance is added.
+mere absent-row observation is not enough. Backend #557 independently validates
+its transaction fence (including controls that fail when bypassed); these fake-only
+native tests do not establish deployment or enabled cross-system execution. Until
+the configured endpoint returns a valid authoritative receipt, a new remote follow
+remains blocked. No automatic expiry-based erasure or fallback acceptance is added.
 
 Real initial token issuance, registration, APNs receipt/display, rotation,
 foreground/background/terminated/force-quit freshness, latency/battery and final
