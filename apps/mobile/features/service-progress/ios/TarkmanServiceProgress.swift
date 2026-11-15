@@ -1,4 +1,5 @@
 import ActivityKit
+import Combine
 import CoreFoundation
 import React
 import SwiftUI
@@ -63,7 +64,9 @@ final class TarkmanServiceProgress: NSObject {
                 resolver("unavailable")
                 return
             }
-            let host = UIHostingController(rootView: ServiceProgressProductSheet(caller: controller, selectedID: selectedID))
+            let host = UIHostingController(rootView: ServiceProgressProductSheet(
+                caller: controller, selectedID: selectedID, scene: scene,
+                onDone: { Self.presentation?.dismiss(animated: true) }))
             host.modalPresentationStyle = .pageSheet
             Self.presentation = host
             presenter.present(host, animated: true) { resolver("presented") }
@@ -74,19 +77,42 @@ final class TarkmanServiceProgress: NSObject {
 private struct ServiceProgressProductSheet: View {
     let caller: ServiceRemoteExperimentController
     let selectedID: Int
-    @Environment(\.dismiss) private var dismiss
+    let scene: UIWindowScene
+    let onDone: () -> Void
     @State private var active = false
+    @State private var foreground: Bool
+
+    init(caller: ServiceRemoteExperimentController, selectedID: Int, scene: UIWindowScene,
+         onDone: @escaping () -> Void) {
+        self.caller = caller
+        self.selectedID = selectedID
+        self.scene = scene
+        self.onDone = onDone
+        _foreground = State(initialValue: scene.activationState == .foregroundActive &&
+            UIApplication.shared.applicationState == .active)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 ServiceRemoteExperimentView(remoteActive: $active, ready: true,
-                    controller: caller, selectedServiceID: selectedID) {}
+                    controller: caller, selectedServiceID: selectedID, foregroundActive: foreground) {}
             }
             .navigationTitle(Text("remoteSection"))
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("remoteDone") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("remoteDone", action: onDone) }
             }
+        }
+        // This view is hosted by UIKit, not a SwiftUI App/Scene. Propagate the
+        // presenting scene's actual lifecycle instead of its default environment.
+        .onReceive(NotificationCenter.default.publisher(for: UIScene.didActivateNotification, object: scene)) { _ in
+            foreground = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIScene.willDeactivateNotification, object: scene)) { _ in
+            foreground = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIScene.didEnterBackgroundNotification, object: scene)) { _ in
+            foreground = false
         }
     }
 }

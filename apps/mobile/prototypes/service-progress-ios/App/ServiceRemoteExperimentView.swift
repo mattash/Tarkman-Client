@@ -6,15 +6,18 @@ struct ServiceRemoteExperimentView: View {
     @Binding var remoteActive: Bool
     let ready: Bool
     let selectedServiceID: Int?
+    let foregroundActive: Bool?
+    private var isForeground: Bool { foregroundActive ?? (scenePhase == .active) }
     let beforeStart: () async -> Void
 
     init(remoteActive: Binding<Bool>, ready: Bool,
          controller: ServiceRemoteExperimentController? = nil, selectedServiceID: Int? = nil,
-         beforeStart: @escaping () async -> Void) {
+         foregroundActive: Bool? = nil, beforeStart: @escaping () async -> Void) {
         _caller = StateObject(wrappedValue: controller ?? ServiceRemoteExperimentController())
         _remoteActive = remoteActive
         self.ready = ready
         self.selectedServiceID = selectedServiceID
+        self.foregroundActive = foregroundActive
         self.beforeStart = beforeStart
     }
 
@@ -28,14 +31,14 @@ struct ServiceRemoteExperimentView: View {
             TextField("remoteServiceID", text: $caller.serviceInput)
                 .keyboardType(.numberPad)
                 .accessibilityIdentifier("remoteServiceID")
-                .disabled(selectedServiceID != nil || !caller.canVerify || !ready || scenePhase != .active)
+                .disabled(selectedServiceID != nil || !caller.canVerify || !ready || !isForeground)
             Button("remoteVerify") { Task { await caller.verifySelection() } }
-                .disabled(!caller.canVerify || !ready || scenePhase != .active)
+                .disabled(!caller.canVerify || !ready || !isForeground)
             if let selected = caller.selection {
                 Text(verbatim: selected.title).font(.headline)
                 Text("remoteDisclosureHelp").font(.footnote)
                 Toggle("remoteAllowDisclosure", isOn: $caller.disclosed)
-                    .disabled(caller.busy || scenePhase != .active)
+                    .disabled(caller.busy || !isForeground)
                     .onChange(of: caller.disclosed) { allowed in
                         if !allowed && caller.isActive && !caller.busy {
                             Task { await caller.remove(); remoteActive = caller.isActive }
@@ -51,12 +54,12 @@ struct ServiceRemoteExperimentView: View {
                     await caller.start()
                     remoteActive = caller.isActive
                 }
-            }.disabled(!caller.canStart || !ready || scenePhase != .active)
+            }.disabled(!caller.canStart || !ready || !isForeground)
             Button("remoteRetry") { Task { await caller.retryRegistration() } }
-                .disabled(!caller.isActive || caller.busy || scenePhase != .active)
+                .disabled(!caller.isActive || caller.busy || !isForeground)
             Button("remoteRevoke", role: .destructive) {
                 Task { await caller.remove(); remoteActive = caller.isActive }
-            }.disabled((!caller.isActive && !caller.pendingRecovery) || caller.busy || scenePhase != .active)
+            }.disabled((!caller.isActive && !caller.pendingRecovery) || caller.busy || !isForeground)
             if caller.pendingRecovery {
                 Text("remoteRecoveryHelp").font(.footnote)
             }
