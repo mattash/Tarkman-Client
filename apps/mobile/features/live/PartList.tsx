@@ -1,10 +1,10 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
-import { Platform, Pressable, useWindowDimensions, View } from 'react-native'
+import { memo, useCallback, useEffect, useMemo, useLayoutEffect, useRef, useState, type ReactElement, type ComponentRef } from 'react'
+import { AccessibilityInfo, findNodeHandle, Platform, Pressable, useWindowDimensions, View, type Text } from 'react-native'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import type { Language } from '@tarkman/core'
 import { AppText } from '../../components/AppText'
 import { AppButton } from '../../components/AppButton'
-import { LiturgyText } from '../../components/LiturgyText'
+import { LiturgyText, type PassageHighlight } from '../../components/LiturgyText'
 import { useTheme } from '../../design/ThemeProvider'
 import { readingSizes, spacing, touchTarget, type ReadingSize } from '../../design/tokens'
 import { sampleLanguages } from '../../design/samples'
@@ -14,17 +14,33 @@ import { useI18n } from '../i18n'
 
 const READING_WIDTH = 1152
 
+/** Raw UTF-16 source offsets; requestId allows selecting the same occurrence again. */
+export interface PassageJump { key: string; language: Language; start: number; end: number; requestId: number; focus?: boolean }
+
 export function PartList({ parts, currentKey, following, language, selectedLanguages, manual, open, switchLanguage,
-  browseSettled, browseMoved, browseMomentum, readingSize = 'standard', paused = false, header, compact = false, topPartChanged }: {
+  browseSettled, browseMoved, browseMomentum, readingSize = 'standard', paused = false, header, compact = false, topPartChanged, passageJump }: {
   parts: LivePart[]; currentKey?: string; following: boolean; language: Language; selectedLanguages: readonly Language[]
   browseSettled?(): void; browseMoved?(): void; browseMomentum?(): void; manual(dragging?: boolean): void; open(part: LivePart): void; switchLanguage?(language: Language): void; readingSize?: ReadingSize
-  paused?: boolean; header?: ReactElement; compact?: boolean
+  paused?: boolean; header?: ReactElement; compact?: boolean; passageJump?: PassageJump
   /** The first part at least half on screen, for readers without a live position to explain. */
   topPartChanged?(part: LivePart | undefined): void
 }) {
   const { fontScale } = useWindowDimensions()
   const [frameWidth, setFrameWidth] = useState(0)
   const list = useRef<FlashListRef<LivePart>>(null)
+  const frame = useRef<ComponentRef<typeof View>>(null)
+  const jumpIndex = passageJump?.language === language ? parts.findIndex(part => part.key === passageJump.key) : -1
+  const jumpText = jumpIndex >= 0 ? parts[jumpIndex].text[language] ?? '' : ''
+  const jumpIdentity = passageJump && jumpIndex >= 0 && Number.isInteger(passageJump.start) && Number.isInteger(passageJump.end)
+    && passageJump.start >= 0 && passageJump.end > passageJump.start && passageJump.end <= jumpText.length
+    ? JSON.stringify([passageJump.key, passageJump.language, passageJump.start, passageJump.end, passageJump.requestId]) : undefined
+  const activeJump = useRef(jumpIdentity)
+  useLayoutEffect(() => {
+    activeJump.current = jumpIdentity
+    return () => { activeJump.current = undefined }
+  }, [jumpIdentity])
+  const announcedJump = useRef<string | undefined>(undefined)
+  const jumpDeadline = useRef(0)
   const manualOffset = useRef(0)
   const previousLanguage = useRef(language)
   const page = fontScale > 2 ? spacing.md : spacing.page
@@ -53,18 +69,62 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
   const actions = useRef({ manual, open, switchLanguage, topPartChanged })
   useEffect(() => { actions.current = { manual, open, switchLanguage, topPartChanged } }, [manual, open, switchLanguage, topPartChanged])
   const { t } = useI18n()
-  const stopFollowing = useCallback(() => actions.current.manual(), [])
+  const stopFollowing = useCallback(() => { jumpDeadline.current = 0; actions.current.manual() }, [])
   const openPart = useCallback((part: LivePart) => actions.current.open(part), [])
   const reportTopPart = useCallback(({ viewableItems }: { viewableItems: { item: LivePart }[] }) => actions.current.topPartChanged?.(viewableItems[0]?.item), [])
   const readIn = useMemo(() => switchLanguage ? (value: Language) => actions.current.switchLanguage?.(value) : undefined, [switchLanguage])
 
+  const jumpToOccurrence = useCallback(() => {
+    if (!jumpIdentity || jumpIndex < 0) return
+    jumpDeadline.current = Date.now() + 2200
+    void list.current?.scrollToIndex({ index: jumpIndex, animated: false, viewPosition: 0 })
+  }, [jumpIdentity, jumpIndex])
+  const jumpStart = passageJump?.start
+  const jumpEnd = passageJump?.end
+  const jumpRequestId = passageJump?.requestId
+  const jumpFocus = passageJump?.focus
+  const measurePassage = useCallback((y: number, height: number, anchor: ComponentRef<typeof Text>) => {
+    if (!jumpIdentity || activeJump.current !== jumpIdentity || Date.now() > jumpDeadline.current) return
+    frame.current?.measureInWindow((_x, top, _width, viewportHeight) => {
+      if (activeJump.current !== jumpIdentity || Date.now() > jumpDeadline.current || viewportHeight <= 0) return
+      const margin = spacing.md
+      const bottom = top + viewportHeight - margin
+      if (y < top + margin || y + height > bottom) {
+        const offset = list.current?.getAbsoluteLastScrollOffset?.() ?? manualOffset.current
+        const next = Math.max(0, offset + y - top - margin)
+        list.current?.scrollToOffset({ offset: next, animated: false })
+      } else if (jumpFocus && announcedJump.current !== jumpIdentity) {
+        announcedJump.current = jumpIdentity
+        if (Platform.OS !== 'web') {
+          const handle = findNodeHandle(anchor)
+          if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle)
+          AccessibilityInfo.announceForAccessibility(jumpText.slice(jumpStart, jumpEnd))
+        } else {
+          // RN web's nested Text ref is an HTMLElement; prevent focus from undoing our scroll.
+          const element = anchor as unknown as { setAttribute?(name: string, value: string): void; focus?(options: { preventScroll: boolean }): void }
+          element.setAttribute?.('tabindex', '-1')
+          element.focus?.({ preventScroll: true })
+        }
+      }
+    })
+  }, [jumpIdentity, jumpText, jumpStart, jumpEnd, jumpFocus])
+  const passageHighlight = useMemo<PassageHighlight | undefined>(() => jumpIdentity && jumpStart !== undefined && jumpEnd !== undefined && jumpRequestId !== undefined ? {
+    start: jumpStart, end: jumpEnd, requestId: jumpRequestId, onMeasure: measurePassage,
+  } : undefined, [jumpIdentity, jumpStart, jumpEnd, jumpRequestId, measurePassage])
+  useEffect(() => {
+    if (!jumpIdentity) return
+    announcedJump.current = undefined
+    jumpToOccurrence()
+    return () => { jumpDeadline.current = 0 }
+  }, [jumpIdentity, jumpToOccurrence])
+
   // FlashList measures rows as it goes and corrects its own scroll, so one request lands even on a part hundreds of rows
   // down. The first part scrolls to the very top instead, so the service details above it are shown.
   const target = useCallback(() => {
-    if (!following || index < 0) return
+    if (jumpIdentity || !following || index < 0) return
     if (index === 0 && !compact) list.current?.scrollToOffset({ offset: 0, animated: false })
     else void list.current?.scrollToIndex({ index, animated: false, viewPosition: 0 })
-  }, [following, index, compact])
+  }, [following, index, compact, jumpIdentity])
   // A change of columns, size or language reflows every row, so a following reader is put back on the live part.
   const layoutKey = `${visibleKey}:${readingSize}:${columnWidth}`
   useEffect(() => {
@@ -72,16 +132,16 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
     previousLanguage.current = language
     // Live following puts the accepted reading on screen immediately, including long jumps.
     if (following) target()
-    else if (languageChanged) list.current?.scrollToOffset({ offset: manualOffset.current, animated: false })
-  }, [target, language, following, layoutKey])
+    else if (languageChanged && !jumpIdentity) list.current?.scrollToOffset({ offset: manualOffset.current, animated: false })
+  }, [target, language, following, layoutKey, jumpIdentity])
 
-  return <View testID="reading-frame" style={{ flex: 1 }} onLayout={event => setFrameWidth(event.nativeEvent.layout.width)}
+  return <View ref={frame} collapsable={false} testID="reading-frame" style={{ flex: 1 }} onLayout={event => setFrameWidth(event.nativeEvent.layout.width)}
     {...(Platform.OS === 'web' ? { onWheel: stopFollowing, onTouchMove: stopFollowing,
       onKeyDown: (event: object) => { if ('key' in event && ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(String(event.key))) stopFollowing() } } : {})}>
     <FlashList testID="reading-list" ref={list} data={parts} keyExtractor={p => p.key}
       // Opening straight onto the live part avoids drawing and scrolling past everything before it.
-      initialScrollIndex={following && index > 0 ? index : undefined} onLoad={() => target()}
-      extraData={`${currentKey}:${index}:${layoutKey}:${paused}:${gutter}:${page}`} onScrollBeginDrag={() => actions.current.manual(true)}
+      initialScrollIndex={jumpIdentity ? jumpIndex : following && index > 0 ? index : undefined} onLoad={() => { if (jumpIdentity) jumpToOccurrence(); else target() }}
+      extraData={`${currentKey}:${index}:${layoutKey}:${paused}:${gutter}:${page}:${jumpIdentity ?? ''}`} onScrollBeginDrag={() => { jumpDeadline.current = 0; actions.current.manual(true) }}
       // Status pills live in the list header. FlashList keeps the first visible part anchored by default,
       // so a status change never moves prayer text.
       onScrollEndDrag={browseSettled} onMomentumScrollEnd={browseSettled} onMomentumScrollBegin={browseMomentum}
@@ -94,14 +154,16 @@ export function PartList({ parts, currentKey, following, language, selectedLangu
       renderItem={({ item, index: itemIndex }) => <ReadingRow item={item} current={item.key === currentKey} past={index >= 0 && itemIndex < index}
         paused={paused} language={language} visibleLanguages={visibleLanguages} alternativesFrom={alternativesFrom} compare={compare}
         columnWidth={columnWidth} columnIndent={columnIndent} page={page} gutter={gutter} readingSize={readingSize}
-        onSwipeStart={stopFollowing} open={openPart} readIn={readIn} />} />
+        passageHighlight={jumpIdentity && item.key === passageJump?.key ? passageHighlight : undefined}
+         onSwipeStart={stopFollowing} open={openPart} readIn={readIn} />} />
   </View>
 }
 
 const ReadingRow = memo(function ReadingRow({ item, current, past, paused, language, visibleLanguages, alternativesFrom, compare, columnWidth, columnIndent,
-  page, gutter, readingSize, onSwipeStart, open, readIn }: {
+  page, gutter, readingSize, onSwipeStart, open, readIn, passageHighlight }: {
   item: LivePart; current: boolean; past: boolean; paused: boolean; language: Language; visibleLanguages: readonly Language[]
   alternativesFrom: readonly Language[]; compare: boolean; columnWidth: number | undefined; columnIndent: number; page: number; gutter: number
+  passageHighlight?: PassageHighlight
   readingSize: ReadingSize; onSwipeStart(): void; open(part: LivePart): void; readIn?(language: Language): void
 }) {
   const { colors, scheme } = useTheme()
@@ -132,7 +194,7 @@ const ReadingRow = memo(function ReadingRow({ item, current, past, paused, langu
         borderLeftColor: visibleLanguage === language ? colors.currentRule : colors.divider }}>
         {compare && <AppText variant="label">{t(visibleLanguage === language ? 'partList.readingColumn' : 'partList.comparisonColumn',
           { language: sampleLanguages.find(candidate => candidate.value === visibleLanguage)?.label ?? visibleLanguage })}</AppText>}
-        <LiturgyText language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
+        <LiturgyText passageHighlight={visibleLanguage === language ? passageHighlight : undefined} language={visibleLanguage} text={item.text[visibleLanguage]} readingSize={readingSize} compactStanzas tone={past ? 'muted' : 'default'} />
         {!item.text[visibleLanguage]?.trim() && readIn && alternatives.length > 0 && <View style={{ gap: spacing.sm }}>
           <AppText variant="caption" tone="muted">{t('partList.chooseAnother')}</AppText>
           {alternatives.map(value => <AppButton key={value} variant="secondary" onPress={() => readIn(value)}>

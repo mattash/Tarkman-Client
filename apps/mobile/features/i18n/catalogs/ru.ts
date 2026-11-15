@@ -35,6 +35,16 @@ export const ru: Catalog = {
     "refresh": "Обновить просмотр"
 },
   library: {
+    find: 'Найти в тексте',
+    findPlaceholder: 'Слово или фраза',
+    findHelp: 'Поиск на выбранном языке чтения.',
+    findSearching: 'Поиск…',
+    findEmpty: 'На выбранном языке совпадений нет.',
+    findCount: '{current} из {count} совпадений',
+    findCountLimited: '{current} из первых {count} совпадений — уточните запрос.',
+    findPrevious: 'Предыдущее совпадение',
+    findNext: 'Следующее совпадение',
+    findClose: 'Закрыть поиск',
     // #253: these six share strings were approved by the owner (Fr. Mesrop Ash) on 2026-10-22.
     share: 'Поделиться',
     shareTitle: 'Поделиться: {name}',
