@@ -1,0 +1,98 @@
+{
+  "binding_sha256": "07c78d8f0b4da0a6febd058e8fb6a5811f2311b5d18c65fabaf11e85a32df06b",
+  "cases": [
+    {
+      "alias": "public-state",
+      "method": "GET",
+      "status": 200,
+      "expected": 200,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": false,
+      "single_date": true,
+      "no_age": true
+    },
+    {
+      "alias": "put",
+      "method": "PUT",
+      "status": 200,
+      "expected": 200,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": false,
+      "single_date": true,
+      "no_age": true
+    },
+    {
+      "alias": "wrong-capability-delete",
+      "method": "DELETE",
+      "status": 403,
+      "expected": 403,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": true,
+      "single_date": true,
+      "no_age": true
+    },
+    {
+      "alias": "bodyless-delete",
+      "method": "DELETE",
+      "status": 204,
+      "expected": 204,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": true,
+      "single_date": true,
+      "no_age": true
+    },
+    {
+      "alias": "exact-fenced-post",
+      "method": "POST",
+      "status": 200,
+      "expected": 200,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": false,
+      "single_date": true,
+      "no_age": true,
+      "exact_receipt": true
+    },
+    {
+      "alias": "late-put",
+      "method": "PUT",
+      "status": 409,
+      "expected": 409,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": false,
+      "single_date": true,
+      "no_age": true
+    },
+    {
+      "alias": "wrong-session-read",
+      "method": "GET",
+      "status": 403,
+      "expected": 403,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": false,
+      "single_date": true,
+      "no_age": true
+    },
+    {
+      "alias": "login-denied",
+      "method": "GET",
+      "status": 403,
+      "expected": 403,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": false,
+      "single_date": true,
+      "no_age": true
+    }
+  ],
+  "possibly_attempted": true,
+  "exact_fenced": true,
+  "unresolved": false,
+  "tls_verified": false
+}
