@@ -2,19 +2,33 @@ import SwiftUI
 
 struct ServiceRemoteExperimentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var caller = ServiceRemoteExperimentController()
+    @StateObject private var caller: ServiceRemoteExperimentController
     @Binding var remoteActive: Bool
     let ready: Bool
+    let selectedServiceID: Int?
     let beforeStart: () async -> Void
+
+    init(remoteActive: Binding<Bool>, ready: Bool,
+         controller: ServiceRemoteExperimentController? = nil, selectedServiceID: Int? = nil,
+         beforeStart: @escaping () async -> Void) {
+        _caller = StateObject(wrappedValue: controller ?? ServiceRemoteExperimentController())
+        _remoteActive = remoteActive
+        self.ready = ready
+        self.selectedServiceID = selectedServiceID
+        self.beforeStart = beforeStart
+    }
 
     var body: some View {
         Section("remoteSection") {
-            Text("remoteExperimentHelp").font(.footnote)
+            Text(caller.isSimulatorFixture ? "remoteSimulatorHelp" : "remoteExperimentHelp").font(.footnote)
+            if let selectedServiceID, (caller.isActive || caller.pendingRecovery), Int(caller.serviceInput) != selectedServiceID {
+                Text("remoteOtherService").font(.footnote)
+            }
             Text(LocalizedStringKey(caller.messageKey)).accessibilityIdentifier("remoteStatus")
             TextField("remoteServiceID", text: $caller.serviceInput)
                 .keyboardType(.numberPad)
                 .accessibilityIdentifier("remoteServiceID")
-                .disabled(!caller.canVerify || !ready || scenePhase != .active)
+                .disabled(selectedServiceID != nil || !caller.canVerify || !ready || scenePhase != .active)
             Button("remoteVerify") { Task { await caller.verifySelection() } }
                 .disabled(!caller.canVerify || !ready || scenePhase != .active)
             if let selected = caller.selection {
@@ -47,6 +61,16 @@ struct ServiceRemoteExperimentView: View {
                 Text("remoteRecoveryHelp").font(.footnote)
             }
         }
-        .onChange(of: caller.isActive) { remoteActive = $0 }
+        .onAppear { alignSelectedService() }
+        .onChange(of: caller.isActive) { active in
+            remoteActive = active
+            alignSelectedService()
+        }
+        .onChange(of: caller.pendingRecovery) { _ in alignSelectedService() }
+    }
+
+    private func alignSelectedService() {
+        guard let selectedServiceID, !caller.isActive, !caller.pendingRecovery else { return }
+        caller.serviceInput = String(selectedServiceID)
     }
 }

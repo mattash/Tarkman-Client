@@ -3,6 +3,12 @@
  * Placeholders are `{name}`; a message with `one`/`other` forms is chosen by its `count` parameter.
  */
 export const en = {
+  serviceProgress: {
+    open: 'Service progress options',
+    openHint: 'Opens options for this service. Opening does not start a Live Activity.',
+    unavailable: 'Service progress options are unavailable right now. You can keep reading here.',
+    failed: 'Could not open service progress options. Try again or keep reading here.',
+  },
   lectionary: {
     "title": "Lectionary readings",
     "contentLanguage": "Reading language",

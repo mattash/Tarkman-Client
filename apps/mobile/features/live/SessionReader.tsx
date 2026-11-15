@@ -32,6 +32,7 @@ import { languageAbbreviations as abbreviations } from './languageAbbreviations'
 import { readerScopeKey } from './explanationCue'
 import { useExplanationCue } from './useExplanationCue'
 import { ExplanationSheetContent } from './ExplanationSheetContent'
+import { ServiceProgressAction } from '../service-progress/ServiceProgressAction'
 
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
   useScreenKeepAwake('tarkman-live-reader')
@@ -132,6 +133,7 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
     <AppText variant="heading">{title}</AppText>
     {church && <AppText variant="caption" tone="muted">{church}</AppText>}
     <ReaderStatus state={state} retry={retry} showLive={false} savedCopy={showingSaved} />
+    <ServiceProgressAction key={`${id}:${endpoints.api}`} selectedID={id} readerAPI={endpoints.api} />
     {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">{t('reader.currentPartUnavailable')}</AppText>}
   </View>
   // Deleted is terminal, not a connection problem: no Retry, no saved copy standing in, just a way out.

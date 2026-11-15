@@ -22,10 +22,14 @@ final class ServiceActivityRegistrationBridge {
     }
 
     func observe(_ activity: Activity<ServicePublicationIdentity>, disclosed: Bool, capability: String,
-                 registrationID: UUID = UUID(), beforeTokenObservation: () throws -> Void = {}) throws {
+                 registrationID: UUID = UUID(), simulatorToken: Data? = nil,
+                  beforeTokenObservation: () throws -> Void = {}) throws {
         guard enabled else { throw ServiceRegistrationFailure.disabled }
         guard disclosed else { throw ServiceRegistrationFailure.invalidInput }
         guard current == nil else { throw ServiceRegistrationFailure.removalRequired }
+        #if !targetEnvironment(simulator)
+        guard simulatorToken == nil else { throw ServiceRegistrationFailure.invalidInput }
+        #endif
         let follow = try transport.begin(identity: activity.attributes, activityID: activity.id,
                                          capability: capability, id: registrationID)
         let coordinator = ServiceRegistrationCoordinator(transport: transport, follow: follow)
@@ -41,6 +45,16 @@ final class ServiceActivityRegistrationBridge {
             failure = .transport
             throw ServiceRegistrationFailure.transport
         }
+        #if targetEnvironment(simulator)
+        if let simulatorToken {
+            tokenTask = Task { [weak self] in
+                await coordinator.receive(token: simulatorToken.map { String(format: "%02x", $0) }.joined())
+                guard !Task.isCancelled, let self, self.current?.follow == follow else { return }
+                self.failure = coordinator.failure
+            }
+            return
+        }
+        #endif
         tokenTask = Task { [weak self] in
             for await bytes in activity.pushTokenUpdates {
                 guard !Task.isCancelled, let self, self.current?.follow == follow else { return }
