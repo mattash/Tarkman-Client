@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, Text, View, useTVEventHandler, useWindowDimensions } from 'react-native'
 import QRCode from 'react-native-qrcode-svg'
-import { createContinuousGroup, createManualPosition, createPageGroup, describeDisplay, displayOccurrence, independentDuration, projectionDuration,
+import { createContinuousGroup, createManualPosition, createPageGroup, describeDisplay, displayOccurrence, projectionDuration,
   sessionQrLayout, statusPostureKey, statusTextScale, type DisplayLanguage, type DisplayPreferences, type Endpoints } from '@tarkman/reader'
 import { DisplayOptions } from '../components/DisplayOptions'
 import { FreshnessBadge } from '../components/FreshnessBadge'
@@ -164,7 +164,7 @@ export function DisplayScreen({ endpoints, id, onBack, transport, config, bare =
                   borderColor: colors.borderDivider, borderLeftWidth: stacked ? 0 : 1, borderTopWidth: stacked ? 1 : 0,
                   paddingLeft: stacked ? 0 : padding, paddingTop: stacked ? space.md : 0 } : undefined]}>
                   <ProjectionText key={`${id}/${part.key}/${language}`} text={texts[index]} language={language === 'hyw' || language === 'hye' ? 'grabar' : language} fontSize={fontSize} clock={readingClock}
-                    durationMs={settings.language_sync === 'independent' ? independentDuration(durationMs, texts[index], texts) : durationMs}
+                    durationMs={durationMs}
                     movement={movement} pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
                     continuousGroup={settings.language_sync === 'linked' && languages.length > 1 ? continuousGroup : undefined}
                     manualPosition={settings.language_sync === 'linked' ? manualPositions.linked : manualPositions.independent[language]}

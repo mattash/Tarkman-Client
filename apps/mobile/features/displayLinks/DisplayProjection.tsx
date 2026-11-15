@@ -17,7 +17,7 @@ import { describeDisplay, displayOccurrence, sessionQrLayout as sharedSessionQrL
 import { displayText } from './presentation'
 import { createContinuousGroup, projectionDuration } from './projectionTiming'
 import { useProjectionClock } from './useProjectionClock'
-import { independentDuration, createManualPosition, createPageGroup, statusTextScale } from './customization'
+import { createManualPosition, createPageGroup, statusTextScale } from './customization'
 
 /** Reserve both scaled text lines, quiet zone, gaps and screen margins before sizing the matrix. */
 export function sessionQrLayout(width: number, height: number, fontScale: number, paddingHorizontal: number, paddingVertical: number) {
@@ -118,7 +118,8 @@ export function DisplayPresentation({ state, config, sessionId, statusOnly = fal
             index > 0 ? { borderColor: colors.divider, borderLeftWidth: stacked ? 0 : 1, borderTopWidth: stacked ? 1 : 0, paddingLeft: stacked ? 0 : padding, paddingTop: stacked ? spacing.md : 0 } : undefined]}>
             <ProjectionText key={`${session.id}/${part.key}/${language}`} text={texts[index]}
               language={language === 'hyw' || language === 'hye' ? 'grabar' : language} fontSize={fontSize} clock={readingClock}
-              durationMs={settings.language_sync === 'independent' ? independentDuration(duration, texts[index], texts) : duration}
+              // Every language spans the whole part. Independent columns differ only in their own geometry.
+              durationMs={duration}
               movement={settings.text_movement} preview={preview}
               pageGroup={settings.language_sync === 'linked' ? pageGroup : undefined}
               continuousGroup={settings.language_sync === 'linked' && languages.length > 1 ? continuousGroup : undefined}
