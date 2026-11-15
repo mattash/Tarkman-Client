@@ -1,8 +1,9 @@
 # Exact-passage bookmarks and resume (#276)
 
-**Draft / not ready for merge.** Provisionally stacked on #280 at
-`71890bb1a3a2423c4240d3208db5268bd36fd631`, including its corrected repeated-native-jump
-geometry cache. Reconcile to its accepted final main commit before readiness.
+Reconciled onto the actual accepted #280 squash merge on main,
+`35fbf4961c0e38cd64910a4126f1e8d7c3ee029f`, retaining the corrected repeated-native-jump
+geometry cache and both accepted capture corrections. Delivery checks and review
+are recorded on the PR; original capture revisions remain unchanged.
 [Owned iOS Simulator evidence](<https://github.com/mattash/Tarkman-Client/blob/agent/passage-bookmarks-resume-12a2065a622d/docs/evidence/issue-276/native-simulator.md>) covers exact passage capture, restoration, SQLite persistence and cleanup.
 Physical-device and actual VoiceOver focus/announcements remain unverified.
 The owner requested restoration of changed phone accessibility settings. Physical

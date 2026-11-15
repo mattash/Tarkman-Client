@@ -1,5 +1,5 @@
 {
-  "status": "SIMULATOR_SCOPE_VERIFIED_FINAL_INTEGRATION_PENDING",
+  "status": "SIMULATOR_SCOPE_VERIFIED",
   "scope": "Genuine ticket-owned iOS Simulator reader and direct SQLite evidence; no physical-device or VoiceOver pass is claimed.",
   "simulator": {
     "udid": "2915F3F2-4C10-4D3D-A261-9580C5F0898D",
@@ -721,10 +721,14 @@
     "status": "MERGED",
     "actualSquash": "35fbf4961c0e38cd64910a4126f1e8d7c3ee029f"
   },
-  "pending": [
-    "final-main reconciliation and current combined CI",
-    "final posted-head independent review"
-  ],
+  "mainReconciliation": {
+    "actualBase": "35fbf4961c0e38cd64910a4126f1e8d7c3ee029f",
+    "ownContinuationReplayByteIdentical": true,
+    "childPatchSha256": "1412486406c285af6fdab23995c5f8331a024b80f975156bc650b14b15fecfd0",
+    "preexistingCapturedRuntimeFilesIdentical": 279,
+    "liturgyTextBlob": "34151989752eabf93b9be208d5545731d1b8c1ce"
+  },
+  "deliveryTracking": "Current required CI and exact posted-head independent review are recorded on PR278; this capture manifest is not a check run.",
   "unverified": [
     "physical-device behavior",
     "actual UIKit/VoiceOver focus and spoken announcements",
@@ -1348,5 +1352,5 @@
     "missing occurrence",
     "OS Dynamic Type"
   ],
-  "acceptanceNote": "Owned-Simulator cases are verified within the recorded scope. Actual accessibility focus/VoiceOver and physical-device behavior remain unverified, not waived for #276; #284 tracks the separate Find-only deferral. #280 merged as35fbf496; final-main checks and posted-head review remain pending."
+  "acceptanceNote": "Owned-Simulator cases are verified within the recorded scope, with the continuation reconciled onto actual squash35fbf496. Actual accessibility focus/VoiceOver and physical-device behavior remain unverified, not waived for #276; #284 tracks the separate Find-only deferral. Current required CI and posted-head review are recorded on PR278, not certified by this manifest."
 }
