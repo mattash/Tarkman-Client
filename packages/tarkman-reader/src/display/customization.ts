@@ -57,13 +57,6 @@ export function statusTextScale(textScale: number): number {
   return Math.min(1, textScale)
 }
 
-/** Independent translations finish according to their own lengths within the part's estimate. */
-export function independentDuration(duration: number, text: string | null, texts: Array<string | null>) {
-  const words = (value: string | null) => value?.trim().split(/\s+/).filter(Boolean).length ?? 0
-  const longest = Math.max(1, ...texts.map(words))
-  return Math.min(duration, Math.max(3000, duration * words(text) / longest))
-}
-
 /** Shared manual position avoids React renders on every scroll event and ignores feedback. */
 export function createManualPosition() {
   let progress = 0

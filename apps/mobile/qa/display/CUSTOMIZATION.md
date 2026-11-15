@@ -27,7 +27,8 @@ for automatic. The viewport still determines columns versus stacking.
 
 Linked continuous movement shares the occurrence clock. Linked timed pages change
 at the same instants, using enough pages for the denser column. Independent
-movement paces each language by its word count within the estimated part duration.
+movement scrolls each language through its own height across the full estimated part
+duration, so no column finishes early.
 Manual linked scrolling shares proportional positions; independent columns can
 be scrolled separately. Stationary mode disables scrolling, and the preview warns
 about overflow. Reduced-motion mode always uses discrete pages for automatic text.
