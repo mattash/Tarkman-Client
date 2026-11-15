@@ -20,6 +20,8 @@ EXPO_PUBLIC_ACTIONCABLE_URL=ws://127.0.0.1:8100/cable \
 npm run mobile
 ```
 
+For concurrent isolated QA, set `FIXTURE_PORT` to an unused port (default `8100`) and point both Expo endpoints at that port. The fixture remains loopback-only; do not reuse another ticket's fixture or mutable state.
+
 Then open the numeric deep link `/sessions/9001/parts` (or use the app’s
 manual session entry) and confirm discovery, English/Russian/Grabar rendering,
 the missing-Russian state, long-text scrolling, explanation sheet, and live

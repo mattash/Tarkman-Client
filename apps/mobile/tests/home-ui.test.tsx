@@ -119,6 +119,27 @@ it('does not guess a lead when several services are live and location is unknown
   expect(screen.getByRole('button', { name: 'Morning Service, Holy Trinity, Cambridge, live now' })).toBeOnTheScreen()
 })
 
+it.each(['paused', 'finished'])('does not advertise a secondary %s service as live', async status => {
+  listing([stJohn, { ...trinity, status }])
+  await render(<Today />, { wrapper })
+  expect(screen.getByRole('button', { name: 'Divine Liturgy, St. John Armenian Church, live now' })).toBeOnTheScreen()
+  const row = screen.getByRole('button', { name: 'Morning Service, Holy Trinity, Cambridge' })
+  expect(screen.queryByRole('button', { name: 'Morning Service, Holy Trinity, Cambridge, live now' })).toBeNull()
+  expect(screen.queryByText('Live now')).toBeNull()
+  expect(screen.getByText('Services')).toBeOnTheScreen()
+  await fireEvent.press(row)
+  expect(mockPush).toHaveBeenCalledWith('/sessions/12/parts')
+})
+
+it('does not label a paused service elsewhere as live after finding the lead church', async () => {
+  mockGetPermission.mockResolvedValue({ granted: true, canAskAgain: true })
+  listing([stJohn, { ...trinity, status: 'paused' }])
+  await render(<Today />, { wrapper })
+  expect(await screen.findByText('You’re at St. John Armenian Church')).toBeOnTheScreen()
+  expect(screen.queryByText('Also live elsewhere')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Morning Service, Holy Trinity, Cambridge' })).toBeOnTheScreen()
+})
+
 it('asks for location only when the reader taps, then places them at their church', async () => {
   listing([stJohn, trinity])
   await render(<Today />, { wrapper })

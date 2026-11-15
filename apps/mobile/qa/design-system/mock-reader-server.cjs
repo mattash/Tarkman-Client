@@ -13,7 +13,7 @@ const http = require('node:http')
 const { URL } = require('node:url')
 
 const HOST = '127.0.0.1'
-const PORT = 8100
+const PORT = Number(process.env.FIXTURE_PORT || 8100)
 const SESSION_ID = 9001
 const SECOND_SESSION_ID = 9002
 const SCENARIO = process.env.FIXTURE_SERVICES || 'single'

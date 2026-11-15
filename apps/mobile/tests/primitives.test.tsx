@@ -161,6 +161,33 @@ describe('native primitives', () => {
     expect(input.props.allowFontScaling).toBe(true)
     expect(screen.getByRole('alert')).toHaveTextContent('Enter an address')
   })
+  it('associates web field errors with each input and clears the association on recovery', async () => {
+    const previous = Platform.OS
+    Platform.OS = 'web'
+    try {
+      const { rerender } = await render(<><TextField label="Email" error="Enter an address" /><TextField label="Password" error="Enter a password" /></>, { wrapper })
+      const email = screen.getByLabelText('Email'), password = screen.getByLabelText('Password')
+      expect(email.props['aria-invalid']).toBe(true)
+      expect(email.props['aria-describedby']).toBe(screen.getByText('Enter an address').props.nativeID)
+      expect(password.props['aria-describedby']).toBe(screen.getByText('Enter a password').props.nativeID)
+      expect(email.props['aria-describedby']).not.toBe(password.props['aria-describedby'])
+      await rerender(<><TextField label="Email" /><TextField label="Password" /></>)
+      expect(screen.getByLabelText('Email').props['aria-invalid']).toBe(false)
+      expect(screen.getByLabelText('Email').props['aria-describedby']).toBeUndefined()
+      expect(screen.queryByRole('alert')).toBeNull()
+    } finally { Platform.OS = previous }
+  })
+  it('preserves a caller web description alongside the error and after recovery', async () => {
+    const previous = Platform.OS
+    Platform.OS = 'web'
+    try {
+      const { rerender } = await render(<TextField label="Email" aria-describedby="email-help" error="Enter an address" />, { wrapper })
+      const errorId = screen.getByText('Enter an address').props.nativeID
+      expect(screen.getByLabelText('Email').props['aria-describedby']).toBe(`email-help ${errorId}`)
+      await rerender(<TextField label="Email" aria-describedby="email-help" />)
+      expect(screen.getByLabelText('Email').props['aria-describedby']).toBe('email-help')
+    } finally { Platform.OS = previous }
+  })
   it('lets a caller override the keyboard appearance', async () => {
     await render(<TextField label="Note" keyboardAppearance="dark" />, { wrapper })
     expect(screen.getByLabelText('Note').props.keyboardAppearance).toBe('dark')
