@@ -6,6 +6,7 @@ import { parseMarkdownSource } from '../design/markdownSource'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import type { ReadingSize } from '../design/tokens'
 import { ThemeProvider } from '../design/ThemeProvider'
+import { ReadingFontContext } from '../design/readingFont'
 import { PartList } from '../features/live/PartList'
 import { normalizeParts, type LivePart } from '../features/live/contracts'
 
@@ -13,15 +14,44 @@ let mockTextTop = 0
 let mockTextWidth = 400
 let mockMeasurements = 0
 let mockWebNode: object | undefined
+let mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 }
+const mockStanzaFrames = new Map<string, { y: number; height: number }>()
+let mockDeferStanzaMeasurements = false
+let mockStanzaNodeVersion = 0
+let mockParentNodeVersion = 0
+const mockPendingStanzaMeasurements: (() => void)[] = []
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({ __esModule: true, default: () => mockDimensions }))
 jest.mock('react-native', () => {
   const actual = jest.requireActual<typeof import('react-native')>('react-native')
   const React = jest.requireActual<typeof import('react')>('react')
   const mocked = Object.create(actual)
   Object.defineProperty(mocked, 'View', { value: React.forwardRef((props: import('react-native').ViewProps, ref) => {
-    React.useImperativeHandle(ref, () => mockWebNode ?? ({ measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => {
-      mockMeasurements++
-      done(0, props.testID === 'reading-frame' ? 0 : mockTextTop, props.testID === 'reading-frame' ? 400 : mockTextWidth, props.testID === 'reading-frame' ? 80 : 100000)
-    } }))
+    const nodeVersion = props.testID?.startsWith('visible-stanza-') ? mockStanzaNodeVersion : mockParentNodeVersion
+    const node = React.useMemo(() => {
+      const nativeFrame = () => mockStanzaFrames.get(props.testID ?? '')
+      const deliver = (report: () => void) => {
+        if (mockDeferStanzaMeasurements && props.testID?.startsWith('visible-stanza-')) mockPendingStanzaMeasurements.push(report)
+        else report()
+      }
+      return {
+        nodeVersion,
+        measure: (done: (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => void) => {
+          const frame = nativeFrame()
+          const width = mockTextWidth, top = mockTextTop
+          if (frame) deliver(() => done(0, frame.y, width, frame.height, 0, top + frame.y))
+        },
+        measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => {
+          mockMeasurements++
+          const frame = nativeFrame()
+          if (props.testID?.startsWith('visible-stanza-') && !frame) { done(0, 0, 0, 0); return }
+          const top = props.testID === 'reading-frame' ? 0 : mockTextTop + (frame?.y ?? 0)
+          const width = props.testID === 'reading-frame' ? 400 : mockTextWidth
+          const height = props.testID === 'reading-frame' ? 80 : frame?.height ?? 100000
+          deliver(() => done(0, top, width, height))
+        },
+      }
+    }, [nodeVersion, props.testID])
+    React.useImperativeHandle(ref, () => mockWebNode ?? node)
     return <actual.View {...props} />
   }) })
   Object.defineProperty(mocked, 'Text', { value: React.forwardRef((props: import('react-native').TextProps, ref) => {
@@ -53,13 +83,21 @@ function reader(data: LivePart[], callback?: (passage: { key: string; language: 
 async function layout(text: string, displayedLines: string[], height = 20) {
   await fireEvent(screen.getByText(text), 'textLayout', { nativeEvent: { lines: displayedLines.map((text, index) => ({ text, y: index * height, height })) } })
 }
+function measuredRange(layout: VisibleTextLayout, top: number, bottom: number) {
+  layout.measure(() => {})
+  return layout.range(top, bottom)
+}
 async function settle() { await act(() => { jest.advanceTimersByTime(120) }) }
 async function scroll(top: number) {
   mockTextTop = -top
   await fireEvent.scroll(screen.getByTestId('reading-list'), { nativeEvent: { contentOffset: { y: top } } })
   await settle()
 }
-afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); mockTextTop = 0; mockTextWidth = 400; mockMeasurements = 0; mockWebNode = undefined })
+afterEach(() => {
+  jest.useRealTimers(); jest.restoreAllMocks(); mockTextTop = 0; mockTextWidth = 400; mockMeasurements = 0; mockWebNode = undefined
+  mockDimensions = { width: 390, height: 844, scale: 3, fontScale: 1 }
+  mockStanzaFrames.clear(); mockDeferStanzaMeasurements = false; mockStanzaNodeVersion = 0; mockParentNodeVersion = 0; mockPendingStanzaMeasurements.length = 0
+})
 
 describe('precise optional visible passages', () => {
   it('uses bounded actual glyph geometry on web without onTextLayout or pixel/source interpolation', async () => {
@@ -120,8 +158,8 @@ describe('precise optional visible passages', () => {
     await render(reader(data, callback), { wrapper })
     await layout(first, [first])
     await layout(later.join('\n'), later)
-    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20 } } })
-    await fireEvent(screen.getByTestId(`visible-stanza-${first.length + 4}`), 'layout', { nativeEvent: { layout: { y: 40, height: 3000 } } })
+    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20, width: 400 } } })
+    await fireEvent(screen.getByTestId(`visible-stanza-${first.length + 4}`), 'layout', { nativeEvent: { layout: { y: 40, height: 3000, width: 400 } } })
     await scroll(2040)
     const start = source.indexOf('Later 100.')
     expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start, end: start + 'Later 100.'.length })
@@ -134,13 +172,15 @@ describe('precise optional visible passages', () => {
     const source = `${first}\r\n\r\n${later.join('\r\n')}`
     const data = parts(source)
     const callback = jest.fn()
+    mockStanzaFrames.set('visible-stanza-0', { y: 0, height: 20 })
+    mockStanzaFrames.set(`visible-stanza-${first.length + 4}`, { y: 40, height: 80 })
     await render(reader(data, callback), { wrapper })
     const childLayout = (width: number) => fireEvent(screen.getByText(later.join('\n')), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width, height: 80 } } })
     await childLayout(400)
     await layout(first, [first])
     await layout(later.join('\n'), later)
-    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20 } } })
-    await fireEvent(screen.getByTestId(`visible-stanza-${first.length + 4}`), 'layout', { nativeEvent: { layout: { y: 40, height: 80 } } })
+    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20, width: 400 } } })
+    await fireEvent(screen.getByTestId(`visible-stanza-${first.length + 4}`), 'layout', { nativeEvent: { layout: { y: 40, height: 80, width: 400 } } })
     await settle()
     expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start: 0, end: first.length })
     callback.mockClear()
@@ -165,29 +205,140 @@ describe('precise optional visible passages', () => {
     expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start, end: start + later[0].length })
   })
 
-  it('requires fresh stanza bounds after a reading-context change even when child lines are fresh', async () => {
+  it.each(['fontReady', 'style', 'fontScale'] as const)('recovers unchanged native stanza frames after %s changes without a synthetic wrapper onLayout', async changed => {
+    jest.useFakeTimers()
+    const first = 'Opening.'
+    const later = ['Later first.', 'Later second.']
+    const source = `${first}\r\n\r\n${later.join('\r\n')}`
+    const stanzaID = `visible-stanza-${first.length + 4}`
+    mockStanzaFrames.set('visible-stanza-0', { y: 0, height: 20 })
+    mockStanzaFrames.set(stanzaID, { y: 40, height: 40 })
+    let visible: VisibleTextLayout | undefined
+    const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+    const make = (next: boolean) => <ReadingFontContext.Provider value={!(next && changed === 'fontReady')}>
+      <LiturgyText compactStanzas text={source} registerVisibleText={register} style={next && changed === 'style' ? { fontSize: 25 } : undefined} />
+    </ReadingFontContext.Provider>
+    const view = await render(make(false), { wrapper })
+    await layout(first, [first])
+    await layout(later.join('\n'), later)
+    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20, width: 400 } } })
+    await fireEvent(screen.getByTestId(stanzaID), 'layout', { nativeEvent: { layout: { y: 40, height: 40, width: 400 } } })
+    const start = source.indexOf(later[0])
+    expect(measuredRange(visible!, 40, 80)).toEqual({ start, end: start + later[0].length })
+    if (changed === 'fontScale') mockDimensions = { ...mockDimensions, fontScale: 1.5 }
+    await view.rerender(make(true))
+    expect(measuredRange(visible!, 40, 80)).toBeUndefined()
+    await layout(first, [first])
+    await layout(later.join('\n'), later)
+    // Fabric need not emit another wrapper onLayout when its frame is unchanged.
+    // A bounded current native measurement, not an invented layout event, must recover.
+    measuredRange(visible!, 40, 80)
+    await settle()
+    expect(measuredRange(visible!, 40, 80)).toEqual({ start, end: start + later[0].length })
+  })
+
+  it('bounds unchanged-frame recovery reads for a deep stanza instead of measuring every stanza', async () => {
+    jest.useFakeTimers()
+    const stanzas = Array.from({ length: 128 }, (_, index) => `Stanza ${index}.`)
+    const source = stanzas.join('\n\n')
+    let offset = 0
+    for (const [index, stanza] of stanzas.entries()) {
+      mockStanzaFrames.set(`visible-stanza-${offset}`, { y: index * 40, height: 20 })
+      offset += stanza.length + 2
+    }
+    const target = stanzas[100], start = source.indexOf(target)
+    let visible: VisibleTextLayout | undefined
+    const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+    const make = (next: boolean) => <LiturgyText compactStanzas text={source} registerVisibleText={register} style={{ fontSize: next ? 25 : 24 }} />
+    const view = await render(make(false), { wrapper })
+    await layout(target, [target])
+    await fireEvent(screen.getByTestId(`visible-stanza-${start}`), 'layout', { nativeEvent: { layout: { y: 4000, height: 20, width: 400 } } })
+    expect(measuredRange(visible!, 4000, 4020)).toEqual({ start, end: start + target.length })
+    await view.rerender(make(true))
+    await layout(target, [target])
+    const before = mockMeasurements
+    measuredRange(visible!, 4000, 4020)
+    await settle()
+    expect(measuredRange(visible!, 4000, 4020)).toEqual({ start, end: start + target.length })
+    expect(mockMeasurements - before).toBeLessThan(24)
+  })
+
+  it.each(['geometry', 'node', 'parentNode', 'parentMove', 'width'] as const)('rejects an in-flight stanza-frame recovery after a %s change', async changed => {
+    jest.useFakeTimers()
+    const first = 'Opening.'
+    const later = ['Later first.', 'Later second.']
+    const source = `${first}\r\n\r\n${later.join('\r\n')}`
+    const stanzaID = `visible-stanza-${first.length + 4}`
+    mockStanzaFrames.set('visible-stanza-0', { y: 0, height: 20 })
+    mockStanzaFrames.set(stanzaID, { y: 40, height: 40 })
+    let visible: VisibleTextLayout | undefined
+    const register = (value: VisibleTextLayout) => { visible = value; return () => {} }
+    const make = (revision: number) => <LiturgyText compactStanzas text={source} registerVisibleText={register} style={{ fontSize: 24 + revision }} />
+    const view = await render(make(0), { wrapper })
+    await layout(first, [first])
+    await layout(later.join('\n'), later)
+    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20, width: 400 } } })
+    await fireEvent(screen.getByTestId(stanzaID), 'layout', { nativeEvent: { layout: { y: 40, height: 40, width: 400 } } })
+    const start = source.indexOf(later[0])
+    expect(measuredRange(visible!, 40, 80)).toEqual({ start, end: start + later[0].length })
+    await view.rerender(make(1))
+    await layout(first, [first])
+    await layout(later.join('\n'), later)
+    mockDeferStanzaMeasurements = true
+    expect(measuredRange(visible!, 40, 80)).toBeUndefined()
+    expect(mockPendingStanzaMeasurements.length).toBeGreaterThan(0)
+    if (changed === 'geometry') await view.rerender(make(2))
+    if (changed === 'node') { mockStanzaNodeVersion++; await view.rerender(make(1)) }
+    if (changed === 'parentNode') { mockParentNodeVersion++; await view.rerender(make(1)) }
+    if (changed === 'parentMove') mockTextTop = -10
+    if (changed === 'width') mockTextWidth = 240
+    await act(() => {
+      for (let reads = 0; reads < 20 && mockPendingStanzaMeasurements.length; reads++) {
+        mockPendingStanzaMeasurements.splice(0).forEach(report => report())
+      }
+    })
+    expect(mockPendingStanzaMeasurements).toHaveLength(0)
+    expect(measuredRange(visible!, 40, 80)).toBeUndefined()
+    mockDeferStanzaMeasurements = false
+    mockTextTop = 0
+    await act(() => { mockPendingStanzaMeasurements.splice(0).forEach(report => report()) })
+    await fireEvent(screen.getByText(later.join('\n')), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: mockTextWidth, height: 40 } } })
+    await layout(first, [first])
+    await layout(later.join('\n'), later)
+    measuredRange(visible!, 40, 80)
+    await settle()
+    expect(measuredRange(visible!, 40, 80)).toEqual({ start, end: start + later[0].length })
+  })
+
+  it('rejects stale stanza y offsets while current native bounds are in flight after a context change', async () => {
     jest.useFakeTimers()
     const first = 'Opening.'
     const later = ['Later first.', 'Later second.']
     const source = `${first}\r\n\r\n${later.join('\r\n')}`
     const data = parts(source)
     const callback = jest.fn()
+    mockStanzaFrames.set('visible-stanza-0', { y: 0, height: 20 })
+    mockStanzaFrames.set(`visible-stanza-${first.length + 4}`, { y: 40, height: 40 })
     const view = await render(reader(data, callback), { wrapper })
     await layout(first, [first])
     await layout(later.join('\n'), later)
-    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20 } } })
+    await fireEvent(screen.getByTestId('visible-stanza-0'), 'layout', { nativeEvent: { layout: { y: 0, height: 20, width: 400 } } })
     const stanza = screen.getByTestId(`visible-stanza-${first.length + 4}`)
-    await fireEvent(stanza, 'layout', { nativeEvent: { layout: { y: 40, height: 40 } } })
+    await fireEvent(stanza, 'layout', { nativeEvent: { layout: { y: 40, height: 40, width: 400 } } })
     await settle()
     expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start: 0, end: first.length })
     callback.mockClear()
     await view.rerender(reader(data, callback, 'larger'))
+    mockStanzaFrames.set(`visible-stanza-${first.length + 4}`, { y: 80, height: 80 })
+    mockDeferStanzaMeasurements = true
     await fireEvent(screen.getByText(later.join('\n')), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 80 } } })
     await layout(later.join('\n'), later, 40)
     // Old y=40 would select Later second.; the current stanza actually starts at80.
     await scroll(80)
     expect(callback).not.toHaveBeenCalled()
-    await fireEvent(screen.getByTestId(`visible-stanza-${first.length + 4}`), 'layout', { nativeEvent: { layout: { y: 80, height: 80 } } })
+    expect(mockPendingStanzaMeasurements.length).toBeGreaterThan(0)
+    mockDeferStanzaMeasurements = false
+    await act(() => { mockPendingStanzaMeasurements.splice(0).forEach(report => report()) })
     await scroll(80)
     const start = source.indexOf(later[0])
     expect(callback).toHaveBeenLastCalledWith({ key: data[0].key, language: 'en', start, end: start + later[0].length })

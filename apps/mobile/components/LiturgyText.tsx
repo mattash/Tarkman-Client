@@ -41,8 +41,10 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
   const visibleNode = useRef<ComponentRef<typeof View> | null>(null)
   const stanzaFrame = useRef<ComponentRef<typeof View> | null>(null)
   const visibleLayout = useRef<VisibleTextLayout | undefined>(undefined)
-  const children = useRef(new Map<number, { layout: VisibleTextLayout }>())
-  const stanzaBounds = useRef(new Map<number, { geometry: object; y: number; height: number }>())
+  const children = useRef(new Map<number, { layout: VisibleTextLayout; revision: number }>())
+  const stanzaNodes = useRef(new Map<number, ComponentRef<typeof View>>())
+  const stanzaRevision = useRef(0)
+  const stanzaBounds = useRef(new Map<number, { geometry: object; y: number; height: number; width: number }>())
   const activeVisibility = useRef<object | undefined>(geometry)
   useLayoutEffect(() => {
     activeVisibility.current = geometry
@@ -52,14 +54,107 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
     if (!registerVisibleText || !text?.trim()) return
     const identity = geometry
     let measuredWidth: number | undefined
+    type Frame = { x: number; y: number; width: number; height: number }
+    let measuredParent: Frame | undefined
+    let recovering = false
+    let cancelRecovery: (() => void) | undefined
+    let stanzaStarts: number[] | undefined
+    const sameFrame = (a: Frame, b: Frame) => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
+    // Fabric can suppress onLayout when a new text context leaves a wrapper's
+    // frame unchanged. Recover from current native frames, never by retagging old
+    // bounds. Only a binary-search path and the visible window need native reads.
+    const recoverStanzas = (top: number, bottom: number, width: number | undefined) => {
+      const parent = stanzaFrame.current
+      const origin = measuredParent
+      if (recovering || !parent?.measureInWindow || !origin || width !== origin.width || width <= 0) return
+      recovering = true
+      const revision = stanzaRevision.current
+      let finished = false
+      const samples = new Map<number, { node: ComponentRef<typeof View>; child: NonNullable<ReturnType<typeof children.current.get>>;
+        revision: number; previous: ReturnType<typeof stanzaBounds.current.get>; frame: Frame }>()
+      const current = () => !finished && activeVisibility.current === identity && visibleLayout.current === layout
+        && stanzaFrame.current === parent && measuredParent !== undefined && sameFrame(measuredParent, origin)
+        && [...samples].every(([start, sample]) => stanzaNodes.current.get(start) === sample.node
+          && children.current.get(start) === sample.child && sample.child.revision === sample.revision
+          && stanzaBounds.current.get(start) === sample.previous)
+      const stop = () => {
+        if (finished) return
+        finished = true
+        clearTimeout(timeout)
+        cancelRecovery = undefined
+        recovering = false
+        // A fresh child event may already have requested capture while this read
+        // was pending. Give that event one new attempt after releasing the guard;
+        // an unmeasurable node alone must not cause an automatic retry loop.
+        if (activeVisibility.current === identity && visibleLayout.current === layout
+          && stanzaRevision.current !== revision) layout.onChange?.()
+      }
+      // Detached native nodes need not answer; release the guard without polling.
+      let timeout = setTimeout(stop, 500)
+      const awaitNative = () => { clearTimeout(timeout); timeout = setTimeout(stop, 500) }
+      cancelRecovery = stop
+      const measureStanza = (index: number, report: (frame: Frame) => void) => {
+        const start = stanzaStarts![index]
+        const node = stanzaNodes.current.get(start), child = children.current.get(start)
+        if (!current() || !node?.measureInWindow || !child) { stop(); return }
+        const revision = child.revision, previous = stanzaBounds.current.get(start)
+        awaitNative()
+        node.measureInWindow((x, y, nativeWidth, height) => {
+          if (!current() || stanzaNodes.current.get(start) !== node || children.current.get(start) !== child
+            || child.revision !== revision || stanzaBounds.current.get(start) !== previous
+            || nativeWidth !== width || height <= 0) { stop(); return }
+          const frame = { x, y, width: nativeWidth, height }
+          samples.set(start, { node, child, revision, previous, frame })
+          report(frame)
+        })
+      }
+      const commit = () => {
+        awaitNative()
+        parent.measureInWindow((x, y, nativeWidth, height) => {
+          if (!current() || !sameFrame(origin, { x, y, width: nativeWidth, height })) { stop(); return }
+          let changed = false
+          for (const [start, { frame, previous }] of samples) {
+            const y = frame.y - origin.y
+            if (previous?.geometry !== identity || previous.width !== frame.width || previous.y !== y || previous.height !== frame.height) {
+              stanzaBounds.current.set(start, { geometry: identity, y, height: frame.height, width: frame.width })
+              changed = true
+            }
+          }
+          stop()
+          if (changed) layout.onChange?.()
+        })
+      }
+      parent.measureInWindow((x, y, nativeWidth, height) => {
+        if (!current() || !sameFrame(origin, { x, y, width: nativeWidth, height })) { stop(); return }
+        // Source order is stable for this geometry; do not sort every scroll.
+        stanzaStarts ??= [...children.current.keys()].sort((a, b) => a - b)
+        const visible = (index: number): void => {
+          if (index >= stanzaStarts!.length) { commit(); return }
+          measureStanza(index, frame => {
+            if (frame.y - origin.y >= bottom) commit()
+            else visible(index + 1)
+          })
+        }
+        const search = (low: number, high: number): void => {
+          if (low >= high) { visible(low); return }
+          const mid = Math.floor((low + high) / 2)
+          measureStanza(mid, frame => {
+            if (frame.y + frame.height - origin.y <= top) search(mid + 1, high)
+            else search(low, mid)
+          })
+        }
+        search(0, stanzaStarts.length)
+      })
+    }
     let webSource: ReturnType<typeof visibleSource> | undefined
     const layout: VisibleTextLayout = {
       measure(report) {
         const node = stanzaFrame.current ?? visibleNode.current
         if (!node?.measureInWindow) { report(0, 0); return }
-        node.measureInWindow((_x, y, width, height) => {
+        node.measureInWindow((x, y, width, height) => {
           if (activeVisibility.current !== identity || node !== (stanzaFrame.current ?? visibleNode.current)) { report(0, 0); return }
           measuredWidth = width
+          measuredParent = { x, y, width, height }
           if (Platform.OS !== 'web' && !stanzaFrame.current) {
             const cached = lines.current
             if (cached?.geometry !== identity || cached.width !== width
@@ -71,12 +166,15 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
       range(top, bottom, parentWidth) {
         if (activeVisibility.current !== identity) return
         if (stanzaFrame.current) {
+          const width = parentWidth ?? measuredWidth
           for (const [start, child] of children.current) {
             const bounds = stanzaBounds.current.get(start)
-            if (!bounds || bounds.geometry !== identity || bounds.y + bounds.height <= top || bounds.y >= bottom) continue
-            const range = child.layout.range(top - bounds.y, bottom - bounds.y, parentWidth ?? measuredWidth)
+            if (!bounds || bounds.geometry !== identity || (width !== undefined && bounds.width !== width)
+              || bounds.y + bounds.height <= top || bounds.y >= bottom) continue
+            const range = child.layout.range(top - bounds.y, bottom - bounds.y, width)
             if (range) return { start: start + range.start, end: start + range.end }
           }
+          recoverStanzas(top, bottom, width)
           return
         }
         if (Platform.OS === 'web') return webVisibleRange(visibleNode.current, webSource ??= visibleSource(text), top, bottom)
@@ -100,7 +198,7 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
     }
     visibleLayout.current = layout
     const unregister = registerVisibleText(layout)
-    return () => { visibleLayout.current = undefined; unregister() }
+    return () => { visibleLayout.current = undefined; cancelRecovery?.(); unregister() }
   }, [registerVisibleText, geometry, text])
   const anchor = useRef<ComponentRef<typeof Text> | null>(null)
   const textFrame = useRef<ComponentRef<typeof Text> | null>(null)
@@ -248,13 +346,19 @@ export function LiturgyText({ text, selectable = true, language = 'en', tone = '
       if (!stanza.length) return null
       const content = <LiturgyText key={index} {...props} variant={variant} style={style} text={stanza} language={language} tone={tone} selectable={selectable} readingSize={readingSize} passageHighlight={localHighlight}
         registerVisibleText={registerVisibleText ? layout => {
-          layout.onChange = () => visibleLayout.current?.onChange?.()
-          children.current.set(start, { layout })
-          return () => { children.current.delete(start) }
+          const child = { layout, revision: 0 }
+          layout.onChange = () => { child.revision++; stanzaRevision.current++; visibleLayout.current?.onChange?.() }
+          children.current.set(start, child)
+          stanzaRevision.current++
+          return () => {
+            if (children.current.get(start) === child) { children.current.delete(start); stanzaRevision.current++ }
+          }
         } : undefined} />
-      return registerVisibleText ? <View key={index} testID={`visible-stanza-${start}`} onLayout={event => {
+      return registerVisibleText ? <View key={index} testID={`visible-stanza-${start}`} collapsable={false}
+        ref={node => { if (node) stanzaNodes.current.set(start, node); else stanzaNodes.current.delete(start) }} onLayout={event => {
         if (activeVisibility.current !== geometry) return
         stanzaBounds.current.set(start, { ...event.nativeEvent.layout, geometry })
+        stanzaRevision.current++
         visibleLayout.current?.onChange?.()
       }}>{content}</View> : content
     })}</View>
