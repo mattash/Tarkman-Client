@@ -20,6 +20,10 @@ The [saved HTML specimens](specimens/README.md) preserve the visual proposal for
 
 Specimens stay provisional until the system has been applied in real screens. Use them as review evidence, not definitive or prescriptive layouts. There is no screenshot enforcement or mandatory specimen reproduction.
 
+## Current application audit
+
+[Issue #283 audit and working improvements](issue283-audit.md) reconciles the historical reading audit with the production Expo client, records Impeccable/UI SDK methods and limits, and links runnable improvements with matched real Before/After evidence. It does not replace the selected design direction or authorize an SDK migration.
+
 ## References
 
 - **Structure:** a foundations-first process: inspect existing sources, resolve conflicts, define scope and primitive values, alias semantic roles, document the foundation, then build and verify component variants. No Figma library has been built.
