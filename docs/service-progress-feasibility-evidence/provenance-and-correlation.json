@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "backend_sha": "46481161509155d04e3fcf60ce7928ea19f9614b",
+  "baseline": {
+    "installed_native_source": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+    "relevant_ui_identical_to_base": "75264208c87243cded206b4c0a015155511857fe",
+    "not_full_base_binary": true,
+    "hashes": {
+      "TarkmanProgressDev.debug.dylib": "b7deff39eb1ab47b5c17b9f7f3e224ab5f0ff86a4410e054d13ad882256aa862",
+      "Info.plist": "7c878037bf8d3c939a8af853818705e5a49dd79f98080fb4a60303b62927d24f",
+      "PlugIns/ServiceProgressLiveActivity.appex/ServiceProgressLiveActivity": "6502fd0c34f2f82d5345be84751630576b90efb732ed01c2cd4b83cdc46858aa",
+      "PlugIns/ServiceProgressLiveActivity.appex/Info.plist": "fb3ec87469b69ea8148a7b02000cd9e93ae26a14b9600b6bcdcae38571eb6671"
+    },
+    "flags": {
+      "ServiceProgressSimulatorFixture": true,
+      "ServiceProgressSimulatorHTTP": null,
+      "ServiceProgressSimulatorAPIOrigin": "http://127.0.0.1:8140",
+      "ServiceProgressRemoteEnabled": true
+    }
+  },
+  "after": {
+    "native_inputs_verified_against_commit": "90cbda678b087229bab67a664a2c79f0eb0a0e2f",
+    "built_from_wip_before_commit": true,
+    "installed_and_postcapture_hashes_match": true,
+    "hashes": {
+      "TarkmanProgressDev.debug.dylib": "0ee9905825e5cb31018f69cc425dd53f015ba18635c3a6b8a954cf6573d50e66",
+      "Info.plist": "25024f2be6e78dfde7985ce90a1992170cc120e2766f768cae1aae48ad9de069",
+      "PlugIns/ServiceProgressLiveActivity.appex/ServiceProgressLiveActivity": "6502fd0c34f2f82d5345be84751630576b90efb732ed01c2cd4b83cdc46858aa",
+      "PlugIns/ServiceProgressLiveActivity.appex/Info.plist": "d6fd1fc1a4563a9dda88267624c21dc5066b99844d16aaaeb38cfcceab620483"
+    },
+    "source_hashes": {
+      "apps/mobile/app.config.js": "38ae51434603ba0c3632086c0aec399f0992a111d8bde111a7ae9920cb37c33e",
+      "apps/mobile/plugins/with-service-progress.js": "bb47be74803941930cdfd84b35aef371eebe526c781c7b1ebd2e5fa9c7cebead",
+      "apps/mobile/prototypes/service-progress-ios/App/ServiceRemoteExperimentController.swift": "2fb2b90246a2c098850e968204dd53618952092205b5995bf3981625ad613229",
+      "apps/mobile/prototypes/service-progress-ios/App/ServiceRemoteExperimentView.swift": "85f0da4d7dcc48890421b0982243e31f89f4ebd2cb087ed5af458e97555d2c4b",
+      "apps/mobile/prototypes/service-progress-ios/Resources/en.lproj/Localizable.strings": "26422ff30b9df29040f4494a6e9fa19b1bf395c1dd4b1bd698f1ca5879e07f3b",
+      "apps/mobile/prototypes/service-progress-ios/Shared/ServiceRemoteExperimentConfiguration.swift": "e08d1fa6c76b6b65730b38407331d8ef201e7e4c441f7ad4d1e6702e62f17f65",
+      "apps/mobile/prototypes/service-progress-ios/Shared/ServiceRegistrationURLSessionHTTP.swift": "3bd26ec0ee84300bcc1b234dbc6fd43484c770cb06966d5672dfd0213bc73609",
+      "apps/mobile/prototypes/service-progress-ios/Shared/ServicePublicSelection.swift": "fc7d40dedf9d2bd80bc4786847b87043eca328d5a8144e8beecce8fe9cb45458",
+      "apps/mobile/prototypes/service-progress-ios/Shared/ServiceExperimentJournal.swift": "205adfe77bee8ff43c5fde1d5072712608eff8e74aff38e4b8df023430b75864"
+    },
+    "flags": {
+      "ServiceProgressSimulatorFixture": true,
+      "ServiceProgressSimulatorHTTP": true,
+      "ServiceProgressSimulatorAPIOrigin": "http://127.0.0.1:18777"
+    }
+  },
+  "ui_cohort": {
+    "alias": "UI-A",
+    "at_utc": "2026-11-15T05:26:08Z/2026-11-15T05:26:25Z",
+    "public_service_id": 42,
+    "fresh_disclosure_off_then_real_on": true,
+    "start_separate": true,
+    "registration_put": 200,
+    "provider": "existing adapter/bootstrap; injected synthetic HTTP2 subprocess only",
+    "provider_calls": 1,
+    "bootstrap_rounds": 1,
+    "delete": 500,
+    "delete_failure": "fixture nil EOF before Rails",
+    "exact_fenced_post": 200,
+    "journal_cleared": true,
+    "no_card_after_end": true,
+    "not_delete204_cohort": true
+  },
+  "corrected_probe_cohort": {
+    "at_utc": "2026-11-15T05:39:51Z",
+    "requests": 11,
+    "all_expected": true,
+    "delete": 204,
+    "delete_framing": "no Content-Length or Transfer-Encoding",
+    "unresolved_identities": 0
+  },
+  "teardown": {
+    "database": "sp277_3429_native",
+    "registration_rows": 4,
+    "unresolved_rows": 0,
+    "ciphertext_rows": 0,
+    "prepared_rows": 0,
+    "owned_http_exit": 0,
+    "owned_pg_exit": 0,
+    "closed_loopback_ports": [
+      8139,
+      8140,
+      18777,
+      18778
+    ],
+    "owned_pg_socket_absent": true,
+    "no_activity_remains": true,
+    "private_artifacts_retained": true,
+    "secure_erasure_claim": false
+  },
+  "unrun_or_held": [
+    "actual signing/provisioning/profile/certificate inspection",
+    "system-trusted HTTPS origin",
+    "real APNs/token issuance/delivery",
+    "Keychain durability",
+    "physical-device lifecycle",
+    "production activation/full277acceptance"
+  ]
+}

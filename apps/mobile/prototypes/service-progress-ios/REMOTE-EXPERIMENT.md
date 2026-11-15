@@ -188,8 +188,8 @@ swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
 artifacts/public-selection-tests
 
 swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
-  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
-  Shared/ServiceExperimentJournal.swift Tests/ExperimentJournalTests.swift \
+  Shared/ServicePublicationV1.swift Shared/ServiceRemoteExperimentConfiguration.swift \
+  Shared/ServiceRegistrationTransport.swift Shared/ServiceExperimentJournal.swift Tests/ExperimentJournalTests.swift \
   -o artifacts/experiment-journal-tests
 artifacts/experiment-journal-tests
 
@@ -202,8 +202,8 @@ swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
 artifacts/remote-experiment-flow-tests
 
 swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
-  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
-  Shared/ServiceExperimentJournal.swift Tests/FencedRevocationTests.swift \
+  Shared/ServicePublicationV1.swift Shared/ServiceRemoteExperimentConfiguration.swift \
+  Shared/ServiceRegistrationTransport.swift Shared/ServiceExperimentJournal.swift Tests/FencedRevocationTests.swift \
   -o artifacts/fenced-revocation-tests
 artifacts/fenced-revocation-tests
 ```
@@ -212,5 +212,9 @@ The integrated flow uses selected ID77, two reserved synthetic origins, fake
 public reads/token events/HTTP and in-memory secure storage. It exercises actual
 selection/projection/journal/transport/coordinator methods, including ambiguous
 retry/rotation/removal and no-PUT/restart behavior. A fake Activity ID is not an
-ActivityKit or provider delivery test. Actual app captures exercise the default-off
-UI and normal local fixture, not the enabled remote path.
+ActivityKit or provider delivery test. Those original captures exercise the default-off
+UI and normal local fixture, not token-backed remote delivery. The later separate
+[HTTP feasibility checkpoint](<../../../../docs/service-progress-feasibility-checkpoint.md>)
+adds actual integrated Debug Simulator URLSession→disposable Rails verification,
+registration and fenced recovery with memory storage/nil push type. See its matched
+Before/After, real receipts and retained failures; no APNs/Keychain/physical proof.

@@ -10,6 +10,7 @@ struct ServiceRemoteExperimentConfiguration {
     let developmentReaderOrigin: URL?
     let simulatorFixtureEnabled: Bool
     let simulatorAPIOrigin: URL?
+    let simulatorHTTPEnabled: Bool
 
     enum Failure: Error { case invalidConfiguration }
 
@@ -55,6 +56,13 @@ struct ServiceRemoteExperimentConfiguration {
             }
             simulatorAPIOrigin = origin
         } else { simulatorAPIOrigin = nil }
+        if let value = info["ServiceProgressSimulatorHTTP"] {
+            guard let number = value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else {
+                throw Failure.invalidConfiguration
+            }
+            simulatorHTTPEnabled = number.boolValue
+        } else { simulatorHTTPEnabled = false }
+        guard !simulatorHTTPEnabled || simulatorFixtureEnabled else { throw Failure.invalidConfiguration }
         guard !simulatorFixtureEnabled || (remoteEnabled && simulatorAPIOrigin != nil &&
             developmentOrigin?.absoluteString == "https://backend.service-progress.invalid" &&
             developmentReaderOrigin?.absoluteString == "https://reader.service-progress.invalid") else {
@@ -75,6 +83,20 @@ struct ServiceRemoteExperimentConfiguration {
               let first = URLComponents(url: origin, resolvingAgainstBaseURL: false),
               let second = URLComponents(url: trusted, resolvingAgainstBaseURL: false) else { return false }
         return first.host?.lowercased() == second.host?.lowercased() && (first.port ?? 443) == (second.port ?? 443)
+    }
+
+    /// Socket testing only, never a relaxed HTTPS/trust policy for real callers.
+    /// The separate Mac executable must opt in at compile time; that define cannot
+    /// admit an iOS device or Release app. No TLS challenge override is installed.
+    static func admitsLoopbackHTTP(_ url: URL) -> Bool {
+        #if os(macOS) && SERVICE_PROGRESS_HTTP_TESTING
+        return explicitSimulatorOrigin(url.absoluteString) == url
+        #elseif DEBUG && targetEnvironment(simulator)
+        return Bundle.main.bundleIdentifier == "app.tarkman.progressprototype" &&
+            explicitSimulatorOrigin(url.absoluteString) == url
+        #else
+        return false
+        #endif
     }
 
     static func explicitSimulatorOrigin(_ text: String) -> URL? {

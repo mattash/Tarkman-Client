@@ -33,6 +33,7 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
     private let storage: ServiceExperimentSecretStorage
     private let enabled: Bool
     private let now: () -> Date
+    private let fixtureOrigin: URL?
     private var savedBytes: Data?
     private var removing = false
     private var sending = false
@@ -48,7 +49,12 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
     // Loading never restores consent, creates a follow, or performs remote I/O.
     // Invalid/unreadable storage fails closed and remains untouched.
     init(storage: ServiceExperimentSecretStorage, enabled: Bool = false,
-         now: @escaping () -> Date = Date.init) throws {
+         now: @escaping () -> Date = Date.init, simulatorFixtureOrigin: URL? = nil) throws {
+        if let simulatorFixtureOrigin,
+           !ServiceRemoteExperimentConfiguration.admitsLoopbackHTTP(simulatorFixtureOrigin) {
+            throw ServiceExperimentJournalFailure.invalidRecord
+        }
+        self.fixtureOrigin = simulatorFixtureOrigin
         self.storage = storage
         self.enabled = enabled
         self.now = now
@@ -57,7 +63,7 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
         catch { throw ServiceExperimentJournalFailure.storage }
         if let bytes {
             guard let record = try? JSONDecoder().decode(ServiceExperimentRecoveryRecord.self, from: bytes),
-                  Self.valid(record) else { throw ServiceExperimentJournalFailure.invalidRecord }
+                  Self.valid(record, fixtureOrigin: fixtureOrigin) else { throw ServiceExperimentJournalFailure.invalidRecord }
             recoveryRecord = record
             savedBytes = bytes
             removing = true
@@ -74,7 +80,7 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
         guard recoveryRecord == nil, !sending else { throw ServiceExperimentJournalFailure.pendingRecovery }
         let record = ServiceExperimentRecoveryRecord(origin: origin, registrationID: registrationID,
             identity: identity, activityID: activityID, capability: capability, createdAt: now())
-        guard Self.valid(record), !completed.contains(registrationID) else {
+        guard Self.valid(record, fixtureOrigin: fixtureOrigin), !completed.contains(registrationID) else {
             throw ServiceExperimentJournalFailure.invalidRecord
         }
         let bytes: Data
@@ -135,8 +141,8 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
         removing = true // Cancellation intent precedes every validation and await.
         guard enabled else { throw ServiceExperimentJournalFailure.disabled }
         guard !sending else { throw ServiceExperimentJournalFailure.busy }
-        guard Self.valid(record), let configured = Self.originKey(configuredOrigin),
-              configured == Self.originKey(record.origin) else {
+        guard Self.valid(record, fixtureOrigin: fixtureOrigin), let configured = Self.originKey(configuredOrigin, fixtureOrigin: fixtureOrigin),
+              configured == Self.originKey(record.origin, fixtureOrigin: fixtureOrigin) else {
             throw ServiceExperimentJournalFailure.originMismatch
         }
         sending = true
@@ -177,8 +183,8 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
         removing = true
         guard enabled else { throw ServiceExperimentJournalFailure.disabled }
         guard !sending else { throw ServiceExperimentJournalFailure.busy }
-        guard Self.valid(record), let configured = Self.originKey(configuredOrigin),
-              configured == Self.originKey(record.origin) else {
+        guard Self.valid(record, fixtureOrigin: fixtureOrigin), let configured = Self.originKey(configuredOrigin, fixtureOrigin: fixtureOrigin),
+              configured == Self.originKey(record.origin, fixtureOrigin: fixtureOrigin) else {
             throw ServiceExperimentJournalFailure.originMismatch
         }
         sending = true
@@ -236,8 +242,8 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
             receipt.generation == record.identity.generation && receipt.revoked
     }
 
-    private static func valid(_ record: ServiceExperimentRecoveryRecord) -> Bool {
-        originKey(record.origin) != nil && record.identity.serviceID > 0 &&
+    private static func valid(_ record: ServiceExperimentRecoveryRecord, fixtureOrigin: URL?) -> Bool {
+        originKey(record.origin, fixtureOrigin: fixtureOrigin) != nil && record.identity.serviceID > 0 &&
         UUID(uuidString: record.identity.generation)?.uuidString.lowercased() == record.identity.generation &&
         (1...200).contains(record.activityID.utf8.count) &&
         (32...512).contains(record.capability.utf8.count) && record.capability.utf8.allSatisfy {
@@ -245,7 +251,13 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
         } && record.createdAt.timeIntervalSinceReferenceDate.isFinite
     }
 
-    private static func originKey(_ url: URL) -> String? {
+    private static func originKey(_ url: URL, fixtureOrigin: URL? = nil) -> String? {
+        // This exact origin is constructor-admitted only in the socket-test build.
+        // Even there, another loopback port is a different recovery namespace.
+        if let fixtureOrigin, url == fixtureOrigin,
+           ServiceRemoteExperimentConfiguration.admitsLoopbackHTTP(url) {
+            return url.absoluteString
+        }
         guard let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
               parts.scheme == "https", let host = parts.host, !host.isEmpty,
               parts.user == nil, parts.password == nil, parts.query == nil, parts.fragment == nil,

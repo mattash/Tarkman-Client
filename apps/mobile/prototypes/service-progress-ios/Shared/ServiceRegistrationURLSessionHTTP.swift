@@ -12,9 +12,11 @@ final class ServiceRegistrationURLSessionHTTP: ServiceRegistrationHTTP,
     nonisolated var description: String { "ServiceRegistrationURLSessionHTTP([redacted])" }
     nonisolated var debugDescription: String { description }
 
-    init(baseURL: URL, enabled: Bool = false) throws {
-        guard let origin = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
-              origin.scheme == "https", let host = origin.host, !host.isEmpty,
+    init(baseURL: URL, enabled: Bool = false, simulatorFixture: Bool = false) throws {
+        let loopback = simulatorFixture && ServiceRemoteExperimentConfiguration.admitsLoopbackHTTP(baseURL)
+        guard !simulatorFixture || loopback,
+              let origin = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
+              (origin.scheme == "https" || loopback), let host = origin.host, !host.isEmpty,
               origin.user == nil, origin.password == nil, origin.query == nil,
               origin.fragment == nil, origin.path.isEmpty || origin.path == "/" else {
             throw ServiceRegistrationFailure.invalidInput

@@ -23,7 +23,8 @@ struct ServiceRemoteExperimentView: View {
 
     var body: some View {
         Section("remoteSection") {
-            Text(caller.isSimulatorFixture ? "remoteSimulatorHelp" : "remoteExperimentHelp").font(.footnote)
+            Text(caller.isSimulatorHTTPFixture ? "remoteSimulatorHTTPHelp" :
+                (caller.isSimulatorFixture ? "remoteSimulatorHelp" : "remoteExperimentHelp")).font(.footnote)
             if let selectedServiceID, (caller.isActive || caller.pendingRecovery), Int(caller.serviceInput) != selectedServiceID {
                 Text("remoteOtherService").font(.footnote)
             }
@@ -61,7 +62,7 @@ struct ServiceRemoteExperimentView: View {
                 Task { await caller.remove(); remoteActive = caller.isActive }
             }.disabled((!caller.isActive && !caller.pendingRecovery) || caller.busy || !isForeground)
             if caller.pendingRecovery {
-                Text("remoteRecoveryHelp").font(.footnote)
+                Text(caller.isSimulatorFixture ? "remoteSimulatorRecoveryHelp" : "remoteRecoveryHelp").font(.footnote)
             }
         }
         .onAppear { alignSelectedService() }

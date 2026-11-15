@@ -75,4 +75,7 @@
 "remoteDone" = "Done";
 "remoteSimulatorHelp" = "Simulator-only test. Selection and registration replies stay in memory; no APNs, network registration or Keychain recovery is used. Disclosure and Start remain separate.";
 "remoteSimulatorStarted" = "Simulator local activity started — no APNs or network registration";
+"remoteSimulatorHTTPHelp" = "Simulator HTTP test. Public verification and registration use the explicit loopback fixture. Recovery stays in memory; no APNs or Keychain recovery. Disclosure and Start remain separate.";
+"remoteSimulatorHTTPStarted" = "Local activity started; loopback HTTP registration is unverified — no APNs";
+"remoteSimulatorRecoveryHelp" = "This test retains recovery only in memory until the exact revocation receipt is accepted. Restarting the app loses this test record; it is not durable Keychain recovery.";
 "remoteOtherService" = "A different service is still followed or awaiting revocation. End and revoke it before following the newly selected service.";

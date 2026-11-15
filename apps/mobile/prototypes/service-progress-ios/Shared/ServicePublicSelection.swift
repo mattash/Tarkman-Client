@@ -150,11 +150,13 @@ final class ServicePublicSelectionURLSessionHTTP: ServicePublicSelectionHTTP {
     private let origin: URL
     private let enabled: Bool
 
-    init(baseURL: URL, enabled: Bool = false) throws {
-        guard let origin = ServiceRemoteExperimentConfiguration.explicitHTTPSOrigin(baseURL.absoluteString) else {
+    init(baseURL: URL, enabled: Bool = false, simulatorFixture: Bool = false) throws {
+        let loopback = simulatorFixture && ServiceRemoteExperimentConfiguration.admitsLoopbackHTTP(baseURL)
+        guard !simulatorFixture || loopback,
+              loopback || ServiceRemoteExperimentConfiguration.explicitHTTPSOrigin(baseURL.absoluteString) != nil else {
             throw ServicePublicSelectionFailure.invalidInput
         }
-        self.origin = origin
+        self.origin = baseURL
         self.enabled = enabled
     }
 
