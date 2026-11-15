@@ -1,5 +1,7 @@
 # Reviewed feature reconciliation onto current main
 
+The patch hashes in the historical sections below describe their named reconciliation checkpoints through `88446ff4`, before the subsequent documentation-only acceptance update. They are not a claim that acceptance prose was unchanged afterward.
+
 ## First reconciliation — main `813d52d5`
 
 - Reviewed Library head: `9468c49090c4a80fbfa7ef88775ae1b68f45eb4f`, based on `d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d`.
@@ -13,7 +15,7 @@ Existing captures and execution results retain their **original recorded source 
 
 No unchanged local full suite or phone test was rerun for this reconciliation. Required combined CI/Vercel and exact posted-head independent review are recorded in the PR description when complete.
 
-VoiceOver audible/focus validation remains **UNVERIFIED**. The owner requested restoration; the broader phone pause is an orchestration coordination hold. No phone action, VoiceOver enablement, new operator prompt or acceptance waiver follows from this source-only reconciliation. The PR remains draft pending the already-raised acceptance decision.
+VoiceOver audible/focus validation remains **UNVERIFIED**. The owner requested restoration; the broader phone pause is an orchestration coordination hold. No phone action, VoiceOver enablement, new operator prompt or acceptance waiver follows from this source-only reconciliation. At this historical checkpoint the PR remained draft pending the acceptance decision recorded below.
 
 ## Widget-checkpoint reconciliation — main `41301128`
 
@@ -24,4 +26,8 @@ VoiceOver audible/focus validation remains **UNVERIFIED**. The owner requested r
 - Excluding only this provenance file, source/tests/images remain the same original 2,153,417-byte feature patch with SHA-256 `6d2651617d6e1e0740567b79c8d6a3453e357577626ad2981c80c42d9ee8ca47`; the final published head is checked against those exact bytes before pushing.
 - This provenance update is the sole additional change. Existing credit is retained on all eight rebased commits, with the same credit on the new provenance commit. No unchanged local/full/native/phone case was rerun; combined checks/Vercel and exact-head review are recorded in the PR description.
 
-Historical capture source identities above are unchanged. The actual VoiceOver check never began; the later 10-second explicit-project launch timeout is an **UNKNOWN** connectivity/setup result, not evidence of lock or privacy denial. OFF was verified. The coordination hold and no-enable/no-new-prompt constraint remain; this reconciliation does not answer or waive the pending acceptance decision.
+Historical capture source identities above are unchanged. The actual VoiceOver check never began; the later 10-second explicit-project launch timeout is an **UNKNOWN** connectivity/setup result, not evidence of lock or privacy denial. OFF was verified. The coordination hold and no-enable/no-new-prompt constraint remain; this reconciliation itself did not answer the then-pending acceptance decision.
+
+## Explicit acceptance decision after checkpoint `88446ff4`
+
+The [owner explicitly accepted merge with the actual VoiceOver check deferred](https://github.com/mattash/Tarkman-Client/issues/274#issuecomment-6887231149). Existing [#284](https://github.com/mattash/Tarkman-Client/issues/284) tracks that UNVERIFIED check; it is not a pass or a new device-work authorization. Both failed readiness attempts and OFF verifications are preserved in the [native record](./native-validation.md). This acceptance update changes only three evidence Markdown records, with runtime/tests/images unchanged from reviewed `88446ff4`; checks/review for the final documentation head are recorded in the PR description.

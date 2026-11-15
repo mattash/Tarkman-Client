@@ -2,7 +2,7 @@
 
 ## Status
 
-**Incomplete:** matched native comparisons, repeated-occurrence/keyboard navigation and the corrected long-passage repeat-selection case pass. VoiceOver audible/focus validation is **UNVERIFIED**. The owner requested restoration of changed phone accessibility settings; the broader physical-testing pause and phone handback were orchestration coordination decisions, not a separate owner instruction to stop every device action. VoiceOver was restored to its recorded OFF state and queried as disabled; no other phone accessibility setting or notification choice was changed by Library. No operator prompt is pending. The coordination hold remains until a specific slot is released; no new VoiceOver enablement is authorized, and its acceptance decision remains pending.
+**Accepted for merge with an explicitly deferred check:** matched native comparisons, repeated-occurrence/keyboard navigation and the corrected long-passage repeat-selection case pass. Actual VoiceOver navigation/focus/announcements remain **UNVERIFIED — not a pass**. The [owner's explicit acceptance decision](https://github.com/mattash/Tarkman-Client/issues/274#issuecomment-6887231149) permits merge with that check deferred to existing [follow-up #284](https://github.com/mattash/Tarkman-Client/issues/284), not removed or retrospectively passed. VoiceOver is verified OFF and the phone handed back. No further phone query/test, enablement, privacy choice or operator prompt is authorized now. The owner requested accessibility restoration; the broader physical pause was orchestration coordination, not a separate owner instruction to stop every device action.
 
 ## Actual application and source identity
 
@@ -42,7 +42,7 @@ An initial external QA route-context cache issue was corrected with a byte-ident
 | Previous/Next wrap and dismissal | Passed |
 | Native accessibility labels / controls | Actual XCTest accessibility queries pass; not a substitute for VoiceOver |
 | Native long-paragraph passage geometry | Corrected `bdc1c45`: both initial late jump and same-target keyboard Search pass, with actual settled screenshots inspected |
-| VoiceOver focus and announcements | **UNVERIFIED**; first-use notification prompt appeared. Owner requested restoration; orchestration paused physical testing. VoiceOver restored OFF and verified; coordination hold remains |
+| VoiceOver navigation, focus and announcements | **UNVERIFIED, explicitly deferred for merge to [#284](https://github.com/mattash/Tarkman-Client/issues/284)**; not a pass. Earlier notification prompt was not answered; later actual check never began. OFF restored/verified; phone work remains held |
 | Offline native saved-copy search | Passed with intentionally unavailable content API; seeded-copy provenance above |
 | Rapid native input | Also reproduced on pinned main `d459fa5e`; not introduced by this PR. Underlying native/test-input cause remains undetermined |
 
@@ -58,7 +58,18 @@ The source correction caches native line ranges by actual source/layout context,
 
 [After correction — same-target native Search](./after-ios-long-reselect-fix.png), source `bdc1c45`, shows the late highlighted `lantern` passage still visible after keyboard dismissal and reselecting the same match. The original and corrected repeat captures use the same fixture, language, reading size, light theme and 1179×2556 viewport. Both initial and repeat native stages passed on the corrected source; geometry was checked visually rather than inferred from the counter. The verified P2 review thread was resolved without a completion reply.
 
-Local mobile verification passes: 101 suites / 1,359 tests, typecheck, full lint and reader boundary guard; prior web/Android exports pass. The earlier application head passed repository CI and an independent GPT-6.1 Sol P0–P2 review before the native repeat-selection regression was established. Corrected application head `bdc1c45` passes hosted CI (15/15) and the preserved real native initial/repeat cases. Final current-head independent review is still to be recorded; these results do not waive the unverified VoiceOver gate.
+Local mobile verification passes: 101 suites / 1,359 tests, typecheck, full lint and reader boundary guard; prior web/Android exports pass. The earlier application head passed repository CI and an independent GPT-6.1 Sol P0–P2 review before the native repeat-selection regression was established. Corrected application head `bdc1c45` passes hosted CI (15/15) and the preserved real native initial/repeat cases. Subsequent reconciled heads also passed combined required checks/Vercel and exact-head independent review; final documentation-head status is recorded in the PR description. None of those checks constitutes actual VoiceOver verification; its explicit merge deferral is recorded below.
+
+## Two failed readiness attempts and explicit deferral
+
+The later owner-authorized single brief actual VoiceOver check **never began**:
+
+1. Plain activation of the retained QA client, without explicit project selection and with its Metro stopped, showed Expo's **Finding Dev Servers / Next** intro. No onboarding/privacy choice was selected and VoiceOver was never enabled in this readiness attempt. Targeted OFF and a state query [verified OFF](https://github.com/mattash/Tarkman-Client/issues/274#issuecomment-6886600573). Subsequent Mac-only source inspection identified an app-local Expo onboarding marker, not an iOS permission query; the intro is not evidence of permission denial.
+2. After Mac-only Metro/bundle preparation, a separately released slot used the corrected explicit project URL while VoiceOver remained OFF. The launch command reached its chosen **10-second timeout**; reader readiness was not confirmed. Preparation stopped without retry, warm-reader navigation or preference selection. VoiceOver was never enabled; targeted OFF and a fresh query [again verified OFF](https://github.com/mattash/Tarkman-Client/issues/274#issuecomment-6886948375). The timeout is **UNKNOWN connectivity/setup**, not proof of lock, privacy denial or a Find defect.
+
+These are failed readiness attempts, not two failed VoiceOver tests. They are separate from the earlier first-use VoiceOver notification prompt; no notification option was selected by Library and no successful speech/focus observation was recorded. Accessibility labels/XCTest queries are not substituted for audible/actual VoiceOver behavior.
+
+The owner subsequently explicitly answered **“Merge; explicitly defer VoiceOver check”**, publicly relayed in the [acceptance record](https://github.com/mattash/Tarkman-Client/issues/274#issuecomment-6887231149). Existing [#284](https://github.com/mattash/Tarkman-Client/issues/284) retains the unperformed verification and future specifically released slot requirement. This documentation-only acceptance update changes no runtime, tests, captures or their original source identities. Restoration and deferral do not turn the unrun check into a pass. No further device work or operator prompt follows from this decision.
 
 ## Earlier Simulator limitation
 
