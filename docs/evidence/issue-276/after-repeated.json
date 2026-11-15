@@ -1,5 +1,7 @@
 {
-  "sourceRevision": "87b18be2359a42467852e33ff990085e9af6527e",
+  "sourceRevision": "7801efd40e1606acd9d92dd8bb90f481557c1510",
+  "capturedHead": "5ae3759a8ad2850d383ee3db79bdc95bb4765378",
+  "revisionNote": "Captured dirty worktree containing the settled fix; all source hashes verified identical to final sourceRevision commit.",
   "errors": [],
   "consoleErrors": [],
   "storage": {
