@@ -1,9 +1,10 @@
 # Exact-passage bookmarks and resume (#276)
 
 **Draft / not ready for merge.** Provisionally stacked on #280 at
-`7aa34e13fb04cfdf6c110255d8591f4467a81e69`, including its corrected repeated-native-jump
+`71890bb1a3a2423c4240d3208db5268bd36fd631`, including its corrected repeated-native-jump
 geometry cache. Reconcile to its accepted final main commit before readiness.
-#276 native evidence and audible/focus accessibility validation remain unverified.
+[Owned iOS Simulator evidence](<https://github.com/mattash/Tarkman-Client/blob/agent/passage-bookmarks-resume-12a2065a622d/docs/evidence/issue-276/native-simulator.md>) covers exact passage capture, restoration, SQLite persistence and cleanup.
+Physical-device and actual VoiceOver focus/announcements remain unverified.
 The owner requested restoration of changed phone accessibility settings. Physical
 phone work is paused by orchestration coordination until a specific slot is
 released; no new VoiceOver enablement or owner prompt is authorized. Separately
