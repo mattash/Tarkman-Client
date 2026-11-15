@@ -1,0 +1,50 @@
+{
+  "application_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+  "base_revision": "1636114333e453d3549d5c67bea982a9ce022e03",
+  "native_build": "Debug iphonesimulator arm64, integrated Expo app plus embedded extension, CODE_SIGNING_ALLOWED=NO",
+  "installed_host_identifier": "app.tarkman.progressprototype",
+  "installed_extension_identifier": "app.tarkman.progressprototype.LiveActivity",
+  "installed_sha256": {
+    "host_executable": "3df83a7517257ec4b57a8be96485f987346b7d5ffde22ead0e7cce3cf3802566",
+    "host_debug_dylib": "b7deff39eb1ab47b5c17b9f7f3e224ab5f0ff86a4410e054d13ad882256aa862",
+    "host_info_plist": "7c878037bf8d3c939a8af853818705e5a49dd79f98080fb4a60303b62927d24f",
+    "extension_executable": "6502fd0c34f2f82d5345be84751630576b90efb732ed01c2cd4b83cdc46858aa",
+    "extension_info_plist": "fb3ec87469b69ea8148a7b02000cd9e93ae26a14b9600b6bcdcae38571eb6671"
+  },
+  "installed_hashes_match_corrected_preinstall_snapshot": true,
+  "javascript_provenance": {
+    "separately_fetched_metro_bundle_sha256": "2a140355505616938b69f19b7505ccb956cecd76057e53a133fe7156c678ec6f",
+    "not_an_on_device_byte_inspection_claim": true,
+    "javascript_config_fixture_sources_unchanged_across_native_correction": true,
+    "runtime_associated_with_owned_metro": "http://127.0.0.1:8139"
+  },
+  "simulator_udid": "BA0449F1-92EC-4D80-A869-4E183F56BEC4",
+  "device": "iPhone 18 Pro",
+  "os": "iOS 27.0",
+  "viewport_pixels": [1206, 2622],
+  "viewport_points": [402, 874],
+  "theme": "light",
+  "locale": "English",
+  "wallpaper": "default",
+  "clock": "Actual 2026-11-14 America/Los_Angeles; visible clocks approx19:12-19:33, no override",
+  "scenario": { "service_id": 42, "status": "active", "position": 1, "total_parts": 3, "role": "Reader", "text": "Synthetic public Our Father", "management": false, "credentials": false },
+  "native_fixture": { "selection_registration_storage": "in memory", "push_type": null, "apns": false, "native_network_registration": false, "keychain_recovery": false, "initial_progress": "unknown" },
+  "capture_assembly": "State mosaic across repeated runs, not a continuous photo sequence or one follow identity. See README run/stage table. Actual coherent-flow XCTest at19:23 passed separately; original image bytes/private archives retained.",
+  "executed_cases": {
+    "reader42_to_manager_verify_disclosure_start_done_card_tap": "passed, coherent XCTest flow exit0 at approx19:23",
+    "active42_to_public43_switch_fence_revoke_then_align43": "passed at approx19:30-19:31",
+    "nonactive_manager_home_background_activate_verify_enabled_disclosure_off": "passed, focused XCTest exit0 with bounded3-second expectation at approx19:33",
+    "explicit_revoke_and_system_card_absent": "passed",
+    "final_state": "No Activity, manager dismissed, service43 verified but disclosure OFF and no follow"
+  },
+  "retained_failures": [
+    "Original integrated manager Verify disabled despite app foreground; UIKit hosting lifecycle corrected before accepted captures",
+    "Initial launcher/self-open handoff screens were not accepted as application captures",
+    "Some Done taps were intercepted by unchanged devtools gear; exposed left edge dismissed successfully",
+    "Combined switch/lifecycle driver failed an immediate post-activate enabled assertion; proper bounded focused lifecycle expectation subsequently passed"
+  ],
+  "settings_changed": false,
+  "phone_actions": false,
+  "real_push_or_production_activation": false,
+  "limits": ["Synthetic Simulator only", "No durable relaunch recovery proof", "No real provider/device delivery", "No oldest-OS runtime acceptance", "No universal-link acceptance", "No latency or battery acceptance", "No guaranteed60-second visual redraw", "No secure-memory-erasure claim"]
+}

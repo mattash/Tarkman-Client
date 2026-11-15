@@ -1,0 +1,12 @@
+[
+  {
+    "baseline": "baseline-autolinking-isolated.json",
+    "current": "evidence-current277/1636-autolinking.json",
+    "parsed_json_identical": true
+  },
+  {
+    "baseline": "baseline-introspect-isolated.json",
+    "current": "evidence-current277/1636-introspect.json",
+    "parsed_json_identical": true
+  }
+]

@@ -13,7 +13,7 @@ struct ServiceActivityWidget: Widget {
                 .activityBackgroundTint(Color.black)
                 .activitySystemActionForegroundColor(.white)
                 .foregroundStyle(.white)
-                .widgetURL(presentation.tapURL)
+                .widgetURL(ServiceProgressReaderLink.url(presentation.tapURL))
         } dynamicIsland: { context in
             let presentation = ServicePublicationValidator.presentation(
                 context.state, identity: context.attributes, now: Date(), nativeIsStale: context.isStale)
@@ -40,7 +40,7 @@ struct ServiceActivityWidget: Widget {
             } minimal: {
                 compactProgress(presentation)
             }
-            .widgetURL(presentation.tapURL)
+            .widgetURL(ServiceProgressReaderLink.url(presentation.tapURL))
         }
     }
 

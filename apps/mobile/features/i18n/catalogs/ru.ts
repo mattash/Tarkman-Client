@@ -5,6 +5,12 @@ import type { Catalog } from '..'
  * Part roles, service titles and announcements come from the server and are not translated here.
  */
 export const ru: Catalog = {
+  serviceProgress: {
+    open: 'Параметры хода службы',
+    openHint: 'Открывает параметры этой службы. Открытие не запускает Live Activity.',
+    unavailable: 'Параметры хода службы сейчас недоступны. Вы можете продолжить чтение здесь.',
+    failed: 'Не удалось открыть параметры хода службы. Повторите попытку или продолжите чтение здесь.',
+  },
   lectionary: {
     "title": "Чтения по лекционарию",
     "contentLanguage": "Язык чтений",

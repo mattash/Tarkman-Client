@@ -1,0 +1,32 @@
+{
+  "purpose": "Canonical #277 actual app integration BEFORE at current main, not prior standalone baseline",
+  "javascript_revision": "1636114333e453d3549d5c67bea982a9ce022e03",
+  "native_binary_revision": "d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d",
+  "installed_native_executable_sha256": "97d59158d1709a40a36041227ea3ca1660cb810eb1f2403f5cbb29f13d476bd9",
+  "native_reuse_gate": "37 tracked input files byte-identical; full ordinary autolink and Expo introspect+entitlements JSON identical",
+  "isolated_bundle_identifier": "app.tarkman.progressbaseline",
+  "full_compiled_bundle_sha256": "d24944f4f0d83cb1aa72db3e66eed376416f119b68d67a17bea28145d33ea270",
+  "manifest_lazy_launch_asset_sha256": "dad92e8a2f3d87879eb11f92100c041ecf802afdeb5560468233702f114aeaef",
+  "source_map_sha256": "f900d7dba28d54c5b63ec4495cdf5e3bbfd080cc95a5c277bc53ffb1261a7492",
+  "metro": "http://127.0.0.1:8138",
+  "fixture": "http://127.0.0.1:8141",
+  "simulator_udid": "9A1CCE56-0E76-43BA-AF2D-519416C0100D",
+  "simulator_name": "BaselineService3429",
+  "device": "iPhone 18 Pro",
+  "os": "iOS 27.0",
+  "viewport_pixels": [1206, 2622],
+  "viewport_points": [402, 874],
+  "scale": 3,
+  "theme": "light",
+  "wallpaper": "default",
+  "clock": "actual local Nov14, no override",
+  "scenario": {"session_id": 42, "status": "active", "position": 1, "total_parts": 3, "role": "Reader", "language": "English", "text": "synthetic public Our Father fixture", "credentials": false, "management": false},
+  "captures": [
+    {"path": "before-js1636-reader-no-progress-action.png", "sha256": "5d7599d0b2e2d671ef9901a6c966a60c20423517a9f21c2e0f02cf52219cbdda", "captured_at_utc": "2026-11-15T02:31:21.840Z", "loaded_actual_reader": true, "service_progress_options_present": false},
+    {"path": "before-js1636-system-no-activity.png", "sha256": "5e988b28894bdb63a80e4f98b5bac4136d25347c9cbd1ad6e992a8b307b6b88b", "captured_at_utc": "2026-11-15T02:31:25.748Z", "surface": "Notification Center, not physical lock", "activity_present": false}
+  ],
+  "test_result": "BeforeJS1636Loaded.xcresult PASS exit0; actual Reader+OurFather and Service progress options absence assertions",
+  "caveat": "Unchanged development-client Tools gear overlay visible in upper-right toolbar; new-action header-details location unobscured. Parent keeps same overlay in After.",
+  "app_source_changes": "Only isolated bundle identifier; no UI source edits or native rebuild",
+  "settings_changed": false
+}

@@ -8,6 +8,8 @@ struct ServiceRemoteExperimentConfiguration {
     let remoteEnabled: Bool
     let developmentOrigin: URL?
     let developmentReaderOrigin: URL?
+    let simulatorFixtureEnabled: Bool
+    let simulatorAPIOrigin: URL?
 
     enum Failure: Error { case invalidConfiguration }
 
@@ -41,11 +43,47 @@ struct ServiceRemoteExperimentConfiguration {
         } else {
             developmentReaderOrigin = nil
         }
+        if let value = info["ServiceProgressSimulatorFixture"] {
+            guard let number = value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else {
+                throw Failure.invalidConfiguration
+            }
+            simulatorFixtureEnabled = number.boolValue
+        } else { simulatorFixtureEnabled = false }
+        if let value = info["ServiceProgressSimulatorAPIOrigin"] {
+            guard let text = value as? String, let origin = Self.explicitSimulatorOrigin(text) else {
+                throw Failure.invalidConfiguration
+            }
+            simulatorAPIOrigin = origin
+        } else { simulatorAPIOrigin = nil }
+        guard !simulatorFixtureEnabled || (remoteEnabled && simulatorAPIOrigin != nil &&
+            developmentOrigin?.absoluteString == "https://backend.service-progress.invalid" &&
+            developmentReaderOrigin?.absoluteString == "https://reader.service-progress.invalid") else {
+            throw Failure.invalidConfiguration
+        }
         // Backend IDs are scoped to that backend. An explicit trusted frontend
         // origin prevents a development selection from opening a production ID.
         guard !remoteEnabled || (developmentOrigin != nil && developmentReaderOrigin != nil) else {
             throw Failure.invalidConfiguration
         }
+    }
+
+    func admitsReaderAPI(_ text: String, simulatorAvailable: Bool = false) -> Bool {
+        if simulatorFixtureEnabled {
+            return simulatorAvailable && Self.explicitSimulatorOrigin(text) == simulatorAPIOrigin
+        }
+        guard let origin = Self.explicitHTTPSOrigin(text), let trusted = developmentOrigin,
+              let first = URLComponents(url: origin, resolvingAgainstBaseURL: false),
+              let second = URLComponents(url: trusted, resolvingAgainstBaseURL: false) else { return false }
+        return first.host?.lowercased() == second.host?.lowercased() && (first.port ?? 443) == (second.port ?? 443)
+    }
+
+    static func explicitSimulatorOrigin(_ text: String) -> URL? {
+        guard text.range(of: #"^http://127\.0\.0\.1:[1-9][0-9]{0,4}$"#, options: .regularExpression) != nil,
+              let parts = URLComponents(string: text), parts.scheme == "http", parts.host == "127.0.0.1",
+              let port = parts.port, (1...65535).contains(port), parts.user == nil, parts.password == nil,
+              parts.path.isEmpty, parts.query == nil, parts.fragment == nil,
+              let url = parts.url, url.absoluteString == text else { return nil }
+        return url
     }
 
     /// A bare origin only. Even a trailing slash is intentionally rejected;

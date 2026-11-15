@@ -72,3 +72,7 @@
 "remoteRevocationPending" = "Prior follow needs same-endpoint revocation";
 "remoteRecoveryHelp" = "Relaunch never restores consent or registers again. The recovery capability stays in this isolated app's Keychain until revocation is acknowledged. No new remote follow can overwrite it.";
 "remoteRemoved" = "Development follow ended and cleared";
+"remoteDone" = "Done";
+"remoteSimulatorHelp" = "Simulator-only test. Selection and registration replies stay in memory; no APNs, network registration or Keychain recovery is used. Disclosure and Start remain separate.";
+"remoteSimulatorStarted" = "Simulator local activity started — no APNs or network registration";
+"remoteOtherService" = "A different service is still followed or awaiting revocation. End and revoke it before following the newly selected service.";

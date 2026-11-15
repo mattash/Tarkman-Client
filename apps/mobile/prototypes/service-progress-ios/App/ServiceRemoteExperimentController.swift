@@ -24,6 +24,8 @@ final class ServiceRemoteExperimentController: ObservableObject {
     @Published private(set) var pendingRecovery = false
     @Published private(set) var messageKey = "remoteDisabled"
     private var journal: ServiceExperimentJournal?
+    private let simulator: ServiceSimulatorFixture?
+    var isSimulatorFixture: Bool { simulator != nil }
     private var activity: Activity<ServicePublicationIdentity>?
     private var bridge: ServiceActivityRegistrationBridge?
     private var activityTask: Task<Void, Never>?
@@ -37,11 +39,17 @@ final class ServiceRemoteExperimentController: ObservableObject {
     var canStart: Bool { canVerify && selection != nil && disclosed }
 
     init(info: [String: Any] = Bundle.main.infoDictionary ?? [:]) {
-        configuration = try? ServiceRemoteExperimentConfiguration(info: info)
-        guard configuration != nil else { messageKey = "remoteInvalidConfiguration"; return }
+        let parsed = try? ServiceRemoteExperimentConfiguration(info: info)
+        configuration = parsed
+        simulator = parsed.flatMap { ServiceSimulatorFixture.make(configuration: $0) }
+        guard let configuration, !configuration.simulatorFixtureEnabled || simulator != nil else {
+            messageKey = "remoteInvalidConfiguration"; return
+        }
         guard configured else { return }
         do {
-            let value = try ServiceExperimentJournal(storage: ServiceExperimentKeychain(), enabled: true)
+            let storage: any ServiceExperimentSecretStorage
+            if let simulator { storage = simulator } else { storage = ServiceExperimentKeychain() }
+            let value = try ServiceExperimentJournal(storage: storage, enabled: true)
             journal = value
             pendingRecovery = value.pendingRevocation != nil
             messageKey = pendingRecovery ? "remoteRevocationPending" : "remoteSelectService"
@@ -60,7 +68,9 @@ final class ServiceRemoteExperimentController: ObservableObject {
         selectionNonce = nonce
         defer { busy = false }
         do {
-            let driver = try ServicePublicSelectionURLSessionHTTP(baseURL: origin, enabled: true)
+            let driver: any ServicePublicSelectionHTTP
+            if let simulator { driver = simulator }
+            else { driver = try ServicePublicSelectionURLSessionHTTP(baseURL: origin, enabled: true) }
             let verified = try await ServicePublicSelectionVerifier(http: driver, enabled: true).verify(serviceID: id)
             guard selectionNonce == nonce, Int(serviceInput) == id else { return }
             selection = verified
@@ -93,21 +103,22 @@ final class ServiceRemoteExperimentController: ObservableObject {
             // Explicit remote configuration + verified service + fresh per-service
             // disclosure are all required BEFORE this actual .token request path.
             let target = try Activity.request(attributes: identity,
-                content: ActivityContent(state: state, staleDate: state.expiresAt), pushType: .token)
+                content: ActivityContent(state: state, staleDate: state.expiresAt), pushType: simulator == nil ? .token : nil)
             requested = target
-            let http = try ServiceRegistrationURLSessionHTTP(baseURL: origin, enabled: true)
+            let http = try registrationHTTP(origin: origin)
             let transport = ServiceRegistrationTransport(enabled: true, http: http)
             let next = ServiceActivityRegistrationBridge(transport: transport, enabled: true)
             activity = target
             bridge = next
             // Persist after local begin validation, BEFORE any token observation/PUT.
-            try next.observe(target, disclosed: disclosed, capability: capability, registrationID: registrationID) {
+            try next.observe(target, disclosed: disclosed, capability: capability, registrationID: registrationID,
+                             simulatorToken: simulator == nil ? nil : Data([0xaa, 0xbb])) {
                 _ = try journal.stage(origin: origin, identity: identity, activityID: target.id,
                                       capability: capability, registrationID: registrationID, consented: self.disclosed)
             }
             isActive = true
             pendingRecovery = false
-            messageKey = "remoteObservationStarted"
+            messageKey = simulator == nil ? "remoteObservationStarted" : "remoteSimulatorStarted"
             activityTask = Task { [weak self] in
                 for await state in target.activityStateUpdates {
                     guard !Task.isCancelled, let self, self.activity?.id == target.id else { return }
@@ -192,7 +203,7 @@ final class ServiceRemoteExperimentController: ObservableObject {
             if localProof == .neverAttempted {
                 try journal.completeNeverAttemptedRemoval(registrationID: record.registrationID, proof: .neverAttempted)
             } else {
-                let http = try ServiceRegistrationURLSessionHTTP(baseURL: origin, enabled: true)
+                let http = try registrationHTTP(origin: origin)
                 try await journal.reconcileRevocation(registrationID: record.registrationID, configuredOrigin: origin, http: http)
             }
             activity = nil; bridge = nil; selection = nil
@@ -201,6 +212,11 @@ final class ServiceRemoteExperimentController: ObservableObject {
             // Preserve the durable capability for an explicit same-origin retry.
             messageKey = "remoteRevocationPending"
         }
+    }
+
+    private func registrationHTTP(origin: URL) throws -> any ServiceRegistrationHTTP {
+        if let simulator { return simulator }
+        return try ServiceRegistrationURLSessionHTTP(baseURL: origin, enabled: true)
     }
 
     deinit { activityTask?.cancel() }

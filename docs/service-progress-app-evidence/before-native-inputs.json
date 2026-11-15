@@ -1,0 +1,231 @@
+{
+  "native_binary_source_revision": "d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d",
+  "javascript_source_revision": "1636114333e453d3549d5c67bea982a9ce022e03",
+  "tracked_native_build_inputs": [
+    {
+      "path": "apps/mobile/.eas/workflows/update-preview.yml",
+      "d459_sha256": "94301a1297b8d9ebff3339febe423ec3cdd35a958932ccecd29f96e3f717798b",
+      "1636_sha256": "94301a1297b8d9ebff3339febe423ec3cdd35a958932ccecd29f96e3f717798b",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/.eas/workflows/update-production.yml",
+      "d459_sha256": "029efde2f5f2236b539597dd8de66d6ab4141d2171c181b5486bec7be841e99f",
+      "1636_sha256": "029efde2f5f2236b539597dd8de66d6ab4141d2171c181b5486bec7be841e99f",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/app.json",
+      "d459_sha256": "8d4dea53c06fd6e7ed2cbd98293fba9dbd8e27b7f14be3c55c6886cbd219e6cb",
+      "1636_sha256": "8d4dea53c06fd6e7ed2cbd98293fba9dbd8e27b7f14be3c55c6886cbd219e6cb",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/AUTHORS.txt",
+      "d459_sha256": "727ab5b16dd99b3615f6fc2206f75fe78ac8ce54f20818e462b872ec57161d49",
+      "1636_sha256": "727ab5b16dd99b3615f6fc2206f75fe78ac8ce54f20818e462b872ec57161d49",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/NotoSerifArmenian-Bold.ttf",
+      "d459_sha256": "e7e59b075ee1cb526fe570491325c60574878b18756e83bff784bccc653de043",
+      "1636_sha256": "e7e59b075ee1cb526fe570491325c60574878b18756e83bff784bccc653de043",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/NotoSerifArmenian-Regular.ttf",
+      "d459_sha256": "2c489e2ed0cd0fe7a302e5e04cab452633afe77a51e96a4592eb2ef533300cf3",
+      "1636_sha256": "2c489e2ed0cd0fe7a302e5e04cab452633afe77a51e96a4592eb2ef533300cf3",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/OFL.txt",
+      "d459_sha256": "0468358b316f69f405b55cadf8a8314e16e3610b8feaad96772bd5d968112d02",
+      "1636_sha256": "0468358b316f69f405b55cadf8a8314e16e3610b8feaad96772bd5d968112d02",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/SOURCE-SERIF.md",
+      "d459_sha256": "ab154958adaa78e148919830fe7b8c8e1d91a0a6b40614f3c01ad01a6847cd83",
+      "1636_sha256": "ab154958adaa78e148919830fe7b8c8e1d91a0a6b40614f3c01ad01a6847cd83",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/SOURCE.md",
+      "d459_sha256": "737dc602609ba165c8377f7602c883c428c1f0c7a9c9040a952d83e2ccfb9274",
+      "1636_sha256": "737dc602609ba165c8377f7602c883c428c1f0c7a9c9040a952d83e2ccfb9274",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/SourceSerif-LICENSE.md",
+      "d459_sha256": "75784a295293a8992f5a8d99210566e0064a012e6dab6731305e3787f15896c7",
+      "1636_sha256": "75784a295293a8992f5a8d99210566e0064a012e6dab6731305e3787f15896c7",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/SourceSerif4-Regular.ttf",
+      "d459_sha256": "e5a4ee6a3d87bb9024796be390c6771e2a0eb1883dae25effaf57ca01668e24b",
+      "1636_sha256": "e5a4ee6a3d87bb9024796be390c6771e2a0eb1883dae25effaf57ca01668e24b",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/SourceSerif4-Semibold.ttf",
+      "d459_sha256": "36db62940cb5728b12b1802476dc7fcf4c6c519a7bdd476ba23a4e555fc4655f",
+      "1636_sha256": "36db62940cb5728b12b1802476dc7fcf4c6c519a7bdd476ba23a4e555fc4655f",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/fonts/license.json",
+      "d459_sha256": "bf65dfa1c63347a51250833ff11cbc02578be6d8dab0dbde03098dc8415bf542",
+      "1636_sha256": "bf65dfa1c63347a51250833ff11cbc02578be6d8dab0dbde03098dc8415bf542",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/icons/README.md",
+      "d459_sha256": "245df1a308aa5a845a27c8039642b634ea197880fb25ea5ed601ac2a625fdcee",
+      "1636_sha256": "245df1a308aa5a845a27c8039642b634ea197880fb25ea5ed601ac2a625fdcee",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/icons/adaptive-foreground.png",
+      "d459_sha256": "438ebc9d889812af5a2f2162c93292b38355c8c62ff93c871a6c0b946b89031f",
+      "1636_sha256": "438ebc9d889812af5a2f2162c93292b38355c8c62ff93c871a6c0b946b89031f",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/assets/icons/app-icon.png",
+      "d459_sha256": "dcb8f9dda9d0b39821ad8f9780e7230a306431aadc08dce7b8c3cbd2521f82cb",
+      "1636_sha256": "dcb8f9dda9d0b39821ad8f9780e7230a306431aadc08dce7b8c3cbd2521f82cb",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/babel.config.js",
+      "d459_sha256": "d070b18a7f2a025cddc79e1b0d0cf799f3bdecd5df93b88bd771087019741e32",
+      "1636_sha256": "d070b18a7f2a025cddc79e1b0d0cf799f3bdecd5df93b88bd771087019741e32",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/eas.json",
+      "d459_sha256": "9cc8ef4d127ff9b26aa4a65f4b9dd1272b9f0d304b8ee480f08470eb7025be69",
+      "1636_sha256": "9cc8ef4d127ff9b26aa4a65f4b9dd1272b9f0d304b8ee480f08470eb7025be69",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/metro.config.js",
+      "d459_sha256": "081d8f40f2feb567961efe5c5843fb3dcefe3288a21d6128cd04f7aa5c25add8",
+      "1636_sha256": "081d8f40f2feb567961efe5c5843fb3dcefe3288a21d6128cd04f7aa5c25add8",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/package-lock.json",
+      "d459_sha256": "99ce2a987fb37fdb8fdeb336d6d2404ab4b6551c02305cfa87c56c30af01d2d3",
+      "1636_sha256": "99ce2a987fb37fdb8fdeb336d6d2404ab4b6551c02305cfa87c56c30af01d2d3",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/package.json",
+      "d459_sha256": "0f6421334247db9b0c57ca4fd7148090d04216f68171288cd1b154fa3eb1f89d",
+      "1636_sha256": "0f6421334247db9b0c57ca4fd7148090d04216f68171288cd1b154fa3eb1f89d",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/check-fonts.mjs",
+      "d459_sha256": "451ad871afaa41987199f8be6edad56ea6dbb00db5b7cc791b0c4ed894be186e",
+      "1636_sha256": "451ad871afaa41987199f8be6edad56ea6dbb00db5b7cc791b0c4ed894be186e",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/check-i18n.mjs",
+      "d459_sha256": "5aacf8b08404599b69a515a27ac8461a9f19fbe038346c762dbba6f9f576f3c9",
+      "1636_sha256": "5aacf8b08404599b69a515a27ac8461a9f19fbe038346c762dbba6f9f576f3c9",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/check-store-config.mjs",
+      "d459_sha256": "5467b3c7929900ea0ac5a028648cc5dfce8d39c5ffc3878805cb373acc688971",
+      "1636_sha256": "5467b3c7929900ea0ac5a028648cc5dfce8d39c5ffc3878805cb373acc688971",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/check-ui.mjs",
+      "d459_sha256": "0bf17df31ecca6a56e647b68152d0362993660134007d42425f17c773c48ded9",
+      "1636_sha256": "0bf17df31ecca6a56e647b68152d0362993660134007d42425f17c773c48ded9",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/core-source-request.js",
+      "d459_sha256": "2f694d5b56411e09774eb7944d90dddf594f9ca4407a563d81c61f61669fac67",
+      "1636_sha256": "2f694d5b56411e09774eb7944d90dddf594f9ca4407a563d81c61f61669fac67",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/jest-resolver.js",
+      "d459_sha256": "5e66125f1e254f8df29e08189a58c41f9c7c48ced249c1e964f11e09b813e268",
+      "1636_sha256": "5e66125f1e254f8df29e08189a58c41f9c7c48ced249c1e964f11e09b813e268",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/library-fixture-server.mjs",
+      "d459_sha256": "d64e2bf137a62736d8f3c4df2a63be8946d438fa007fe395f8093bf427880957",
+      "1636_sha256": "d64e2bf137a62736d8f3c4df2a63be8946d438fa007fe395f8093bf427880957",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/maestro-android.mjs",
+      "d459_sha256": "91017b4d7e8a3e454084b53c7aedd83ea82828046ca8e3b8112cf06b4ff295c3",
+      "1636_sha256": "91017b4d7e8a3e454084b53c7aedd83ea82828046ca8e3b8112cf06b4ff295c3",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/maestro-android.test.mjs",
+      "d459_sha256": "0599e6774c187a5af920e15ac260471cb07f0d818fa04ceed1dc6fc287b243a6",
+      "1636_sha256": "0599e6774c187a5af920e15ac260471cb07f0d818fa04ceed1dc6fc287b243a6",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/native-inputs.mjs",
+      "d459_sha256": "745f26a48af92a9d4e302567288d4ae42c7468507d378e90cd695030f3604e5a",
+      "1636_sha256": "745f26a48af92a9d4e302567288d4ae42c7468507d378e90cd695030f3604e5a",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/scripts/native-inputs.test.mjs",
+      "d459_sha256": "39550de9e7443bb8beeb20007f35edabdec52dd24cc161845c7d43482ab609e0",
+      "1636_sha256": "39550de9e7443bb8beeb20007f35edabdec52dd24cc161845c7d43482ab609e0",
+      "identical": true
+    },
+    {
+      "path": "apps/mobile/tsconfig.json",
+      "d459_sha256": "f47dd0de47d98ae00677c4cc8c4d5d191d741aa20d2cf1835dd4cb57d3434c8e",
+      "1636_sha256": "f47dd0de47d98ae00677c4cc8c4d5d191d741aa20d2cf1835dd4cb57d3434c8e",
+      "identical": true
+    },
+    {
+      "path": "tools/metro/core-source-request.js",
+      "d459_sha256": "85c5838cf7d68f4a4acd7e4f5a412fe9db9c91dc222a1e8f11d1b6a6774b4669",
+      "1636_sha256": "85c5838cf7d68f4a4acd7e4f5a412fe9db9c91dc222a1e8f11d1b6a6774b4669",
+      "identical": true
+    },
+    {
+      "path": "tools/metro/shared-package-resolver.js",
+      "d459_sha256": "fbb0b8d83bf08895a95e43dbc13268559adf86aa1f6db96a4ab8b860d7a86a37",
+      "1636_sha256": "fbb0b8d83bf08895a95e43dbc13268559adf86aa1f6db96a4ab8b860d7a86a37",
+      "identical": true
+    },
+    {
+      "path": "tools/metro/single-react-native.js",
+      "d459_sha256": "fa4976506606a973c8856f6300d86171f1f8cd5c7f4b21f6cd8bb8ff62d76a1c",
+      "1636_sha256": "fa4976506606a973c8856f6300d86171f1f8cd5c7f4b21f6cd8bb8ff62d76a1c",
+      "identical": true
+    },
+    {
+      "path": "tools/metro/single-react-native.test.mjs",
+      "d459_sha256": "ad48dfe3fdb5e745c69749cb2cf8e7ebbe44b25dfc7d3fbd07cb063e1fe3199d",
+      "1636_sha256": "ad48dfe3fdb5e745c69749cb2cf8e7ebbe44b25dfc7d3fbd07cb063e1fe3199d",
+      "identical": true
+    }
+  ],
+  "all_identical": true,
+  "bundle_identifier_exception": "Both tracked configs app.tarkman; local baseline overrides only app.tarkman.progressbaseline.",
+  "new_dormant_prototype_sources": "New prototype Swift files are not ordinary app native inputs; verify ordinary graph equality and unchanged app config."
+}
