@@ -106,8 +106,9 @@ access request is justified merely by the missing bootstrap code.
 6. Explicit removal cancels observation/reconciliation, ends locally and revokes
    at the same configured origin. A genuine never-attempted removal can clear a
    same-process staged journal without HTTP. A possibly attempted registration
-   requires acknowledged remote deletion. The journal's extra idempotent DELETE
-   validates its exact durable record before clearing; no HTTP receipt is invented.
+   requires acknowledged remote revocation. The backend556 fenced POST below is
+   reachable even if legacy bridge DELETE fails with404 or an in-flight/ambiguous
+   error. No legacy failure, local timer or version0 is fabricated into a receipt.
 
 All credential-bearing requests stay on the explicit HTTPS backend origin, with
 no redirects/shared cookies/cache/credential storage. Public reads have a 64 KiB
@@ -140,9 +141,19 @@ app's device-only Keychain, not defaults, a file or a shared access group. A
 restored record can never be abandoned using a new transport's version0 or a
 fabricated never-attempted outcome. A 404 after a possibly attempted or restored
 registration remains unresolved: it is not evidence permitting deletion of the
-capability. This may block a new experiment follow until the same endpoint can
-acknowledge revocation. No automatic expiry-based erasure or server reconciliation
-API is claimed. Synthetic tests explicitly preserve this fail-closed limitation.
+capability. The matching native [backend556 contract](<https://github.com/mattash/Tarkman/issues/556#issuecomment-6886397865>)
+is now prepared: `POST /public/service_activity_registrations/:uuid/revoke`, same
+capability header, JSON exactly `{session_id, activity_id, generation}`. Only HTTP200,
+`Cache-Control: no-store` and an exact receipt
+`{id, session_id, activity_id, generation, revoked: true}` matching every durable
+subject field permits exact-byte Keychain erasure. Missing/extra/wrong/null fields,
+non-Boolean acknowledgement, wrong origin/identity, non200 or storage error retain
+recovery. The concrete driver bounds and validates this POST separately from legacy
+PUT/DELETE. The receipt must mean durable server fencing against a late PUT; a
+mere absent-row observation is not enough. Backend implementation/review and live
+support are not claimed by these fake-only native tests. Until the endpoint is
+supported and returns a valid authoritative receipt, a new remote follow remains
+blocked. No automatic expiry-based erasure or fallback acceptance is added.
 
 Real initial token issuance, registration, APNs receipt/display, rotation,
 foreground/background/terminated/force-quit freshness, latency/battery and final
@@ -183,6 +194,12 @@ swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
   Shared/ServiceExperimentJournal.swift Tests/RemoteExperimentFlowTests.swift \
   -o artifacts/remote-experiment-flow-tests
 artifacts/remote-experiment-flow-tests
+
+swiftc -swift-version 6 -warnings-as-errors -strict-concurrency=complete \
+  Shared/ServicePublicationV1.swift Shared/ServiceRegistrationTransport.swift \
+  Shared/ServiceExperimentJournal.swift Tests/FencedRevocationTests.swift \
+  -o artifacts/fenced-revocation-tests
+artifacts/fenced-revocation-tests
 ```
 
 The integrated flow uses selected ID77, two reserved synthetic origins, fake

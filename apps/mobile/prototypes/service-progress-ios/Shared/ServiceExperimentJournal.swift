@@ -166,6 +166,76 @@ final class ServiceExperimentJournal: CustomStringConvertible, CustomDebugString
         removing = false
     }
 
+    // Additive backend556 fence: unlike legacy DELETE404, a fully bound receipt
+    // acknowledges durable revocation even if the original PUT never created a row.
+    func reconcileRevocation(registrationID: UUID, configuredOrigin: URL, http: ServiceRegistrationHTTP) async throws {
+        if completed.contains(registrationID) { return }
+        guard let record = recoveryRecord, let bytes = savedBytes,
+              record.registrationID == registrationID else {
+            throw ServiceExperimentJournalFailure.staleFollow
+        }
+        removing = true
+        guard enabled else { throw ServiceExperimentJournalFailure.disabled }
+        guard !sending else { throw ServiceExperimentJournalFailure.busy }
+        guard Self.valid(record), let configured = Self.originKey(configuredOrigin),
+              configured == Self.originKey(record.origin) else {
+            throw ServiceExperimentJournalFailure.originMismatch
+        }
+        sending = true
+        defer { sending = false }
+        let body: Data
+        do {
+            body = try JSONSerialization.data(withJSONObject: [
+                "session_id": record.identity.serviceID,
+                "activity_id": record.activityID,
+                "generation": record.identity.generation
+            ], options: [.sortedKeys])
+        } catch { throw ServiceExperimentJournalFailure.invalidRecord }
+        let response: ServiceRegistrationResponse
+        do {
+            response = try await http.send(ServiceRegistrationRequest(method: "POST",
+                path: "/public/service_activity_registrations/\(record.registrationID.uuidString.lowercased())/revoke",
+                headers: ["X-Service-Activity-Secret": record.capability, "Content-Type": "application/json"], body: body))
+        } catch { throw ServiceExperimentJournalFailure.transport }
+        guard Self.validFenceReceipt(response, record: record) else {
+            throw ServiceExperimentJournalFailure.invalidDeletionReceipt
+        }
+        guard recoveryRecord == record, savedBytes == bytes else {
+            throw ServiceExperimentJournalFailure.staleFollow
+        }
+        do { try storage.removeIfMatching(bytes) }
+        catch { throw ServiceExperimentJournalFailure.storage }
+        completed.insert(record.registrationID)
+        recoveryRecord = nil
+        savedBytes = nil
+        stagedInCurrentProcess = nil
+        removing = false
+    }
+
+    private struct FenceReceipt: Decodable {
+        let id: String
+        let session_id: Int
+        let activity_id: String
+        let generation: String
+        let revoked: Bool
+    }
+
+    private static func validFenceReceipt(_ response: ServiceRegistrationResponse,
+                                          record: ServiceExperimentRecoveryRecord) -> Bool {
+        let cacheHeaders = response.headers.filter { $0.key.lowercased() == "cache-control" }
+        guard response.status == 200, !response.body.isEmpty, response.body.count <= 4096,
+              cacheHeaders.count == 1,
+              cacheHeaders.first!.value.lowercased().split(separator: ",").contains(where: {
+                  $0.trimmingCharacters(in: .whitespaces) == "no-store"
+              }),
+              let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+              Set(object.keys) == Set(["id", "session_id", "activity_id", "generation", "revoked"]),
+              let receipt = try? JSONDecoder().decode(FenceReceipt.self, from: response.body) else { return false }
+        return receipt.id == record.registrationID.uuidString.lowercased() &&
+            receipt.session_id == record.identity.serviceID && receipt.activity_id == record.activityID &&
+            receipt.generation == record.identity.generation && receipt.revoked
+    }
+
     private static func valid(_ record: ServiceExperimentRecoveryRecord) -> Bool {
         originKey(record.origin) != nil && record.identity.serviceID > 0 &&
         UUID(uuidString: record.identity.generation)?.uuidString.lowercased() == record.identity.generation &&

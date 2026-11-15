@@ -160,6 +160,7 @@ final class ServiceRemoteExperimentController: ObservableObject {
         disclosed = false
         activityTask?.cancel()
         activityTask = nil
+        bridge?.invalidateLocally()
         defer { busy = false }
         guard let record = journal.recoveryRecord else {
             if let activity { await activity.end(nil, dismissalPolicy: .immediate) }
@@ -177,22 +178,22 @@ final class ServiceRemoteExperimentController: ObservableObject {
         isActive = false
         pendingRecovery = true
         do {
+            let localProof: ServiceRegistrationRemoval?
             if let bridge {
-                let result = try await bridge.remove()
-                if result == .neverAttempted {
-                    try journal.completeNeverAttemptedRemoval(registrationID: record.registrationID, proof: .neverAttempted)
-                } else {
-                    // Idempotent second DELETE confirms the durable journal's exact
-                    // record/origin before clearing it. No fabricated HTTP receipt.
-                    let http = try ServiceRegistrationURLSessionHTTP(baseURL: origin, enabled: true)
-                    try await journal.retryDeletion(registrationID: record.registrationID, configuredOrigin: origin, http: http)
-                }
+                // A legacy404 or in-flight/ambiguous failure MUST NOT prevent
+                // the additive fenced POST from reaching the server.
+                do { localProof = try await bridge.remove() }
+                catch { localProof = nil }
             } else {
                 // Relaunch never recreates a transport/follow or restores consent.
-                // An ambiguous persisted registration can only be revoked remotely.
                 if let activity { await activity.end(nil, dismissalPolicy: .immediate) }
+                localProof = nil
+            }
+            if localProof == .neverAttempted {
+                try journal.completeNeverAttemptedRemoval(registrationID: record.registrationID, proof: .neverAttempted)
+            } else {
                 let http = try ServiceRegistrationURLSessionHTTP(baseURL: origin, enabled: true)
-                try await journal.retryDeletion(registrationID: record.registrationID, configuredOrigin: origin, http: http)
+                try await journal.reconcileRevocation(registrationID: record.registrationID, configuredOrigin: origin, http: http)
             }
             activity = nil; bridge = nil; selection = nil
             pendingRecovery = false; messageKey = "remoteRemoved"

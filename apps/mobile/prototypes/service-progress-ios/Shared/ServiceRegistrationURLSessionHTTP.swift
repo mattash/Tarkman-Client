@@ -1,6 +1,7 @@
 import Foundation
+import CoreFoundation
 
-// Prepared real HTTP driver, never instantiated by the app and OFF by default.
+// Opt-in development HTTP driver, OFF by default.
 // Caller must explicitly supply an HTTPS origin and enable it after all activation
 // gates. No token stream, provider, credentials, or production origin is supplied.
 @MainActor
@@ -27,8 +28,12 @@ final class ServiceRegistrationURLSessionHTTP: ServiceRegistrationHTTP,
         guard enabled else { throw ServiceRegistrationFailure.disabled }
         let prefix = "/public/service_activity_registrations/"
         guard request.path.hasPrefix(prefix) else { throw ServiceRegistrationFailure.invalidInput }
-        let id = String(request.path.dropFirst(prefix.count))
+        let segments = request.path.dropFirst(prefix.count).split(separator: "/", omittingEmptySubsequences: false)
+        let revocation = segments.count == 2 && segments[1] == "revoke"
+        guard segments.count == 1 || revocation else { throw ServiceRegistrationFailure.invalidInput }
+        let id = String(segments[0])
         guard UUID(uuidString: id)?.uuidString.lowercased() == id,
+              (request.method == "POST") == revocation,
               let secret = request.headers["X-Service-Activity-Secret"],
               (32...512).contains(secret.utf8.count),
               secret.utf8.allSatisfy({ (33...126).contains($0) }) else {
@@ -39,6 +44,23 @@ final class ServiceRegistrationURLSessionHTTP: ServiceRegistrationHTTP,
             guard Set(request.headers.keys) == Set(["Content-Type", "X-Service-Activity-Secret"]),
                   request.headers["Content-Type"] == "application/json",
                   let body = request.body, !body.isEmpty, body.count <= 4096 else {
+                throw ServiceRegistrationFailure.invalidInput
+            }
+        case "POST":
+            // Additive backend #556 capability-owned revocation fence. Never a
+            // token/version input; validates identity even for an absent row.
+            guard Set(request.headers.keys) == Set(["Content-Type", "X-Service-Activity-Secret"]),
+                  request.headers["Content-Type"] == "application/json",
+                  let body = request.body, !body.isEmpty, body.count <= 4096,
+                  let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+                  Set(object.keys) == Set(["session_id", "activity_id", "generation"]),
+                  let session = object["session_id"] as? NSNumber,
+                  CFGetTypeID(session) != CFBooleanGetTypeID(),
+                  !["f", "d"].contains(String(cString: session.objCType)),
+                  session.int64Value > 0,
+                  let activity = object["activity_id"] as? String, (1...200).contains(activity.utf8.count),
+                  let generation = object["generation"] as? String,
+                  UUID(uuidString: generation)?.uuidString.lowercased() == generation else {
                 throw ServiceRegistrationFailure.invalidInput
             }
         case "DELETE":
@@ -96,7 +118,7 @@ final class ServiceRegistrationURLSessionHTTP: ServiceRegistrationHTTP,
     }
 }
 
-// Reject ALL redirects, even same-origin: never replay a capability-bearing PUT.
+// Reject ALL redirects, even same-origin: never replay a capability-bearing request.
 final class ServiceRegistrationRedirectGuard: NSObject, URLSessionTaskDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask,
                     willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
