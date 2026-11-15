@@ -54,6 +54,35 @@ it('opens only on one explicit tap using the selected public service and configu
   expect(screen.getByRole('button', { name: 'Return to live' })).toBeOnTheScreen()
 })
 
+it('keeps selected-service management reachable after deletion without dispatching controls or retry', async () => {
+  mockSelectedID = '73'
+  const refreshAfterCommand = jest.fn()
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, deleted: true }, retry, dispatch, refreshAfterCommand })
+  await render(<SessionReaderScreen />, { wrapper })
+  expect(screen.getByTestId('reader-deleted')).toBeOnTheScreen()
+  expect(screen.queryByText('Public prayer remains readable')).toBeNull()
+  expect(presentServiceProgress).not.toHaveBeenCalled()
+  await fireEvent.press(screen.getByRole('button', { name: label }))
+  expect(presentServiceProgress).toHaveBeenCalledTimes(1)
+  expect(presentServiceProgress).toHaveBeenCalledWith(73, 'https://reader.example.test')
+  expect(dispatch).not.toHaveBeenCalled()
+  expect(retry).not.toHaveBeenCalled()
+  expect(refreshAfterCommand).not.toHaveBeenCalled()
+  expect(screen.queryByRole('button', { name: 'Return to live' })).toBeNull()
+})
+
+it('keeps the deleted-reader fallback usable when native management is unavailable', async () => {
+  jest.mocked(isServiceProgressAvailable).mockReturnValue(false)
+  jest.mocked(useReader).mockReturnValue({ saved: null, state: { ...initialState, loading: false, deleted: true }, retry, dispatch, refreshAfterCommand: jest.fn() })
+  await render(<SessionReaderScreen />, { wrapper })
+  expect(screen.getByTestId('reader-deleted')).toBeOnTheScreen()
+  expect(screen.queryByRole('button', { name: label })).toBeNull()
+  expect(screen.getAllByRole('button')).toHaveLength(1)
+  expect(presentServiceProgress).not.toHaveBeenCalled()
+  expect(dispatch).not.toHaveBeenCalled()
+  expect(retry).not.toHaveBeenCalled()
+})
+
 it('accepts a configured bare root with a trailing slash', async () => {
   mockReaderAPI = 'https://reader.example.test/'
   await render(<SessionReaderScreen />, { wrapper })
