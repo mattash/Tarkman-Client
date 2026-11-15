@@ -1,12 +1,12 @@
 import { useId, useState, type ReactNode, type Ref } from 'react'
-import { TextInput, View, type TextInputProps } from 'react-native'
+import { Platform, TextInput, View, type TextInputProps } from 'react-native'
 import { useTheme } from '../design/ThemeProvider'
 import { radii, spacing, touchTarget, typography } from '../design/tokens'
 import { AppText } from './AppText'
 
-export interface TextFieldProps extends TextInputProps { ref?: Ref<React.ComponentRef<typeof TextInput>>; label: string; error?: string; leading?: ReactNode; trailing?: ReactNode }
+export interface TextFieldProps extends TextInputProps { ref?: Ref<React.ComponentRef<typeof TextInput>>; label: string; error?: string; leading?: ReactNode; trailing?: ReactNode; 'aria-describedby'?: string }
 /** Label above a 52pt field. The 1pt control outline becomes a 2pt actionPrimary border on focus without moving the text. */
-export function TextField({ label, error, leading, trailing, style, onFocus, onBlur, editable = true, keyboardAppearance, ...props }: TextFieldProps) {
+export function TextField({ label, error, leading, trailing, style, onFocus, onBlur, editable = true, keyboardAppearance, 'aria-describedby': describedBy, ...props }: TextFieldProps) {
   const { colors, scheme } = useTheme()
   const [focused, setFocused] = useState(false)
   const id = useId()
@@ -17,13 +17,14 @@ export function TextField({ label, error, leading, trailing, style, onFocus, onB
       borderColor: error ? colors.destructive : focused ? colors.primary : colors.border, backgroundColor: colors.surface,
       paddingLeft: 14 + 2 - borderWidth, paddingRight: (trailing ? spacing.xs : 14) + 2 - borderWidth }}>
       {leading}
-      <TextInput {...props} editable={editable} allowFontScaling keyboardAppearance={keyboardAppearance ?? scheme} accessibilityLabel={props.accessibilityLabel ?? label}
+      <TextInput {...props} {...(Platform.OS === 'web' ? { 'aria-invalid': !!error, 'aria-describedby': [describedBy, error ? `${id}-error` : undefined].filter(Boolean).join(' ') || undefined } : {})}
+        editable={editable} allowFontScaling keyboardAppearance={keyboardAppearance ?? scheme} accessibilityLabel={props.accessibilityLabel ?? label}
         accessibilityHint={error ?? props.accessibilityHint} accessibilityState={{ ...props.accessibilityState, disabled: !editable }}
         onFocus={event => { setFocused(true); onFocus?.(event) }} onBlur={event => { setFocused(false); onBlur?.(event) }}
         placeholderTextColor={colors.muted} selectionColor={colors.primary}
         style={[typography.body, { flex: 1, minHeight: touchTarget, color: colors.foreground, paddingVertical: spacing.sm, textAlignVertical: 'top' }, style]} />
       {trailing}
     </View>
-    {error && <AppText tone="destructive" variant="caption" accessibilityRole="alert">{error}</AppText>}
+    {error && <AppText nativeID={`${id}-error`} tone="destructive" variant="caption" accessibilityRole="alert">{error}</AppText>}
   </View>
 }
