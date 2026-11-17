@@ -478,6 +478,19 @@ The regular mobile tests, lint, typecheck, store/config checks and iOS prebuild
 smoke check still run; mobile changes also run both JavaScript bundle checks.
 The tag requests those bundles even on an otherwise non-mobile PR.
 
+The bundle checks (`ios-bundle-smoke`, `android-bundle-smoke`) export the iOS and
+Android bundles exactly as a release does, Hermes bytecode included, through
+[`.github/actions/native-bundle`](../../.github/actions/native-bundle/action.yml).
+That action reuses Metro's transform cache through Expo's
+`EXPO_METRO_CACHE_RESTORE_DIR`/`EXPO_METRO_CACHE_OUTPUT_DIR` (#292). Pushes to `main`
+also run both bundle checks and save the cache that PRs restore. A PR saves its own
+cache only when nothing matched, such as after a dependency change. Metro keys
+transforms by file content, and the cache key adds the lockfile,
+Babel/Metro/Tailwind/app config and `EXPO_PUBLIC_*` values, so a changed file is
+always re-transformed. Do not add `--clear` to these exports: it also clears the
+restored transforms. With a warm cache, most of each export is the Hermes `-O`
+compile.
+
 When requested, iOS compiles on macOS 26 using Node 24, a clean dependency
 install, Expo prebuild, CocoaPods and unsigned Debug `xcodebuild` for a generic
 iOS Simulator. Android checks the merged release manifest and compiles a debug
