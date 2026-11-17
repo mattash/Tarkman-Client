@@ -15,7 +15,7 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "config": "expo config --type public",
-    "test": "jest --runInBand",
+    "test": "jest",
     "maestro:android": "node scripts/maestro-android.mjs",
     "test:maestro-android": "node --test scripts/maestro-android.test.mjs",
     "test:native-inputs": "node --test scripts/native-inputs.test.mjs",
