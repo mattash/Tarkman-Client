@@ -3,18 +3,24 @@
 // the tree it built; a later run of the same PR with an identical fingerprint may reuse
 // that result instead of compiling again. Other changes retain the Linux bundle
 // smoke checks and the unconditional mobile validation job on every head.
+// The tvOS compile of apps/tv reuses results the same way, by fingerprint only.
 //
 // Usage (from the repository root, in a full-history checkout of the PR merge commit):
 //   node apps/mobile/scripts/native-inputs.mjs --platform ios --base <sha> --head <sha> [--tree HEAD] [--salt <text>]
 // Add --title <PR title> to opt in with [native-build].
 // Prints mobile=, native=, requested= and fingerprint= lines, suitable for $GITHUB_OUTPUT.
+//   node apps/mobile/scripts/native-inputs.mjs --platform tvos [--tree HEAD] [--salt <text>]
+// Prints only the fingerprint= line.
 
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { isDeepStrictEqual } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
-export const platforms = ['ios', 'android']
+export const platforms = ['ios', 'android', 'tvos']
+
+// Platforms built from apps/mobile; only these have a PR change classification.
+const mobilePlatforms = ['ios', 'android']
 
 // Paths whose change makes a PR mobile-relevant at all.
 export const mobilePathspecs = [
@@ -25,31 +31,49 @@ export const mobilePathspecs = [
   'packages/tarkman-lectionary/',
   'tools/metro/',
   '.github/workflows/node.js.yml',
+  '.github/actions/',
 ]
 
-// Native build inputs shared by both platforms. The workflow pins the runners and
+// Native build inputs of every compile. The workflow pins the runners and
 // toolchains, and this script decides what is native, so both count as inputs.
+const ciNativePatterns = [
+  /^\.github\/workflows\/node\.js\.yml$/,
+  /^apps\/mobile\/scripts\/native-inputs\.mjs$/,
+]
+
+// Native build inputs shared by both mobile platforms.
 // CI runs Expo prebuild + xcodebuild/Gradle directly, without an EAS profile.
 // eas.json and .easignore affect EAS builds/uploads, not these compiles. The
 // check-store-config script only asserts configuration in the Linux mobile job.
 // If prebuild/plugins start consuming those files, add them back as inputs.
 const sharedNativePatterns = [
-  /^\.github\/workflows\/node\.js\.yml$/,
-  /^apps\/mobile\/scripts\/native-inputs\.mjs$/,
+  ...ciNativePatterns,
   /^apps\/mobile\/(app\.json|package\.json|package-lock\.json|npm-shrinkwrap\.json)$/,
   /^apps\/mobile\/app\.config\.[^/]+$/,
   /^apps\/mobile\/app\.plugin\.[^/]+$/,
   /^apps\/mobile\/(plugins|config-plugins|assets\/icons)\//,
 ]
 
+// apps/tv is a separate Expo app with its own config, lockfile, plugins and icons,
+// under the same rules as mobile.
+const tvNativePatterns = [
+  ...ciNativePatterns,
+  /^apps\/tv\/(app\.json|package\.json|package-lock\.json|npm-shrinkwrap\.json)$/,
+  /^apps\/tv\/app\.config\.[^/]+$/,
+  /^apps\/tv\/app\.plugin\.[^/]+$/,
+  /^apps\/tv\/(plugins|config-plugins|assets\/icons)\//,
+  /^apps\/tv\/ios\//,
+]
+
 const platformNativePatterns = {
-  ios: [/^apps\/mobile\/ios\//],
-  android: [/^apps\/mobile\/android\//],
+  ios: [...sharedNativePatterns, /^apps\/mobile\/ios\//],
+  android: [...sharedNativePatterns, /^apps\/mobile\/android\//],
+  tvos: tvNativePatterns,
 }
 
 export function isNativeInput(path, platform) {
   assertPlatform(platform)
-  return [...sharedNativePatterns, ...platformNativePatterns[platform]].some(pattern => pattern.test(path))
+  return platformNativePatterns[platform].some(pattern => pattern.test(path))
 }
 
 // `git ls-tree -r` lines are "<mode> <type> <object>\t<path>"; the object IDs pin content.
@@ -102,8 +126,14 @@ export function nativeBuildRequested(title = '') {
   return /\[native-build\]/i.test(title)
 }
 
+export function fingerprintTree({ platform, tree = 'HEAD', salt = '', git = runGit }) {
+  return fingerprint(git(['ls-tree', '-r', '--full-tree', tree]), platform, salt)
+}
+
 export function classify({ platform, base, head, tree = 'HEAD', salt = '', title = '', git = runGit }) {
-  assertPlatform(platform)
+  if (!mobilePlatforms.includes(platform)) {
+    throw new Error(`No change classification for platform: ${platform}`)
+  }
   // Disable rename detection so moving a file out of mobile still counts as a change.
   // Git pathspecs avoid API pagination and changed-file count limits.
   const changed = git(['diff', '--no-renames', '--name-only', `${base}...${head}`, '--', ...mobilePathspecs])
@@ -124,7 +154,7 @@ export function classify({ platform, base, head, tree = 'HEAD', salt = '', title
     mobile: changed.length > 0 || requested,
     native,
     requested,
-    fingerprint: fingerprint(git(['ls-tree', '-r', '--full-tree', tree]), platform, salt),
+    fingerprint: fingerprintTree({ platform, tree, salt, git }),
   }
 }
 
@@ -148,14 +178,18 @@ function parseArgs(argv) {
     }
     options[name.slice(2)] = value
   }
-  if (!options.platform || !options.base || !options.head) {
-    throw new Error('--platform, --base and --head are required.')
+  if (!options.platform) {
+    throw new Error('--platform is required.')
+  }
+  if (options.platform !== 'tvos' && (!options.base || !options.head)) {
+    throw new Error('--base and --head are required for ios and android.')
   }
   return options
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const result = classify(parseArgs(process.argv.slice(2)))
+  const options = parseArgs(process.argv.slice(2))
+  const result = options.platform === 'tvos' ? { fingerprint: fingerprintTree(options) } : classify(options)
   for (const [key, value] of Object.entries(result)) {
     console.log(`${key}=${value}`)
   }

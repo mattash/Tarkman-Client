@@ -89,8 +89,8 @@ For an update:
 5. Repeat platform measurements and product/backend verification. Record independent
    source validation separately. Clear the data-rights gate before distribution.
 
-CI's mobile job runs package compilation, checksum/shape tests, full-result
-comparisons with checked-in packs, and mobile adapter tests. It acquires the
+CI's mobile-checks job runs package compilation, checksum/shape tests and full-result
+comparisons with checked-in packs; mobile-test runs the mobile adapter tests. CI acquires the
 pinned archive separately and runs exhaustive Python/public-API parity too.
 
 ## Preserved source limitations and attribution
