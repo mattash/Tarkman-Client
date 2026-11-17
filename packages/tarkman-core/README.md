@@ -36,7 +36,7 @@ app-local TypeScript; there is no global compiler lookup or tooling download.
 Consumer compile probes require both installs and use each app's own compiler.
 Core is independently checked, but is not a standalone installable verification
 toolchain: a fresh checkout must install mobile before building/testing core.
-CI runs `core:test` in the required `mobile` job and `core:check-consumers`
+CI runs `core:test` in `mobile-checks` (aggregated by the required `mobile` check) and `core:check-consumers`
 in the path-filtered Legacy web CI workflow.
 Do not run a root or core install.
 

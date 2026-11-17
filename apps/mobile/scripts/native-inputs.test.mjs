@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { classify, fingerprint, isNativeInput, isVersionOnlyChange, nativeBuildRequested } from './native-inputs.mjs'
+import { classify, fingerprint, fingerprintTree, isNativeInput, isVersionOnlyChange, nativeBuildRequested } from './native-inputs.mjs'
 
 test('classifies shared and platform-specific native inputs', () => {
   for (const path of [
@@ -33,6 +33,36 @@ test('classifies shared and platform-specific native inputs', () => {
   assert.throws(() => isNativeInput('apps/mobile/app.json', 'web'), /Unknown platform/)
 })
 
+test('classifies apps/tv native inputs for tvOS only', () => {
+  for (const path of ['.github/workflows/node.js.yml', 'apps/mobile/scripts/native-inputs.mjs']) {
+    assert.equal(isNativeInput(path, 'tvos'), true, path)
+  }
+  for (const path of [
+    'apps/tv/app.json',
+    'apps/tv/app.config.ts',
+    'apps/tv/package.json',
+    'apps/tv/package-lock.json',
+    'apps/tv/plugins/with-thing.js',
+    'apps/tv/assets/icons/topshelf-1920x720.png',
+    'apps/tv/ios/Podfile',
+  ]) {
+    assert.equal(isNativeInput(path, 'tvos'), true, path)
+    assert.equal(isNativeInput(path, 'ios'), false, path)
+    assert.equal(isNativeInput(path, 'android'), false, path)
+  }
+  for (const path of [
+    'apps/mobile/app.json',
+    'apps/mobile/package-lock.json',
+    'apps/mobile/ios/Podfile',
+    'apps/tv/src/App.tsx',
+    'apps/tv/assets/fonts/x.ttf',
+    'apps/tv/eas.json',
+    'packages/tarkman-reader/src/index.ts',
+  ]) {
+    assert.equal(isNativeInput(path, 'tvos'), false, path)
+  }
+})
+
 test('fingerprints content, not order, and refuses an empty input set', () => {
   const a = '100644 blob aaa\tapps/mobile/package.json'
   const b = '100644 blob bbb\tapps/mobile/app.json'
@@ -42,6 +72,28 @@ test('fingerprints content, not order, and refuses an empty input set', () => {
   assert.notEqual(fingerprint(`${a}\n${b}`, 'ios'), fingerprint(`${a}\n${b}`, 'android'))
   assert.notEqual(fingerprint(`${a}\n${b}`, 'ios', '2026-W40'), fingerprint(`${a}\n${b}`, 'ios', '2026-W41'))
   assert.throws(() => fingerprint(js, 'ios'), /No ios native inputs/)
+
+  // tvOS reuse follows apps/tv only: mobile native and TV JavaScript edits keep it.
+  const workflow = '100644 blob www\t.github/workflows/node.js.yml'
+  const tv = '100644 blob ttt\tapps/tv/package-lock.json'
+  const tvos = fingerprint(`${workflow}\n${tv}\n${a}\n${b}`, 'tvos')
+  assert.equal(tvos, fingerprint(`${workflow}\n${tv}\n100644 blob ddd\tapps/mobile/package.json\n100644 blob eee\tapps/tv/src/App.tsx`, 'tvos'))
+  assert.notEqual(tvos, fingerprint(`${workflow}\n100644 blob ttu\tapps/tv/package-lock.json`, 'tvos'))
+  assert.notEqual(tvos, fingerprint(`100644 blob wwx\t.github/workflows/node.js.yml\n${tv}`, 'tvos'))
+  assert.notEqual(tvos, fingerprint(`${workflow}\n${tv}\n100644 blob iii\tapps/tv/assets/icons/icon.png`, 'tvos'))
+  assert.equal(fingerprint(`${workflow}\n${a}\n${b}`, 'ios'), fingerprint(`${workflow}\n${a}\n${b}\n${tv}`, 'ios'))
+})
+
+test('fingerprints tvOS from the command line without a change classification', () => {
+  const root = new URL('../../../', import.meta.url).pathname
+  const script = new URL('./native-inputs.mjs', import.meta.url).pathname
+  const run = args => spawnSync(process.execPath, [script, ...args], { cwd: root, encoding: 'utf8' })
+  const result = run(['--platform', 'tvos', '--tree', 'HEAD', '--salt', '2026-W47'])
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /^fingerprint=[0-9a-f]{64}\n$/)
+  assert.equal(result.stdout, `fingerprint=${fingerprintTree({ platform: 'tvos', salt: '2026-W47' })}\n`)
+  assert.notEqual(run(['--platform', 'ios', '--tree', 'HEAD']).status, 0)
+  assert.throws(() => classify({ platform: 'tvos', base: 'a', head: 'b', git: () => '' }), /No change classification/)
 })
 
 // Representative PR scenarios against a real repository and merge commits.
@@ -191,14 +243,32 @@ test('reuses a compile only while the merged native inputs are unchanged', t => 
   assert.notEqual(run('ios', main, commit('config change')).fingerprint, first.fingerprint)
 })
 
-// This exclusion is safe only while config validation remains an unconditional job.
+// This exclusion is safe only while config validation remains unconditional and
+// required through the aggregate `mobile` check.
 test('mobile CI validates store settings even when both native compiles are skipped', () => {
   const workflow = readFileSync(new URL('../../../.github/workflows/node.js.yml', import.meta.url), 'utf8')
-  const mobileJob = workflow.split('\n  mobile:\n')[1].split('\n  ios-changes:')[0]
-  assert.doesNotMatch(mobileJob, /^\s+if:/m)
-  for (const command of ['npm run check:store-config', 'npm run config', 'npx expo prebuild --platform ios --clean --no-install']) {
-    assert.ok(mobileJob.includes(command), command)
+  const job = name => workflow.split(`\n  ${name}:\n`)[1].split(/\n {2}[a-z][a-z-]+:\n/)[0]
+  const gate = job('mobile')
+  const needs = gate.match(/^ {4}needs: \[([^\]]+)\]$/m)[1].split(',').map(name => name.trim())
+  assert.deepEqual(needs, ['mobile-checks', 'mobile-test', 'mobile-export'])
+  assert.match(gate, /^ {4}if: always\(\)$/m)
+  for (const name of needs) {
+    assert.doesNotMatch(job(name), /^\s+if:/m, name)
   }
+  for (const command of ['npm run check:store-config', 'npm run config', 'npx expo prebuild --platform ios --clean --no-install', 'npm test', 'npm run lint', 'npm run typecheck', 'npm run export:web']) {
+    assert.ok(needs.some(name => job(name).includes(command)), command)
+  }
+
+  // The aggregate passes only when every mobile job succeeded.
+  const body = gate.split('      run: |\n')[1].split('\n').map(line => line.slice(8)).join('\n')
+  const verify = results => spawnSync('bash', ['-e', '-c', body], { env: { ...process.env, RESULTS: JSON.stringify(results) }, encoding: 'utf8' })
+  const all = result => Object.fromEntries(needs.map(name => [name, { result, outputs: {} }]))
+  const check = verify(all('success'))
+  assert.equal(check.status, 0, check.stderr)
+  for (const failure of ['failure', 'cancelled', 'skipped']) {
+    assert.notEqual(verify({ ...all('success'), 'mobile-test': { result: failure, outputs: {} } }).status, 0, failure)
+  }
+  assert.notEqual(verify({}).status, 0)
 })
 
 
@@ -217,7 +287,8 @@ test('version exception fails closed for invalid versions and other native edits
 // silently diverge between the classifier, reuse decision and required gates.
 test('title opt-in controls both compile decisions and aggregate gates', t => {
   const workflow = readFileSync(new URL('../../../.github/workflows/node.js.yml', import.meta.url), 'utf8')
-  assert.match(workflow, /types: \[opened, synchronize, reopened, edited\]/)
+  // Title and description edits must not re-run CI on an already tested commit.
+  assert.match(workflow, /\n {2}pull_request:\n {4}types: \[opened, synchronize, reopened\]\n/)
   const dir = mkdtempSync(join(tmpdir(), 'native-policy-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   const runBlock = (job, step) => {
@@ -225,10 +296,10 @@ test('title opt-in controls both compile decisions and aggregate gates', t => {
     const body = jobText.split(`    - name: ${step}\n`)[1].split('      run: |\n')[1]
     return body.split(/\n(?= {0,6}\S)/)[0].split('\n').map(line => line.slice(8)).join('\n')
   }
-  for (const platform of ['ios', 'android']) {
-    const label = platform === 'ios' ? 'iOS' : 'Android'
-    const decision = runBlock(`${platform}-changes`, 'Decide whether to compile')
-    const gate = runBlock(`${platform}-build`, `Verify ${label} compile outcome`)
+  const decisionJobs = { ios: 'ios-changes', android: 'android-changes', tvos: 'tv' }
+  for (const platform of ['ios', 'android', 'tvos']) {
+    const label = { ios: 'iOS', android: 'Android', tvos: 'tvOS' }[platform]
+    const decision = runBlock(decisionJobs[platform], 'Decide whether to compile')
     const output = join(dir, `${platform}-output`)
     const marker = join(dir, `${platform}.json`)
     const decide = (requested, data, cacheHit = 'true') => {
@@ -245,6 +316,8 @@ test('title opt-in controls both compile decisions and aggregate gates', t => {
     assert.match(decide('true', { ...valid, fingerprint: 'different' }), /compile=true/)
     assert.match(decide('true', { ...valid, result: 'failure' }), /compile=true/)
     assert.match(decide('true', { ...valid, platform: 'other' }), /compile=true/)
+    if (platform === 'tvos') continue
+    const gate = runBlock(`${platform}-build`, `Verify ${label} compile outcome`)
     const check = overrides => spawnSync('bash', ['-e', '-c', gate], { env: { ...process.env, CHANGES_RESULT: 'success', MOBILE_CHANGED: 'true', BUILD_REQUESTED: 'false', COMPILE_NEEDED: 'false', REUSED_RUN: '', BUNDLE_RESULT: 'success', COMPILE_RESULT: 'skipped', ...overrides } }).status
     assert.equal(check({}), 0)
     assert.equal(check({ BUILD_REQUESTED: 'true', COMPILE_NEEDED: 'true', COMPILE_RESULT: 'success' }), 0)
@@ -260,7 +333,7 @@ test('title opt-in controls both compile decisions and aggregate gates', t => {
   assert.equal(nativeBuildRequested('[Native-Build] tvOS'), true)
   assert.equal(nativeBuildRequested('native-build tvOS'), false)
   assert.equal(nativeBuildRequested(undefined), false)
-  assert.match(workflow, /\n {2}tv-compile:\n {4}needs: tv\n {4}if: needs\.tv\.outputs\.requested == 'true'\n/)
+  assert.match(workflow, /\n {2}tv-compile:\n {4}needs: tv\n {4}if: needs\.tv\.outputs\.compile == 'true'\n/)
   const request = runBlock('tv', 'Read the native build request')
   const requestOutput = join(dir, 'tv-request')
   const ask = title => {
@@ -274,10 +347,33 @@ test('title opt-in controls both compile decisions and aggregate gates', t => {
   assert.match(ask('tvOS'), /^requested=false$/m)
   assert.match(ask(''), /^requested=false$/m)
   const tvGate = runBlock('tv-build', 'Verify tvOS compile outcome')
-  const tvCheck = overrides => spawnSync('bash', ['-e', '-c', tvGate], { env: { ...process.env, TV_RESULT: 'success', BUILD_REQUESTED: 'false', COMPILE_RESULT: 'skipped', ...overrides } }).status
+  const tvCheck = overrides => spawnSync('bash', ['-e', '-c', tvGate], { env: { ...process.env, TV_RESULT: 'success', BUILD_REQUESTED: 'false', COMPILE_NEEDED: 'false', REUSED_RUN: '', COMPILE_RESULT: 'skipped', ...overrides } }).status
   assert.equal(tvCheck({}), 0)
-  assert.equal(tvCheck({ BUILD_REQUESTED: 'true', COMPILE_RESULT: 'success' }), 0)
-  for (const failure of ['failure', 'cancelled', 'skipped']) assert.notEqual(tvCheck({ BUILD_REQUESTED: 'true', COMPILE_RESULT: failure }), 0)
+  assert.equal(tvCheck({ BUILD_REQUESTED: 'true', COMPILE_NEEDED: 'true', COMPILE_RESULT: 'success' }), 0)
+  assert.equal(tvCheck({ BUILD_REQUESTED: 'true', REUSED_RUN: 'https://example.invalid/run' }), 0)
+  assert.notEqual(tvCheck({ BUILD_REQUESTED: 'true' }), 0)
+  for (const failure of ['failure', 'cancelled', 'skipped']) assert.notEqual(tvCheck({ BUILD_REQUESTED: 'true', COMPILE_NEEDED: 'true', COMPILE_RESULT: failure }), 0)
   assert.notEqual(tvCheck({ COMPILE_RESULT: 'success' }), 0)
   assert.notEqual(tvCheck({ TV_RESULT: 'failure' }), 0)
+
+  // Every title consumer reads the live title, falling back to the event's on an API failure.
+  const titleSteps = ['ios-changes', 'android-changes', 'tv'].map(job => runBlock(job, 'Read the current PR title'))
+  assert.equal(new Set(titleSteps).size, 1)
+  const bin = join(dir, 'bin')
+  mkdirSync(bin)
+  writeFileSync(join(bin, 'gh'), '#!/bin/sh\n[ -n "$FAKE_GH_TITLE" ] || exit 1\nprintf "%s\\n" "$FAKE_GH_TITLE"\n')
+  chmodSync(join(bin, 'gh'), 0o755)
+  const titleOutput = join(dir, 'title-output')
+  const readTitle = env => {
+    writeFileSync(titleOutput, '')
+    const result = spawnSync('bash', ['-e', '-c', titleSteps[0]], { env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, GITHUB_REPOSITORY: 'owner/repo', GITHUB_OUTPUT: titleOutput, EVENT_TITLE: 'Old title', PR_NUMBER: '7', ...env }, encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    return { output: readFileSync(titleOutput, 'utf8'), stdout: result.stdout }
+  }
+  assert.equal(readTitle({ FAKE_GH_TITLE: '[native-build] New title' }).output, 'title=[native-build] New title\n')
+  const fallback = readTitle({ FAKE_GH_TITLE: '' })
+  assert.equal(fallback.output, 'title=Old title\n')
+  assert.match(fallback.stdout, /::warning::/)
+  // Push runs have no PR: the title stays empty without an API call.
+  assert.equal(readTitle({ EVENT_TITLE: '', PR_NUMBER: '', FAKE_GH_TITLE: 'unused' }).output, 'title=\n')
 })

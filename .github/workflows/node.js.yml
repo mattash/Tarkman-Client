@@ -7,8 +7,10 @@ name: Node.js CI
 on:
   push:
     branches: [ "main" ]
+  # Not `edited`: a title or description edit would re-run every job on an already tested
+  # commit. Jobs read the live PR title, so add [native-build], then push or re-run.
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened]
     branches: [ "main" ]
 
 concurrency:
@@ -27,25 +29,29 @@ jobs:
     # Fails when web.css is stale or a token color pair misses its contrast target.
     - run: npm run check --prefix packages/tarkman-design
 
-  mobile:
+  # mobile-checks, mobile-test and mobile-export run in parallel; the `mobile` job
+  # below is the required check that aggregates them.
+  mobile-checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: apps/mobile
     steps:
     - uses: actions/checkout@v7
-    # SDK 58 requires Node >=22.13; this matches the runtime the website deploys on.
-    - uses: actions/setup-node@v7
       with:
-        node-version: 24.x
-        cache: 'npm'
-        cache-dependency-path: apps/mobile/package-lock.json
-    - run: npm ci
+        persist-credentials: false
+    # SDK 58 requires Node >=22.13; this matches the runtime the website deploys on.
+    # The one job that saves node_modules for the other mobile jobs and later runs.
+    - uses: ./.github/actions/mobile-install
+      with:
+        save: 'true'
     - run: npm ls --all
     - run: npx expo-doctor
     - run: npm run lint
     - run: npm run typecheck
-    - run: npm test
     - run: npm run test:native-inputs
     # Shared core builds with mobile's locked TypeScript, so it needs no web install.
     - name: Shared core tests
@@ -65,6 +71,35 @@ jobs:
     - run: npm run check:fonts
     - run: npm run check:store-config
     - run: npm run config
+
+  mobile-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/mobile-install
+    - run: npm test
+
+  mobile-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/mobile-install
     - run: npm run export:web
     # Generates the native iOS project so a broken app config or config plugin fails here
     # rather than during a release build. Runs last: prebuild rewrites package.json scripts.
@@ -81,11 +116,27 @@ jobs:
         grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' ios/Tarkman/PrivacyInfo.xcprivacy
         node ../../tools/check-apple-lifecycle.mjs .
 
+  # Require this stable check: it passes only when every mobile job succeeded.
+  mobile:
+    name: mobile
+    needs: [mobile-checks, mobile-test, mobile-export]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - name: Verify mobile results
+      env:
+        RESULTS: ${{ toJSON(needs) }}
+      run: |
+        echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+        echo "$RESULTS" | jq -e 'length > 0 and all(.[]; .result == "success")' > /dev/null
+
   ios-changes:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       mobile: ${{ steps.changes.outputs.mobile }}
       native: ${{ steps.changes.outputs.native }}
@@ -99,12 +150,28 @@ jobs:
         # Full history supports the PR merge-base diff, including fork PRs.
         fetch-depth: 0
         persist-credentials: false
+    - name: Read the current PR title
+      id: title
+      env:
+        EVENT_TITLE: ${{ github.event.pull_request.title }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # A re-run reuses the triggering event, so its title can be stale.
+        title=$EVENT_TITLE
+        if [ -n "$PR_NUMBER" ]; then
+          title=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .title) || {
+            echo "::warning::Could not read the current PR title; using the title from the triggering event."
+            title=$EVENT_TITLE
+          }
+        fi
+        echo "title=$title" >> "$GITHUB_OUTPUT"
     - name: Detect mobile-relevant changes
       id: changes
       env:
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_TITLE: ${{ steps.title.outputs.title }}
       run: |
         # The fingerprint covers the checked-out merge commit, so base updates count. The ISO
         # week bounds runner image and toolchain drift: opted-in builds refresh at least weekly.
@@ -144,7 +211,7 @@ jobs:
             echo "No verified iOS compile for native fingerprint $FINGERPRINT; compiling."
           fi
         else
-          echo "Native compile not requested; add [native-build] to the PR title to enable it."
+          echo "Native compile not requested; add [native-build] to the PR title, then push or re-run, to enable it."
         fi
         echo "compile=$compile" >> "$GITHUB_OUTPUT"
 
@@ -165,12 +232,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-    - uses: actions/setup-node@v7
-      with:
-        node-version: 24.x
-        cache: 'npm'
-        cache-dependency-path: apps/mobile/package-lock.json
-    - run: npm ci --prefix apps/mobile
+    - uses: ./.github/actions/mobile-install
     - name: Export iOS JavaScript bundle
       working-directory: apps/mobile
       run: npx expo export --platform ios --clear --output-dir "$RUNNER_TEMP/tarkman-ios-bundle"
@@ -282,6 +344,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       mobile: ${{ steps.changes.outputs.mobile }}
       native: ${{ steps.changes.outputs.native }}
@@ -295,12 +358,28 @@ jobs:
         # Full history supports the PR merge-base diff, including fork PRs.
         fetch-depth: 0
         persist-credentials: false
+    - name: Read the current PR title
+      id: title
+      env:
+        EVENT_TITLE: ${{ github.event.pull_request.title }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # A re-run reuses the triggering event, so its title can be stale.
+        title=$EVENT_TITLE
+        if [ -n "$PR_NUMBER" ]; then
+          title=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .title) || {
+            echo "::warning::Could not read the current PR title; using the title from the triggering event."
+            title=$EVENT_TITLE
+          }
+        fi
+        echo "title=$title" >> "$GITHUB_OUTPUT"
     - name: Detect mobile-relevant changes
       id: changes
       env:
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_TITLE: ${{ steps.title.outputs.title }}
       run: |
         # The fingerprint covers the checked-out merge commit, so base updates count. The ISO
         # week bounds runner image and toolchain drift: opted-in builds refresh at least weekly.
@@ -340,7 +419,7 @@ jobs:
             echo "No verified Android compile for native fingerprint $FINGERPRINT; compiling."
           fi
         else
-          echo "Native compile not requested; add [native-build] to the PR title to enable it."
+          echo "Native compile not requested; add [native-build] to the PR title, then push or re-run, to enable it."
         fi
         echo "compile=$compile" >> "$GITHUB_OUTPUT"
 
@@ -361,12 +440,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-    - uses: actions/setup-node@v7
-      with:
-        node-version: 24.x
-        cache: 'npm'
-        cache-dependency-path: apps/mobile/package-lock.json
-    - run: npm ci --prefix apps/mobile
+    - uses: ./.github/actions/mobile-install
     - name: Export Android JavaScript bundle
       working-directory: apps/mobile
       run: npx expo export --platform android --clear --output-dir "$RUNNER_TEMP/tarkman-android-bundle"
@@ -514,8 +588,12 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       requested: ${{ steps.request.outputs.requested }}
+      fingerprint: ${{ steps.inputs.outputs.fingerprint }}
+      compile: ${{ steps.reuse.outputs.compile }}
+      reused-run: ${{ steps.reuse.outputs.reused-run }}
     defaults:
       run:
         working-directory: apps/tv
@@ -533,14 +611,71 @@ jobs:
         node-version: 24.x
         cache: 'npm'
         cache-dependency-path: apps/tv/package-lock.json
+    - name: Read the current PR title
+      id: title
+      env:
+        EVENT_TITLE: ${{ github.event.pull_request.title }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # A re-run reuses the triggering event, so its title can be stale.
+        title=$EVENT_TITLE
+        if [ -n "$PR_NUMBER" ]; then
+          title=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .title) || {
+            echo "::warning::Could not read the current PR title; using the title from the triggering event."
+            title=$EVENT_TITLE
+          }
+        fi
+        echo "title=$title" >> "$GITHUB_OUTPUT"
     # The same [native-build] PR title tag that opts mobile into native compiles also requests tv-compile.
     - name: Read the native build request
       id: request
       working-directory: .
       env:
-        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_TITLE: ${{ steps.title.outputs.title }}
       run: |
         node --input-type=module -e "import { nativeBuildRequested } from './apps/mobile/scripts/native-inputs.mjs'; console.log('requested=' + nativeBuildRequested(process.env.PR_TITLE))" | tee -a "$GITHUB_OUTPUT"
+    # Like iOS and Android, reuse a successful tvOS compile of identical native inputs
+    # (apps/tv config, lockfile, plugins, icons, this workflow) within the PR.
+    - name: Fingerprint the tvOS native inputs
+      id: inputs
+      if: steps.request.outputs.requested == 'true'
+      working-directory: .
+      run: |
+        set -o pipefail
+        node apps/mobile/scripts/native-inputs.mjs --platform tvos --tree HEAD --salt "$(date -u +%G-W%V)" | tee -a "$GITHUB_OUTPUT"
+    - name: Look up a prior tvOS compile for these native inputs
+      id: marker
+      if: steps.request.outputs.requested == 'true'
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ runner.temp }}/native-compile-marker/tvos.json
+        key: native-compile-ok-tvos-${{ steps.inputs.outputs.fingerprint }}
+    - name: Decide whether to compile
+      id: reuse
+      env:
+        BUILD_REQUESTED: ${{ steps.request.outputs.requested }}
+        FINGERPRINT: ${{ steps.inputs.outputs.fingerprint }}
+        CACHE_HIT: ${{ steps.marker.outputs.cache-hit }}
+        MARKER: ${{ runner.temp }}/native-compile-marker/tvos.json
+      run: |
+        compile=false
+        if [ "$BUILD_REQUESTED" = true ]; then
+          compile=true
+          # Fail closed: any missing, unreadable or mismatched marker means compile again.
+          if [ "$CACHE_HIT" = true ] && [ -f "$MARKER" ] && \
+             jq -e --arg fp "$FINGERPRINT" '.platform == "tvos" and .result == "success" and .fingerprint == $fp' "$MARKER" > /dev/null; then
+            compile=false
+            run_url=$(jq -r '.run_url' "$MARKER")
+            echo "reused-run=$run_url" >> "$GITHUB_OUTPUT"
+            echo "Native inputs match a successful tvOS compile: $run_url (head $(jq -r '.head_sha' "$MARKER"))."
+          else
+            echo "No verified tvOS compile for native fingerprint $FINGERPRINT; compiling."
+          fi
+        else
+          echo "Native compile not requested; add [native-build] to the PR title, then push or re-run, to enable it."
+        fi
+        echo "compile=$compile" >> "$GITHUB_OUTPUT"
     - run: npm ci
     - run: npm ls --all
     - run: npx expo-doctor
@@ -575,11 +710,13 @@ jobs:
   # Signed device and App Store builds belong to the release workflow in apps/tv/README.md, not CI.
   tv-compile:
     needs: tv
-    if: needs.tv.outputs.requested == 'true'
+    if: needs.tv.outputs.compile == 'true'
     runs-on: macos-26
     timeout-minutes: 60
     permissions:
       contents: read
+    outputs:
+      toolchain: ${{ steps.toolchain.outputs.toolchain }}
     env:
       CI: '1'
       LANG: en_US.UTF-8
@@ -612,6 +749,9 @@ jobs:
           -destination 'generic/platform=tvOS Simulator' \
           -derivedDataPath "$RUNNER_TEMP/tarkman-tv-build" \
           EXPO_TV=1 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+    - name: Record toolchain
+      id: toolchain
+      run: echo "toolchain=$ImageOS $ImageVersion; $(xcodebuild -version | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
 
   # Require this stable check, not the conditional macOS job.
   tv-build:
@@ -625,17 +765,40 @@ jobs:
       env:
         TV_RESULT: ${{ needs.tv.result }}
         BUILD_REQUESTED: ${{ needs.tv.outputs.requested }}
+        COMPILE_NEEDED: ${{ needs.tv.outputs.compile }}
+        REUSED_RUN: ${{ needs.tv.outputs.reused-run }}
         COMPILE_RESULT: ${{ needs.tv-compile.result }}
       run: |
         if [ "$TV_RESULT" != success ]; then
           echo "TV validation did not succeed."
           exit 1
         fi
-        if [ "$BUILD_REQUESTED" = false ] && [ "$COMPILE_RESULT" = skipped ]; then
+        if [ "$BUILD_REQUESTED" = false ] && [ "$COMPILE_NEEDED" = false ] && [ "$COMPILE_RESULT" = skipped ]; then
           echo "TV checks, tvOS bundle and prebuild succeeded; native compile not requested (enable with [native-build] in the PR title)."
-        elif [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_RESULT" = success ]; then
+        elif [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_NEEDED" = true ] && [ "$COMPILE_RESULT" = success ]; then
           echo "TV checks and unsigned tvOS simulator compile succeeded."
+        elif [ "$BUILD_REQUESTED" = true ] && [ "$COMPILE_NEEDED" = false ] && [ -n "$REUSED_RUN" ] && [ "$COMPILE_RESULT" = skipped ]; then
+          echo "TV checks succeeded; tvOS native inputs are identical to the successful compile in $REUSED_RUN."
         else
-          echo "Unexpected tvOS validation outcomes: tv=$TV_RESULT requested=$BUILD_REQUESTED compile=$COMPILE_RESULT."
+          echo "Unexpected tvOS validation outcomes: tv=$TV_RESULT requested=$BUILD_REQUESTED compile-needed=$COMPILE_NEEDED compile=$COMPILE_RESULT."
           exit 1
         fi
+    - name: Write the tvOS compile marker
+      if: needs.tv-compile.result == 'success'
+      env:
+        FINGERPRINT: ${{ needs.tv.outputs.fingerprint }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        TOOLCHAIN: ${{ needs.tv-compile.outputs.toolchain }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+      run: |
+        test -n "$FINGERPRINT"
+        mkdir -p "$RUNNER_TEMP/native-compile-marker"
+        jq -n --arg fp "$FINGERPRINT" --arg head "$HEAD_SHA" --arg toolchain "$TOOLCHAIN" --arg url "$RUN_URL" \
+          '{platform: "tvos", result: "success", fingerprint: $fp, head_sha: $head, toolchain: $toolchain, run_url: $url}' \
+          | tee "$RUNNER_TEMP/native-compile-marker/tvos.json"
+    - name: Save the tvOS compile marker
+      if: needs.tv-compile.result == 'success'
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ runner.temp }}/native-compile-marker/tvos.json
+        key: native-compile-ok-tvos-${{ needs.tv.outputs.fingerprint }}
