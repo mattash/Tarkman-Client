@@ -448,7 +448,11 @@ Three jobs run in parallel, and the required **`mobile`** check passes only when
 all of them succeed. `mobile-checks` runs `npm ls --all`, `expo-doctor`, lint,
 typecheck, the UI, interface-copy and font guards and `expo config`, plus
 `npm run core:test` (shared core build, tests and boundary guard), which needs
-only the mobile install. `mobile-test` runs the Jest suite. `mobile-export` runs
+only the mobile install. `mobile-test` always runs the full Jest suite. PRs
+restore Jest transforms from `main`; Jest still validates entries against the
+source, and the cache namespace also covers Node, the lockfile, test/transform
+config and Expo/Babel environment inputs. Pushes to `main` run with a fresh
+transform cache and save it after a passing suite. `mobile-export` runs
 the Expo web export and an iOS config smoke check that prebuilds the native
 project and asserts the associated-domains entitlement and bundle identifier
 survive. The `design` job checks generated tokens and color contrast; the mobile

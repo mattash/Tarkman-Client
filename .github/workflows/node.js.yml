@@ -91,7 +91,30 @@ jobs:
       with:
         persist-credentials: false
     - uses: ./.github/actions/mobile-install
-    - run: npm test
+    - name: Key the Jest transform cache
+      id: jest-cache
+      env:
+        INPUTS: ${{ hashFiles('apps/mobile/package.json', 'apps/mobile/package-lock.json', 'apps/mobile/jest.config.js', 'apps/mobile/babel.config.js', 'apps/mobile/tailwind.config.js', 'apps/mobile/tsconfig.json', 'apps/mobile/scripts/jest-resolver.js') }}
+      run: |
+        set -o pipefail
+        transform_env=$(env | { grep -E '^(EXPO_[A-Z0-9_]+|BABEL_ENV|NODE_ENV)=' || true; } | LC_ALL=C sort | sha256sum | cut -c1-16)
+        echo "prefix=jest-mobile-v1-$RUNNER_OS-$RUNNER_ARCH-$(node --version)-$INPUTS-$transform_env-" >> "$GITHUB_OUTPUT"
+    # Restore only transforms, not Jest's file discovery or timing data. Main starts
+    # clean to seed current transforms rather than accumulating stale ones.
+    - name: Restore Jest transforms
+      if: github.event_name == 'pull_request'
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ runner.temp }}/tarkman-jest/jest-transform-cache-*
+        key: ${{ steps.jest-cache.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: ${{ steps.jest-cache.outputs.prefix }}
+    - run: npm test -- --cacheDirectory "$RUNNER_TEMP/tarkman-jest"
+    - name: Save Jest transforms
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ runner.temp }}/tarkman-jest/jest-transform-cache-*
+        key: ${{ steps.jest-cache.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
 
   mobile-export:
     runs-on: ubuntu-latest
@@ -705,9 +728,9 @@ jobs:
       run: npm run reader:check && npm run metro:test
     # The Metro guard fails this export if react/react-native resolve outside apps/tv/node_modules.
     - name: Export tvOS JavaScript bundle
-      run: |
-        npm run export:tvos -- --clear --no-bytecode --output-dir "$RUNNER_TEMP/tarkman-tv-bundle"
-        grep -q TVFocusGuideView "$RUNNER_TEMP"/tarkman-tv-bundle/_expo/static/js/ios/*.js
+      uses: ./.github/actions/native-bundle
+      with:
+        platform: tvos
     - name: tvOS config smoke check
       run: |
         npm run prebuild:tvos -- --no-install
