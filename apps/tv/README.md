@@ -162,14 +162,22 @@ CocoaPods needs a UTF-8 locale (`export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`).
 
 ### CI
 
-Every run executes the Linux `tv` job: `expo-doctor`, `check:runtime`,
-`check:identity`, typecheck, the reader and Metro guards, the tvOS bundle and a
-prebuild smoke check (tvOS SDK, scene manifest). The unsigned tvOS simulator
+Every run executes the Linux `tv` job: `npm ci`, `npm ls --all`, `expo-doctor`,
+the runtime, identity and font guards, lint, typecheck, the full Jest suite,
+the reader and Metro guards, the tvOS bundle and a prebuild smoke check
+(tvOS SDK, scene manifest). The bundle check restores TV-specific Metro
+transforms seeded by `main`, but still exports JavaScript (no Hermes bytecode)
+and checks for `TVFocusGuideView` on every run. The unsigned tvOS simulator
 compile (`tv-compile`, macOS) is **opt-in** with the same `[native-build]` PR
-title tag as mobile's native builds; editing the title reruns CI. On PRs, the
-stable **`tv-build`** check passes when the compile was not requested and was skipped,
-or requested and succeeded. It fails on any other outcome. Unlike mobile,
-tv-compile has no fingerprint reuse: each tagged run compiles.
+title tag as mobile's native builds. Editing the title does not run CI: push a
+commit or choose **Re-run all jobs** after adding the tag. On PRs, the stable
+**`tv-build`** check passes when the compile was not requested and was skipped,
+requested and succeeded, or requested and reused. Like mobile, a successful
+compile saves a marker in the PR's Actions cache under a fingerprint of the tvOS
+native inputs (`apps/tv` config, `package.json`, lockfile, plugins, icons and
+`ios/`, plus the workflow and classifier, salted per ISO week). A later tagged
+run with the same fingerprint reuses it instead of compiling again; JavaScript
+and mobile-only changes do not invalidate it. The gate fails on any other outcome.
 
 Signed build for a paired Apple TV (development profile installed in Xcode):
 

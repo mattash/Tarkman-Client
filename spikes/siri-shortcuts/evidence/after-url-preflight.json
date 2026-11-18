@@ -1,0 +1,23 @@
+{
+  "kind": "actual-physical-application-capture",
+  "baseSource": "d459fa5e9e2685b7cbc9f8e79605e0bc2f4b2b1d",
+  "overlaySourceRevision": "07344207d22f18dbb305dab65821ea2219cd3826",
+  "installedBundleIdentifier": "app.tarkman.sirispike",
+  "configuration": "Release, development-signed, minimum iOS 16.4; native action compiled but not exercised by this capture",
+  "device": "iPhone 15 Pro",
+  "os": "iOS 27.2",
+  "capturedAt": "2026-11-14T12:35:00-08:00",
+  "capturedAtPrecision": "minute shown in device status bar",
+  "viewportPixels": { "width": 1179, "height": 2556 },
+  "theme": "light",
+  "readingLanguage": "English",
+  "liturgyId": 1,
+  "liturgyName": "Divine Liturgy",
+  "state": "online public reader, top of reading, no worker preference changes or data reset; isolated baseline app upgraded in place",
+  "invocation": "isolated custom URL passed through devicectl; NOT a Shortcuts or Siri invocation",
+  "image": "after-reader-url-preflight.png",
+  "sha256": "3b43e1748a3b33f4f2d8c50319e689fe75c4a1826f0950f35adf9b3e980a1f5b",
+  "purpose": "Matching Before/After reader visual comparison only, demonstrating the pre-existing reader still renders in the changed test binary",
+  "voiceResult": "The separate subsequent actual voice invocation FAILED after Liturgy ID prompting; see voice-attempt-1.json",
+  "limitations": "This screenshot MUST NOT be represented as successful Siri/Shortcuts routing, cold/warm invocation proof or an explanation of the voice failure."
+}

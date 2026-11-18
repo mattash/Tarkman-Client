@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "provenance": "Delegated provider CLI execution reports retained in the ticket session; no raw input packet or credentials captured",
+  "backend_revision": "46481161509155d04e3fcf60ce7928ea19f9614b",
+  "material": "generated ephemeral TEST ES256, token and capability, anonymous FD only",
+  "actual_apns_network": false,
+  "initial_fresh_same_process": {
+    "exit_code": 1,
+    "status": "failed",
+    "attempted": 1,
+    "requests": 0,
+    "fenced_receipts": 0,
+    "cleanup_verified": false,
+    "aggregate_unrevoked": 0,
+    "aggregate_ciphertexts": 0,
+    "aggregate_prepared": 0,
+    "cause": "uncaptured; not inferred from later success"
+  },
+  "distinct_fresh_split_process": {
+    "exit_code": 0,
+    "put_status": 200,
+    "requests": 1,
+    "fence_status": 200,
+    "exact_fenced_receipt": true,
+    "cleanup_verified": true,
+    "aggregate_unrevoked": 0,
+    "aggregate_ciphertexts": 0,
+    "aggregate_prepared": 0,
+    "note": "Executed before acceptance-summary fields were added; no retrospective acceptance fields asserted"
+  },
+  "actual_rails_acceptance_matrix": [
+    {"scenario": "synthetic_accepted", "child_exit": 0, "execution_completed": true, "responses": {"200": 1}, "accepted_responses": 1, "exceptions": 0, "acceptance": "synthetic_only", "fence_status": 200, "cleanup_verified": true},
+    {"scenario": "synthetic_permanent_rejection", "child_exit": 1, "execution_completed": true, "responses": {"400": 1}, "accepted_responses": 0, "exceptions": 0, "acceptance": "not_observed", "fence_status": 200, "cleanup_verified": true},
+    {"scenario": "synthetic_transport_exception", "child_exit": 1, "execution_completed": true, "responses": {}, "accepted_responses": 0, "exceptions": 1, "acceptance": "not_observed", "fence_status": 200, "cleanup_verified": true},
+    {"scenario": "synthetic_expired_registration", "child_exit": 1, "execution_completed": true, "responses": {}, "accepted_responses": 0, "requests": 0, "exceptions": 0, "acceptance": "not_observed", "fence_status": 200, "cleanup_verified": true}
+  ],
+  "all_matrix_cohorts": {"unresolved_aliases": [], "aggregate_unrevoked": 0, "aggregate_ciphertexts": 0, "aggregate_prepared": 0, "generated_secret_redaction_checks": true, "no_apns_network": true},
+  "limits": ["not current native Follow HTTP integration", "trusted selected-registration caller must retain recovery material", "not real provider acceptance", "not device receipt or display"]
+}

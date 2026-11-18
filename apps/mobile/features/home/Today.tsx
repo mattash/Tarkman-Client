@@ -76,9 +76,9 @@ export function Today() {
         {located && <LocationLine state={nearby.state} church={found?.church} find={() => { void nearby.find() }} />}
         {lead && <LeadService session={lead} placed={!!found} open={() => open(lead)} />}
         {others.length > 0 && <View style={{ marginTop: lead ? 26 : 18, gap: 10 }}>
-          <AppText variant="label" tone="muted" accessibilityRole="header">{lead ? t('today.alsoLiveElsewhere') : t('common.liveNow')}</AppText>
-          {others.map(session => <ServiceRow key={session.id} live title={session.title} subtitle={session.church}
-            accessibilityLabel={t('today.rowLiveLabel', { title: session.title, church: session.church })} onPress={() => open(session)} />)}
+          <AppText variant="label" tone="muted" accessibilityRole="header">{t(others.every(session => session.status === 'active') ? lead ? 'today.alsoLiveElsewhere' : 'common.liveNow' : 'servicesList.title')}</AppText>
+          {others.map(session => <ServiceRow key={session.id} live={session.status === 'active'} title={session.title} subtitle={session.church}
+            accessibilityLabel={t(session.status === 'active' ? 'today.rowLiveLabel' : 'servicesList.rowLabel', { title: session.title, church: session.church })} onPress={() => open(session)} />)}
         </View>}
       </>}
 

@@ -1,0 +1,148 @@
+[
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694198128.9119,
+    "stage": "native:runtime-created",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694198223.7139,
+    "stage": "module:available",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694198224.082,
+    "stage": "root:waiting",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694198224.395,
+    "stage": "app:inactive",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694198224.89,
+    "stage": "root:ready",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694198289.5942,
+    "stage": "app:active",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694700737.556,
+    "stage": "app:inactive",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58263,
+    "timestamp": 1794694700787.283,
+    "stage": "app:active",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862177.009,
+    "stage": "native:runtime-created",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "inputClassification": "exact-one",
+    "timestamp": 1794694862238.698,
+    "stage": "native:perform-entered",
+    "inputUTF8ByteCount": 1,
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862238.9841,
+    "stage": "native:validation-accepted",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862240.313,
+    "invocationId": "B536D316-5B67-4BB7-8907-C16D5D13BE1A",
+    "stage": "native:dispatch-returned",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862305.346,
+    "stage": "module:available",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862306.165,
+    "stage": "root:waiting",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862306.777,
+    "stage": "app:background",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862308.6628,
+    "stage": "root:ready",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862309.03,
+    "invocationId": "B536D316-5B67-4BB7-8907-C16D5D13BE1A",
+    "stage": "queue:received",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862309.2297,
+    "invocationId": "B536D316-5B67-4BB7-8907-C16D5D13BE1A",
+    "stage": "route:accepted",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862316.683,
+    "invocationId": "B536D316-5B67-4BB7-8907-C16D5D13BE1A",
+    "stage": "ack:ok",
+    "processName": "TarkmanSiriSpike"
+  },
+  {
+    "bundleIdentifier": "app.tarkman.sirispike",
+    "processIdentifier": 58321,
+    "timestamp": 1794694862667.774,
+    "stage": "app:active",
+    "processName": "TarkmanSiriSpike"
+  }
+]

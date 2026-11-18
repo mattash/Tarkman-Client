@@ -1,0 +1,48 @@
+# Observes proposed PR job selections without changing existing CI or native fingerprints.
+name: Affected Job Planning
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: ["main"]
+
+concurrency:
+  group: affected-job-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  affected-job-plan:
+    # Observation only (#293): no validation job depends on this job yet.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24.x
+    - run: node --test tools/ci/affected-jobs.test.mjs
+    - name: Record the proposed job plan
+      env:
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # As with the native jobs, a re-run can see current title tags without an edit trigger.
+        if title=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .title); then
+          export CI_PLAN_TITLE="$title"
+        else
+          echo '::warning::Current title unavailable; proposing full validation.'
+        fi
+        unset GH_TOKEN
+        node tools/ci/affected-jobs.mjs "$RUNNER_TEMP/affected-job-plan.json"
+    - uses: actions/upload-artifact@v6
+      with:
+        name: affected-job-plan
+        path: ${{ runner.temp }}/affected-job-plan.json
+        if-no-files-found: error
+        retention-days: 14

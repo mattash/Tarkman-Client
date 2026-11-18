@@ -1,0 +1,51 @@
+{
+  "result": "Cold native AppIntent execution with resolved String1 and reader display observed; exact entry method and operator identity unverified",
+  "provenanceCorrection": "The filename reflects the requested typed-ID scenario, not independently established typing/Shortcuts entry. Earlier owner-created/owner-confirmed claims were contextual inferences and are withdrawn.",
+  "testedOverlayRevision": "4ce6d8e28d35553d4fced3a6eecd367af792cfb4",
+  "installedApp": { "bundleIdentifier": "app.tarkman.sirispike", "version": "0.2.7", "build": "1", "configuration": "development-signed Release", "minimumOS": "16.4" },
+  "device": "iPhone 15 Pro, iOS 27.2",
+  "invocationProvenance": {
+    "requestedScenario": "New native Shortcuts workflow using Tarkman Siri Spike → Open Liturgy, typed literal String1 in Liturgy ID, run once",
+    "actualEntryMethod": null,
+    "operatorIdentity": null,
+    "retainedCompletionSource": "An unwrapped user-role message in the worker Executor conversation reported completion and opening after the typed-ID request was queued",
+    "sourceLimit": "The retained message has no sender account, transport/source-channel attribution or exact receipt timestamp. It does not explicitly describe creating a workflow, typing1 or the entry used. Request delivery to the same operator is not independently established.",
+    "exactConfirmationTimestamp": null,
+    "surroundingRuntimeSampleBounds": { "after": "2026-11-14T14:19:15-08:00", "before": "2026-11-14T14:29:23-08:00", "meaning": "Session ordering bounds only, not a confirmation timestamp or device event time" },
+    "secondaryAcknowledgmentNotTestimony": "https://github.com/mattash/Tarkman-Client/issues/275#issuecomment-6885182904",
+    "secondaryAcknowledgmentLimit": "Automated orchestration acknowledgment based on the worker report; not independent human/operator confirmation",
+    "workerLaunchedReaderUrlAfterColdSetup": false,
+    "spokenSiriUsedForThisRun": null,
+    "unattendedAudioVideoRecording": false
+  },
+  "preconditionsVerified": {
+    "currentDeviceUnlocked": true,
+    "strictSignatureValid": true,
+    "runtimeDiagnosticCollectionLive": true,
+    "nativeModuleAvailable": true,
+    "rootNavigationAndLibraryReady": true,
+    "noNativePerformBeforeComparison": true,
+    "isolatedProcessTerminatedAndAbsenceVerified": true
+  },
+  "phaseEvidence": {
+    "file": "typed-1-phase-events.json",
+    "resolvedInputClassification": "exact-one",
+    "resolvedInputUtf8ByteCount": 1,
+    "nativeValidation": "accepted",
+    "invocationId": "B536D316-5B67-4BB7-8907-C16D5D13BE1A",
+    "sameIdStages": ["native:dispatch-returned", "queue:received", "route:accepted", "ack:ok"],
+    "processBeforeTermination": 58263,
+    "newProcessAfterRun": 58321,
+    "foregroundObservedAfterStartup": true,
+    "persistedNativePendingQueueAfterAcknowledgment": []
+  },
+  "readerResult": {
+    "observed": "Divine Liturgy existing reader, public ID1, English, light theme, top of reading",
+    "image": "after-reader-shortcuts-typed-1.png",
+    "imageSha256": "2d331fe139e99128453550328cda42cfb10c6076f4aefe76f88df898cdc1b45f",
+    "viewportPixels": { "width": 1179, "height": 2556 }
+  },
+  "privacy": "Only allowlisted bounded own-app phase events are published; no whole preferences, raw speech, unrelated phone UI or production app data",
+  "originalVoiceAttempt": "FAILED after parameter prompting; cause remains undetermined. The later observed native String1 execution does not show what the original speech resolved to or retroactively make it pass.",
+  "limits": "Native/JS UUID/process/pending-queue facts and the actual reader image are separate genuine device observations. They do not establish who operated the device or whether the entry was typed Shortcuts, Siri or another route into the AppIntent. The unattributed session completion message is not independently verified owner testimony. No warm/repeat, invalid/stale, offline, deletion/revocation or speech outcome follows. No rerun was performed to repair provenance; phone access remains held by owner."
+}

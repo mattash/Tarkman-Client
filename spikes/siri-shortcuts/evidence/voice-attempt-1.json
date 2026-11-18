@@ -1,0 +1,29 @@
+{
+  "result": "failed",
+  "cause": "undetermined",
+  "testedOverlayRevision": "07344207d22f18dbb305dab65821ea2219cd3826",
+  "installedBundleIdentifier": "app.tarkman.sirispike",
+  "precondition": "Worker terminated the verified isolated executable; a subsequent device query showed zero TarkmanSiriSpike processes before requesting the voice test",
+  "requestedPhrase": "Siri, open a liturgy in Tarkman Siri Spike",
+  "provenance": "Owner performed the voice invocation; observations relayed through owner-authorized orchestration, not an unattended voice recording",
+  "ownerReport": {
+    "parameterPromptObserved": "Liturgy ID",
+    "spokenAnswerReported": "1",
+    "resultReported": "Something went wrong, please try again",
+    "resolvedNativeParameter": null
+  },
+  "sourceReports": [
+    "https://github.com/mattash/Tarkman-Client/issues/275#issuecomment-6883961386",
+    "https://github.com/mattash/Tarkman-Client/issues/275#issuecomment-6883982576"
+  ],
+  "boundedDeviceObservations": {
+    "newIsolatedProcessPresentAfterAttempt": true,
+    "siriResultScreenAvailableAtCapture": false,
+    "unrelatedPrivateScreenExcludedFromPublication": true,
+    "pendingInvocationPreferenceKeyPresent": false,
+    "corruptedInvocationPreferenceKeyPresent": false
+  },
+  "verifiedStage": "Action discovery and parameter prompting reached the Liturgy ID prompt according to the owner",
+  "unverifiedStages": ["actual resolved String", "native perform entry", "validation", "dispatcher persistence", "JavaScript receipt/routing/acknowledgment", "reader outcome"],
+  "limits": "Absent preference keys do not distinguish no dispatch, persistence timing or consumption. The new process does not prove the reader opened. No raw speech/native entry trace existed in this build. String word-one versus digit-one is only a hypothesis. Ordinary URL/preflight success does not overturn this failed voice result. No unchanged voice repeat was requested."
+}

@@ -1,0 +1,18 @@
+{
+  "binding_sha256": "07c78d8f0b4da0a6febd058e8fb6a5811f2311b5d18c65fabaf11e85a32df06b",
+  "cases": [
+    {
+      "alias": "public-state",
+      "method": "GET",
+      "status": 403,
+      "expected": 200,
+      "no_cookie": true,
+      "no_store": true,
+      "bodyless_no_framing": false
+    }
+  ],
+  "possibly_attempted": false,
+  "exact_fenced": false,
+  "unresolved": false,
+  "tls_verified": false
+}

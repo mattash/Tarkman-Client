@@ -1,0 +1,8 @@
+*.xcodeproj/
+.derivedData/
+.deviceDerivedData/
+artifacts/
+build.log
+*.xcuserstate
+__pycache__/
+*.generated.plist

@@ -444,15 +444,35 @@ awake for the operator.
 
 ### What CI runs
 
-The `mobile` job runs `npm ci`, `npm ls --all`, `expo-doctor`, lint, typecheck,
-the Jest suite, the UI, interface-copy and font guards, `expo config`, the Expo web export, and
-an iOS config smoke check that prebuilds the native project and asserts the
-associated-domains entitlement and bundle identifier survive. The `mobile` job
-also runs `npm run core:test` (shared core build, tests and boundary guard), which
-needs only the mobile install. The `design` job checks generated tokens and color
-contrast; `mobile` uses Node 24. The deprecated `apps/web` client is validated by
+Three jobs run in parallel, and the required **`mobile`** check passes only when
+all of them succeed. `mobile-checks` runs `npm ls --all`, `expo-doctor`, lint,
+typecheck, the UI, interface-copy and font guards and `expo config`, plus
+`npm run core:test` (shared core build, tests and boundary guard), which needs
+only the mobile install. `mobile-test` always runs the full Jest suite. PRs
+restore Jest transforms from `main`; Jest still validates entries against the
+source, and the cache namespace also covers Node, the lockfile, test/transform
+config and Expo/Babel environment inputs. Pushes to `main` run with a fresh
+transform cache and save it after a passing suite. `mobile-export` runs
+the Expo web export and an iOS config smoke check that prebuilds the native
+project and asserts the associated-domains entitlement and bundle identifier
+survive. The `design` job checks generated tokens and color contrast; the mobile
+jobs use Node 24. They share
+[`.github/actions/mobile-install`](../../.github/actions/mobile-install/action.yml),
+which restores `node_modules` saved by `mobile-checks` when the runner, exact Node
+version and lockfile all match, and runs `npm ci` otherwise. The deprecated `apps/web` client is validated by
 the separate, non-required [Legacy web CI](../../.github/workflows/legacy-web.yml)
 workflow only when it or shared core changes.
+
+[Affected Job Planning](../../.github/workflows/affected-job-plan.yml) is a
+PR-only **observation** workflow (#293). Its job summary shows proposed groups
+and reasons; the `affected-job-plan` artifact records the PR head, tested merge,
+base and complete classified paths. Nothing consumes the proposal to skip work
+in this phase. Add `[full-ci]` to the PR title to exercise the proposed override
+(push a commit or re-run the planning workflow; title edits do not trigger CI).
+The override is separate from `[native-build]` and does not request compiles.
+
+See the [CI rollout notes](../../docs/affected-job-planning.md) for the consumer
+boundaries and the evidence needed before enabling omissions.
 
 The smoke check runs last because `expo prebuild` rewrites `package.json`
 scripts; it catches a broken app config or config plugin in CI rather than
@@ -464,11 +484,27 @@ stable **`ios-build`** and **`android-build`** checks. Full native compilation i
 **opt-in**: add **`[native-build]`** anywhere in the PR title (case-insensitive)
 to request both platforms (and the tvOS compile for `apps/tv`, gated by `tv-build`).
 For example: `[native-build] Upgrade Expo`.
-Adding or removing the tag reruns CI through the `pull_request.edited` event.
+Editing a PR's title or description does not run CI: re-running a tested commit
+for every description edit doubled CI time. After adding or removing the tag,
+push a commit or choose **Re-run all jobs**. The jobs read the PR's current
+title, because a re-run otherwise reuses the original event's title.
 Without the tag, even native dependency/config changes skip full compilation.
 The regular mobile tests, lint, typecheck, store/config checks and iOS prebuild
 smoke check still run; mobile changes also run both JavaScript bundle checks.
 The tag requests those bundles even on an otherwise non-mobile PR.
+
+The bundle checks (`ios-bundle-smoke`, `android-bundle-smoke`) export the iOS and
+Android bundles exactly as a release does, Hermes bytecode included, through
+[`.github/actions/native-bundle`](../../.github/actions/native-bundle/action.yml).
+That action reuses Metro's transform cache through Expo's
+`EXPO_METRO_CACHE_RESTORE_DIR`/`EXPO_METRO_CACHE_OUTPUT_DIR` (#292). Pushes to `main`
+also run both bundle checks and save the cache that PRs restore. A PR saves its own
+cache only when nothing matched, such as after a dependency change. Metro keys
+transforms by file content, and the cache key adds the lockfile,
+Babel/Metro/Tailwind/app config and `EXPO_PUBLIC_*` values, so a changed file is
+always re-transformed. Do not add `--clear` to these exports: it also clears the
+restored transforms. With a warm cache, most of each export is the Hermes `-O`
+compile.
 
 When requested, iOS compiles on macOS 26 using Node 24, a clean dependency
 install, Expo prebuild, CocoaPods and unsigned Debug `xcodebuild` for a generic

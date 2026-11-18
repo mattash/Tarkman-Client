@@ -1,5 +1,5 @@
 import { expect, it } from '@jest/globals'
-import { customization, DEFAULT_CUSTOMIZATION, normalizeCustomization, projectionLayout, independentDuration,
+import { customization, DEFAULT_CUSTOMIZATION, normalizeCustomization, projectionLayout,
   createManualPosition, createPageGroup } from '../features/displayLinks/customization'
 import { normalizeConfig, normalizeOverrides, mergeDisplayConfig } from '../features/displayLinks/normalize'
 import { projectionPosition } from '../features/displayLinks/projectionTiming'
@@ -25,11 +25,19 @@ it('supports automatic or explicit margins, including zero, independently from a
   expect(normalizeCustomization({ margin_percent: null })).toEqual({ margin_percent: null })
   expect(normalizeCustomization({ margin_percent: 16, text_movement: 'loop', device_type: 'watch', language_sync: 'pixels' })).toEqual({})
 })
-it('uses separate translation lengths for independent timing while the longest retains the part duration', () => {
-  const texts = ['one two', 'one two three four']
-  expect(independentDuration(60000, texts[0], texts)).toBe(30000)
-  expect(independentDuration(60000, texts[1], texts)).toBe(60000)
-  expect(independentDuration(1000, null, texts)).toBe(1000)
+it('scrolls independent translations through their own heights across the whole part duration', () => {
+  const column = (content: number) => ({ content, viewport: 800, lineHeight: 60, duration: 60000, reducedMotion: false })
+  for (const content of [1500, 3000]) {
+    const maximum = content - 800, hold = 60000 * 800 / (2 * content)
+    // Movement spans the part, apart from the same half-viewport reading hold at each end.
+    const late = projectionPosition(column(content), 60000 - hold - 1000)
+    expect(late.done).toBe(false)
+    expect(late.y).toBeLessThan(maximum)
+    expect(projectionPosition(column(content), 60000 - hold)).toMatchObject({ y: maximum, done: true })
+  }
+  // Each column starts when its own estimated line reaches the middle, so the shorter one starts later.
+  expect(projectionPosition(column(1500), 10000).y).toBe(0)
+  expect(projectionPosition(column(3000), 10000).y).toBeGreaterThan(0)
 })
 it('synchronizes manual progress without feedback loops and removes listeners', () => {
   const position = createManualPosition(), received: number[] = []

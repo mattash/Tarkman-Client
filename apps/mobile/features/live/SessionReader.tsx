@@ -32,6 +32,7 @@ import { languageAbbreviations as abbreviations } from './languageAbbreviations'
 import { readerScopeKey } from './explanationCue'
 import { useExplanationCue } from './useExplanationCue'
 import { ExplanationSheetContent } from './ExplanationSheetContent'
+import { ServiceProgressAction } from '../service-progress/ServiceProgressAction'
 
 export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; id: number; back(): void }) {
   useScreenKeepAwake('tarkman-live-reader')
@@ -128,15 +129,18 @@ export function SessionReader({ endpoints, id, back }: { endpoints: Endpoints; i
       else setSheet(step)
     },
   })
+  const progressOptions = <ServiceProgressAction key={`${id}:${endpoints.api}`} selectedID={id} readerAPI={endpoints.api} />
   const details = <View testID="reader-header-details" style={{ paddingHorizontal: spacing.page, paddingBottom: spacing.md, gap: spacing.sm }}>
     <AppText variant="heading">{title}</AppText>
     {church && <AppText variant="caption" tone="muted">{church}</AppText>}
     <ReaderStatus state={state} retry={retry} showLive={false} savedCopy={showingSaved} />
+    {progressOptions}
     {!showingSaved && state.session && !part && !state.loading && <AppText variant="caption">{t('reader.currentPartUnavailable')}</AppText>}
   </View>
-  // Deleted is terminal, not a connection problem: no Retry, no saved copy standing in, just a way out.
+  // Deleted is terminal: no Retry or saved copy. Existing native follow cleanup must remain reachable.
   if (state.deleted) return <View testID="reader-deleted" style={{ flex: 1, padding: spacing.lg, gap: spacing.lg, justifyContent: 'center' }}>
     <AppText variant="heading" accessibilityRole="alert">{t('common.serviceNoLongerAvailable')}</AppText>
+    {progressOptions}
     <AppButton variant="secondary" onPress={() => router.replace('/')}>{t('scan.backToToday')}</AppButton>
   </View>
   return <View testID="reader-root" ref={root} {...(Platform.OS === 'web' ? { onKeyDown: (event: object) => { if ('key' in event && event.key === 'Escape') education.endTour() } } : {})} onLayout={() => setLayoutReady(true)} style={{ flex: 1 }}>

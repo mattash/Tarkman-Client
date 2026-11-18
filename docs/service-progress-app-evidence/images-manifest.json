@@ -1,0 +1,150 @@
+{
+  "regular_after_application_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+  "capture_order_is_not_follow_chronology": true,
+  "images": [
+    {
+      "path": "after-322-disclosure-on.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "d53677504a69607b87fa600b71fa9886d87e9931b5c88c3020d2310e903c19d8",
+      "bytes": 274861,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-foreground-return.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "a6258e9bdeca397974a69319b4f67495ba8a40b60d5ed4fbc16ed94da60c23f2",
+      "bytes": 269809,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-read-only-tap.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "87b8be76465a6f2b0cd8a25e974289679c81c48550c221292aec1b0987bb8439",
+      "bytes": 281510,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-reader.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "0608ccee0d9bbd5991f6cf6ebc5aae9203de21b04f558f52e14ad48fadf11adf",
+      "bytes": 280455,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-revoked.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "0bf5052eec70189675ba8c57ccafe7da2b269e81d4e333af43912abf15e8de72",
+      "bytes": 207084,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-started.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "12b9bc48b77cdf6f2458e816e61fce0a25ca5b9139e634564acc00ac5cd02c7a",
+      "bytes": 273809,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-switch-fenced.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "f78293f0f4517717449154ae76776e8d24a42e621eb5a67e03f4eb2f9685b7b3",
+      "bytes": 315828,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-switch-revoked.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "64904458d24c93e4f1e7c738879d1a942253e564de6f7f6d2262a0302a1e7bfb",
+      "bytes": 207110,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-system-activity.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "068b0fd1d0ed27d93401f960a21f06505ecde0e34ee256c9428efa9db4987bb2",
+      "bytes": 2970194,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-system-removed.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "893b65858dee2db169031a9a6534c791d4f4b0a34f9cc848a3cdae7e26d3100f",
+      "bytes": 3376639,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-322-verified-off.png",
+      "capture_source_revision": "32294c9ab80421c5dae7e74fc7842e46693dc181",
+      "sha256": "4e2311059e9e549d2327385fb8d33717ea673c61801394b3d2102a39bd3dd206",
+      "bytes": 271321,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-32cd-deleted-manager.png",
+      "capture_source_revision": "32cd1f813200938b1c44aa9a2866028a6b94fd9b",
+      "sha256": "75e601e3c8a9016b275dc7334614ef3a8feea542cd227a44e4ac617dc2b7d807",
+      "bytes": 306480,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-32cd-deleted-no-activity.png",
+      "capture_source_revision": "32cd1f813200938b1c44aa9a2866028a6b94fd9b",
+      "sha256": "ac28f2653f9348486fc87c6e0e47bfadd40f82f0e18d2b920ac7632ca8cb62c2",
+      "bytes": 3384310,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-32cd-deleted-reader.png",
+      "capture_source_revision": "32cd1f813200938b1c44aa9a2866028a6b94fd9b",
+      "sha256": "76549718869b308bceeda240eaad02bbe20b74d3168dee16a63178acb6225164",
+      "bytes": 133842,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "after-32cd-deleted-revoked.png",
+      "capture_source_revision": "32cd1f813200938b1c44aa9a2866028a6b94fd9b",
+      "sha256": "36a90043306d8285b6996867ebf5e06e7250e5c4f8c1deb02eefc59c0e6f12f4",
+      "bytes": 208340,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "before-b160-deleted-reader.png",
+      "capture_source_revision": "b160d86950d2b347b19692100abc17104f9da28e",
+      "sha256": "43c7ce7db90837c83b0a28470416c92d2afbf47086767446554d7fa16b91eae6",
+      "bytes": 123558,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "before-main1636-reader.png",
+      "capture_source_revision": "1636114333e453d3549d5c67bea982a9ce022e03",
+      "sha256": "5d7599d0b2e2d671ef9901a6c966a60c20423517a9f21c2e0f02cf52219cbdda",
+      "bytes": 285432,
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "path": "before-main1636-system.png",
+      "capture_source_revision": "1636114333e453d3549d5c67bea982a9ce022e03",
+      "sha256": "5e988b28894bdb63a80e4f98b5bac4136d25347c9cbd1ad6e992a8b307b6b88b",
+      "bytes": 3382186,
+      "width": 1206,
+      "height": 2622
+    }
+  ]
+}

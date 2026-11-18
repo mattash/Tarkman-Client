@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { AccessibilityInfo, findNodeHandle, Platform, useWindowDimensions, View } from 'react-native'
 import { router, useCanGoBack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { AppButton } from '../../components/AppButton'
 import { AppText } from '../../components/AppText'
@@ -12,7 +12,12 @@ import { SegmentedControl } from '../../components/SegmentedControl'
 import { spacing } from '../../design/tokens'
 import { useTheme } from '../../design/ThemeProvider'
 import { sampleLanguages } from '../../design/samples'
-import { PartList } from '../live/PartList'
+import { PartList, type PassageJump } from '../live/PartList'
+import { ReaderFind } from './ReaderFind'
+import { SavedPassages } from './SavedPassages'
+import { useReadingPositions } from './useReadingPositions'
+import { canOpenSavedPassage } from './savedPassage'
+import { resolveTextJump, type TextJumpTarget } from './textFind'
 import { languageAbbreviations } from '../live/languageAbbreviations'
 import type { LivePart } from '../live/contracts'
 import { usePreferences } from '../preferences/PreferencesProvider'
@@ -33,10 +38,25 @@ export function LiturgyReader() {
 }
 function Reader({ id, environment, origin }: { id: number; environment: string | string[]; origin?: string }) {
   const { controller, state } = useLibrary(), { t } = useI18n()
-  const { preferences, setLanguage, setReadingSize, setAppearance } = usePreferences()
+  const { preferences, setLanguage, setSelectedLanguages, setReadingSize, setAppearance } = usePreferences()
   const { colors } = useTheme()
   const { anchor: shareAnchor, busy, notice, manual, dismiss, share } = useShareService(), compact = useWindowDimensions().width < 360
-  const [sheet, setSheet] = useState<'language' | 'preferences' | null>(null)
+  const [sheet, setSheet] = useState<'language' | 'preferences' | 'saved' | null>(null)
+  const savedOpener = useRef<React.ComponentRef<typeof View>>(null)
+  const [pendingSavedJump, setPendingSavedJump] = useState<TextJumpTarget | null>(null)
+  const [savedJump, setSavedJump] = useState<PassageJump | undefined>(undefined)
+  const [finding, setFinding] = useState(false)
+  const [passageJump, setPassageJump] = useState<PassageJump | undefined>(undefined)
+  const findOpener = useRef<React.ComponentRef<typeof View>>(null)
+  const jumpSequence = useRef(0)
+  const closeFind = () => {
+    setFinding(false); setPassageJump(undefined)
+    if (Platform.OS === 'web') findOpener.current?.focus()
+    else {
+      const handle = findNodeHandle(findOpener.current)
+      if (handle != null) AccessibilityInfo.setAccessibilityFocus(handle)
+    }
+  }
   const languageOpener = useRef<React.ComponentRef<typeof View>>(null), preferencesOpener = useRef<React.ComponentRef<typeof View>>(null), explanationOpener = useRef<React.ComponentRef<typeof View>>(null)
   // With no live position, the book explains the part at the top of the screen.
   const [topKey, setTopKey] = useState<string | undefined>(undefined)
@@ -49,24 +69,31 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   const stored = state.items.find(i => i.id === id)
   const [snapshot, setSnapshot] = useState<{ bundle: Bundle; savedAt: number | null } | null>(() => stored?.bundle && sameEnvironment ? { bundle: stored.bundle, savedAt: stored.savedAt } : null)
   const [failed, setFailed] = useState(false), [detail, setDetail] = useState<Occurrence | null>(null)
+  const positions = useReadingPositions(controller, id, snapshot?.bundle, sameEnvironment && validId && controller.enabled)
+  const contentCurrent = positions.current
   useFocusEffect(useCallback(() => {
     let active = true
-    if (snapshot || !state.ready || !sameEnvironment || !validId || !controller.enabled || controller.getSnapshot().revoked.includes(id)) return
+    if (snapshot || !contentCurrent || !state.ready || !sameEnvironment || !validId || !controller.enabled || controller.getSnapshot().revoked.includes(id)) return
     const saved = controller.getSnapshot().items.find(i => i.id === id)
     if (saved?.bundle) {
-      void Promise.resolve().then(() => { if (active) setSnapshot({ bundle: saved.bundle!, savedAt: saved.savedAt }) })
+      void Promise.resolve().then(() => { if (active && controller.isContentCurrent(id, positions.lease)) setSnapshot({ bundle: saved.bundle!, savedAt: saved.savedAt }) })
       return () => { active = false }
     }
     const request = new AbortController()
     void controller.request(id, false, request.signal).then(bundle => {
-      if (active) { if (bundle) setSnapshot({ bundle, savedAt: null }); else setFailed(true) }
+      if (active && controller.isContentCurrent(id, positions.lease)) { if (bundle) setSnapshot({ bundle, savedAt: null }); else setFailed(true) }
     }, () => { if (active) setFailed(true) })
     return () => { active = false; request.abort() }
     // The explicit retry counter intentionally restarts this focus-scoped request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controller, id, sameEnvironment, state.ready, attempt, validId, snapshot]))
+  }, [controller, id, sameEnvironment, state.ready, attempt, validId, snapshot, contentCurrent, positions.lease]))
+  const jumpToPassage = useCallback((target: TextJumpTarget | null, focus = false) => {
+    const resolved = target && snapshot ? resolveTextJump(snapshot.bundle, target, preferences.language) : null
+    setPassageJump(resolved && target ? { key: `library:${target.liturgyPartId}`, language: preferences.language,
+      start: resolved.start, end: resolved.end, requestId: ++jumpSequence.current, focus } : undefined)
+  }, [snapshot, preferences.language])
   const revoked = state.revoked.includes(id)
-  if (revoked && snapshot) setSnapshot(null)
+  if ((revoked || !contentCurrent) && snapshot) { setSnapshot(null); setDetail(null) }
   const parts = useMemo<LivePart[]>(() => snapshot?.bundle.parts.map(p => ({
     id: p.part_id, key: `library:${p.liturgy_part_id}`, liturgyId: p.liturgy_id, liturgyPartId: p.liturgy_part_id,
     position: p.position, role: p.role, posture: p.posture, page: p.page,
@@ -78,13 +105,32 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   const back = () => { if (router.canGoBack()) router.back(); else router.replace('/(tabs)/live') }
   const canGoBack = useCanGoBack()
   const backLabel = t(canGoBack ? origin === 'library' ? 'library.back' : 'onboarding.back' : 'servicesList.title')
-  const reading = !!snapshot && sameEnvironment && !revoked
+  const reading = !!snapshot && sameEnvironment && !revoked && contentCurrent
+  const openSaved = (target: TextJumpTarget) => {
+    if (!snapshot || !controller.isContentCurrent(id, positions.lease) || !canOpenSavedPassage(snapshot.bundle, target)) return
+    positions.resume(target)
+    setFinding(false)
+    if (!preferences.selectedLanguages.includes(target.language)) setSelectedLanguages([target.language, ...preferences.selectedLanguages].slice(0, 3))
+    setLanguage(target.language)
+    if (sheet === 'saved') { setPendingSavedJump(target); setSheet(null) }
+    else setSavedJump({ key: `library:${target.liturgyPartId}`, language: target.language, start: target.start, end: target.end, requestId: ++jumpSequence.current, focus: true })
+  }
+  const savedDismissed = () => {
+    const target = pendingSavedJump
+    setPendingSavedJump(null)
+    if (target && snapshot && controller.isContentCurrent(id, positions.lease) && canOpenSavedPassage(snapshot.bundle, target)) {
+      setSavedJump({ key: `library:${target.liturgyPartId}`, language: target.language, start: target.start, end: target.end, requestId: ++jumpSequence.current, focus: true })
+    }
+  }
+  const openSavedSheet = () => { opener.current = savedOpener.current; setSheet('saved') }
   // The live reader's toolbar: one pinned row, so the text scrolls beneath it instead of below a block of controls.
   const toolbar = <View testID="library-reader-toolbar" style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs,
     paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.background, flexShrink: 0 }}>
     <BackButton iconOnly onPress={back}>{backLabel}</BackButton>
     {reading && <View style={{ flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', gap: spacing.xs, marginLeft: 'auto', flexShrink: 0 }}>
-      {controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" iconOnly disabled={busy}
+      <AppButton testID="library-reader-find-open" ref={findOpener} variant="quiet" icon="search" iconOnly selected={finding}
+        onPress={() => { setSavedJump(undefined); if (finding) closeFind(); else setFinding(true) }}>{t('library.find')}</AppButton>
+      {!compact && controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" iconOnly disabled={busy}
         accessibilityLabel={t('library.shareTitle', { name: snapshot.bundle.liturgy.name })}
         onPress={() => share(id, snapshot.bundle.liturgy.name)}>{t('library.share')}</AppButton>}
       <AppButton testID="library-reader-language" ref={languageOpener} variant="quiet" selected icon={compact ? undefined : 'languages'} labelMaxFontSizeMultiplier={1.3} labelNumberOfLines={1}
@@ -100,22 +146,39 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
   </View>
   const details = reading ? <View testID="library-reader-details" style={{ paddingHorizontal: spacing.page, paddingBottom: spacing.md, gap: spacing.sm }}>
     <AppText variant="heading">{snapshot.bundle.liturgy.name}</AppText>
+    <AppButton ref={savedOpener} testID="library-saved-open" variant="secondary" icon="book" onPress={openSavedSheet}>{t('library.savedPassages')}</AppButton>
+    {positions.ready && positions.metadata.resume && <>
+      <AppButton testID="library-resume" variant="quiet" disabled={!canOpenSavedPassage(snapshot.bundle, positions.metadata.resume)} onPress={() => openSaved(positions.metadata.resume!)}>{t('library.resumeReading')}</AppButton>
+      {!canOpenSavedPassage(snapshot.bundle, positions.metadata.resume) && <AppText variant="caption">{t('library.readingPositionUnavailable')}</AppText>}
+    </>}
+    {positions.storageFailed && <AppText variant="caption" accessibilityRole="alert">{t('library.positionStorageFailed')}</AppText>}
+    {compact && controller.enabled && validId && <AppButton testID="library-reader-share" ref={shareAnchor} variant="quiet" icon="share" disabled={busy}
+      accessibilityLabel={t('library.shareTitle', { name: snapshot.bundle.liturgy.name })}
+      onPress={() => share(id, snapshot.bundle.liturgy.name)}>{t('library.share')}</AppButton>}
     {snapshot.savedAt && stored?.bundle && <AppText variant="caption" tone="muted">{t('library.downloaded')}</AppText>}
     {stored?.bundle && stored.bundle.revision !== snapshot.bundle.revision && <AppText variant="caption" accessibilityLiveRegion="polite">{t('library.reopen')}</AppText>}
   </View> : undefined
   const message = (text: string, alert: boolean) => <View style={{ padding: spacing.page, gap: spacing.md }}>
     <AppText accessibilityRole={alert ? 'alert' : undefined}>{text}</AppText>
   </View>
-  if (revoked || !sameEnvironment) return <View>{toolbar}{message(t('library.errors.unavailable'), true)}</View>
+  const savedContent = <SavedPassages bundle={snapshot?.bundle} metadata={positions.metadata} ready={positions.ready}
+    position={positions.position?.language === preferences.language ? positions.position : null} storageFailed={positions.storageFailed}
+    capacity={positions.capacity} save={positions.save} remove={positions.remove} clearResume={positions.clearResume} open={openSaved} />
+  if (revoked || !sameEnvironment || !contentCurrent) return <View>{toolbar}{message(t('library.errors.unavailable'), true)}</View>
   const paused = state.error === 'rate-limited' && ['downloading', 'updating'].includes(state.status[id])
   if (!snapshot) return <View>{toolbar}{message(t(!validId ? 'library.errors.invalid' : !controller.enabled ? 'library.errors.unsupported' : paused ? 'library.errors.rate-limited' : failed ? `library.errors.${state.failures[id] ?? (controller.enabled ? 'network' : 'unsupported')}` : 'library.loading'), paused || failed || !validId)}
     {failed && validId && controller.enabled && <View style={{ paddingHorizontal: spacing.page }}><AppButton onPress={() => { setFailed(false); setAttempt(value => value + 1) }}>{t('library.readOnline')}</AppButton></View>}
+    {validId && controller.enabled && <View style={{ padding: spacing.page }}><AppButton ref={savedOpener} testID="library-saved-open" variant="secondary" onPress={openSavedSheet}>{t('library.savedPassages')}</AppButton></View>}
+    <AppModal visible={sheet === 'saved'} onDismiss={() => setSheet(null)} openerRef={opener} title={t('library.savedPassages')}>{savedContent}</AppModal>
   </View>
   return <View style={{ flex: 1 }} testID="library-reader">
     {toolbar}
+    {finding && reading && <ReaderFind bundle={snapshot.bundle} language={preferences.language} jump={jumpToPassage} close={closeFind} />}
     {reading && controller.enabled && validId && <>{!!notice && <View style={{ paddingHorizontal: spacing.page, paddingVertical: spacing.xs }}><ShareNotice notice={notice} /></View>}<ShareManualModal manual={manual} dismiss={dismiss} openerRef={shareAnchor} /></>}
     <PartList parts={parts} following={false} language={preferences.language} selectedLanguages={preferences.selectedLanguages}
-      readingSize={preferences.readingSize} manual={() => {}} switchLanguage={setLanguage} header={details}
+      readingSize={preferences.readingSize} manual={() => { positions.moved(); setSavedJump(undefined) }} switchLanguage={language => { setSavedJump(undefined); setLanguage(language) }} header={details}
+      passageVisible={passage => { if (passage.language === preferences.language) positions.visible(passage) }}
+      passageJump={finding && passageJump?.language === preferences.language ? passageJump : savedJump?.language === preferences.language ? savedJump : undefined}
       topPartChanged={part => setTopKey(part?.key)} open={part => { opener.current = null; setDetail(occurrence(part)) }} />
     <AppModal visible={detail !== null} onDismiss={() => setDetail(null)} openerRef={opener} title={t('library.details')}>
       {detail && <>
@@ -130,17 +193,23 @@ function Reader({ id, environment, origin }: { id: number; environment: string |
       </>}
     </AppModal>
     <AppModal visible={sheet !== null} onDismiss={() => setSheet(null)} openerRef={opener}
-      title={sheet === 'language' ? t('reader.readingLanguage') : t('readingPreferences.title')}>
-      {sheet === 'language' ? <>
+      title={sheet === 'language' ? t('reader.readingLanguage') : sheet === 'saved' ? t('library.savedPassages') : t('readingPreferences.title')}
+      onAfterDismiss={savedDismissed} restoreFocus={!pendingSavedJump}>
+      {sheet === 'saved' ? savedContent : sheet === 'language' ? <>
         {preferences.selectedLanguages.map(value => <LanguageSelectionRow key={value} language={value} label={sampleLanguages.find(l => l.value === value)!.label}
-          selected={value === preferences.language} onPress={() => { setLanguage(value); setSheet(null) }} />)}
+          selected={value === preferences.language} onPress={() => { setSavedJump(undefined); setLanguage(value); setSheet(null) }} />)}
         <AppButton variant="quiet" icon="next" onPress={() => { setSheet(null); router.push('/(tabs)/settings') }}>{t('reader.chooseLanguages')}</AppButton>
       </> : <>
+        <AppButton variant="secondary" icon="book" onPress={() => setSheet('saved')}>{t('library.savedPassages')}</AppButton>
         <AppText variant="label">{t('readingPreferences.appearance')}</AppText>
         <SegmentedControl label={t('readingPreferences.appearance')} value={preferences.appearance} onChange={setAppearance}
           options={[{ value: 'system', label: t('readingPreferences.system') }, { value: 'light', label: t('readingPreferences.light') }, { value: 'dark', label: t('readingPreferences.dark') }]} />
         <AppText variant="label" style={{ marginTop: spacing.md }}>{t('readingPreferences.readingSize')}</AppText>
-        <SegmentedControl label={t('readingPreferences.readingSize')} value={preferences.readingSize} onChange={setReadingSize}
+        <SegmentedControl label={t('readingPreferences.readingSize')} value={preferences.readingSize} onChange={size => {
+          const target = positions.position
+          if (target && target.language === preferences.language && canOpenSavedPassage(snapshot.bundle, target)) setSavedJump({ key: `library:${target.liturgyPartId}`, language: target.language, start: target.start, end: target.end, requestId: ++jumpSequence.current })
+          setReadingSize(size)
+        }}
           options={[{ value: 'standard', label: t('readingPreferences.standard') }, { value: 'larger', label: t('readingPreferences.larger') }, { value: 'extraLarge', label: t('readingPreferences.extraLarge') }]} />
         <AppText variant="caption" tone="muted">{t('readingPreferences.readingSizeHint')}</AppText>
       </>}

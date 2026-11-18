@@ -1,0 +1,26 @@
+{
+  "js_revision": "1636114333e453d3549d5c67bea982a9ce022e03",
+  "bundle_sha256": "d24944f4f0d83cb1aa72db3e66eed376416f119b68d67a17bea28145d33ea270",
+  "source_map_sha256": "f900d7dba28d54c5b63ec4495cdf5e3bbfd080cc95a5c277bc53ffb1261a7492",
+  "checked_ui_sources": [
+    {
+      "source": "apps/mobile/features/live/SessionReader.tsx",
+      "sha256": "b951f361331ecf4abf7d50e1d14240be98baeab562913225e00411a5d70f333d",
+      "matches_exact_worktree_source": true,
+      "git_blob": "d0ae7579b291b29aca8576fe534480d8101d47a3"
+    },
+    {
+      "source": "apps/mobile/features/live/PartList.tsx",
+      "sha256": "db61df28b8509fb41a6e13918e7632415cb8247784742b0b6fbb50de2605b3c0",
+      "matches_exact_worktree_source": true,
+      "git_blob": "d1f50c5f82514194ed71eb9fa1d6ed9bb8bc8364"
+    },
+    {
+      "source": "apps/mobile/features/library/LiturgyReader.tsx",
+      "sha256": "d4597cbfe66f6d2ce5f0fee1c649b5b1b84c57e70477491ed5a2c106aff37f10",
+      "matches_exact_worktree_source": true,
+      "git_blob": "276a7f7233399fdbb98b7b40e34ad92111b38c3a"
+    }
+  ],
+  "bundle_source_count": 2993
+}

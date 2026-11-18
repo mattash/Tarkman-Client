@@ -1,0 +1,14 @@
+{
+  "aps": {
+    "timestamp": 1700000000,
+    "event": "update",
+    "content-state": {
+      "ordinal": 1,
+      "occurrenceID": 11,
+      "role": "reader",
+      "updatedAt": 721692800,
+      "paused": false
+    },
+    "stale-date": 1700000060
+  }
+}
