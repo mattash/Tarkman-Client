@@ -459,6 +459,17 @@ version and lockfile all match, and runs `npm ci` otherwise. The deprecated `app
 the separate, non-required [Legacy web CI](../../.github/workflows/legacy-web.yml)
 workflow only when it or shared core changes.
 
+[Affected Job Planning](../../.github/workflows/affected-job-plan.yml) is a
+PR-only **observation** workflow (#293). Its job summary shows proposed groups
+and reasons; the `affected-job-plan` artifact records the PR head, tested merge,
+base and complete classified paths. Nothing consumes the proposal to skip work
+in this phase. Add `[full-ci]` to the PR title to exercise the proposed override
+(push a commit or re-run the planning workflow; title edits do not trigger CI).
+The override is separate from `[native-build]` and does not request compiles.
+
+See the [CI rollout notes](../../docs/affected-job-planning.md) for the consumer
+boundaries and the evidence needed before enabling omissions.
+
 The smoke check runs last because `expo prebuild` rewrites `package.json`
 scripts; it catches a broken app config or config plugin in CI rather than
 during a release build. It generates native configuration but does not compile
