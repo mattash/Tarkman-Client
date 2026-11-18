@@ -253,7 +253,13 @@ test('mobile CI validates store settings even when both native compiles are skip
   assert.deepEqual(needs, ['mobile-checks', 'mobile-test', 'mobile-export'])
   assert.match(gate, /^ {4}if: always\(\)$/m)
   for (const name of needs) {
-    assert.doesNotMatch(job(name), /^\s+if:/m, name)
+    const [header, ...steps] = job(name).split(/^ {4}- /m)
+    assert.doesNotMatch(header, /^ {4}if:/m, name)
+    for (const step of steps) {
+      // Cache IO may be conditional, but the suite and other validation may not.
+      if (name === 'mobile-test' && /\n {6}uses: actions\/cache\/(restore|save)@v5\n/.test(step)) continue
+      assert.doesNotMatch(step, /^ {6}if:/m, name)
+    }
   }
   for (const command of ['npm run check:store-config', 'npm run config', 'npx expo prebuild --platform ios --clean --no-install', 'npm test', 'npm run lint', 'npm run typecheck', 'npm run export:web']) {
     assert.ok(needs.some(name => job(name).includes(command)), command)

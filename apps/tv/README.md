@@ -162,9 +162,12 @@ CocoaPods needs a UTF-8 locale (`export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`).
 
 ### CI
 
-Every run executes the Linux `tv` job: `expo-doctor`, `check:runtime`,
-`check:identity`, typecheck, the reader and Metro guards, the tvOS bundle and a
-prebuild smoke check (tvOS SDK, scene manifest). The unsigned tvOS simulator
+Every run executes the Linux `tv` job: `npm ci`, `npm ls --all`, `expo-doctor`,
+the runtime, identity and font guards, lint, typecheck, the full Jest suite,
+the reader and Metro guards, the tvOS bundle and a prebuild smoke check
+(tvOS SDK, scene manifest). The bundle check restores TV-specific Metro
+transforms seeded by `main`, but still exports JavaScript (no Hermes bytecode)
+and checks for `TVFocusGuideView` on every run. The unsigned tvOS simulator
 compile (`tv-compile`, macOS) is **opt-in** with the same `[native-build]` PR
 title tag as mobile's native builds. Editing the title does not run CI: push a
 commit or choose **Re-run all jobs** after adding the tag. On PRs, the stable
