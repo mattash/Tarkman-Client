@@ -1,0 +1,61 @@
+# Exports the apps/mobile JavaScript bundle for ios or android the way a release does
+# (Metro, then Hermes bytecode), reusing Metro's transform cache across CI runs (#292).
+#
+# Expo's EXPO_METRO_CACHE_RESTORE_DIR/EXPO_METRO_CACHE_OUTPUT_DIR build cache reads the
+# restored transforms and writes only the ones this export used to the output directory,
+# so the saved cache does not grow. Metro keys each transform by file content and
+# transform options, so a restored entry is reused only for unchanged input. The cache key
+# also covers what Metro's key does not: the lockfile, Babel/Metro/Tailwind/app config and
+# the EXPO_PUBLIC_* values that Babel inlines.
+#
+# Cold, the iOS export spent ~38s bundling in CI; warm, transforms drop from ~28s to ~2.5s
+# locally and the Hermes -O compile (~23s) is what remains.
+name: Export a native mobile bundle
+description: expo export for ios or android with a persistent Metro transform cache.
+inputs:
+  platform:
+    description: ios or android
+    required: true
+runs:
+  using: composite
+  steps:
+  - id: key
+    shell: bash
+    env:
+      PLATFORM: ${{ inputs.platform }}
+      INPUTS: ${{ hashFiles('apps/mobile/package-lock.json', 'apps/mobile/babel.config.js', 'apps/mobile/metro.config.js', 'apps/mobile/tailwind.config.js', 'apps/mobile/app.json', 'apps/mobile/app.config.js', 'apps/mobile/scripts/core-source-request.js', 'tools/metro/*.js') }}
+    run: |
+      public_env=$(env | { grep '^EXPO_PUBLIC_' || true; } | LC_ALL=C sort | sha256sum | cut -c1-16)
+      echo "prefix=metro-$PLATFORM-v1-$RUNNER_OS-$RUNNER_ARCH-$INPUTS-$public_env-" >> "$GITHUB_OUTPUT"
+  # actions/cache versions an entry by its path, so restore and save use the same
+  # directory; the export step moves the restored copy aside before Metro writes to it.
+  - id: restore
+    uses: actions/cache/restore@v5
+    with:
+      path: ${{ runner.temp }}/metro-cache
+      key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
+      restore-keys: ${{ steps.key.outputs.prefix }}
+  - shell: bash
+    working-directory: apps/mobile
+    env:
+      PLATFORM: ${{ inputs.platform }}
+      RESTORED_KEY: ${{ steps.restore.outputs.cache-matched-key }}
+      EXPO_METRO_CACHE_RESTORE_DIR: ${{ runner.temp }}/metro-restore
+      EXPO_METRO_CACHE_OUTPUT_DIR: ${{ runner.temp }}/metro-cache
+    run: |
+      rm -rf "$EXPO_METRO_CACHE_RESTORE_DIR"
+      if [ -d "$EXPO_METRO_CACHE_OUTPUT_DIR" ]; then
+        mv "$EXPO_METRO_CACHE_OUTPUT_DIR" "$EXPO_METRO_CACHE_RESTORE_DIR"
+      fi
+      mkdir -p "$EXPO_METRO_CACHE_RESTORE_DIR" "$EXPO_METRO_CACHE_OUTPUT_DIR"
+      # Logged so a cold export is easy to tell apart from a slowdown.
+      echo "Restored Metro cache: ${RESTORED_KEY:-none (cold export)}"
+      # No --clear: it would also clear the restored transforms.
+      npx expo export --platform "$PLATFORM" --output-dir "$RUNNER_TEMP/tarkman-$PLATFORM-bundle"
+  # main seeds the cache that every PR restores. A PR saves only when nothing matched
+  # (for example after a dependency change), so its later pushes start warm.
+  - if: github.event_name == 'push' || steps.restore.outputs.cache-matched-key == ''
+    uses: actions/cache/save@v5
+    with:
+      path: ${{ runner.temp }}/metro-cache
+      key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}

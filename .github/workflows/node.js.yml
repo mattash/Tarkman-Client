@@ -223,7 +223,9 @@ jobs:
 
   ios-bundle-smoke:
     needs: ios-changes
-    if: needs.ios-changes.outputs.mobile == 'true'
+    # Pushes to main bundle too: they seed the Metro cache that PRs restore (#292).
+    # ios-changes only runs on PRs, so the push condition must survive its skip.
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.ios-changes.outputs.mobile == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -240,8 +242,9 @@ jobs:
         persist-credentials: false
     - uses: ./.github/actions/mobile-install
     - name: Export iOS JavaScript bundle
-      working-directory: apps/mobile
-      run: npx expo export --platform ios --clear --output-dir "$RUNNER_TEMP/tarkman-ios-bundle"
+      uses: ./.github/actions/native-bundle
+      with:
+        platform: ios
 
   ios-compile:
     needs: ios-changes
@@ -431,7 +434,9 @@ jobs:
 
   android-bundle-smoke:
     needs: android-changes
-    if: needs.android-changes.outputs.mobile == 'true'
+    # Pushes to main bundle too: they seed the Metro cache that PRs restore (#292).
+    # android-changes only runs on PRs, so the push condition must survive its skip.
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.android-changes.outputs.mobile == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -448,8 +453,9 @@ jobs:
         persist-credentials: false
     - uses: ./.github/actions/mobile-install
     - name: Export Android JavaScript bundle
-      working-directory: apps/mobile
-      run: npx expo export --platform android --clear --output-dir "$RUNNER_TEMP/tarkman-android-bundle"
+      uses: ./.github/actions/native-bundle
+      with:
+        platform: android
 
   android-compile:
     needs: android-changes
