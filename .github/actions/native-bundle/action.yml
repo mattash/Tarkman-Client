@@ -23,14 +23,16 @@ runs:
     shell: bash
     env:
       PLATFORM: ${{ inputs.platform }}
-      INPUTS: ${{ hashFiles('apps/mobile/package-lock.json', 'apps/mobile/babel.config.js', 'apps/mobile/metro.config.js', 'apps/mobile/tailwind.config.js', 'apps/mobile/app.json', 'apps/mobile/app.config.js', 'apps/mobile/scripts/core-source-request.js', 'tools/metro/*.js', '.github/actions/native-bundle/action.yml') }}
+      INPUTS: ${{ hashFiles('apps/mobile/package-lock.json', 'apps/mobile/babel.config.js', 'apps/mobile/metro.config.js', 'apps/mobile/tailwind.config.js', 'apps/mobile/app.json', 'apps/mobile/app.config.js', 'apps/mobile/scripts/core-source-request.js', 'tools/metro/*.js') }}
     run: |
       public_env=$(env | { grep '^EXPO_PUBLIC_' || true; } | LC_ALL=C sort | sha256sum | cut -c1-16)
       echo "prefix=metro-$PLATFORM-v1-$RUNNER_OS-$RUNNER_ARCH-$INPUTS-$public_env-" >> "$GITHUB_OUTPUT"
+  # actions/cache versions an entry by its path, so restore and save use the same
+  # directory; the export step moves the restored copy aside before Metro writes to it.
   - id: restore
     uses: actions/cache/restore@v5
     with:
-      path: ${{ runner.temp }}/metro-restore
+      path: ${{ runner.temp }}/metro-cache
       key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
       restore-keys: ${{ steps.key.outputs.prefix }}
   - shell: bash
@@ -39,8 +41,12 @@ runs:
       PLATFORM: ${{ inputs.platform }}
       RESTORED_KEY: ${{ steps.restore.outputs.cache-matched-key }}
       EXPO_METRO_CACHE_RESTORE_DIR: ${{ runner.temp }}/metro-restore
-      EXPO_METRO_CACHE_OUTPUT_DIR: ${{ runner.temp }}/metro-output
+      EXPO_METRO_CACHE_OUTPUT_DIR: ${{ runner.temp }}/metro-cache
     run: |
+      rm -rf "$EXPO_METRO_CACHE_RESTORE_DIR"
+      if [ -d "$EXPO_METRO_CACHE_OUTPUT_DIR" ]; then
+        mv "$EXPO_METRO_CACHE_OUTPUT_DIR" "$EXPO_METRO_CACHE_RESTORE_DIR"
+      fi
       mkdir -p "$EXPO_METRO_CACHE_RESTORE_DIR" "$EXPO_METRO_CACHE_OUTPUT_DIR"
       # Logged so a cold export is easy to tell apart from a slowdown.
       echo "Restored Metro cache: ${RESTORED_KEY:-none (cold export)}"
@@ -51,5 +57,5 @@ runs:
   - if: github.event_name == 'push' || steps.restore.outputs.cache-matched-key == ''
     uses: actions/cache/save@v5
     with:
-      path: ${{ runner.temp }}/metro-output
+      path: ${{ runner.temp }}/metro-cache
       key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
