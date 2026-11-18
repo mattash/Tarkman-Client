@@ -72,8 +72,7 @@ export function parseBundle(value: unknown, expectedId?: number): Bundle {
     if (integer(p.liturgy_id) !== liturgy.id || seen.has(id) || pos < position || (pos === position && id <= lastId)) return fail()
     seen.add(id); position = pos; lastId = id
     const role = string(p.role, 32), posture = nullableString(p.posture, 32)
-    if (!['priest', 'deacon', 'choir', 'people', 'instruction', 'title', 'leader', 'all', 'clergy'].includes(role) ||
-      (posture !== null && !['stand', 'sit', 'kneel'].includes(posture)) || typeof p.requires_session_context !== 'boolean') return fail()
+    if ((posture !== null && !['stand', 'sit', 'kneel'].includes(posture)) || typeof p.requires_session_context !== 'boolean') return fail()
     const rawText = object(p.text), text = Object.fromEntries(LANGUAGES.map(l => [l, nullableString(rawText[l])])) as Occurrence['text']
     if (p.requires_session_context && text.en !== null) return fail()
     return { liturgy_part_id: id, liturgy_id: liturgy.id, part_id: integer(p.part_id), position: pos, role, posture,

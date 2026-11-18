@@ -31,7 +31,8 @@ function database() {
   return { db, open: async () => adapter as unknown as SQLiteDatabase, fail() { failWrite = true } }
 }
 it('initializes once; rehydration preserves text beyond seven days and separates environments/dismissal', async () => {
-  const d = database(), store = createNativeStore(d.open), bundle = parseBundle(fixture)
+  const d = database(), store = createNativeStore(d.open)
+  const bundle = parseBundle({ ...fixture, parts: fixture.parts.map((part, index) => index === 0 ? { ...part, role: 'lector' } : part) })
   await store.commit('a', bundle, 1, () => true); await store.dismiss('a')
   const restarted = createNativeStore(d.open)
   expect((await restarted.hydrate('a')).items[0]).toMatchObject({ bundle, savedAt: 1 })

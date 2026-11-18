@@ -31,6 +31,16 @@ it('preserves repeated part identity, null translations, context and explanation
   expect(parseBundle(updated).revision).not.toBe(result.revision)
   expect(parseCatalog(catalog).liturgies[0].download_bytes).toBe(byteLength(JSON.stringify(bundle)))
 })
+it.each(['lector', 'Future Reader', 'r'.repeat(32)])('preserves role %s', role => {
+  const value = clone()
+  value.parts[0].role = role
+  expect(parseBundle(value, 701).parts[0].role).toBe(role)
+})
+it.each(['', 'r'.repeat(33), 123])('rejects invalid role %p', role => {
+  const value = clone()
+  value.parts[0].role = role
+  expect(() => parseBundle(value, 701)).toThrow(LibraryError)
+})
 it.each([
   (b: ReturnType<typeof clone>) => { b.schema_version = 2 },
   (b: ReturnType<typeof clone>) => { delete b.parts[0].text.ru },
