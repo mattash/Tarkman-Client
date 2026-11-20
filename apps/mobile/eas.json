@@ -60,6 +60,12 @@
         "releaseStatus": "draft"
       }
     },
+    "android-production": {
+      "android": {
+        "track": "production",
+        "releaseStatus": "draft"
+      }
+    },
     "production": {
       "ios": {
         "appleTeamId": "FHF872BAQR",
