@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Gesture Handler can write touch-action: none inline on this container.
+   Let the browser handle vertical pans and leave horizontal swipes to the row. */
+[data-reader-swipe-surface] {
+  touch-action: pan-y !important;
+}
