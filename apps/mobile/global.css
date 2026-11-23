@@ -1,3 +1,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Gesture Handler can write touch-action: none inline on the swipe container
+   and on the content view when the tray is open. The content view is the sole
+   child of Swipeable's final (tap detector) wrapper. Leave horizontal swipes
+   to the row while allowing the browser to pan vertically. */
+[data-reader-swipe-surface],
+[data-reader-swipe-surface] > :last-child > :only-child {
+  touch-action: pan-y !important;
+}

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals'
 import { act, fireEvent, render, type RenderResult } from '@testing-library/react-native'
-import { Text } from 'react-native'
+import { Platform, Text } from 'react-native'
 import { ThemeProvider } from '../design/ThemeProvider'
 import { SwipeablePart } from '../features/live/SwipeablePart'
 import { clearSwipeableMocks, findSwipeable } from './swipeable-helpers'
@@ -37,6 +37,12 @@ const measure = async (view: RenderResult, testID: string) =>
 
 // A tray out of reach is hidden from accessibility, so label queries skip it exactly as a screen reader would.
 const trayReachable = (view: RenderResult) => view.queryByLabelText('View details for deacon') !== null
+
+it.each(['web', 'ios', 'android'] as const)('marks only the web swipe surface for vertical browser panning (%s)', async platform => {
+  jest.replaceProperty(Platform, 'OS', platform)
+  await render(row('row-touch', jest.fn(), jest.fn()))
+  expect(findSwipeable('row-touch-gesture').props['dataSet']).toEqual(platform === 'web' ? { readerSwipeSurface: '' } : undefined)
+})
 
 it('leaves the tray unreachable until a swipe settles it open', async () => {
   const view = await render(row('row-hidden', jest.fn(), jest.fn()))

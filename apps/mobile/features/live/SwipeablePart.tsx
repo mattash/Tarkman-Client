@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren } from 'react'
-import { View } from 'react-native'
+import { Platform, View } from 'react-native'
 import { useRecyclingState } from '@shopify/flash-list'
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { useAnimatedReaction, useSharedValue, type SharedValue } from 'react-native-reanimated'
@@ -8,6 +8,8 @@ import { useTheme } from '../../design/ThemeProvider'
 import { useI18n } from '../i18n'
 
 const actionWidth = 72
+// ReanimatedSwipeable forwards dataSet to its animated container, not the testID wrapper.
+const webSwipeSurface = { dataSet: { readerSwipeSurface: '' } }
 
 type SwipeablePartProps = PropsWithChildren<{
   partLabel: string; testID: string; onSwipeStart(): void; onOpen(): void
@@ -34,6 +36,7 @@ export function SwipeablePart({ children, partLabel, testID, onSwipeStart, onOpe
     {/* The gesture surface keeps the "-gesture" suffix the old PanResponder view established, so row
         queries and gesture queries stay distinct testIDs on device. */}
     <ReanimatedSwipeable ref={swipeable} testID={`${testID}-gesture`}
+      {...(Platform.OS === 'web' ? webSwipeSurface : {})}
       renderRightActions={progress => <PartActionsTray progress={progress} maxProgress={maxProgress}
         partLabel={partLabel} revealed={revealed} onPress={() => {
           swipeable.current?.reset()
